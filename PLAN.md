@@ -217,6 +217,7 @@ Based on the â€œDevelopment Plan for a Python-Based Droplet Shape Analysis Toolâ
       -Any time the contour is re-computed (e.g. after ROI change), update these markers.
 
 19 **Improvement 1: External Contour Only**
+   <!-- Completed by Codex -->
    -Detect only the external droplet contour
      -Discard all internal contours (e.g., bright interior region) before volume and fitting routines.
 

@@ -146,3 +146,9 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 **Task:** Implement detection of the droplet apex and contact point with overlays.
 
 **Summary:** Added apex and contact point markers in `MainWindow.process_image` using a yellow ellipse and cyan line. Updated `ParameterPanel` integration to clear previous markers, wrote a GUI test verifying marker creation, and marked the plan step complete. All tests pass.
+
+## Entry 25 - External Contour Only
+
+**Task:** Continue with the plan by ensuring only the outer droplet contour is used for processing.
+
+**Summary:** Added `external_contour_mask` in `segmentation.py` to keep only the largest external contour and fill interior holes. Integrated this step into `batch.py` and `MainWindow.process_image`. Updated processing tests with a new case for the function and marked the plan item complete.

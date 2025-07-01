@@ -4,6 +4,7 @@ from src.processing.segmentation import (
     otsu_threshold,
     adaptive_threshold,
     morphological_cleanup,
+    external_contour_mask,
     find_contours,
     ml_segment,
 )
@@ -46,4 +47,16 @@ def test_ml_segment():
     img[10:30, 10:30] = 255
     mask = ml_segment(img)
     assert mask.sum() > 0
+
+
+def test_external_contour_mask():
+    cv2 = __import__('cv2')
+    mask = np.zeros((40, 40), dtype=np.uint8)
+    cv2.rectangle(mask, (5, 5), (35, 35), 255, -1)
+    cv2.rectangle(mask, (10, 10), (30, 30), 0, -1)  # hole
+    cleaned = external_contour_mask(mask)
+    contours = find_contours(cleaned)
+    assert len(contours) == 1
+    # hole should be filled
+    assert cleaned[20, 20] == 255
 

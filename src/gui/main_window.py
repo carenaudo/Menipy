@@ -34,6 +34,7 @@ from ..processing.reader import load_image
 from ..processing import segmentation
 from ..processing.segmentation import (
     morphological_cleanup,
+    external_contour_mask,
     find_contours,
     ml_segment,
 )
@@ -202,6 +203,7 @@ class MainWindow(QMainWindow):
                 mask = segmentation.adaptive_threshold(image)
 
         mask = morphological_cleanup(mask, kernel_size=3, iterations=1)
+        mask = external_contour_mask(mask)
         mask_img = QImage(
             mask.data,
             mask.shape[1],

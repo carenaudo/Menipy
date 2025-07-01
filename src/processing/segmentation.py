@@ -34,6 +34,17 @@ def morphological_cleanup(mask: np.ndarray, kernel_size: int = 3, iterations: in
     return closed
 
 
+def external_contour_mask(mask: np.ndarray) -> np.ndarray:
+    """Return a mask containing only the largest external contour."""
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not contours:
+        return np.zeros_like(mask)
+    largest = max(contours, key=cv2.contourArea)
+    ext = np.zeros_like(mask)
+    cv2.drawContours(ext, [largest], -1, 255, -1)
+    return ext
+
+
 def find_contours(mask: np.ndarray) -> list[np.ndarray]:
     """Return contours from a binary mask."""
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
