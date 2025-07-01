@@ -91,3 +91,9 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 **Task:** Continue with the plan by adding a metrics panel to display calculated values.
 
 **Summary:** Created a `MetricsPanel` widget in `src/gui/controls.py` to show IFT, Wo number, volume, contact angle, height, and diameter. Integrated the panel into `MainWindow` and provided a simple metrics calculation in `process_image`. Exported the widget from the GUI package and added `test_metrics_panel_update` to verify updates. All tests pass.
+
+## Entry 16 - Update Documentation
+
+**Task:** Continue with the plan by updating DOCUMENTATION.md after implementing the metrics panel.
+
+**Summary:** Added an Interface Overview section documenting the zoom slider, parameter panel, and metrics panel. Marked the metrics panel step complete in PLAN.md. All tests pass.

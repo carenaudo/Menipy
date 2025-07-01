@@ -161,6 +161,7 @@ Based on the â€œDevelopment Plan for a Python-Based Droplet Shape Analysis Toolâ
       - Liquid density
       - Surface tension
 14.4 **Metrics Panel**
+    <!-- Completed by Codex -->
     - Add a **Metrics Panel** in `gui/main_window.py` or `gui/controls.py` for calculated values:
     - Extend the **Metrics Panel** to display calculated values:
       - Interfacial tension (IFT) in mN/m
