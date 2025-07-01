@@ -68,3 +68,9 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 **Task:** Continue with the plan by adding an optional ML-based segmentation toggle in the GUI.
 
 **Summary:** Implemented a `Use ML Segmentation` checkable action in `MainWindow` and a placeholder `ml_segment` function. Processing now routes through this function when the action is enabled, and tests verify the new behavior.
+
+## Entry 12 - Zoom Control
+
+**Task:** Continue with the plan by adding a zoom slider to adjust the image view scale.
+
+**Summary:** Created `ZoomControl` widget in `src/gui/controls.py` and integrated it into `MainWindow`. The slider emits a `zoomChanged` signal connected to a new `set_zoom` method that scales the `QGraphicsView`. Added unit test `test_zoom_control` verifying the zoom factor. All tests pass.
