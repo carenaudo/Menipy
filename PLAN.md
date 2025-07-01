@@ -184,6 +184,7 @@ Based on the â€œDevelopment Plan for a Python-Based Droplet Shape Analysis Toolâ
       -Immediately render the blue rectangle in the QGraphicsView overlay, editable by drag handles.
 
 16 **Pixel-to-mm Calibration**
+    <!-- Completed by Codex -->
     -Manual Mode
       -In Calibration Mode, allow drawing a line between two points inside the blue box.
       -Let the user enter the real length (mm) in the parameter panel.

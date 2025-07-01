@@ -35,7 +35,7 @@ from ..processing.segmentation import (
     find_contours,
     ml_segment,
 )
-from ..utils import get_calibration, pixels_to_mm
+from ..utils import get_calibration, pixels_to_mm, auto_calibrate
 from ..models.properties import droplet_volume
 from .calibration_dialog import CalibrationDialog
 
@@ -301,9 +301,31 @@ class MainWindow(QMainWindow):
         if getattr(self, "image", None) is None:
             QMessageBox.information(self, "Calibration", "Load an image first")
             return
-        dialog = CalibrationDialog(self.image, self)
-        if dialog.exec():
+        if self.calibration_rect is None:
+            QMessageBox.information(self, "Calibration", "Draw calibration box first")
+            return
+        method = self.parameter_panel.calibration_method()
+        if method == "manual":
+            x1, y1, x2, y2 = map(int, self.calibration_rect)
+            roi = self.image[y1:y2, x1:x2]
+            dialog = CalibrationDialog(roi, self)
+            if dialog.exec():
+                cal = get_calibration()
+                self.parameter_panel.set_scale_display(cal.pixels_per_mm)
+                QMessageBox.information(
+                    self,
+                    "Calibration",
+                    f"Calibration set to {cal.pixels_per_mm:.2f} px/mm",
+                )
+        else:
+            length_mm = self.parameter_panel.calibration_length()
+            try:
+                auto_calibrate(self.image, self.calibration_rect, length_mm)
+            except Exception as exc:
+                QMessageBox.warning(self, "Calibration", str(exc))
+                return
             cal = get_calibration()
+            self.parameter_panel.set_scale_display(cal.pixels_per_mm)
             QMessageBox.information(
                 self,
                 "Calibration",

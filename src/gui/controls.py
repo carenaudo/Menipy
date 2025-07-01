@@ -7,6 +7,8 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QDoubleSpinBox,
     QCheckBox,
+    QRadioButton,
+    QButtonGroup,
 )
 
 
@@ -65,6 +67,23 @@ class ParameterPanel(QWidget):
         self.calibration_mode = QCheckBox("Calibration Mode")
         layout.addRow(self.calibration_mode)
 
+        self.ref_length = QDoubleSpinBox()
+        self.ref_length.setRange(0.1, 100.0)
+        self.ref_length.setValue(1.0)
+        self.ref_length.setSuffix(" mm")
+        layout.addRow("Ref length", self.ref_length)
+
+        self.manual_radio = QRadioButton("Manual")
+        self.auto_radio = QRadioButton("Automatic")
+        self.manual_radio.setChecked(True)
+        group = QButtonGroup(self)
+        group.addButton(self.manual_radio)
+        group.addButton(self.auto_radio)
+        layout.addRow(self.manual_radio, self.auto_radio)
+
+        self.scale_label = QLabel("1.0")
+        layout.addRow("Scale (px/mm)", self.scale_label)
+
     def values(self) -> dict[str, float]:
         return {
             "air_density": self.air_density.value(),
@@ -75,6 +94,15 @@ class ParameterPanel(QWidget):
     def is_calibration_enabled(self) -> bool:
         """Return True if calibration mode is checked."""
         return self.calibration_mode.isChecked()
+
+    def calibration_method(self) -> str:
+        return "manual" if self.manual_radio.isChecked() else "automatic"
+
+    def calibration_length(self) -> float:
+        return self.ref_length.value()
+
+    def set_scale_display(self, px_per_mm: float) -> None:
+        self.scale_label.setText(f"{px_per_mm:.2f}")
 
 
 class MetricsPanel(QWidget):

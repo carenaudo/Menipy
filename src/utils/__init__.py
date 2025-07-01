@@ -7,6 +7,7 @@ from .calibration import (
     mm_to_pixels,
     pixels_to_mm,
     set_calibration,
+    auto_calibrate,
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     "pixels_to_mm",
     "mm_to_pixels",
     "calibrate_from_points",
+    "auto_calibrate",
 ]

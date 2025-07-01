@@ -55,3 +55,46 @@ def calibrate_from_points(p1: tuple[float, float], p2: tuple[float, float], leng
         raise ValueError("length_mm must be positive")
     set_calibration(pixel_length / length_mm)
     return pixel_length
+
+
+def auto_calibrate(image, box: tuple[float, float, float, float], length_mm: float = 1.0) -> float:
+    """Automatically calibrate using vertical edge detection within a box.
+
+    Parameters
+    ----------
+    image:
+        Input image array (grayscale or BGR).
+    box:
+        (x1, y1, x2, y2) coordinates of the region containing the calibration
+        needle in pixels.
+    length_mm:
+        Known physical separation of the needle edges in millimeters. Defaults
+        to ``1.0`` if not provided.
+
+    Returns
+    -------
+    float
+        Measured pixel distance between detected edges.
+    """
+    import cv2
+    import numpy as np
+
+    x1, y1, x2, y2 = map(int, box)
+    roi = image[y1:y2, x1:x2]
+    if roi.size == 0:
+        raise ValueError("Calibration ROI is empty")
+
+    if roi.ndim == 3:
+        gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = roi
+
+    projection = gray.sum(axis=0)
+    cols = np.where(projection > projection.max() * 0.5)[0]
+    if cols.size < 2:
+        raise ValueError("Could not detect calibration lines")
+    separation = float(cols[-1] - cols[0])
+    if length_mm <= 0:
+        raise ValueError("length_mm must be positive")
+    set_calibration(separation / length_mm)
+    return float(separation)

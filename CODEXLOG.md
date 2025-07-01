@@ -116,3 +116,9 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 
 **Summary:** Inserted "<!-- Completed by Codex -->" comment under the Interactive Calibration Box section in PLAN.md and under Update Documentation. All tests pass.
 
+## Entry 20 - Pixel-to-mm Calibration
+
+**Task:** Implement manual and automatic pixel-to-mm calibration.
+
+**Summary:** Added calibration controls to the parameter panel with manual/automatic modes and reference length input. Updated `MainWindow.open_calibration` to crop the ROI and call a new `auto_calibrate` utility. Implemented `auto_calibrate` in `src/utils/calibration.py` and exposed it via `__init__`. Added tests for automatic calibration and new GUI controls, updated README with a Calibration Workflow section, and marked the plan step complete. All tests pass.
+

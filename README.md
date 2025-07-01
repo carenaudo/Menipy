@@ -18,3 +18,12 @@ Human involvement in this project is intentionally kept light. The main role of
 the user will be testing the GUI and submitting prompts as tasks to CODEX or as
 issues on GitHub. Feedback from these manual tests will guide further automated
 iterations of the tool.
+
+## Calibration Workflow
+
+1. Enable **Calibration Mode** in the parameter panel and draw a blue box around
+   the calibration needle.
+2. Select **Manual** or **Automatic** method. Manual mode uses a user-drawn line
+   with a known length; automatic mode detects the two vertical needle edges.
+3. Use **Tools → Calibration** to compute the pixel-to-mm scale. The resulting
+   scale value is displayed in the parameter panel.
