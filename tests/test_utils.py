@@ -31,9 +31,8 @@ def test_auto_calibrate_detects_lines():
     import numpy as np
     import cv2
 
-    img = np.zeros((20, 20), dtype=np.uint8)
-    cv2.line(img, (5, 0), (5, 19), 255, 1)
-    cv2.line(img, (15, 0), (15, 19), 255, 1)
+    img = np.full((20, 20), 255, dtype=np.uint8)
+    cv2.rectangle(img, (5, 0), (15, 19), 0, -1)
 
     sep = auto_calibrate(cv2.cvtColor(img, cv2.COLOR_GRAY2BGR), (0, 0, 20, 20), 1.0)
     assert sep == pytest.approx(10, abs=1)

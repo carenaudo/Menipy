@@ -89,11 +89,29 @@ def auto_calibrate(image, box: tuple[float, float, float, float], length_mm: flo
     else:
         gray = roi
 
-    projection = gray.sum(axis=0)
-    cols = np.where(projection > projection.max() * 0.5)[0]
-    if cols.size < 2:
+    # Detect vertical edges using Canny + Hough transform
+    edges = cv2.Canny(gray, 50, 150, apertureSize=3)
+    lines = cv2.HoughLinesP(
+        edges,
+        rho=1,
+        theta=np.pi / 180,
+        threshold=10,
+        minLineLength=gray.shape[0] // 2,
+        maxLineGap=5,
+    )
+    if lines is None or len(lines) < 2:
         raise ValueError("Could not detect calibration lines")
-    separation = float(cols[-1] - cols[0])
+
+    vertical_positions = []
+    for x_start, y_start, x_end, y_end in lines[:, 0]:
+        if abs(x_end - x_start) <= 3:  # near-vertical
+            vertical_positions.append((x_start + x_end) / 2)
+
+    if len(vertical_positions) < 2:
+        raise ValueError("Could not detect calibration lines")
+
+    vertical_positions.sort()
+    separation = float(vertical_positions[-1] - vertical_positions[0])
     if length_mm <= 0:
         raise ValueError("length_mm must be positive")
     set_calibration(separation / length_mm)
