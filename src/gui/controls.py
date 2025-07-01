@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QFormLayout,
     QDoubleSpinBox,
+    QCheckBox,
 )
 
 
@@ -61,12 +62,19 @@ class ParameterPanel(QWidget):
         self.surface_tension.valueChanged.connect(self.parametersChanged.emit)
         layout.addRow("Surface tension", self.surface_tension)
 
+        self.calibration_mode = QCheckBox("Calibration Mode")
+        layout.addRow(self.calibration_mode)
+
     def values(self) -> dict[str, float]:
         return {
             "air_density": self.air_density.value(),
             "liquid_density": self.liquid_density.value(),
             "surface_tension": self.surface_tension.value(),
         }
+
+    def is_calibration_enabled(self) -> bool:
+        """Return True if calibration mode is checked."""
+        return self.calibration_mode.isChecked()
 
 
 class MetricsPanel(QWidget):

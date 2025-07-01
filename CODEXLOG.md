@@ -103,3 +103,16 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 **Task:** Continue with the plan by outlining future improvements.
 
 **Summary:** Added bullet points under "Propose enhancements" in PLAN.md suggesting real-time metric updates, ML segmentation integration, 3D reconstruction, a CLI for batch mode, and expanded tests.
+
+## Entry 18 - Interactive Calibration Box
+
+**Task:** Implement a calibration mode with draggable box overlay.
+
+**Summary:** Added a Calibration Mode checkbox to the ParameterPanel and new handlers in MainWindow to draw a blue rectangle when dragging on the image. The box coordinates are stored for downstream processing. Added unit test `test_calibration_box` and all tests pass.
+
+## Entry 19 - Mark Calibration Box Complete
+
+**Task:** Update PLAN.md to mark the interactive calibration box step as done.
+
+**Summary:** Inserted "<!-- Completed by Codex -->" comment under the Interactive Calibration Box section in PLAN.md and under Update Documentation. All tests pass.
+

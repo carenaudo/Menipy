@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QRectF
 from PySide6.QtGui import (
     QImage,
     QPixmap,
@@ -106,6 +106,16 @@ class MainWindow(QMainWindow):
 
         self.mask_item = None
         self.contour_items = []
+        self.calibration_rect_item = None
+        self.calibration_rect = None
+        self._calib_start = None
+        self._default_press = self.graphics_view.mousePressEvent
+        self._default_move = self.graphics_view.mouseMoveEvent
+        self._default_release = self.graphics_view.mouseReleaseEvent
+
+        self.parameter_panel.calibration_mode.toggled.connect(
+            self.set_calibration_mode
+        )
 
     def open_image(self) -> None:
         """Open an image file and display it."""
@@ -231,6 +241,60 @@ class MainWindow(QMainWindow):
         self.graphics_view.render(painter)
         painter.end()
         image.save(str(path))
+
+    # --- Calibration box handling -------------------------------------------------
+
+    def set_calibration_mode(self, enabled: bool) -> None:
+        """Enable or disable interactive calibration box drawing."""
+        if enabled:
+            self.graphics_view.setCursor(Qt.CrossCursor)
+            self.graphics_view.mousePressEvent = self._calib_press
+            self.graphics_view.mouseMoveEvent = self._calib_move
+            self.graphics_view.mouseReleaseEvent = self._calib_release
+        else:
+            self.graphics_view.setCursor(Qt.ArrowCursor)
+            self.graphics_view.mousePressEvent = self._default_press
+            self.graphics_view.mouseMoveEvent = self._default_move
+            self.graphics_view.mouseReleaseEvent = self._default_release
+            if self.calibration_rect_item is not None:
+                self.graphics_scene.removeItem(self.calibration_rect_item)
+                self.calibration_rect_item = None
+            self.calibration_rect = None
+            self._calib_start = None
+
+    def _calib_press(self, event):
+        pos = self.graphics_view.mapToScene(event.pos())
+        self._calib_start = pos
+        if self.calibration_rect_item is not None:
+            self.graphics_scene.removeItem(self.calibration_rect_item)
+        pen = QPen(QColor("blue"))
+        pen.setWidth(2)
+        rect = QRectF(pos, pos)
+        self.calibration_rect_item = self.graphics_scene.addRect(rect, pen)
+        event.accept()
+
+    def _calib_move(self, event):
+        if self._calib_start is None or self.calibration_rect_item is None:
+            return
+        pos = self.graphics_view.mapToScene(event.pos())
+        rect = QRectF(self._calib_start, pos).normalized()
+        self.calibration_rect_item.setRect(rect)
+        event.accept()
+
+    def _calib_release(self, event):
+        if self._calib_start is None or self.calibration_rect_item is None:
+            return
+        pos = self.graphics_view.mapToScene(event.pos())
+        rect = QRectF(self._calib_start, pos).normalized()
+        self.calibration_rect_item.setRect(rect)
+        self.calibration_rect = (
+            rect.left(),
+            rect.top(),
+            rect.right(),
+            rect.bottom(),
+        )
+        self._calib_start = None
+        event.accept()
 
     def open_calibration(self) -> None:
         """Open a dialog to calibrate pixel size."""
