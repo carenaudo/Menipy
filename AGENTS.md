@@ -121,5 +121,17 @@ This file defines the specialized agents (sub-agents) that CODEX will instantiat
 
 ---
 
-*End of AGENTS.md*
+## 9. CODEXLOG Agent
 
+**Role:** Maintain a persistent activity log for CODEX tasks.
+
+**Responsibilities:**
+- Append a new entry to `CODEXLOG.md` after each CODEX task.
+- Summarize the task description and CODEX's response.
+- Keep the log concise and in chronological order.
+
+**Inputs:** Task descriptions and summaries from other agents.
+**Outputs:** Updated `CODEXLOG.md` with a new entry.
+
+---
+*End of AGENTS.md*
