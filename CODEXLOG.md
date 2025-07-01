@@ -19,3 +19,9 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 **Task:** Continue implementing features from PLAN.md, focusing on the GUI skeleton and calibration utilities.
 
 **Summary:** Added basic image loading and segmentation controls to `gui/main_window.py`, implemented calibration utilities under `src/utils`, updated the CLI entry point, and expanded tests accordingly.
+
+## Entry 4 - Fix QAction Import
+
+**Task:** Resolve error due to missing QAction attribute from QtWidgets by importing QAction from QtGui and updating usage.
+
+**Summary:** Updated `gui/main_window.py` to import `QAction` from `PySide6.QtGui` and replaced references to QtWidgets with direct class imports. All tests pass.
