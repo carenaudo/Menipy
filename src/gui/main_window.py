@@ -28,7 +28,11 @@ from PySide6.QtWidgets import (
 
 from ..processing.reader import load_image
 from ..processing import segmentation
-from ..processing.segmentation import morphological_cleanup, find_contours
+from ..processing.segmentation import (
+    morphological_cleanup,
+    find_contours,
+    ml_segment,
+)
 from ..utils import get_calibration
 from .calibration_dialog import CalibrationDialog
 
@@ -83,6 +87,10 @@ class MainWindow(QMainWindow):
         tools_menu = self.menuBar().addMenu("Tools")
         tools_menu.addAction(calib_action)
 
+        self.use_ml_action = QAction("Use ML Segmentation", self)
+        self.use_ml_action.setCheckable(True)
+        tools_menu.addAction(self.use_ml_action)
+
         self.mask_item = None
         self.contour_items = []
 
@@ -127,11 +135,14 @@ class MainWindow(QMainWindow):
         """Run segmentation on the loaded image and overlay the mask."""
         if getattr(self, "image", None) is None:
             return
-        algo = self.algorithm_combo.currentText()
-        if algo == "Otsu":
-            mask = segmentation.otsu_threshold(self.image)
+        if getattr(self, "use_ml_action", None) and self.use_ml_action.isChecked():
+            mask = ml_segment(self.image)
         else:
-            mask = segmentation.adaptive_threshold(self.image)
+            algo = self.algorithm_combo.currentText()
+            if algo == "Otsu":
+                mask = segmentation.otsu_threshold(self.image)
+            else:
+                mask = segmentation.adaptive_threshold(self.image)
 
         mask = morphological_cleanup(mask, kernel_size=3, iterations=1)
         mask_img = QImage(

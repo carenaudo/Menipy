@@ -83,3 +83,27 @@ def test_save_annotated_image(tmp_path):
 
     window.close()
     app.quit()
+
+
+def test_ml_segmentation_toggle(tmp_path):
+    if QtWidgets is None:
+        pytest.skip("PySide6 not available")
+
+    import numpy as np
+    import cv2
+
+    img = np.zeros((10, 10), dtype=np.uint8)
+    img[2:8, 2:8] = 255
+    path = tmp_path / "img.png"
+    cv2.imwrite(str(path), img)
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    window = MainWindow()
+    window.use_ml_action.setChecked(True)
+    window.load_image(path)
+    window.process_image()
+
+    assert window.mask_item is not None
+
+    window.close()
+    app.quit()

@@ -39,3 +39,14 @@ def find_contours(mask: np.ndarray) -> list[np.ndarray]:
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     return [c.squeeze(1) for c in contours if c.size > 0]
 
+
+def ml_segment(image: np.ndarray) -> np.ndarray:
+    """Placeholder ML-based segmentation.
+
+    This stub mimics an ML model by applying Otsu thresholding followed by
+    morphological cleanup. It allows the GUI to toggle an "ML" option without
+    requiring heavy dependencies.
+    """
+    mask = otsu_threshold(image)
+    return morphological_cleanup(mask, kernel_size=3, iterations=1)
+
