@@ -149,3 +149,21 @@ def test_parameter_panel_defaults():
 
     window.close()
     app.quit()
+
+
+def test_metrics_panel_update():
+    if QtWidgets is None:
+        pytest.skip("PySide6 not available")
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    window = MainWindow()
+
+    panel = window.metrics_panel
+    panel.set_metrics(ift=1.2, wo=0.5, volume=3.4, contact_angle=45.0, height=2.0, diameter=4.0)
+
+    assert panel.ift_label.text().startswith("1.2")
+    assert panel.volume_label.text().startswith("3.4")
+
+    window.close()
+    app.quit()
+

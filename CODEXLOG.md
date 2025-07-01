@@ -85,3 +85,9 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 **Task:** Review the previous work and mark completed stages in `PLAN.md`.
 
 **Summary:** Added "Completed by Codex" markers for the Zoom Control and Parameter Panel steps in `PLAN.md` to reflect the finished features. No code changes were required. All tests still pass.
+
+## Entry 15 - Metrics Panel
+
+**Task:** Continue with the plan by adding a metrics panel to display calculated values.
+
+**Summary:** Created a `MetricsPanel` widget in `src/gui/controls.py` to show IFT, Wo number, volume, contact angle, height, and diameter. Integrated the panel into `MainWindow` and provided a simple metrics calculation in `process_image`. Exported the widget from the GUI package and added `test_metrics_panel_update` to verify updates. All tests pass.

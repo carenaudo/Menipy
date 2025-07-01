@@ -67,3 +67,53 @@ class ParameterPanel(QWidget):
             "liquid_density": self.liquid_density.value(),
             "surface_tension": self.surface_tension.value(),
         }
+
+
+class MetricsPanel(QWidget):
+    """Display calculated droplet metrics."""
+
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+        layout = QFormLayout(self)
+
+        self.ift_label = QLabel("0.0")
+        layout.addRow("IFT (mN/m)", self.ift_label)
+
+        self.wo_label = QLabel("0.0")
+        layout.addRow("Wo number", self.wo_label)
+
+        self.volume_label = QLabel("0.0")
+        layout.addRow("Volume (\u00b5L)", self.volume_label)
+
+        self.angle_label = QLabel("0.0")
+        layout.addRow("Contact angle (\u00b0)", self.angle_label)
+
+        self.height_label = QLabel("0.0")
+        layout.addRow("Height", self.height_label)
+
+        self.diameter_label = QLabel("0.0")
+        layout.addRow("Diameter", self.diameter_label)
+
+    def set_metrics(
+        self,
+        *,
+        ift: float | None = None,
+        wo: float | None = None,
+        volume: float | None = None,
+        contact_angle: float | None = None,
+        height: float | None = None,
+        diameter: float | None = None,
+    ) -> None:
+        """Update displayed metric values."""
+        if ift is not None:
+            self.ift_label.setText(f"{ift:.2f}")
+        if wo is not None:
+            self.wo_label.setText(f"{wo:.2f}")
+        if volume is not None:
+            self.volume_label.setText(f"{volume:.2f}")
+        if contact_angle is not None:
+            self.angle_label.setText(f"{contact_angle:.2f}")
+        if height is not None:
+            self.height_label.setText(f"{height:.2f}")
+        if diameter is not None:
+            self.diameter_label.setText(f"{diameter:.2f}")
