@@ -31,3 +31,6 @@
 
 ## Entry 23 - ROI Selection for Volume
 **Summary:** Generated some indent errors that i fixed by hand
+
+## Entry 24 - Apex and Contact Marking
+**Summary:** I am not seeing this... add some steps to the plan based on what i think is missing
