@@ -33,3 +33,9 @@ def morphological_cleanup(mask: np.ndarray, kernel_size: int = 3, iterations: in
     closed = cv2.morphologyEx(opened, cv2.MORPH_CLOSE, kernel, iterations=iterations)
     return closed
 
+
+def find_contours(mask: np.ndarray) -> list[np.ndarray]:
+    """Return contours from a binary mask."""
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    return [c.squeeze(1) for c in contours if c.size > 0]
+

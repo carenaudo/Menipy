@@ -4,6 +4,7 @@ from src.processing.segmentation import (
     otsu_threshold,
     adaptive_threshold,
     morphological_cleanup,
+    find_contours,
 )
 
 
@@ -28,4 +29,13 @@ def test_morphological_cleanup():
     cleaned = morphological_cleanup(mask, kernel_size=3, iterations=1)
     assert cleaned[0, 0] == 0
     assert cleaned.sum() >= mask[5:15, 5:15].sum()
+
+
+def test_find_contours():
+    mask = np.zeros((30, 30), dtype=np.uint8)
+    cv2 = __import__('cv2')
+    cv2.rectangle(mask, (5, 5), (25, 25), 255, -1)
+    contours = find_contours(mask)
+    assert len(contours) == 1
+    assert contours[0].shape[1] == 2
 
