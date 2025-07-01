@@ -35,9 +35,13 @@ from ..processing.segmentation import (
     find_contours,
     ml_segment,
 )
-from ..utils import get_calibration, pixels_to_mm, auto_calibrate
+from ..utils import (
+    get_calibration,
+    pixels_to_mm,
+    auto_calibrate,
+    calibrate_from_points,
+)
 from ..models.properties import droplet_volume
-from .calibration_dialog import CalibrationDialog
 
 
 class MainWindow(QMainWindow):
@@ -108,6 +112,8 @@ class MainWindow(QMainWindow):
         self.contour_items = []
         self.calibration_rect_item = None
         self.calibration_rect = None
+        self.calibration_line_item = None
+        self.calibration_line = None
         self._calib_start = None
         self._default_press = self.graphics_view.mousePressEvent
         self._default_move = self.graphics_view.mouseMoveEvent
@@ -116,6 +122,10 @@ class MainWindow(QMainWindow):
         self.parameter_panel.calibration_mode.toggled.connect(
             self.set_calibration_mode
         )
+        self.parameter_panel.manual_toggle.toggled.connect(
+            lambda _: self.set_calibration_mode(self.parameter_panel.is_calibration_enabled())
+        )
+        self.parameter_panel.calibrate_button.clicked.connect(self.open_calibration)
 
     def open_image(self) -> None:
         """Open an image file and display it."""
@@ -242,15 +252,21 @@ class MainWindow(QMainWindow):
         painter.end()
         image.save(str(path))
 
-    # --- Calibration box handling -------------------------------------------------
+    # --- Calibration drawing handling -------------------------------------------------
 
     def set_calibration_mode(self, enabled: bool) -> None:
-        """Enable or disable interactive calibration box drawing."""
+        """Enable or disable interactive calibration drawing."""
         if enabled:
             self.graphics_view.setCursor(Qt.CrossCursor)
-            self.graphics_view.mousePressEvent = self._calib_press
-            self.graphics_view.mouseMoveEvent = self._calib_move
-            self.graphics_view.mouseReleaseEvent = self._calib_release
+            method = self.parameter_panel.calibration_method()
+            if method == "manual":
+                self.graphics_view.mousePressEvent = self._line_press
+                self.graphics_view.mouseMoveEvent = self._line_move
+                self.graphics_view.mouseReleaseEvent = self._line_release
+            else:
+                self.graphics_view.mousePressEvent = self._box_press
+                self.graphics_view.mouseMoveEvent = self._box_move
+                self.graphics_view.mouseReleaseEvent = self._box_release
         else:
             self.graphics_view.setCursor(Qt.ArrowCursor)
             self.graphics_view.mousePressEvent = self._default_press
@@ -260,9 +276,13 @@ class MainWindow(QMainWindow):
                 self.graphics_scene.removeItem(self.calibration_rect_item)
                 self.calibration_rect_item = None
             self.calibration_rect = None
+            if self.calibration_line_item is not None:
+                self.graphics_scene.removeItem(self.calibration_line_item)
+                self.calibration_line_item = None
+            self.calibration_line = None
             self._calib_start = None
 
-    def _calib_press(self, event):
+    def _box_press(self, event):
         pos = self.graphics_view.mapToScene(event.pos())
         self._calib_start = pos
         if self.calibration_rect_item is not None:
@@ -273,7 +293,7 @@ class MainWindow(QMainWindow):
         self.calibration_rect_item = self.graphics_scene.addRect(rect, pen)
         event.accept()
 
-    def _calib_move(self, event):
+    def _box_move(self, event):
         if self._calib_start is None or self.calibration_rect_item is None:
             return
         pos = self.graphics_view.mapToScene(event.pos())
@@ -281,7 +301,7 @@ class MainWindow(QMainWindow):
         self.calibration_rect_item.setRect(rect)
         event.accept()
 
-    def _calib_release(self, event):
+    def _box_release(self, event):
         if self._calib_start is None or self.calibration_rect_item is None:
             return
         pos = self.graphics_view.mapToScene(event.pos())
@@ -296,28 +316,67 @@ class MainWindow(QMainWindow):
         self._calib_start = None
         event.accept()
 
+    # --- Manual line drawing -------------------------------------------------
+
+    def _line_press(self, event):
+        pos = self.graphics_view.mapToScene(event.pos())
+        self._calib_start = pos
+        if self.calibration_line_item is not None:
+            self.graphics_scene.removeItem(self.calibration_line_item)
+        pen = QPen(QColor("blue"))
+        pen.setWidth(2)
+        self.calibration_line_item = self.graphics_scene.addLine(pos.x(), pos.y(), pos.x(), pos.y(), pen)
+        event.accept()
+
+    def _line_move(self, event):
+        if self._calib_start is None or self.calibration_line_item is None:
+            return
+        pos = self.graphics_view.mapToScene(event.pos())
+        line = self.calibration_line_item.line()
+        line.setP2(pos)
+        self.calibration_line_item.setLine(line)
+        event.accept()
+
+    def _line_release(self, event):
+        if self._calib_start is None or self.calibration_line_item is None:
+            return
+        pos = self.graphics_view.mapToScene(event.pos())
+        line = self.calibration_line_item.line()
+        line.setP2(pos)
+        self.calibration_line_item.setLine(line)
+        self.calibration_line = (
+            line.x1(),
+            line.y1(),
+            line.x2(),
+            line.y2(),
+        )
+        self._calib_start = None
+        event.accept()
+
     def open_calibration(self) -> None:
         """Open a dialog to calibrate pixel size."""
         if getattr(self, "image", None) is None:
             QMessageBox.information(self, "Calibration", "Load an image first")
             return
-        if self.calibration_rect is None:
-            QMessageBox.information(self, "Calibration", "Draw calibration box first")
-            return
         method = self.parameter_panel.calibration_method()
         if method == "manual":
-            x1, y1, x2, y2 = map(int, self.calibration_rect)
-            roi = self.image[y1:y2, x1:x2]
-            dialog = CalibrationDialog(roi, self)
-            if dialog.exec():
-                cal = get_calibration()
-                self.parameter_panel.set_scale_display(cal.pixels_per_mm)
-                QMessageBox.information(
-                    self,
-                    "Calibration",
-                    f"Calibration set to {cal.pixels_per_mm:.2f} px/mm",
-                )
+            if self.calibration_line is None:
+                QMessageBox.information(self, "Calibration", "Draw calibration line first")
+                return
+            x1, y1, x2, y2 = self.calibration_line
+            length_mm = self.parameter_panel.calibration_length()
+            calibrate_from_points((x1, y1), (x2, y2), length_mm)
+            cal = get_calibration()
+            self.parameter_panel.set_scale_display(cal.pixels_per_mm)
+            QMessageBox.information(
+                self,
+                "Calibration",
+                f"Calibration set to {cal.pixels_per_mm:.2f} px/mm",
+            )
         else:
+            if self.calibration_rect is None:
+                QMessageBox.information(self, "Calibration", "Draw calibration box first")
+                return
             length_mm = self.parameter_panel.calibration_length()
             try:
                 auto_calibrate(self.image, self.calibration_rect, length_mm)
