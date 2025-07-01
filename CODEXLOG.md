@@ -31,3 +31,10 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 **Task:** Adjust the GUI so loaded images are shown at their original dimensions instead of being fit to the view.
 
 **Summary:** Modified `load_image` in `gui/main_window.py` to reset the view transform and set the scene rectangle to the pixmap's bounds. Added a corresponding unit test to verify the image dimensions and transform. All tests pass (GUI tests skipped if PySide6 unavailable).
+
+## Entry 6 - Expand Window to Image Size
+
+**Task:** Ensure that when an image is loaded, the main window grows to match the image dimensions rather than constraining the view.
+
+**Summary:** Updated `load_image` to set the graphics view size to the pixmap's bounding rectangle and call `adjustSize()` so the window expands. Extended the GUI test to confirm the view size matches the image.
+

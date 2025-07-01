@@ -100,7 +100,12 @@ class MainWindow(QMainWindow):
         self.graphics_scene.clear()
         self.pixmap_item = self.graphics_scene.addPixmap(pixmap)
         self.graphics_view.resetTransform()
-        self.graphics_view.setSceneRect(self.pixmap_item.boundingRect())
+
+        rect = self.pixmap_item.boundingRect()
+        self.graphics_view.setSceneRect(rect)
+        self.graphics_view.setFixedSize(int(rect.width()), int(rect.height()))
+        self.adjustSize()
+
 
     def process_image(self) -> None:
         """Run segmentation on the loaded image and overlay the mask."""
