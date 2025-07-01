@@ -5,6 +5,7 @@ from src.processing.segmentation import (
     adaptive_threshold,
     morphological_cleanup,
     find_contours,
+    ml_segment,
 )
 
 
@@ -38,4 +39,11 @@ def test_find_contours():
     contours = find_contours(mask)
     assert len(contours) == 1
     assert contours[0].shape[1] == 2
+
+
+def test_ml_segment():
+    img = np.zeros((40, 40), dtype=np.uint8)
+    img[10:30, 10:30] = 255
+    mask = ml_segment(img)
+    assert mask.sum() > 0
 

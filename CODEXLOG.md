@@ -62,3 +62,9 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 **Task:** Continue with the plan by adding continuous integration to run tests and build packages automatically.
 
 **Summary:** Created `.github/workflows/ci.yml` to set up Python 3.10 and 3.11, install dependencies, run pytest with coverage, and build source and wheel distributions.
+
+## Entry 11 - ML Segmentation Toggle
+
+**Task:** Continue with the plan by adding an optional ML-based segmentation toggle in the GUI.
+
+**Summary:** Implemented a `Use ML Segmentation` checkable action in `MainWindow` and a placeholder `ml_segment` function. Processing now routes through this function when the action is enabled, and tests verify the new behavior.

@@ -100,10 +100,14 @@ Based on the “Development Plan for a Python-Based Droplet Shape Analysis Tool�
 
 7. **GUI Skeleton**
 
+   <!-- Completed by Codex -->
+
    - In `gui/main_window.py` build two‐panel layout: image view + controls using PySide6.
    - Stub controls: open file/folder, calibration dialog, model selector, “Process” button.
 
 8. **Integration & Overlays**
+
+   <!-- Completed by Codex -->
 
    - Hook processing modules into GUI actions.
    - Draw overlays (raw contour, model curve) using QGraphicsView or Matplotlib canvas.
@@ -111,23 +115,33 @@ Based on the “Development Plan for a Python-Based Droplet Shape Analysis Tool�
 
 9. **Calibration Features**
 
+   <!-- Completed by Codex -->
+
    - Implement `utils/calibration.py` for pixel-to-mm entry and on-image line measurement dialog.
 
 10. **Batch Mode**
 
+    <!-- Completed by Codex -->
+
     - In `batch.py`, iterate over directory, apply default segmentation + model(s), aggregate results into a pandas DataFrame and export to CSV.
 
 11. **Testing & Validation**
+
+    <!-- Completed by Codex -->
 
     - Write pytest tests covering `processing/`, `models/`, and core GUI logic.
     - Include sample images in `data/samples/` for CI.
 
 12. **Packaging & CI**
 
+    <!-- Completed by Codex -->
+
     - Finalize `setup.py` entry point (`src.main:main`).
     - Configure GitHub Actions (or equivalent) to run tests on push.
 
 13. **Optional ML Plugin**
+
+    <!-- Completed by Codex -->
 
     - Scaffold a toggle in GUI to enable ML-based segmentation (TensorFlow/PyTorch).
     - Leave as future extension.
