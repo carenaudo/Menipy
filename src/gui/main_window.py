@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+import numpy as np
+
 from PySide6.QtCore import Qt, QRectF
 from PySide6.QtGui import (
     QImage,
@@ -115,6 +117,9 @@ class MainWindow(QMainWindow):
         self.calibration_line_item = None
         self.calibration_line = None
         self._calib_start = None
+        self.roi_rect_item = None
+        self.roi_rect = None
+        self._roi_start = None
         self._default_press = self.graphics_view.mousePressEvent
         self._default_move = self.graphics_view.mouseMoveEvent
         self._default_release = self.graphics_view.mouseReleaseEvent
@@ -126,6 +131,7 @@ class MainWindow(QMainWindow):
             lambda _: self.set_calibration_mode(self.parameter_panel.is_calibration_enabled())
         )
         self.parameter_panel.calibrate_button.clicked.connect(self.open_calibration)
+        self.parameter_panel.roi_mode.toggled.connect(self.set_roi_mode)
 
     def open_image(self) -> None:
         """Open an image file and display it."""
@@ -169,14 +175,21 @@ class MainWindow(QMainWindow):
         """Run segmentation on the loaded image and overlay the mask."""
         if getattr(self, "image", None) is None:
             return
+        image = self.image
+        offset = (0, 0)
+        if self.roi_rect is not None:
+            x1, y1, x2, y2 = map(int, self.roi_rect)
+            image = image[y1:y2, x1:x2]
+            offset = (x1, y1)
+
         if getattr(self, "use_ml_action", None) and self.use_ml_action.isChecked():
-            mask = ml_segment(self.image)
+            mask = ml_segment(image)
         else:
             algo = self.algorithm_combo.currentText()
             if algo == "Otsu":
-                mask = segmentation.otsu_threshold(self.image)
+                mask = segmentation.otsu_threshold(image)
             else:
-                mask = segmentation.adaptive_threshold(self.image)
+                mask = segmentation.adaptive_threshold(image)
 
         mask = morphological_cleanup(mask, kernel_size=3, iterations=1)
         mask_img = QImage(
@@ -190,6 +203,7 @@ class MainWindow(QMainWindow):
         if self.mask_item is not None:
             self.graphics_scene.removeItem(self.mask_item)
         self.mask_item = self.graphics_scene.addPixmap(mask_pix)
+        self.mask_item.setOffset(*offset)
         self.mask_item.setOpacity(0.4)
 
         for item in self.contour_items:
@@ -200,6 +214,8 @@ class MainWindow(QMainWindow):
             path = QPainterPath()
             if contour.size == 0:
                 continue
+            if offset != (0, 0):
+                contour = contour + np.array(offset)
             path.moveTo(*contour[0])
             for point in contour[1:]:
                 path.lineTo(*point)
@@ -209,8 +225,6 @@ class MainWindow(QMainWindow):
             self.contour_items.append(item)
 
         # Basic metrics from the mask
-        import numpy as np
-
         ys, xs = np.nonzero(mask)
         if ys.size > 0 and xs.size > 0:
             height_px = ys.max() - ys.min()
@@ -313,8 +327,8 @@ class MainWindow(QMainWindow):
             rect.right(),
             rect.bottom(),
         )
-        self._calib_start = None
-        event.accept()
+            self._calib_start = None
+            event.accept()
 
     # --- Manual line drawing -------------------------------------------------
 
@@ -351,6 +365,60 @@ class MainWindow(QMainWindow):
             line.y2(),
         )
         self._calib_start = None
+        event.accept()
+
+    # --- ROI drawing ---------------------------------------------------------
+
+    def set_roi_mode(self, enabled: bool) -> None:
+        """Enable or disable ROI drawing mode."""
+        if enabled:
+            self.graphics_view.setCursor(Qt.CrossCursor)
+            self.graphics_view.mousePressEvent = self._roi_press
+            self.graphics_view.mouseMoveEvent = self._roi_move
+            self.graphics_view.mouseReleaseEvent = self._roi_release
+        else:
+            self.graphics_view.setCursor(Qt.ArrowCursor)
+            self.graphics_view.mousePressEvent = self._default_press
+            self.graphics_view.mouseMoveEvent = self._default_move
+            self.graphics_view.mouseReleaseEvent = self._default_release
+            if self.roi_rect_item is not None:
+                self.graphics_scene.removeItem(self.roi_rect_item)
+                self.roi_rect_item = None
+            self.roi_rect = None
+            self._roi_start = None
+
+    def _roi_press(self, event):
+        pos = self.graphics_view.mapToScene(event.pos())
+        self._roi_start = pos
+        if self.roi_rect_item is not None:
+            self.graphics_scene.removeItem(self.roi_rect_item)
+        pen = QPen(QColor("green"))
+        pen.setWidth(2)
+        rect = QRectF(pos, pos)
+        self.roi_rect_item = self.graphics_scene.addRect(rect, pen)
+        event.accept()
+
+    def _roi_move(self, event):
+        if self._roi_start is None or self.roi_rect_item is None:
+            return
+        pos = self.graphics_view.mapToScene(event.pos())
+        rect = QRectF(self._roi_start, pos).normalized()
+        self.roi_rect_item.setRect(rect)
+        event.accept()
+
+    def _roi_release(self, event):
+        if self._roi_start is None or self.roi_rect_item is None:
+            return
+        pos = self.graphics_view.mapToScene(event.pos())
+        rect = QRectF(self._roi_start, pos).normalized()
+        self.roi_rect_item.setRect(rect)
+        self.roi_rect = (
+            rect.left(),
+            rect.top(),
+            rect.right(),
+            rect.bottom(),
+        )
+        self._roi_start = None
         event.accept()
 
     def open_calibration(self) -> None:

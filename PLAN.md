@@ -197,6 +197,7 @@ Based on the “Development Plan for a Python-Based Droplet Shape Analysis Tool�
       -Radio buttons to switch between Manual / Automatic calibration.
 
 17 **Region-of-Interest for Volume**
+   <!-- Completed by Codex -->
    -ROI Drawing
       -After calibration, enable an “ROI Mode” to draw a green box around the droplet’s shadow.
       -Store ROI coordinates and overlay in the scene.
