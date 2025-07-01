@@ -25,3 +25,6 @@
 
 ## Entry 20 - Pixel-to-mm Calibration
 **Summary:** While it worked, it was not as i wanted. i generated a new task with a better explanation of what i wanted
+
+## Entry 21 - Calibration UI Tweaks
+**Summary:** The automatic detection was not working as intended. 
