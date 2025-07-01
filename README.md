@@ -1,0 +1,2 @@
+# Menipy
+For learning only
