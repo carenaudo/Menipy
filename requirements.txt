@@ -13,3 +13,4 @@ matplotlib
 # Packaging and testing
 setuptools
 pytest
+pytest-cov
