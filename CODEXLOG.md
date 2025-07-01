@@ -56,3 +56,9 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 **Task:** Continue with the plan by implementing batch mode to process directories of images and export results.
 
 **Summary:** Added a functional `run_batch` in `src/batch.py` that loads each image, applies Otsu thresholding and morphological cleanup, counts contours, and collects basic stats into a pandas DataFrame. Results can be saved to CSV. Created `tests/test_batch.py` to verify batch processing and CSV output.
+
+## Entry 10 - CI Workflow
+
+**Task:** Continue with the plan by adding continuous integration to run tests and build packages automatically.
+
+**Summary:** Created `.github/workflows/ci.yml` to set up Python 3.10 and 3.11, install dependencies, run pytest with coverage, and build source and wheel distributions.
