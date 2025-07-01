@@ -196,13 +196,54 @@ def test_calibration_box(tmp_path):
         def accept(self):
             pass
 
-    window._calib_press(DummyEvent(1, 1))
-    window._calib_move(DummyEvent(10, 10))
-    window._calib_release(DummyEvent(10, 10))
+    window._box_press(DummyEvent(1, 1))
+    window._box_move(DummyEvent(10, 10))
+    window._box_release(DummyEvent(10, 10))
 
     assert window.calibration_rect is not None
     x1, y1, x2, y2 = window.calibration_rect
     assert x2 > x1 and y2 > y1
+
+    window.close()
+    app.quit()
+
+
+def test_calibration_line(tmp_path):
+    if QtWidgets is None:
+        pytest.skip("PySide6 not available")
+
+    import numpy as np
+    import cv2
+    from PySide6.QtCore import QPoint
+
+    img = np.zeros((20, 20, 3), dtype=np.uint8)
+    path = tmp_path / "img.png"
+    cv2.imwrite(str(path), img)
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    window = MainWindow()
+    window.load_image(path)
+
+    window.parameter_panel.calibration_mode.setChecked(True)
+    window.parameter_panel.manual_toggle.setChecked(True)
+
+    class DummyEvent:
+        def __init__(self, x, y):
+            self._pos = QPoint(x, y)
+
+        def pos(self):
+            return self._pos
+
+        def accept(self):
+            pass
+
+    window._line_press(DummyEvent(2, 2))
+    window._line_move(DummyEvent(8, 8))
+    window._line_release(DummyEvent(8, 8))
+
+    assert window.calibration_line is not None
+    x1, y1, x2, y2 = window.calibration_line
+    assert x1 != x2 or y1 != y2
 
     window.close()
     app.quit()
@@ -217,7 +258,7 @@ def test_parameter_panel_calibration_controls():
 
     panel = window.parameter_panel
     assert panel.calibration_method() == "manual"
-    panel.auto_radio.setChecked(True)
+    panel.manual_toggle.setChecked(False)
     assert panel.calibration_method() == "automatic"
     panel.set_scale_display(5.0)
     assert panel.scale_label.text().startswith("5.0")

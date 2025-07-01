@@ -7,8 +7,7 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QDoubleSpinBox,
     QCheckBox,
-    QRadioButton,
-    QButtonGroup,
+    QPushButton,
 )
 
 
@@ -73,13 +72,12 @@ class ParameterPanel(QWidget):
         self.ref_length.setSuffix(" mm")
         layout.addRow("Ref length", self.ref_length)
 
-        self.manual_radio = QRadioButton("Manual")
-        self.auto_radio = QRadioButton("Automatic")
-        self.manual_radio.setChecked(True)
-        group = QButtonGroup(self)
-        group.addButton(self.manual_radio)
-        group.addButton(self.auto_radio)
-        layout.addRow(self.manual_radio, self.auto_radio)
+        self.manual_toggle = QCheckBox("Manual Calibration")
+        self.manual_toggle.setChecked(True)
+        layout.addRow(self.manual_toggle)
+
+        self.calibrate_button = QPushButton("Calibrate")
+        layout.addRow(self.calibrate_button)
 
         self.scale_label = QLabel("1.0")
         layout.addRow("Scale (px/mm)", self.scale_label)
@@ -96,7 +94,7 @@ class ParameterPanel(QWidget):
         return self.calibration_mode.isChecked()
 
     def calibration_method(self) -> str:
-        return "manual" if self.manual_radio.isChecked() else "automatic"
+        return "manual" if self.manual_toggle.isChecked() else "automatic"
 
     def calibration_length(self) -> float:
         return self.ref_length.value()
