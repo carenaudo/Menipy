@@ -29,6 +29,8 @@ from PySide6.QtWidgets import (
 from ..processing.reader import load_image
 from ..processing import segmentation
 from ..processing.segmentation import morphological_cleanup, find_contours
+from ..utils import get_calibration
+from .calibration_dialog import CalibrationDialog
 
 
 class MainWindow(QMainWindow):
@@ -184,8 +186,18 @@ class MainWindow(QMainWindow):
         image.save(str(path))
 
     def open_calibration(self) -> None:
-        """Display a placeholder calibration dialog."""
-        QMessageBox.information(self, "Calibration", "Not implemented")
+        """Open a dialog to calibrate pixel size."""
+        if getattr(self, "image", None) is None:
+            QMessageBox.information(self, "Calibration", "Load an image first")
+            return
+        dialog = CalibrationDialog(self.image, self)
+        if dialog.exec():
+            cal = get_calibration()
+            QMessageBox.information(
+                self,
+                "Calibration",
+                f"Calibration set to {cal.pixels_per_mm:.2f} px/mm",
+            )
 
 
 def main():

@@ -44,3 +44,9 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 
 **Summary:** Implemented `find_contours` in `segmentation.py` and updated `MainWindow` to draw contour overlays using `QPainterPath`. Added a "Save Annotated Image" action and method that render the scene to a file. Extended processing and GUI tests to cover these new capabilities.
 
+
+## Entry 8 - Calibration Dialog
+
+**Task:** Continue with the plan by adding calibration features to allow setting pixel-to-millimeter scaling from a reference line in the image.
+
+**Summary:** Implemented an interactive `CalibrationDialog` that lets the user draw a line on the image and enter its real-world length. The dialog computes pixels-per-millimeter using `calibrate_from_points` from updated `utils.calibration`. The main window now launches this dialog via the Tools menu. Utility functions for conversions were added along with new tests.
