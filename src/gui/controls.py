@@ -66,6 +66,9 @@ class ParameterPanel(QWidget):
         self.calibration_mode = QCheckBox("Calibration Mode")
         layout.addRow(self.calibration_mode)
 
+        self.roi_mode = QCheckBox("ROI Mode")
+        layout.addRow(self.roi_mode)
+
         self.ref_length = QDoubleSpinBox()
         self.ref_length.setRange(0.1, 100.0)
         self.ref_length.setValue(1.0)
@@ -92,6 +95,10 @@ class ParameterPanel(QWidget):
     def is_calibration_enabled(self) -> bool:
         """Return True if calibration mode is checked."""
         return self.calibration_mode.isChecked()
+
+    def is_roi_enabled(self) -> bool:
+        """Return True if ROI mode is checked."""
+        return self.roi_mode.isChecked()
 
     def calibration_method(self) -> str:
         return "manual" if self.manual_toggle.isChecked() else "automatic"

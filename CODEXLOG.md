@@ -134,3 +134,9 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 
 **Summary:** Reimplemented `auto_calibrate` to apply Canny edge detection and a Hough transform, measuring the separation of near-vertical lines. Updated the unit test to draw a dark needle on a light background and documented the new approach in the README. All tests pass.
 
+## Entry 23 - ROI Selection for Volume
+
+**Task:** Implement region-of-interest drawing and restrict processing to this area. Update PLAN.md to mark the step complete.
+
+**Summary:** Added an ROI Mode checkbox in `ParameterPanel` and new handlers in `MainWindow` to draw a green rectangle. Segmentation and contour overlays now operate on the cropped region, and metrics use the restricted mask. Updated tests with ROI drawing and processing cases, and marked the corresponding plan section complete.
+
