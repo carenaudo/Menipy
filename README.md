@@ -26,3 +26,5 @@ iterations of the tool.
    draw the needle region for automatic detection.
 3. Click **Calibrate** to compute the pixel-to-mm scale. The resulting value is
    shown in the parameter panel.
+   Automatic mode detects the two vertical edges of the needle using Canny edge
+   detection and a Hough transform to measure their separation.

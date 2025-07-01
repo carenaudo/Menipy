@@ -128,3 +128,9 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 
 **Summary:** Replaced manual/automatic radio buttons with a single toggle and added a "Calibrate" button. Calibration mode now supports drawing either a line (manual) or a box (automatic). Updated `MainWindow` to handle both interactions and compute scale directly from the main view. Adjusted tests and documentation. All tests pass.
 
+## Entry 22 - Improve Automatic Calibration
+
+**Task:** Refine the automatic calibration method so it detects the two vertical needle edges rather than using simple intensity projection.
+
+**Summary:** Reimplemented `auto_calibrate` to apply Canny edge detection and a Hough transform, measuring the separation of near-vertical lines. Updated the unit test to draw a dark needle on a light background and documented the new approach in the README. All tests pass.
+
