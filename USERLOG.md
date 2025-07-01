@@ -22,3 +22,6 @@
 **Summary:** Forgot to update the PLAN.md that the task was done,
 ## Entry 17 - Propose Enhancements
 **Summary:** Did not like it, made my own list using chatgpt and 2 images
+
+## Entry 20 - Pixel-to-mm Calibration
+**Summary:** While it worked, it was not as i wanted. i generated a new task with a better explanation of what i wanted
