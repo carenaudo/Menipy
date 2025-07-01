@@ -25,5 +25,6 @@ def test_main_window_instantiation():
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     window = MainWindow()
     assert window.windowTitle() == "Menipy"
+    assert window.algorithm_combo.count() >= 2
     window.close()
     app.quit()
