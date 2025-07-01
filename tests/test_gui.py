@@ -167,3 +167,43 @@ def test_metrics_panel_update():
     window.close()
     app.quit()
 
+
+def test_calibration_box(tmp_path):
+    if QtWidgets is None:
+        pytest.skip("PySide6 not available")
+
+    import numpy as np
+    import cv2
+    from PySide6.QtCore import QPoint
+
+    img = np.zeros((20, 20, 3), dtype=np.uint8)
+    path = tmp_path / "img.png"
+    cv2.imwrite(str(path), img)
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    window = MainWindow()
+    window.load_image(path)
+
+    window.parameter_panel.calibration_mode.setChecked(True)
+
+    class DummyEvent:
+        def __init__(self, x, y):
+            self._pos = QPoint(x, y)
+
+        def pos(self):
+            return self._pos
+
+        def accept(self):
+            pass
+
+    window._calib_press(DummyEvent(1, 1))
+    window._calib_move(DummyEvent(10, 10))
+    window._calib_release(DummyEvent(10, 10))
+
+    assert window.calibration_rect is not None
+    x1, y1, x2, y2 = window.calibration_rect
+    assert x2 > x1 and y2 > y1
+
+    window.close()
+    app.quit()
+

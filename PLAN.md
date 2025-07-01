@@ -170,9 +170,11 @@ Based on the “Development Plan for a Python-Based Droplet Shape Analysis Tool�
       - Contact angle (θ)
       - Height & diameter
 14.5 **Update Documentation**
-    - Update the DOCUMENTATION.m.    
+    <!-- Completed by Codex -->
+    - Update the DOCUMENTATION.m.
 
 15 **Interactive Calibration Box**
+    <!-- Completed by Codex -->
     - UI Mode Toggle
       -Add a “Calibration Mode” checkbox in the parameter panel.
       -When enabled, left-click+drag on the image to draw the blue “needle box.”
