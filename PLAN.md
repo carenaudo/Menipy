@@ -76,15 +76,21 @@ Based on the “Development Plan for a Python-Based Droplet Shape Analysis Tool�
 
 4. **Image Preprocessing Module**
 
+   <!-- Completed by Codex -->
+
    - Implement `processing/reader.py` (image loading).
    - Implement `processing/segmentation.py` with Otsu, adaptive, morphology.
 
 5. **Geometric & Physical Models**
 
+   <!-- Completed by Codex -->
+
    - In `models/geometry.py` implement circle‐fit, ellipse‐fit, polynomial tangent.
    - In `models/physics.py` implement Young–Laplace ODE solver and ADSA optimizer.
 
 6. **Property Calculators**
+
+   <!-- Completed by Codex -->
 
    - In `models/properties.py` compute:
      - Surface tension (γ) from fitted shape
