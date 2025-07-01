@@ -97,3 +97,9 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 **Task:** Continue with the plan by updating DOCUMENTATION.md after implementing the metrics panel.
 
 **Summary:** Added an Interface Overview section documenting the zoom slider, parameter panel, and metrics panel. Marked the metrics panel step complete in PLAN.md. All tests pass.
+
+## Entry 17 - Propose Enhancements
+
+**Task:** Continue with the plan by outlining future improvements.
+
+**Summary:** Added bullet points under "Propose enhancements" in PLAN.md suggesting real-time metric updates, ML segmentation integration, 3D reconstruction, a CLI for batch mode, and expanded tests.

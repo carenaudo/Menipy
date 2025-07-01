@@ -173,6 +173,11 @@ Based on the â€œDevelopment Plan for a Python-Based Droplet Shape Analysis Toolâ
     - Update the DOCUMENTATION.m.    
 
 15. **Propose enhancements**
+   - Evaluate adding real-time metric updates when parameters change.
+   - Investigate integrating true ML-based segmentation models.
+   - Consider 3D droplet reconstruction for pendant drops.
+   - Provide a command-line interface for batch operations.
+   - Expand unit tests to cover new functionality as it is added.
 ---
 
 *End of CODEX agent plan.*
