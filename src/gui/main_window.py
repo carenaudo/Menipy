@@ -116,6 +116,8 @@ class MainWindow(QMainWindow):
         self.calibration_rect = None
         self.calibration_line_item = None
         self.calibration_line = None
+        self.apex_item = None
+        self.contact_line_item = None
         self._calib_start = None
         self.roi_rect_item = None
         self.roi_rect = None
@@ -182,6 +184,14 @@ class MainWindow(QMainWindow):
             image = image[y1:y2, x1:x2]
             offset = (x1, y1)
 
+        # Clear previous markers
+        if self.apex_item is not None:
+            self.graphics_scene.removeItem(self.apex_item)
+            self.apex_item = None
+        if self.contact_line_item is not None:
+            self.graphics_scene.removeItem(self.contact_line_item)
+            self.contact_line_item = None
+
         if getattr(self, "use_ml_action", None) and self.use_ml_action.isChecked():
             mask = ml_segment(image)
         else:
@@ -223,6 +233,51 @@ class MainWindow(QMainWindow):
             pen.setWidth(2)
             item = self.graphics_scene.addPath(path, pen)
             self.contour_items.append(item)
+
+        # Apex marker from mask
+        if self.apex_item is not None:
+            self.graphics_scene.removeItem(self.apex_item)
+            self.apex_item = None
+        if self.contact_line_item is not None:
+            self.graphics_scene.removeItem(self.contact_line_item)
+            self.contact_line_item = None
+
+        if mask.any():
+            ys, xs = np.nonzero(mask)
+            idx = int(ys.argmin())
+            apex_x = xs[idx] + offset[0]
+            apex_y = ys[idx] + offset[1]
+            pen = QPen(QColor("yellow"))
+            brush = QColor("yellow")
+            self.apex_item = self.graphics_scene.addEllipse(
+                apex_x - 3,
+                apex_y - 3,
+                6,
+                6,
+                pen,
+                brush,
+            )
+
+            if self.calibration_rect is not None:
+                contact_y = int(self.calibration_rect[1])
+            else:
+                contact_y = ys.max() + offset[1]
+            row_y = contact_y - offset[1]
+            row_y = min(max(int(row_y), 0), mask.shape[0] - 1)
+            row = mask[row_y]
+            cols = np.where(row > 0)[0]
+            if cols.size >= 2:
+                x1 = cols.min() + offset[0]
+                x2 = cols.max() + offset[0]
+                pen = QPen(QColor("cyan"))
+                pen.setWidth(2)
+                self.contact_line_item = self.graphics_scene.addLine(
+                    x1,
+                    contact_y,
+                    x2,
+                    contact_y,
+                    pen,
+                )
 
         # Basic metrics from the mask
         ys, xs = np.nonzero(mask)

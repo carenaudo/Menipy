@@ -140,3 +140,9 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 
 **Summary:** Added an ROI Mode checkbox in `ParameterPanel` and new handlers in `MainWindow` to draw a green rectangle. Segmentation and contour overlays now operate on the cropped region, and metrics use the restricted mask. Updated tests with ROI drawing and processing cases, and marked the corresponding plan section complete.
 
+
+## Entry 24 - Apex and Contact Marking
+
+**Task:** Implement detection of the droplet apex and contact point with overlays.
+
+**Summary:** Added apex and contact point markers in `MainWindow.process_image` using a yellow ellipse and cyan line. Updated `ParameterPanel` integration to clear previous markers, wrote a GUI test verifying marker creation, and marked the plan step complete. All tests pass.

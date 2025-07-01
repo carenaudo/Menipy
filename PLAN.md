@@ -206,6 +206,7 @@ Based on the â€œDevelopment Plan for a Python-Based Droplet Shape Analysis Toolâ
    -Volume Integration
       -Compute the solid-of-revolution volume using only the contour segments within that ROI, applying the calibrated scale.
 18 **Apex & Contact-Point Marking**
+   <!-- Completed by Codex -->
    -Apex Detection
       -Detect the highest point on the extracted droplet contour.
       -Mark it with a yellow QGraphicsEllipseItem.
