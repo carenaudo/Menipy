@@ -28,3 +28,7 @@ iterations of the tool.
    shown in the parameter panel.
    Automatic mode detects the two vertical edges of the needle using Canny edge
    detection and a Hough transform to measure their separation.
+
+## Image Processing
+
+Segmented masks are cleaned with morphological operations and reduced to the largest external contour. This ensures internal artifacts do not affect volume or fitting calculations.

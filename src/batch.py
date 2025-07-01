@@ -11,6 +11,7 @@ from .processing.reader import load_image
 from .processing.segmentation import (
     otsu_threshold,
     morphological_cleanup,
+    external_contour_mask,
     find_contours,
 )
 
@@ -45,6 +46,7 @@ def run_batch(directory: str | Path, output_csv: str | Path | None = None) -> pd
         image = load_image(img_path, as_gray=True)
         mask = otsu_threshold(image)
         mask = morphological_cleanup(mask, kernel_size=3, iterations=1)
+        mask = external_contour_mask(mask)
         contours = find_contours(mask)
         area = int((mask > 0).sum())
         records.append(
