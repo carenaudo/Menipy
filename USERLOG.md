@@ -17,3 +17,6 @@
 
 ## Entry 11 - ML Segmentation Toggle
 **Summary:** After entry 11 i manually updated the plan based on chatgpt recommendations in which i described missing features
+
+## Entry 15 - Metrics Panel
+**Summary:** Forgot to update the PLAN.md that the task was done
