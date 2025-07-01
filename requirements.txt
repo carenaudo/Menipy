@@ -12,5 +12,6 @@ PySide6
 matplotlib
 # Packaging and testing
 setuptools
+wheel
 pytest
 pytest-cov
