@@ -74,3 +74,14 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 **Task:** Continue with the plan by adding a zoom slider to adjust the image view scale.
 
 **Summary:** Created `ZoomControl` widget in `src/gui/controls.py` and integrated it into `MainWindow`. The slider emits a `zoomChanged` signal connected to a new `set_zoom` method that scales the `QGraphicsView`. Added unit test `test_zoom_control` verifying the zoom factor. All tests pass.
+## Entry 13 - Parameter Panel
+
+**Task:** Continue with the plan by adding a panel to edit physical parameters in the GUI.
+
+**Summary:** Implemented `ParameterPanel` widget in `src/gui/controls.py` with fields for air density, liquid density, and surface tension. Integrated the panel into `MainWindow` and exported it from the GUI package. Added `test_parameter_panel_defaults` ensuring default values are accessible. All tests pass.
+
+## Entry 14 - Address Feedback
+
+**Task:** Review the previous work and mark completed stages in `PLAN.md`.
+
+**Summary:** Added "Completed by Codex" markers for the Zoom Control and Parameter Panel steps in `PLAN.md` to reflect the finished features. No code changes were required. All tests still pass.

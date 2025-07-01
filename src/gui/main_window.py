@@ -26,7 +26,7 @@ from PySide6.QtWidgets import (
     QPushButton,
 )
 
-from .controls import ZoomControl
+from .controls import ZoomControl, ParameterPanel
 
 from ..processing.reader import load_image
 from ..processing import segmentation
@@ -68,6 +68,9 @@ class MainWindow(QMainWindow):
         self.zoom_control = ZoomControl()
         self.zoom_control.zoomChanged.connect(self.set_zoom)
         control_layout.addWidget(self.zoom_control)
+
+        self.parameter_panel = ParameterPanel()
+        control_layout.addWidget(self.parameter_panel)
 
         self.process_button = QPushButton("Process")
         self.process_button.clicked.connect(self.process_image)
