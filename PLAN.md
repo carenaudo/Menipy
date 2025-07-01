@@ -172,13 +172,49 @@ Based on the “Development Plan for a Python-Based Droplet Shape Analysis Tool�
 14.5 **Update Documentation**
     - Update the DOCUMENTATION.m.    
 
-15. **Propose enhancements**
+15 **Interactive Calibration Box**
+    - UI Mode Toggle
+      -Add a “Calibration Mode” checkbox in the parameter panel.
+      -When enabled, left-click+drag on the image to draw the blue “needle box.”
+    - Data Capture
+      -Store the box as pixel coordinates 𝑥1,𝑦1,𝑥2,𝑦2 for downstream processing.
+    - Visual Feedback
+      -Immediately render the blue rectangle in the QGraphicsView overlay, editable by drag handles.
+
+16 **Pixel-to-mm Calibration**
+    -Manual Mode
+      -In Calibration Mode, allow drawing a line between two points inside the blue box.
+      -Let the user enter the real length (mm) in the parameter panel.
+      -Compute scale = length_mm / pixel_distance.
+   -Automatic Mode
+      -Run edge detection (e.g. Canny + vertical Hough lines) within the blue box.
+      -Identify the two roughly parallel vertical needle edges and measure their pixel separation.
+      -Derive scale automatically and display it in the panel.
+    -UI Switch
+      -Radio buttons to switch between Manual / Automatic calibration.
+
+17 **Region-of-Interest for Volume**
+   -ROI Drawing
+      -After calibration, enable an “ROI Mode” to draw a green box around the droplet’s shadow.
+      -Store ROI coordinates and overlay in the scene.
+   -Constrained Contour Extraction
+      -Restrict all image-processing (thresholding, contour find) to pixels inside the green ROI.
+   -Volume Integration
+      -Compute the solid-of-revolution volume using only the contour segments within that ROI, applying the calibrated scale.
+18 **Apex & Contact-Point Marking**
+   -Apex Detection
+      -Detect the highest point on the extracted droplet contour.
+      -Mark it with a yellow QGraphicsEllipseItem.
+   -Contact-Point Detection
+      -For pendant drops, find where the contour meets the top of the blue box; for sessile, where it meets the substrate baseline.
+      -Draw a light-blue horizontal QGraphicsLineItem at the contact location.
+  -Live Updates
+      -Any time the contour is re-computed (e.g. after ROI change), update these markers.
+19. **Propose enhancements**
    - Evaluate adding real-time metric updates when parameters change.
    - Investigate integrating true ML-based segmentation models.
    - Consider 3D droplet reconstruction for pendant drops.
    - Provide a command-line interface for batch operations.
    - Expand unit tests to cover new functionality as it is added.
 ---
-
 *End of CODEX agent plan.*
-

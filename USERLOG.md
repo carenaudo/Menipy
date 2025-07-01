@@ -19,4 +19,6 @@
 **Summary:** After entry 11 i manually updated the plan based on chatgpt recommendations in which i described missing features
 
 ## Entry 15 - Metrics Panel
-**Summary:** Forgot to update the PLAN.md that the task was done
+**Summary:** Forgot to update the PLAN.md that the task was done,
+## Entry 17 - Propose Enhancements
+**Summary:** Did not like it, made my own list using chatgpt and 2 images
