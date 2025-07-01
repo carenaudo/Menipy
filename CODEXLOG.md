@@ -37,3 +37,4 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 **Task:** Ensure that when an image is loaded, the main window grows to match the image dimensions rather than constraining the view.
 
 **Summary:** Updated `load_image` to set the graphics view size to the pixmap's bounding rectangle and call `adjustSize()` so the window expands. Extended the GUI test to confirm the view size matches the image.
+

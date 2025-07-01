@@ -50,6 +50,7 @@ def test_load_image_retains_size(tmp_path):
     assert pixmap.height() == 20
     assert window.graphics_view.width() == 30
     assert window.graphics_view.height() == 20
+
     transform = window.graphics_view.transform()
     assert transform.m11() == 1
     assert transform.m22() == 1
