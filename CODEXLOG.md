@@ -1,0 +1,15 @@
+# CODEX Activity Log
+
+This file summarizes tasks requested of CODEX and a brief description of how CODEX responded.
+
+## Entry 1 - Creating CODEXLOG.md
+
+**Task:** Create a file called CODEXLOG.md that will describe what task was asked to CODEX and a summary of what CODEX did. This file will be updated in every task.
+
+**Summary:** CODEX created CODEXLOG.md and added this initial entry to log future activities.
+
+## Entry 2 - Adding CODEXLOG agent instructions
+
+**Task:** Add a new "CODEXLOG" agent description in AGENTS.md so that CODEX appends to CODEXLOG.md after each task.
+
+**Summary:** Updated AGENTS.md with a dedicated CODEXLOG agent section describing how the log should be maintained. Appended this entry to record the update.
