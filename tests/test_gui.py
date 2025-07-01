@@ -57,3 +57,29 @@ def test_load_image_retains_size(tmp_path):
 
     window.close()
     app.quit()
+
+
+def test_save_annotated_image(tmp_path):
+    if QtWidgets is None:
+        pytest.skip("PySide6 not available")
+
+    import numpy as np
+    import cv2
+
+    img = np.zeros((10, 10), dtype=np.uint8)
+    img[2:8, 2:8] = 255
+    path = tmp_path / "img.png"
+    cv2.imwrite(str(path), img)
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    window = MainWindow()
+    window.load_image(path)
+    window.process_image()
+
+    out_path = tmp_path / "annotated.png"
+    window.save_annotated_image(out_path)
+
+    assert out_path.exists()
+
+    window.close()
+    app.quit()

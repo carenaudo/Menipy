@@ -3,7 +3,15 @@
 from pathlib import Path
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QImage, QPixmap, QAction
+from PySide6.QtGui import (
+    QImage,
+    QPixmap,
+    QAction,
+    QPainter,
+    QPainterPath,
+    QPen,
+    QColor,
+)
 from PySide6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -20,6 +28,7 @@ from PySide6.QtWidgets import (
 
 from ..processing.reader import load_image
 from ..processing import segmentation
+from ..processing.segmentation import morphological_cleanup, find_contours
 
 
 class MainWindow(QMainWindow):
@@ -63,12 +72,17 @@ class MainWindow(QMainWindow):
         file_menu = self.menuBar().addMenu("File")
         file_menu.addAction(open_action)
 
+        save_action = QAction("Save Annotated Image", self)
+        save_action.triggered.connect(self.save_annotated_image)
+        file_menu.addAction(save_action)
+
         calib_action = QAction("Calibration", self)
         calib_action.triggered.connect(self.open_calibration)
         tools_menu = self.menuBar().addMenu("Tools")
         tools_menu.addAction(calib_action)
 
         self.mask_item = None
+        self.contour_items = []
 
     def open_image(self) -> None:
         """Open an image file and display it."""
@@ -116,6 +130,8 @@ class MainWindow(QMainWindow):
             mask = segmentation.otsu_threshold(self.image)
         else:
             mask = segmentation.adaptive_threshold(self.image)
+
+        mask = morphological_cleanup(mask, kernel_size=3, iterations=1)
         mask_img = QImage(
             mask.data,
             mask.shape[1],
@@ -128,6 +144,44 @@ class MainWindow(QMainWindow):
             self.graphics_scene.removeItem(self.mask_item)
         self.mask_item = self.graphics_scene.addPixmap(mask_pix)
         self.mask_item.setOpacity(0.4)
+
+        for item in self.contour_items:
+            self.graphics_scene.removeItem(item)
+        self.contour_items.clear()
+
+        for contour in find_contours(mask):
+            path = QPainterPath()
+            if contour.size == 0:
+                continue
+            path.moveTo(*contour[0])
+            for point in contour[1:]:
+                path.lineTo(*point)
+            pen = QPen(QColor("red"))
+            pen.setWidth(2)
+            item = self.graphics_scene.addPath(path, pen)
+            self.contour_items.append(item)
+
+    def save_annotated_image(self, path: Path | None = None) -> None:
+        """Save the current scene (image + overlays) to a file."""
+        if self.pixmap_item is None:
+            return
+        if path is None:
+            p, _ = QFileDialog.getSaveFileName(
+                self,
+                "Save Annotated Image",
+                str(Path.home() / "annotated.png"),
+                "Images (*.png *.jpg *.bmp)",
+            )
+            if not p:
+                return
+            path = Path(p)
+        image = QImage(
+            self.graphics_view.viewport().size(), QImage.Format_ARGB32
+        )
+        painter = QPainter(image)
+        self.graphics_view.render(painter)
+        painter.end()
+        image.save(str(path))
 
     def open_calibration(self) -> None:
         """Display a placeholder calibration dialog."""

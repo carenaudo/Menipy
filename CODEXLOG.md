@@ -38,3 +38,9 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 
 **Summary:** Updated `load_image` to set the graphics view size to the pixmap's bounding rectangle and call `adjustSize()` so the window expands. Extended the GUI test to confirm the view size matches the image.
 
+## Entry 7 - Overlay Contours and Save Image
+
+**Task:** Continue with the plan by integrating contour overlays after segmentation and adding a feature to save the annotated image.
+
+**Summary:** Implemented `find_contours` in `segmentation.py` and updated `MainWindow` to draw contour overlays using `QPainterPath`. Added a "Save Annotated Image" action and method that render the scene to a file. Extended processing and GUI tests to cover these new capabilities.
+
