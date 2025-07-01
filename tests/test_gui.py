@@ -334,3 +334,31 @@ def test_process_image_with_roi(tmp_path):
     window.close()
     app.quit()
 
+
+def test_apex_and_contact_markers(tmp_path):
+    if QtWidgets is None:
+        pytest.skip("PySide6 not available")
+
+    import numpy as np
+    import cv2
+
+    img = np.zeros((20, 20), dtype=np.uint8)
+    img[10:18, 8:12] = 255
+    path = tmp_path / "img.png"
+    cv2.imwrite(str(path), img)
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    window = MainWindow()
+    window.load_image(path)
+
+    window.calibration_rect = (8, 10, 12, 18)
+    window.process_image()
+
+    assert window.apex_item is not None
+    assert window.contact_line_item is not None
+    line = window.contact_line_item.line()
+    assert line.y1() == line.y2() == 10
+
+    window.close()
+    app.quit()
+
