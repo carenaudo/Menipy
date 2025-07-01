@@ -26,7 +26,7 @@ from PySide6.QtWidgets import (
     QPushButton,
 )
 
-from .controls import ZoomControl, ParameterPanel
+from .controls import ZoomControl, ParameterPanel, MetricsPanel
 
 from ..processing.reader import load_image
 from ..processing import segmentation
@@ -35,7 +35,8 @@ from ..processing.segmentation import (
     find_contours,
     ml_segment,
 )
-from ..utils import get_calibration
+from ..utils import get_calibration, pixels_to_mm
+from ..models.properties import droplet_volume
 from .calibration_dialog import CalibrationDialog
 
 
@@ -71,6 +72,9 @@ class MainWindow(QMainWindow):
 
         self.parameter_panel = ParameterPanel()
         control_layout.addWidget(self.parameter_panel)
+
+        self.metrics_panel = MetricsPanel()
+        control_layout.addWidget(self.metrics_panel)
 
         self.process_button = QPushButton("Process")
         self.process_button.clicked.connect(self.process_image)
@@ -183,6 +187,28 @@ class MainWindow(QMainWindow):
             pen.setWidth(2)
             item = self.graphics_scene.addPath(path, pen)
             self.contour_items.append(item)
+
+        # Basic metrics from the mask
+        import numpy as np
+
+        ys, xs = np.nonzero(mask)
+        if ys.size > 0 and xs.size > 0:
+            height_px = ys.max() - ys.min()
+            diameter_px = xs.max() - xs.min()
+            height = pixels_to_mm(float(height_px))
+            diameter = pixels_to_mm(float(diameter_px))
+            volume = droplet_volume(diameter / 2.0, np.deg2rad(90.0))
+        else:
+            height = diameter = volume = 0.0
+
+        self.metrics_panel.set_metrics(
+            ift=0.0,
+            wo=0.0,
+            volume=volume,
+            contact_angle=0.0,
+            height=height,
+            diameter=diameter,
+        )
 
     def save_annotated_image(self, path: Path | None = None) -> None:
         """Save the current scene (image + overlays) to a file."""
