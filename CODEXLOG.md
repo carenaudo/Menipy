@@ -50,3 +50,9 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 **Task:** Continue with the plan by adding calibration features to allow setting pixel-to-millimeter scaling from a reference line in the image.
 
 **Summary:** Implemented an interactive `CalibrationDialog` that lets the user draw a line on the image and enter its real-world length. The dialog computes pixels-per-millimeter using `calibrate_from_points` from updated `utils.calibration`. The main window now launches this dialog via the Tools menu. Utility functions for conversions were added along with new tests.
+
+## Entry 9 - Batch Processing
+
+**Task:** Continue with the plan by implementing batch mode to process directories of images and export results.
+
+**Summary:** Added a functional `run_batch` in `src/batch.py` that loads each image, applies Otsu thresholding and morphological cleanup, counts contours, and collects basic stats into a pandas DataFrame. Results can be saved to CSV. Created `tests/test_batch.py` to verify batch processing and CSV output.
