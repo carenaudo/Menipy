@@ -25,3 +25,9 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 **Task:** Resolve error due to missing QAction attribute from QtWidgets by importing QAction from QtGui and updating usage.
 
 **Summary:** Updated `gui/main_window.py` to import `QAction` from `PySide6.QtGui` and replaced references to QtWidgets with direct class imports. All tests pass.
+
+## Entry 5 - Display Image at Native Size
+
+**Task:** Adjust the GUI so loaded images are shown at their original dimensions instead of being fit to the view.
+
+**Summary:** Modified `load_image` in `gui/main_window.py` to reset the view transform and set the scene rectangle to the pixmap's bounds. Added a corresponding unit test to verify the image dimensions and transform. All tests pass (GUI tests skipped if PySide6 unavailable).
