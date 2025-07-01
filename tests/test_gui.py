@@ -107,3 +107,27 @@ def test_ml_segmentation_toggle(tmp_path):
 
     window.close()
     app.quit()
+
+
+def test_zoom_control(tmp_path):
+    if QtWidgets is None:
+        pytest.skip("PySide6 not available")
+
+    import numpy as np
+    import cv2
+
+    img = np.zeros((10, 10, 3), dtype=np.uint8)
+    path = tmp_path / "img.png"
+    cv2.imwrite(str(path), img)
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    window = MainWindow()
+    window.load_image(path)
+
+    window.zoom_control.slider.setValue(200)
+    transform = window.graphics_view.transform()
+    assert transform.m11() == pytest.approx(2.0, rel=0.01)
+    assert transform.m22() == pytest.approx(2.0, rel=0.01)
+
+    window.close()
+    app.quit()

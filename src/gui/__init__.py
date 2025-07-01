@@ -2,5 +2,6 @@
 
 from .main_window import MainWindow
 from .calibration_dialog import CalibrationDialog
+from .controls import ZoomControl
 
-__all__ = ["MainWindow", "CalibrationDialog"]
+__all__ = ["MainWindow", "CalibrationDialog", "ZoomControl"]

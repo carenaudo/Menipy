@@ -26,6 +26,8 @@ from PySide6.QtWidgets import (
     QPushButton,
 )
 
+from .controls import ZoomControl
+
 from ..processing.reader import load_image
 from ..processing import segmentation
 from ..processing.segmentation import (
@@ -62,6 +64,10 @@ class MainWindow(QMainWindow):
         self.algorithm_combo = QComboBox()
         self.algorithm_combo.addItems(["Otsu", "Adaptive"])
         control_layout.addWidget(self.algorithm_combo)
+
+        self.zoom_control = ZoomControl()
+        self.zoom_control.zoomChanged.connect(self.set_zoom)
+        control_layout.addWidget(self.zoom_control)
 
         self.process_button = QPushButton("Process")
         self.process_button.clicked.connect(self.process_image)
@@ -129,6 +135,7 @@ class MainWindow(QMainWindow):
         self.graphics_view.setSceneRect(rect)
         self.graphics_view.setFixedSize(int(rect.width()), int(rect.height()))
         self.adjustSize()
+        self.set_zoom(self.zoom_control.slider.value() / 100.0)
 
 
     def process_image(self) -> None:
@@ -209,6 +216,11 @@ class MainWindow(QMainWindow):
                 "Calibration",
                 f"Calibration set to {cal.pixels_per_mm:.2f} px/mm",
             )
+
+    def set_zoom(self, factor: float) -> None:
+        """Scale the graphics view by ``factor``."""
+        self.graphics_view.resetTransform()
+        self.graphics_view.scale(factor, factor)
 
 
 def main():
