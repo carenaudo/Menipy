@@ -131,3 +131,21 @@ def test_zoom_control(tmp_path):
 
     window.close()
     app.quit()
+
+
+def test_parameter_panel_defaults():
+    if QtWidgets is None:
+        pytest.skip("PySide6 not available")
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    window = MainWindow()
+
+    panel = window.parameter_panel
+    values = panel.values()
+
+    assert "air_density" in values and values["air_density"] > 0
+    assert "liquid_density" in values and values["liquid_density"] > 0
+    assert "surface_tension" in values and values["surface_tension"] > 0
+
+    window.close()
+    app.quit()

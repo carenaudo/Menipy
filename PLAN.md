@@ -152,8 +152,10 @@ Based on the â€œDevelopment Plan for a Python-Based Droplet Shape Analysis Toolâ
     - Analyze if /src/models/geometry.py, /src/models/physics.py and /src/models/properties.py need to be modified
     - Analyze if image processing need to be updated or exended
 14.2 **Zoom Control**
+    <!-- Completed by Codex -->
     - In `gui/controls.py`, implement a **zoom slider** that adjusts the scale of the image view (QGraphicsView or Matplotlib canvas) and its overlays.
 14.3 **Parameter Panel**
+    <!-- Completed by Codex -->
     - Add a **Parameter Panel** in `gui/main_window.py` or `gui/controls.py` for user inputs:
       - Air density
       - Liquid density
