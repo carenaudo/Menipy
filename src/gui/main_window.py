@@ -327,8 +327,8 @@ class MainWindow(QMainWindow):
             rect.right(),
             rect.bottom(),
         )
-            self._calib_start = None
-            event.accept()
+        self._calib_start = None
+        event.accept()
 
     # --- Manual line drawing -------------------------------------------------
 

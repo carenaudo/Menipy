@@ -214,7 +214,34 @@ Based on the “Development Plan for a Python-Based Droplet Shape Analysis Tool�
       -Draw a light-blue horizontal QGraphicsLineItem at the contact location.
   -Live Updates
       -Any time the contour is re-computed (e.g. after ROI change), update these markers.
-19. **Propose enhancements**
+
+19 **Improvement 1: External Contour Only**
+   -Detect only the external droplet contour
+     -Discard all internal contours (e.g., bright interior region) before volume and fitting routines.
+
+20 **Missing Feature 1: “Calculate” & “Draw” Buttons**
+   -Calculate
+     -Compute surface tension for pendant drops or contact angle for sessile drops.
+     -For pendant: find γ such that the curvature at the apex (red line) produces the observed max-diameter radius (blue line).
+     -Allow each fitting method to return slightly different γ/θ values.
+   -Draw
+     -Use the Young–Laplace equation (or chosen approximation) to generate the predicted droplet profile from the apex outward.
+     -Base the model on either user-entered fluid properties or the values computed by Calculate.
+   -UI Cleanup
+     -Remove the standalone “Calibration” button—calibration workflows remain in the parameter panel.
+
+21 *Missing Feature 2: CSV Export**
+   -Add a “Save CSV” button
+     -Exports all user parameters and computed results (γ, θ, volume, dimensions) in comma-separated format.
+
+22 *Missing Feature 3: Save Annotated Image**
+   -Add a “Save Image” button
+     -Open a file-save dialog for naming.
+     -Save the current view—including calibration box, ROI, apex & contact markers, and model overlay—as a single image file.
+
+
+
+23. **Propose enhancements**
    - Evaluate adding real-time metric updates when parameters change.
    - Investigate integrating true ML-based segmentation models.
    - Consider 3D droplet reconstruction for pendant drops.

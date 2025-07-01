@@ -28,3 +28,6 @@
 
 ## Entry 21 - Calibration UI Tweaks
 **Summary:** The automatic detection was not working as intended. 
+
+## Entry 23 - ROI Selection for Volume
+**Summary:** Generated some indent errors that i fixed by hand
