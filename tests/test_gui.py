@@ -207,3 +207,21 @@ def test_calibration_box(tmp_path):
     window.close()
     app.quit()
 
+
+def test_parameter_panel_calibration_controls():
+    if QtWidgets is None:
+        pytest.skip("PySide6 not available")
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    window = MainWindow()
+
+    panel = window.parameter_panel
+    assert panel.calibration_method() == "manual"
+    panel.auto_radio.setChecked(True)
+    assert panel.calibration_method() == "automatic"
+    panel.set_scale_display(5.0)
+    assert panel.scale_label.text().startswith("5.0")
+
+    window.close()
+    app.quit()
+
