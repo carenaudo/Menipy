@@ -21,9 +21,8 @@ iterations of the tool.
 
 ## Calibration Workflow
 
-1. Enable **Calibration Mode** in the parameter panel and draw a blue box around
-   the calibration needle.
-2. Select **Manual** or **Automatic** method. Manual mode uses a user-drawn line
-   with a known length; automatic mode detects the two vertical needle edges.
-3. Use **Tools → Calibration** to compute the pixel-to-mm scale. The resulting
-   scale value is displayed in the parameter panel.
+1. Enable **Calibration Mode** in the parameter panel.
+2. Toggle **Manual Calibration** on to draw a line between two points, or off to
+   draw the needle region for automatic detection.
+3. Click **Calibrate** to compute the pixel-to-mm scale. The resulting value is
+   shown in the parameter panel.

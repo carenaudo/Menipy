@@ -122,3 +122,9 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 
 **Summary:** Added calibration controls to the parameter panel with manual/automatic modes and reference length input. Updated `MainWindow.open_calibration` to crop the ROI and call a new `auto_calibrate` utility. Implemented `auto_calibrate` in `src/utils/calibration.py` and exposed it via `__init__`. Added tests for automatic calibration and new GUI controls, updated README with a Calibration Workflow section, and marked the plan step complete. All tests pass.
 
+## Entry 21 - Calibration UI Tweaks
+
+**Task:** Fix manual calibration and add calibration/measurement toggles.
+
+**Summary:** Replaced manual/automatic radio buttons with a single toggle and added a "Calibrate" button. Calibration mode now supports drawing either a line (manual) or a box (automatic). Updated `MainWindow` to handle both interactions and compute scale directly from the main view. Adjusted tests and documentation. All tests pass.
+
