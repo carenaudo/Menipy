@@ -146,6 +146,28 @@ Based on the “Development Plan for a Python-Based Droplet Shape Analysis Tool�
     - Scaffold a toggle in GUI to enable ML-based segmentation (TensorFlow/PyTorch).
     - Leave as future extension.
 
+14. **UI Enhancements & Parameter Panel**
+14.1 **Project review**
+    - Review the documentation folder /doc/
+    - Analyze if /src/models/geometry.py, /src/models/physics.py and /src/models/properties.py need to be modified
+14.2 **Zoom Control**
+    - In `gui/controls.py`, implement a **zoom slider** that adjusts the scale of the image view (QGraphicsView or Matplotlib canvas) and its overlays.
+14.3 **Parameter Panel**
+    - Add a **Parameter Panel** in `gui/main_window.py` or `gui/controls.py` for user inputs:
+      - Air density
+      - Liquid density
+      - Surface tension
+14.4 **Metrics Panel**
+    - Add a **Metrics Panel** in `gui/main_window.py` or `gui/controls.py` for calculated values:
+    - Extend the **Metrics Panel** to display calculated values:
+      - Interfacial tension (IFT) in mN/m
+      - Wo number
+      - Volume (µL)
+      - Contact angle (θ)
+      - Height & diameter
+14.5 **Update Documentation**
+    - Update the DOCUMENTATION.m.    
+
 ---
 
 *End of CODEX agent plan.*

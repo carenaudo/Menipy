@@ -25,6 +25,10 @@ This document outlines the user interface architecture and components using PySi
 - Use `QGraphicsScene` with `QGraphicsPixmapItem` for the image and `QGraphicsPathItem` for contours.  
 - Contour (solid line) and model fit (dashed line) are drawn using `QPen` settings.  
 - Provide checkboxes or actions to toggle overlay visibility in a toolbar.
+- **Predicted Y–L Profile Overlay**  
+  - Once the physics model returns the optimal γ and ΔP, generate its (r(z)) curve.  
+  - Convert model coordinates into scene coordinates and draw via a second `QGraphicsPathItem` (dashed).  
+  - Use distinct pen style (e.g. width 2, dashed) so users can compare measured contour vs. theory.
 
 ## 4. Output Panel
 
