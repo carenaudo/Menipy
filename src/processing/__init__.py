@@ -9,6 +9,7 @@ from .segmentation import (
     ml_segment,
 )
 from .detection import Droplet, detect_droplet
+from .classification import classify_drop_mode
 
 __all__ = [
     "load_image",
@@ -21,4 +22,5 @@ __all__ = [
     "ml_segment",
     "Droplet",
     "detect_droplet",
+    "classify_drop_mode",
 ]

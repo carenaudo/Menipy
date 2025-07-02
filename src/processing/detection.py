@@ -12,7 +12,7 @@ class Droplet:
     """Result of droplet detection."""
 
     apex_px: Tuple[int, int]
-    contact_px: Tuple[int, int]
+    contact_px: Tuple[int, int, int, int]
     contour_px: np.ndarray
     projected_area_mm2: float
     r_max_mm: float
@@ -93,8 +93,10 @@ def detect_droplet(frame: np.ndarray, roi: tuple[int, int, int, int], px_to_mm: 
     else:
         raise ValueError("No droplet found in ROI")
 
-    contact_x = float(contact_line_pts[:, 0].min() + contact_line_pts[:, 0].max()) / 2.0
-    contact_px = (int(round(contact_x)), int(round(contact_line_pts[0, 1])))
+    left = int(round(contact_line_pts[:, 0].min()))
+    right = int(round(contact_line_pts[:, 0].max()))
+    y_contact = int(round(contact_line_pts[0, 1]))
+    contact_px = (left, y_contact, right, y_contact)
     apex_px = (int(round(apex_x)), int(round(apex_y)))
 
     height_mm = abs(contact_px[1] - apex_px[1]) * px_to_mm

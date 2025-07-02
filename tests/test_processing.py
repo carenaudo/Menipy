@@ -78,6 +78,7 @@ def test_detect_droplet_circle():
     assert abs(droplet.apex_px[0] - (x0 + radius)) <= 1
     assert abs(droplet.apex_px[1] - (y0 + 2 * radius)) <= 1
     assert droplet.contact_px[1] == y0
+    assert droplet.contact_px[3] == y0
     expected_r = radius * px_to_mm
     assert np.isclose(droplet.r_max_mm, expected_r, rtol=5e-3)
     expected_area = np.pi * expected_r**2

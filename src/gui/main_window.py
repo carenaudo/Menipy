@@ -33,7 +33,7 @@ import pandas as pd
 from .controls import ZoomControl, ParameterPanel, MetricsPanel
 
 from ..processing.reader import load_image
-from ..processing import detect_droplet, segmentation
+from ..processing import detect_droplet, segmentation, classify_drop_mode
 from ..processing.segmentation import find_contours
 from ..utils import (
     get_calibration,
@@ -217,6 +217,8 @@ class MainWindow(QMainWindow):
             self.last_mask = None
             return
 
+        mode = classify_drop_mode(droplet)
+
         self.last_mask = droplet.mask
         self.mask_offset = (x1, y1)
         if self.model_item is not None:
@@ -274,15 +276,13 @@ class MainWindow(QMainWindow):
         if 0 <= row_y < droplet.mask.shape[0]:
             cols = np.where(droplet.mask[row_y] > 0)[0]
             if cols.size >= 2:
-                x1_line = cols.min() + x1
-                x2_line = cols.max() + x1
                 pen = QPen(QColor("cyan"))
                 pen.setWidth(2)
                 self.contact_line_item = self.graphics_scene.addLine(
-                    x1_line,
+                    droplet.contact_px[0],
                     droplet.contact_px[1],
-                    x2_line,
-                    droplet.contact_px[1],
+                    droplet.contact_px[2],
+                    droplet.contact_px[3],
                     pen,
                 )
         # Basic metrics from the silhouette
@@ -299,6 +299,7 @@ class MainWindow(QMainWindow):
             contact_angle=0.0,
             height=height,
             diameter=diameter,
+            mode=mode,
         )
 
     def calculate_parameters(self) -> None:
