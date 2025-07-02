@@ -194,3 +194,9 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 **Task:** Resolve a crash when using `Save CSV` due to PySide6 passing a boolean to slots expecting a path.
 
 **Summary:** Updated `MainWindow` connections for menu actions and the CSV button to use lambdas, preventing unintended boolean arguments from `triggered`/`clicked` signals. Added lambdas for `Open Image` and `Save Annotated Image` actions as well. All tests pass.
+
+## Entry 33 - Refactor droplet property functions
+
+**Task:** Improve droplet volume and surface tension calculations, addressing review comments.
+
+**Summary:** Updated `properties.py` to accept a pixel-to-millimetre factor, validate inputs, and use consistent units. GUI and tests now supply the calibration factor. Functions return `None` when measurements fail. All tests pass.
