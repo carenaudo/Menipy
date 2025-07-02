@@ -223,6 +223,7 @@ Based on the “Development Plan for a Python-Based Droplet Shape Analysis Tool�
      -Discard all internal contours (e.g., bright interior region) before volume and fitting routines.
 
 20 **Missing Feature 1: “Calculate” & “Draw” Buttons**
+   <!-- Completed by Codex -->
    -Calculate
      -Compute surface tension for pendant drops or contact angle for sessile drops.
      -For pendant: find γ such that the curvature at the apex (red line) produces the observed max-diameter radius (blue line).
@@ -238,11 +239,13 @@ Based on the “Development Plan for a Python-Based Droplet Shape Analysis Tool�
      -Exports all user parameters and computed results (γ, θ, volume, dimensions) in comma-separated format.
 
 22 *Missing Feature 3: Save Annotated Image**
+   <!-- Completed by Codex -->
    -Add a “Save Image” button
      -Open a file-save dialog for naming.
      -Save the current view—including calibration box, ROI, apex & contact markers, and model overlay—as a single image file.
 
 23 **Propose enhancements**
+   <!-- Completed by Codex -->
    -Evaluate adding real-time metric updates when parameters change.
    -Investigate integrating true ML-based segmentation models.
    -Consider 3D droplet reconstruction for pendant drops.

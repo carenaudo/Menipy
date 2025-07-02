@@ -164,3 +164,9 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 **Task:** Continue with the plan by adding buttons to compute physical parameters and overlay a model contour.
 
 **Summary:** Introduced `Calculate` and `Draw Model` buttons in the control panel. These call new helper methods in `MainWindow` that estimate surface tension and contact angle then plot a fitted circle. Added simple estimation functions in `models.properties`, exported them, and expanded unit tests. Removed the redundant Calibration menu action. All tests pass.
+
+## Entry 28 - CSV Export Feature
+
+**Task:** Review PLAN.md, mark completed tasks, and start the next task by implementing CSV export.
+
+**Summary:** Marked the "Calculate & Draw" buttons, "Save Annotated Image," and "Propose enhancements" items as completed in PLAN.md. Added a "Save CSV" button to `MainWindow` with a new `save_csv` method that exports parameters and metrics using pandas. Extended `MetricsPanel` with a `values` method, updated GUI tests, and added a new test for CSV export. All tests pass.

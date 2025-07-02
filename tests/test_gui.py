@@ -164,6 +164,9 @@ def test_metrics_panel_update():
     assert panel.ift_label.text().startswith("1.2")
     assert panel.volume_label.text().startswith("3.4")
 
+    metrics = panel.values()
+    assert metrics["ift"] == pytest.approx(1.2)
+
     window.close()
     app.quit()
 
@@ -385,6 +388,37 @@ def test_calculate_and_draw(tmp_path):
 
     window.draw_model()
     assert window.model_item is not None
+
+    window.close()
+    app.quit()
+
+
+def test_save_csv(tmp_path):
+    if QtWidgets is None:
+        pytest.skip("PySide6 not available")
+
+    import numpy as np
+    import cv2
+    import pandas as pd
+
+    img = np.zeros((10, 10), dtype=np.uint8)
+    img[2:8, 2:8] = 255
+    path = tmp_path / "img.png"
+    cv2.imwrite(str(path), img)
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    window = MainWindow()
+    window.load_image(path)
+    window.process_image()
+    window.calculate_parameters()
+
+    out_path = tmp_path / "out.csv"
+    window.save_csv(out_path)
+
+    assert out_path.exists()
+    df = pd.read_csv(out_path)
+    assert "air_density" in df.columns
+    assert "ift" in df.columns
 
     window.close()
     app.quit()
