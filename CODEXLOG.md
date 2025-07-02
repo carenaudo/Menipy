@@ -158,3 +158,9 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 **Task:** Revise the droplet volume function and fix the apex detection logic in the GUI.
 
 **Summary:** Rewrote `droplet_volume` to compute the solid-of-revolution integral from a binary mask, returning volume in cubic millimetres. Updated `MainWindow.process_image` to call the new API and corrected the apex selection to use the lowest point of the mask. Adjusted unit tests accordingly.
+
+## Entry 27 - Calculate & Draw Buttons
+
+**Task:** Continue with the plan by adding buttons to compute physical parameters and overlay a model contour.
+
+**Summary:** Introduced `Calculate` and `Draw Model` buttons in the control panel. These call new helper methods in `MainWindow` that estimate surface tension and contact angle then plot a fitted circle. Added simple estimation functions in `models.properties`, exported them, and expanded unit tests. Removed the redundant Calibration menu action. All tests pass.

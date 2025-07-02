@@ -44,7 +44,12 @@ from ..utils import (
     auto_calibrate,
     calibrate_from_points,
 )
-from ..models.properties import droplet_volume
+from ..models.properties import (
+    droplet_volume,
+    estimate_surface_tension,
+    contact_angle_from_mask,
+)
+from ..models.geometry import fit_circle
 
 
 class MainWindow(QMainWindow):
@@ -87,6 +92,14 @@ class MainWindow(QMainWindow):
         self.process_button.clicked.connect(self.process_image)
         control_layout.addWidget(self.process_button)
 
+        self.calculate_button = QPushButton("Calculate")
+        self.calculate_button.clicked.connect(self.calculate_parameters)
+        control_layout.addWidget(self.calculate_button)
+
+        self.draw_button = QPushButton("Draw Model")
+        self.draw_button.clicked.connect(self.draw_model)
+        control_layout.addWidget(self.draw_button)
+
         control_layout.addStretch()
         splitter.addWidget(control_widget)
 
@@ -102,10 +115,7 @@ class MainWindow(QMainWindow):
         save_action.triggered.connect(self.save_annotated_image)
         file_menu.addAction(save_action)
 
-        calib_action = QAction("Calibration", self)
-        calib_action.triggered.connect(self.open_calibration)
         tools_menu = self.menuBar().addMenu("Tools")
-        tools_menu.addAction(calib_action)
 
         self.use_ml_action = QAction("Use ML Segmentation", self)
         self.use_ml_action.setCheckable(True)
@@ -126,6 +136,10 @@ class MainWindow(QMainWindow):
         self._default_press = self.graphics_view.mousePressEvent
         self._default_move = self.graphics_view.mouseMoveEvent
         self._default_release = self.graphics_view.mouseReleaseEvent
+
+        self.last_mask = None
+        self.mask_offset = (0, 0)
+        self.model_item = None
 
         self.parameter_panel.calibration_mode.toggled.connect(
             self.set_calibration_mode
@@ -204,6 +218,11 @@ class MainWindow(QMainWindow):
 
         mask = morphological_cleanup(mask, kernel_size=3, iterations=1)
         mask = external_contour_mask(mask)
+        self.last_mask = mask
+        self.mask_offset = offset
+        if self.model_item is not None:
+            self.graphics_scene.removeItem(self.model_item)
+            self.model_item = None
         mask_img = QImage(
             mask.data,
             mask.shape[1],
@@ -300,6 +319,45 @@ class MainWindow(QMainWindow):
             height=height,
             diameter=diameter,
         )
+
+    def calculate_parameters(self) -> None:
+        """Calculate surface tension and contact angle from the mask."""
+        if self.last_mask is None:
+            self.process_image()
+        if self.last_mask is None:
+            return
+
+        values = self.parameter_panel.values()
+        gamma = estimate_surface_tension(
+            self.last_mask, values["air_density"], values["liquid_density"]
+        )
+        angle = contact_angle_from_mask(self.last_mask)
+
+        self.metrics_panel.set_metrics(ift=gamma, contact_angle=angle)
+
+    def draw_model(self) -> None:
+        """Draw a fitted circle model overlay."""
+        if self.last_mask is None:
+            self.process_image()
+        if self.last_mask is None:
+            return
+
+        contours = find_contours(self.last_mask)
+        if not contours:
+            return
+        contour = max(contours, key=lambda c: c.shape[0]).astype(float)
+        contour += np.array(self.mask_offset)
+        center, radius = fit_circle(contour)
+        theta = np.linspace(0, 2 * np.pi, 200)
+        path = QPainterPath()
+        path.moveTo(center[0] + radius * np.cos(theta[0]), center[1] + radius * np.sin(theta[0]))
+        for t in theta[1:]:
+            path.lineTo(center[0] + radius * np.cos(t), center[1] + radius * np.sin(t))
+        pen = QPen(QColor("magenta"))
+        pen.setWidth(2)
+        if self.model_item is not None:
+            self.graphics_scene.removeItem(self.model_item)
+        self.model_item = self.graphics_scene.addPath(path, pen)
 
     def save_annotated_image(self, path: Path | None = None) -> None:
         """Save the current scene (image + overlays) to a file."""

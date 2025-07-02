@@ -362,3 +362,30 @@ def test_apex_and_contact_markers(tmp_path):
     window.close()
     app.quit()
 
+
+def test_calculate_and_draw(tmp_path):
+    if QtWidgets is None:
+        pytest.skip("PySide6 not available")
+
+    import numpy as np
+    import cv2
+
+    img = np.zeros((20, 20), dtype=np.uint8)
+    img[8:18, 8:12] = 255
+    path = tmp_path / "img.png"
+    cv2.imwrite(str(path), img)
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    window = MainWindow()
+    window.load_image(path)
+    window.process_image()
+
+    window.calculate_parameters()
+    assert float(window.metrics_panel.ift_label.text()) >= 0
+
+    window.draw_model()
+    assert window.model_item is not None
+
+    window.close()
+    app.quit()
+
