@@ -40,3 +40,6 @@
 
 ## Entry 27 - Calculate & Draw Buttons
 **Summary:** There are several mistakes in the calculation, but i will review at the end of the improvements tasks
+
+## Entry 33 - Refactor droplet property functions
+**Summary:** To solve the issues, i generated a prompt using ChatGPT o3 model and the issues descriptions (uploading properties.py file) and used this prompt on CODEX to generate the task to refactor the functions
