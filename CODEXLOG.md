@@ -183,3 +183,8 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 
 **Summary:** Pinned all dependencies in `requirements.txt` (numpy 1.24.0, scipy 1.10.0, etc.) and updated `setup.py` to require those same versions. Ensured the requirements file ends with a newline and verified all tests still pass.
 
+## Entry 31 - Remove matplotlib dependency
+
+**Task:** Remove matplotlib from requirements and setup since it is unused.
+
+**Summary:** Deleted matplotlib from `requirements.txt` and the `install_requires` list in `setup.py`. All tests pass.

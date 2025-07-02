@@ -10,9 +10,6 @@ pandas==1.5.3
 # GUI framework
 PySide6==6.5.1
 
-# Plotting (optional overlays)
-matplotlib==3.7.1
-
 # Packaging and testing
 setuptools==65.5.0
 wheel==0.41.2
