@@ -176,3 +176,10 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 **Task:** Add a newline at the end of `.gitignore` to properly terminate the final entry `\.cursorindexingignore`.
 
 **Summary:** Appended a newline to `.gitignore` so the last entry `.cursorindexingignore` is correctly terminated. No other lines were modified.
+
+## Entry 30 - Pin Dependency Versions
+
+**Task:** Edit requirements.txt to pin exact package versions and update setup.py to match.
+
+**Summary:** Pinned all dependencies in `requirements.txt` (numpy 1.24.0, scipy 1.10.0, etc.) and updated `setup.py` to require those same versions. Ensured the requirements file ends with a newline and verified all tests still pass.
+
