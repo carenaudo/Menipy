@@ -1,17 +1,17 @@
 # Image processing
-scikit-image==0.19.3
-opencv-python==4.7.0.72
+scikit-image
+opencv-python
 
 # Core numerical and data libraries
-numpy==1.24.0
-scipy==1.10.0
-pandas==1.5.3
+numpy
+scipy
+pandas
 
 # GUI framework
-PySide6==6.5.1
+PySide6
 
 # Packaging and testing
-setuptools==65.5.0
-wheel==0.41.2
-pytest==7.4.0
-pytest-cov==4.1.0
+setuptools
+wheel
+pytest
+pytest-cov
