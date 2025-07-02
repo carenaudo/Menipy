@@ -37,7 +37,6 @@ from ..processing import segmentation
 from ..processing.segmentation import (
     morphological_cleanup,
     external_contour_mask,
-    largest_contour,
     find_contours,
     ml_segment,
 )
@@ -52,7 +51,7 @@ from ..models.properties import (
     estimate_surface_tension,
     contact_angle_from_mask,
 )
-from ..models.geometry import fit_circle
+from ..models.geometry import fit_circle, horizontal_intersections
 
 
 class MainWindow(QMainWindow):
@@ -224,17 +223,16 @@ class MainWindow(QMainWindow):
                 mask = segmentation.adaptive_threshold(image)
 
         mask = morphological_cleanup(mask, kernel_size=3, iterations=1)
-        mask = external_contour_mask(mask)
-        self.last_mask = mask
+        self.last_mask = external_contour_mask(mask)
         self.mask_offset = offset
         if self.model_item is not None:
             self.graphics_scene.removeItem(self.model_item)
             self.model_item = None
         mask_img = QImage(
-            mask.data,
-            mask.shape[1],
-            mask.shape[0],
-            mask.strides[0],
+            self.last_mask.data,
+            self.last_mask.shape[1],
+            self.last_mask.shape[0],
+            self.last_mask.strides[0],
             QImage.Format_Grayscale8,
         )
         mask_pix = QPixmap.fromImage(mask_img)
@@ -248,7 +246,8 @@ class MainWindow(QMainWindow):
             self.graphics_scene.removeItem(item)
         self.contour_items.clear()
 
-        contour = segmentation.largest_contour(mask)
+        contours = segmentation.find_contours(self.last_mask)
+        contour = max(contours, key=cv2.contourArea) if contours else None
         if contour is not None:
             path = QPainterPath()
             c = contour + np.array(offset)
@@ -268,11 +267,11 @@ class MainWindow(QMainWindow):
             self.graphics_scene.removeItem(self.contact_line_item)
             self.contact_line_item = None
 
-        contact_y_local = 0  # pendant orientation
+        contact_y_local = 0.0  # pendant orientation
         if contour is not None:
-            idx = int(contour[:, 1].argmax())
-            apex_x = int(contour[idx, 0]) + offset[0]
-            apex_y = int(contour[idx, 1]) + offset[1]
+            idx = int(np.argmax(contour[:, 1]))
+            apex_x = int(round(contour[idx, 0] + offset[0]))
+            apex_y = int(round(contour[idx, 1] + offset[1]))
             pen = QPen(QColor("yellow"))
             brush = QColor("yellow")
             self.apex_item = self.graphics_scene.addEllipse(
@@ -283,27 +282,17 @@ class MainWindow(QMainWindow):
                 pen,
                 brush,
             )
-            contact_y = contact_y_local + offset[1]
-            cols = None
-            pts = contour[contour[:, 1] <= contact_y_local + 0.5]
-            if pts.size >= 2:
-                x1 = int(pts[:, 0].min()) + offset[0]
-                x2 = int(pts[:, 0].max()) + offset[0]
-            else:
-                row = mask[contact_y_local]
-                found = np.where(row > 0)[0]
-                if found.size >= 2:
-                    cols = found
-                    x1 = int(cols.min()) + offset[0]
-                    x2 = int(cols.max()) + offset[0]
-            if pts.size >= 2 or cols is not None:
+            xs = horizontal_intersections(contour, contact_y_local)
+            if xs.size >= 2:
+                x1 = xs.min() + offset[0]
+                x2 = xs.max() + offset[0]
                 pen = QPen(QColor("cyan"))
                 pen.setWidth(2)
                 self.contact_line_item = self.graphics_scene.addLine(
                     x1,
-                    contact_y,
+                    contact_y_local + offset[1],
                     x2,
-                    contact_y,
+                    contact_y_local + offset[1],
                     pen,
                 )
 
@@ -316,7 +305,7 @@ class MainWindow(QMainWindow):
             height_px = abs(contact_y_local - contour[idx, 1])
             diameter = pixels_to_mm(float(r_max_px * 2.0))
             height = pixels_to_mm(float(height_px))
-            volume = droplet_volume(mask, px_to_mm=px_to_mm)
+            volume = droplet_volume(self.last_mask, px_to_mm=px_to_mm)
         else:
             area_mm2 = height = diameter = volume = 0.0
 
