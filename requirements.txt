@@ -8,8 +8,6 @@ scipy
 pandas
 # GUI framework
 PySide6
-# Plotting (optional overlays)
-matplotlib
 # Packaging and testing
 setuptools
 wheel
