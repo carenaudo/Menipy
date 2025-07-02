@@ -1,7 +1,11 @@
 import numpy as np
 
 from src.models.geometry import fit_circle
-from src.models.properties import droplet_volume
+from src.models.properties import (
+    droplet_volume,
+    estimate_surface_tension,
+    contact_angle_from_mask,
+)
 
 
 def test_fit_circle():
@@ -21,4 +25,14 @@ def test_droplet_volume():
     volume = droplet_volume(mask)
     expected = (4.0 / 3.0) * np.pi * r**3
     assert np.isclose(volume, expected, rtol=0.1)
+
+
+def test_estimate_surface_tension_and_contact_angle():
+    r = 10
+    y, x = np.ogrid[-r:r + 1, -r:r + 1]
+    mask = ((x ** 2 + y ** 2) <= r ** 2).astype(np.uint8)
+    gamma = estimate_surface_tension(mask, 1.0, 1000.0)
+    angle = contact_angle_from_mask(mask)
+    assert gamma > 0
+    assert 0 < angle < 90
 
