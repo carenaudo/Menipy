@@ -152,3 +152,9 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 **Task:** Continue with the plan by ensuring only the outer droplet contour is used for processing.
 
 **Summary:** Added `external_contour_mask` in `segmentation.py` to keep only the largest external contour and fill interior holes. Integrated this step into `batch.py` and `MainWindow.process_image`. Updated processing tests with a new case for the function and marked the plan item complete.
+
+## Entry 26 - Correct Volume and Apex Calculations
+
+**Task:** Revise the droplet volume function and fix the apex detection logic in the GUI.
+
+**Summary:** Rewrote `droplet_volume` to compute the solid-of-revolution integral from a binary mask, returning volume in cubic millimetres. Updated `MainWindow.process_image` to call the new API and corrected the apex selection to use the lowest point of the mask. Adjusted unit tests accordingly.
