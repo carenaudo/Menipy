@@ -170,3 +170,10 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 **Task:** Review PLAN.md, mark completed tasks, and start the next task by implementing CSV export.
 
 **Summary:** Marked the "Calculate & Draw" buttons, "Save Annotated Image," and "Propose enhancements" items as completed in PLAN.md. Added a "Save CSV" button to `MainWindow` with a new `save_csv` method that exports parameters and metrics using pandas. Extended `MetricsPanel` with a `values` method, updated GUI tests, and added a new test for CSV export. All tests pass.
+
+## Entry 29 - Pin Dependency Versions
+
+**Task:** Edit requirements.txt to pin exact package versions and update setup.py to match.
+
+**Summary:** Pinned all dependencies in `requirements.txt` (numpy 1.24.0, scipy 1.10.0, etc.) and updated `setup.py` to require those same versions. Ensured the requirements file ends with a newline and verified all tests still pass.
+
