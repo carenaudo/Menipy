@@ -34,3 +34,6 @@
 
 ## Entry 24 - Apex and Contact Marking
 **Summary:** I am not seeing this... add some steps to the plan based on what i think is missing
+
+## Entry 25 - External Contour Only
+**Summary:** I found that the volume it calculate is the region of interest... add a file to define what is a droplet

@@ -33,6 +33,7 @@ Based on the “Development Plan for a Python-Based Droplet Shape Analysis Tool�
 ```
 .
 ├── doc/                    # Reference docs (markdown) for CODEX to verify:
+│   ├── droplet_description.md   # • Droplet definition for image detection
 │   ├── physics_models.md   # • Young–Laplace, ADSA equations
 │   ├── numerical_methods.md# • ODE integration, optimization
 │   ├── image_processing.md # • thresholding, contour extraction
@@ -241,13 +242,11 @@ Based on the “Development Plan for a Python-Based Droplet Shape Analysis Tool�
      -Open a file-save dialog for naming.
      -Save the current view—including calibration box, ROI, apex & contact markers, and model overlay—as a single image file.
 
+23 **Propose enhancements**
+   -Evaluate adding real-time metric updates when parameters change.
+   -Investigate integrating true ML-based segmentation models.
+   -Consider 3D droplet reconstruction for pendant drops.
+   -Provide a command-line interface for batch operations.
+   -Expand unit tests to cover new functionality as it is added.
 
-
-23. **Propose enhancements**
-   - Evaluate adding real-time metric updates when parameters change.
-   - Investigate integrating true ML-based segmentation models.
-   - Consider 3D droplet reconstruction for pendant drops.
-   - Provide a command-line interface for batch operations.
-   - Expand unit tests to cover new functionality as it is added.
----
 *End of CODEX agent plan.*
