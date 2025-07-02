@@ -51,6 +51,14 @@ def find_contours(mask: np.ndarray) -> list[np.ndarray]:
     return [c.squeeze(1) for c in contours if c.size > 0]
 
 
+def largest_contour(mask: np.ndarray) -> np.ndarray | None:
+    """Return the largest external contour or ``None`` if none found."""
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not contours:
+        return None
+    return max(contours, key=cv2.contourArea).squeeze(1)
+
+
 def ml_segment(image: np.ndarray) -> np.ndarray:
     """Placeholder ML-based segmentation.
 

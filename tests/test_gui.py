@@ -354,7 +354,7 @@ def test_apex_and_contact_markers(tmp_path):
     window = MainWindow()
     window.load_image(path)
 
-    window.calibration_rect = (8, 10, 12, 18)
+    window.roi_rect = (8, 10, 12, 20)
     window.process_image()
 
     assert window.apex_item is not None

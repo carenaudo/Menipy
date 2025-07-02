@@ -5,6 +5,7 @@ from .segmentation import (
     morphological_cleanup,
     external_contour_mask,
     find_contours,
+    largest_contour,
     ml_segment,
 )
 
@@ -15,5 +16,6 @@ __all__ = [
     "morphological_cleanup",
     "external_contour_mask",
     "find_contours",
+    "largest_contour",
     "ml_segment",
 ]
