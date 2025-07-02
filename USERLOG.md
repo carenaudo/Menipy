@@ -37,3 +37,6 @@
 
 ## Entry 25 - External Contour Only
 **Summary:** I found that the volume it calculate is the region of interest... add a file to define what is a droplet
+
+## Entry 27 - Calculate & Draw Buttons
+**Summary:** There are several mistakes in the calculation, but i will review at the end of the improvements tasks
