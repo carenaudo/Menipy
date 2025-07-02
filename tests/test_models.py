@@ -15,6 +15,10 @@ def test_fit_circle():
 
 
 def test_droplet_volume():
-    volume = droplet_volume(2.0, np.deg2rad(60))
-    assert volume > 0
+    r = 10
+    y, x = np.ogrid[-r:r+1, -r:r+1]
+    mask = ((x**2 + y**2) <= r**2).astype(np.uint8)
+    volume = droplet_volume(mask)
+    expected = (4.0 / 3.0) * np.pi * r**3
+    assert np.isclose(volume, expected, rtol=0.1)
 

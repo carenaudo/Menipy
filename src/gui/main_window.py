@@ -246,7 +246,7 @@ class MainWindow(QMainWindow):
 
         if mask.any():
             ys, xs = np.nonzero(mask)
-            idx = int(ys.argmin())
+            idx = int(ys.argmax())
             apex_x = xs[idx] + offset[0]
             apex_y = ys[idx] + offset[1]
             pen = QPen(QColor("yellow"))
@@ -288,7 +288,7 @@ class MainWindow(QMainWindow):
             diameter_px = xs.max() - xs.min()
             height = pixels_to_mm(float(height_px))
             diameter = pixels_to_mm(float(diameter_px))
-            volume = droplet_volume(diameter / 2.0, np.deg2rad(90.0))
+            volume = droplet_volume(mask)
         else:
             height = diameter = volume = 0.0
 
