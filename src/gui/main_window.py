@@ -312,7 +312,8 @@ class MainWindow(QMainWindow):
             diameter_px = xs.max() - xs.min()
             height = pixels_to_mm(float(height_px))
             diameter = pixels_to_mm(float(diameter_px))
-            volume = droplet_volume(mask)
+            cal = get_calibration()
+            volume = droplet_volume(mask, px_to_mm=1.0 / cal.pixels_per_mm)
         else:
             height = diameter = volume = 0.0
 
@@ -333,8 +334,12 @@ class MainWindow(QMainWindow):
             return
 
         values = self.parameter_panel.values()
+        cal = get_calibration()
         gamma = estimate_surface_tension(
-            self.last_mask, values["air_density"], values["liquid_density"]
+            self.last_mask,
+            values["air_density"],
+            values["liquid_density"],
+            px_to_mm=1.0 / cal.pixels_per_mm,
         )
         angle = contact_angle_from_mask(self.last_mask)
 

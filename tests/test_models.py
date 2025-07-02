@@ -22,7 +22,7 @@ def test_droplet_volume():
     r = 10
     y, x = np.ogrid[-r:r+1, -r:r+1]
     mask = ((x**2 + y**2) <= r**2).astype(np.uint8)
-    volume = droplet_volume(mask)
+    volume = droplet_volume(mask, px_to_mm=1.0)
     expected = (4.0 / 3.0) * np.pi * r**3
     assert np.isclose(volume, expected, rtol=0.1)
 
@@ -31,7 +31,7 @@ def test_estimate_surface_tension_and_contact_angle():
     r = 10
     y, x = np.ogrid[-r:r + 1, -r:r + 1]
     mask = ((x ** 2 + y ** 2) <= r ** 2).astype(np.uint8)
-    gamma = estimate_surface_tension(mask, 1.0, 1000.0)
+    gamma = estimate_surface_tension(mask, 1.0, 1000.0, px_to_mm=1.0)
     angle = contact_angle_from_mask(mask)
     assert gamma > 0
     assert 0 < angle < 90
