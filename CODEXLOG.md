@@ -171,7 +171,13 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 
 **Summary:** Marked the "Calculate & Draw" buttons, "Save Annotated Image," and "Propose enhancements" items as completed in PLAN.md. Added a "Save CSV" button to `MainWindow` with a new `save_csv` method that exports parameters and metrics using pandas. Extended `MetricsPanel` with a `values` method, updated GUI tests, and added a new test for CSV export. All tests pass.
 
-## Entry 29 - Pin Dependency Versions
+## Entry 29 - .gitignore newline fix
+
+**Task:** Add a newline at the end of `.gitignore` to properly terminate the final entry `\.cursorindexingignore`.
+
+**Summary:** Appended a newline to `.gitignore` so the last entry `.cursorindexingignore` is correctly terminated. No other lines were modified.
+
+## Entry 30 - Pin Dependency Versions
 
 **Task:** Edit requirements.txt to pin exact package versions and update setup.py to match.
 
