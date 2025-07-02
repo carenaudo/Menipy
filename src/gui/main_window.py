@@ -33,13 +33,8 @@ import pandas as pd
 from .controls import ZoomControl, ParameterPanel, MetricsPanel
 
 from ..processing.reader import load_image
-from ..processing import segmentation
-from ..processing.segmentation import (
-    morphological_cleanup,
-    external_contour_mask,
-    find_contours,
-    ml_segment,
-)
+from ..processing import detect_droplet, segmentation
+from ..processing.segmentation import find_contours
 from ..utils import (
     get_calibration,
     pixels_to_mm,
@@ -51,7 +46,7 @@ from ..models.properties import (
     estimate_surface_tension,
     contact_angle_from_mask,
 )
-from ..models.geometry import fit_circle, horizontal_intersections
+from ..models.geometry import fit_circle
 
 
 class MainWindow(QMainWindow):
@@ -199,11 +194,11 @@ class MainWindow(QMainWindow):
         if getattr(self, "image", None) is None:
             return
         image = self.image
-        offset = (0, 0)
         if self.roi_rect is not None:
             x1, y1, x2, y2 = map(int, self.roi_rect)
-            image = image[y1:y2, x1:x2]
-            offset = (x1, y1)
+        else:
+            x1, y1, x2, y2 = 0, 0, image.shape[1], image.shape[0]
+        roi = (x1, y1, x2 - x1, y2 - y1)
 
         # Clear previous markers
         if self.apex_item is not None:
@@ -213,51 +208,48 @@ class MainWindow(QMainWindow):
             self.graphics_scene.removeItem(self.contact_line_item)
             self.contact_line_item = None
 
-        if getattr(self, "use_ml_action", None) and self.use_ml_action.isChecked():
-            mask = ml_segment(image)
-        else:
-            algo = self.algorithm_combo.currentText()
-            if algo == "Otsu":
-                mask = segmentation.otsu_threshold(image)
-            else:
-                mask = segmentation.adaptive_threshold(image)
+        cal = get_calibration()
+        px_to_mm = 1.0 / cal.pixels_per_mm
+        try:
+            droplet = detect_droplet(self.image, roi, px_to_mm)
+        except ValueError as exc:
+            QMessageBox.warning(self, "Detection", str(exc))
+            self.last_mask = None
+            return
 
-        mask = morphological_cleanup(mask, kernel_size=3, iterations=1)
-        self.last_mask = external_contour_mask(mask)
-        self.mask_offset = offset
+        self.last_mask = droplet.mask
+        self.mask_offset = (x1, y1)
         if self.model_item is not None:
             self.graphics_scene.removeItem(self.model_item)
             self.model_item = None
+
         mask_img = QImage(
-            self.last_mask.data,
-            self.last_mask.shape[1],
-            self.last_mask.shape[0],
-            self.last_mask.strides[0],
+            droplet.mask.data,
+            droplet.mask.shape[1],
+            droplet.mask.shape[0],
+            droplet.mask.strides[0],
             QImage.Format_Grayscale8,
         )
         mask_pix = QPixmap.fromImage(mask_img)
         if self.mask_item is not None:
             self.graphics_scene.removeItem(self.mask_item)
         self.mask_item = self.graphics_scene.addPixmap(mask_pix)
-        self.mask_item.setOffset(*offset)
+        self.mask_item.setOffset(x1, y1)
         self.mask_item.setOpacity(0.4)
 
         for item in self.contour_items:
             self.graphics_scene.removeItem(item)
         self.contour_items.clear()
 
-        contours = segmentation.find_contours(self.last_mask)
-        contour = max(contours, key=cv2.contourArea) if contours else None
-        if contour is not None:
-            path = QPainterPath()
-            c = contour + np.array(offset)
-            path.moveTo(*c[0])
-            for point in c[1:]:
-                path.lineTo(*point)
-            pen = QPen(QColor("red"))
-            pen.setWidth(2)
-            item = self.graphics_scene.addPath(path, pen)
-            self.contour_items.append(item)
+        path = QPainterPath()
+        c = droplet.contour_px
+        path.moveTo(*c[0])
+        for point in c[1:]:
+            path.lineTo(*point)
+        pen = QPen(QColor("red"))
+        pen.setWidth(2)
+        item = self.graphics_scene.addPath(path, pen)
+        self.contour_items.append(item)
 
         # Apex and contact line markers from silhouette
         if self.apex_item is not None:
@@ -267,47 +259,38 @@ class MainWindow(QMainWindow):
             self.graphics_scene.removeItem(self.contact_line_item)
             self.contact_line_item = None
 
-        contact_y_local = 0.0  # pendant orientation
-        if contour is not None:
-            idx = int(np.argmax(contour[:, 1]))
-            apex_x = int(round(contour[idx, 0] + offset[0]))
-            apex_y = int(round(contour[idx, 1] + offset[1]))
-            pen = QPen(QColor("yellow"))
-            brush = QColor("yellow")
-            self.apex_item = self.graphics_scene.addEllipse(
-                apex_x - 3,
-                apex_y - 3,
-                6,
-                6,
-                pen,
-                brush,
-            )
-            xs = horizontal_intersections(contour, contact_y_local)
-            if xs.size >= 2:
-                x1 = xs.min() + offset[0]
-                x2 = xs.max() + offset[0]
+        pen = QPen(QColor("yellow"))
+        brush = QColor("yellow")
+        self.apex_item = self.graphics_scene.addEllipse(
+            droplet.apex_px[0] - 3,
+            droplet.apex_px[1] - 3,
+            6,
+            6,
+            pen,
+            brush,
+        )
+
+        row_y = droplet.contact_px[1] - y1
+        if 0 <= row_y < droplet.mask.shape[0]:
+            cols = np.where(droplet.mask[row_y] > 0)[0]
+            if cols.size >= 2:
+                x1_line = cols.min() + x1
+                x2_line = cols.max() + x1
                 pen = QPen(QColor("cyan"))
                 pen.setWidth(2)
                 self.contact_line_item = self.graphics_scene.addLine(
-                    x1,
-                    contact_y_local + offset[1],
-                    x2,
-                    contact_y_local + offset[1],
+                    x1_line,
+                    droplet.contact_px[1],
+                    x2_line,
+                    droplet.contact_px[1],
                     pen,
                 )
-
         # Basic metrics from the silhouette
         cal = get_calibration()
         px_to_mm = 1.0 / cal.pixels_per_mm
-        if contour is not None:
-            area_mm2 = cv2.contourArea(contour) * px_to_mm**2
-            r_max_px = 0.5 * (contour[:, 0].max() - contour[:, 0].min())
-            height_px = abs(contact_y_local - contour[idx, 1])
-            diameter = pixels_to_mm(float(r_max_px * 2.0))
-            height = pixels_to_mm(float(height_px))
-            volume = droplet_volume(self.last_mask, px_to_mm=px_to_mm)
-        else:
-            area_mm2 = height = diameter = volume = 0.0
+        height = droplet.height_mm
+        diameter = droplet.r_max_mm * 2.0
+        volume = droplet_volume(droplet.mask, px_to_mm=px_to_mm)
 
         self.metrics_panel.set_metrics(
             ift=0.0,

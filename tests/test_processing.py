@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from src.processing.segmentation import (
     otsu_threshold,
@@ -8,6 +9,7 @@ from src.processing.segmentation import (
     find_contours,
     ml_segment,
 )
+from src.processing import detect_droplet
 
 
 def test_otsu_threshold():
@@ -59,4 +61,51 @@ def test_external_contour_mask():
     assert len(contours) == 1
     # hole should be filled
     assert cleaned[20, 20] == 255
+
+
+
+def test_detect_droplet_circle():
+    cv2 = __import__('cv2')
+    frame = np.full((400, 400), 255, dtype=np.uint8)
+    x0, y0, w, h = 50, 50, 300, 300
+    radius = 100
+    center = (x0 + radius, y0 + radius)
+    cv2.circle(frame, center, radius, 0, -1)
+    px_to_mm = 0.1
+
+    droplet = detect_droplet(frame, (x0, y0, w, h), px_to_mm)
+
+    assert abs(droplet.apex_px[0] - (x0 + radius)) <= 1
+    assert abs(droplet.apex_px[1] - (y0 + 2 * radius)) <= 1
+    assert droplet.contact_px[1] == y0
+    expected_r = radius * px_to_mm
+    assert np.isclose(droplet.r_max_mm, expected_r, rtol=5e-3)
+    expected_area = np.pi * expected_r**2
+    assert np.isclose(droplet.projected_area_mm2, expected_area, rtol=1e-2)
+
+
+def test_detect_droplet_translation():
+    cv2 = __import__('cv2')
+    frame = np.full((400, 400), 255, dtype=np.uint8)
+    x0, y0, w, h = 50, 50, 300, 300
+    radius = 100
+    shift = 40
+    center1 = (x0 + radius, y0 + radius)
+    center2 = (center1[0] + shift, center1[1])
+    cv2.circle(frame, center1, radius, 0, -1)
+    droplet1 = detect_droplet(frame, (x0, y0, w, h), 0.1)
+
+    frame.fill(255)
+    cv2.circle(frame, center2, radius, 0, -1)
+    droplet2 = detect_droplet(frame, (x0, y0, w, h), 0.1)
+
+    assert droplet2.apex_px[0] - droplet1.apex_px[0] == shift
+    assert np.isclose(droplet1.r_max_mm, droplet2.r_max_mm, rtol=6e-3)
+    assert np.isclose(droplet1.projected_area_mm2, droplet2.projected_area_mm2, rtol=6e-3)
+
+
+def test_detect_droplet_failure():
+    frame = np.full((100, 100), 255, dtype=np.uint8)
+    with pytest.raises(ValueError):
+        detect_droplet(frame, (10, 10, 50, 50), 0.1)
 

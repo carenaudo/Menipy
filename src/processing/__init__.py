@@ -8,6 +8,7 @@ from .segmentation import (
     largest_contour,
     ml_segment,
 )
+from .detection import Droplet, detect_droplet
 
 __all__ = [
     "load_image",
@@ -18,4 +19,6 @@ __all__ = [
     "find_contours",
     "largest_contour",
     "ml_segment",
+    "Droplet",
+    "detect_droplet",
 ]
