@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import numpy as np
+import cv2
 
 from PySide6.QtCore import Qt, QRectF
 from PySide6.QtGui import (
@@ -36,6 +37,7 @@ from ..processing import segmentation
 from ..processing.segmentation import (
     morphological_cleanup,
     external_contour_mask,
+    largest_contour,
     find_contours,
     ml_segment,
 )
@@ -246,21 +248,19 @@ class MainWindow(QMainWindow):
             self.graphics_scene.removeItem(item)
         self.contour_items.clear()
 
-        for contour in find_contours(mask):
+        contour = segmentation.largest_contour(mask)
+        if contour is not None:
             path = QPainterPath()
-            if contour.size == 0:
-                continue
-            if offset != (0, 0):
-                contour = contour + np.array(offset)
-            path.moveTo(*contour[0])
-            for point in contour[1:]:
+            c = contour + np.array(offset)
+            path.moveTo(*c[0])
+            for point in c[1:]:
                 path.lineTo(*point)
             pen = QPen(QColor("red"))
             pen.setWidth(2)
             item = self.graphics_scene.addPath(path, pen)
             self.contour_items.append(item)
 
-        # Apex marker from mask
+        # Apex and contact line markers from silhouette
         if self.apex_item is not None:
             self.graphics_scene.removeItem(self.apex_item)
             self.apex_item = None
@@ -268,11 +268,11 @@ class MainWindow(QMainWindow):
             self.graphics_scene.removeItem(self.contact_line_item)
             self.contact_line_item = None
 
-        if mask.any():
-            ys, xs = np.nonzero(mask)
-            idx = int(ys.argmax())
-            apex_x = xs[idx] + offset[0]
-            apex_y = ys[idx] + offset[1]
+        contact_y_local = 0  # pendant orientation
+        if contour is not None:
+            idx = int(contour[:, 1].argmax())
+            apex_x = int(contour[idx, 0]) + offset[0]
+            apex_y = int(contour[idx, 1]) + offset[1]
             pen = QPen(QColor("yellow"))
             brush = QColor("yellow")
             self.apex_item = self.graphics_scene.addEllipse(
@@ -283,18 +283,20 @@ class MainWindow(QMainWindow):
                 pen,
                 brush,
             )
-
-            if self.calibration_rect is not None:
-                contact_y = int(self.calibration_rect[1])
+            contact_y = contact_y_local + offset[1]
+            cols = None
+            pts = contour[contour[:, 1] <= contact_y_local + 0.5]
+            if pts.size >= 2:
+                x1 = int(pts[:, 0].min()) + offset[0]
+                x2 = int(pts[:, 0].max()) + offset[0]
             else:
-                contact_y = ys.max() + offset[1]
-            row_y = contact_y - offset[1]
-            row_y = min(max(int(row_y), 0), mask.shape[0] - 1)
-            row = mask[row_y]
-            cols = np.where(row > 0)[0]
-            if cols.size >= 2:
-                x1 = cols.min() + offset[0]
-                x2 = cols.max() + offset[0]
+                row = mask[contact_y_local]
+                found = np.where(row > 0)[0]
+                if found.size >= 2:
+                    cols = found
+                    x1 = int(cols.min()) + offset[0]
+                    x2 = int(cols.max()) + offset[0]
+            if pts.size >= 2 or cols is not None:
                 pen = QPen(QColor("cyan"))
                 pen.setWidth(2)
                 self.contact_line_item = self.graphics_scene.addLine(
@@ -305,22 +307,23 @@ class MainWindow(QMainWindow):
                     pen,
                 )
 
-        # Basic metrics from the mask
-        ys, xs = np.nonzero(mask)
-        if ys.size > 0 and xs.size > 0:
-            height_px = ys.max() - ys.min()
-            diameter_px = xs.max() - xs.min()
+        # Basic metrics from the silhouette
+        cal = get_calibration()
+        px_to_mm = 1.0 / cal.pixels_per_mm
+        if contour is not None:
+            area_mm2 = cv2.contourArea(contour) * px_to_mm**2
+            r_max_px = 0.5 * (contour[:, 0].max() - contour[:, 0].min())
+            height_px = abs(contact_y_local - contour[idx, 1])
+            diameter = pixels_to_mm(float(r_max_px * 2.0))
             height = pixels_to_mm(float(height_px))
-            diameter = pixels_to_mm(float(diameter_px))
-            cal = get_calibration()
-            volume = droplet_volume(mask, px_to_mm=1.0 / cal.pixels_per_mm)
+            volume = droplet_volume(mask, px_to_mm=px_to_mm)
         else:
-            height = diameter = volume = 0.0
+            area_mm2 = height = diameter = volume = 0.0
 
         self.metrics_panel.set_metrics(
             ift=0.0,
             wo=0.0,
-            volume=volume,
+            volume=volume if volume is not None else 0.0,
             contact_angle=0.0,
             height=height,
             diameter=diameter,

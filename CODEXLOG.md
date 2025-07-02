@@ -200,3 +200,9 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 **Task:** Improve droplet volume and surface tension calculations, addressing review comments.
 
 **Summary:** Updated `properties.py` to accept a pixel-to-millimetre factor, validate inputs, and use consistent units. GUI and tests now supply the calibration factor. Functions return `None` when measurements fail. All tests pass.
+
+## Entry 34 - Improve contact line detection
+
+**Task:** Address review feedback on silhouette-only analysis and fix contact line calculation.
+
+**Summary:** Updated `MainWindow.process_image` so the contact line is derived from the outer contour by intersecting it with the ROI boundary, falling back to the mask row if needed. This ensures geometric metrics rely solely on the droplet silhouette. All tests pass.
