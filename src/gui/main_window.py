@@ -102,7 +102,7 @@ class MainWindow(QMainWindow):
         control_layout.addWidget(self.draw_button)
 
         self.save_csv_button = QPushButton("Save CSV")
-        self.save_csv_button.clicked.connect(self.save_csv)
+        self.save_csv_button.clicked.connect(lambda: self.save_csv())
         control_layout.addWidget(self.save_csv_button)
 
         control_layout.addStretch()
@@ -112,12 +112,12 @@ class MainWindow(QMainWindow):
 
         # Menu actions
         open_action = QAction("Open Image", self)
-        open_action.triggered.connect(self.open_image)
+        open_action.triggered.connect(lambda: self.open_image())
         file_menu = self.menuBar().addMenu("File")
         file_menu.addAction(open_action)
 
         save_action = QAction("Save Annotated Image", self)
-        save_action.triggered.connect(self.save_annotated_image)
+        save_action.triggered.connect(lambda: self.save_annotated_image())
         file_menu.addAction(save_action)
 
         tools_menu = self.menuBar().addMenu("Tools")

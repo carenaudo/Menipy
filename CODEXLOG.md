@@ -188,3 +188,9 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 **Task:** Remove matplotlib from requirements and setup since it is unused.
 
 **Summary:** Deleted matplotlib from `requirements.txt` and the `install_requires` list in `setup.py`. All tests pass.
+
+## Entry 32 - Fix file dialog signal arguments
+
+**Task:** Resolve a crash when using `Save CSV` due to PySide6 passing a boolean to slots expecting a path.
+
+**Summary:** Updated `MainWindow` connections for menu actions and the CSV button to use lambdas, preventing unintended boolean arguments from `triggered`/`clicked` signals. Added lambdas for `Open Image` and `Save Annotated Image` actions as well. All tests pass.
