@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
     QComboBox,
     QPushButton,
 )
+import pandas as pd
 
 from .controls import ZoomControl, ParameterPanel, MetricsPanel
 
@@ -99,6 +100,10 @@ class MainWindow(QMainWindow):
         self.draw_button = QPushButton("Draw Model")
         self.draw_button.clicked.connect(self.draw_model)
         control_layout.addWidget(self.draw_button)
+
+        self.save_csv_button = QPushButton("Save CSV")
+        self.save_csv_button.clicked.connect(self.save_csv)
+        control_layout.addWidget(self.save_csv_button)
 
         control_layout.addStretch()
         splitter.addWidget(control_widget)
@@ -380,6 +385,22 @@ class MainWindow(QMainWindow):
         self.graphics_view.render(painter)
         painter.end()
         image.save(str(path))
+
+    def save_csv(self, path: Path | None = None) -> None:
+        """Export parameters and metrics to a CSV file."""
+        if path is None:
+            p, _ = QFileDialog.getSaveFileName(
+                self,
+                "Save CSV",
+                str(Path.home() / "results.csv"),
+                "CSV Files (*.csv)",
+            )
+            if not p:
+                return
+            path = Path(p)
+
+        data = {**self.parameter_panel.values(), **self.metrics_panel.values()}
+        pd.DataFrame([data]).to_csv(path, index=False)
 
     # --- Calibration drawing handling -------------------------------------------------
 

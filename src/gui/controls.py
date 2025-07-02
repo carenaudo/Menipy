@@ -158,3 +158,20 @@ class MetricsPanel(QWidget):
             self.height_label.setText(f"{height:.2f}")
         if diameter is not None:
             self.diameter_label.setText(f"{diameter:.2f}")
+
+    def values(self) -> dict[str, float]:
+        """Return the currently displayed metric values."""
+        def _to_float(label: QLabel) -> float:
+            try:
+                return float(label.text())
+            except ValueError:
+                return 0.0
+
+        return {
+            "ift": _to_float(self.ift_label),
+            "wo": _to_float(self.wo_label),
+            "volume": _to_float(self.volume_label),
+            "contact_angle": _to_float(self.angle_label),
+            "height": _to_float(self.height_label),
+            "diameter": _to_float(self.diameter_label),
+        }
