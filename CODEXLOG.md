@@ -206,3 +206,17 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 **Task:** Address review feedback on silhouette-only analysis and fix contact line calculation.
 
 **Summary:** Updated `MainWindow.process_image` so the contact line is derived from the outer contour by intersecting it with the ROI boundary, falling back to the mask row if needed. This ensures geometric metrics rely solely on the droplet silhouette. All tests pass.
+## Entry 35 - Implement droplet detection
+
+**Task:** Add ROI-based droplet detection returning geometric metrics.
+
+**Summary:** Created `detect_droplet` with a `Droplet` dataclass to extract the outer contour, apex and contact point in image coordinates. The function thresholds using Otsu, closes small holes, chooses the largest contour by area, and computes height, radius and area from the mask. New unit tests validate synthetic examples and error handling. All tests pass.
+
+
+
+## Entry 36 - Integrate droplet detection with GUI
+
+**Task:** Use the new `detect_droplet` function in the GUI pipeline to compute metrics and overlays.**
+
+**Summary:** Updated `detect_droplet` for robust polarity handling and apex calculation. `MainWindow.process_image` now calls this function to obtain the mask, contour, apex, and contact line which are drawn on the scene. Metrics such as height, diameter and volume are derived from the returned data. All tests pass.
+
