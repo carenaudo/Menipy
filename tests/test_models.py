@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.models.geometry import fit_circle
+from src.models.geometry import fit_circle, horizontal_intersections
 from src.models.properties import (
     droplet_volume,
     estimate_surface_tension,
@@ -35,4 +35,11 @@ def test_estimate_surface_tension_and_contact_angle():
     angle = contact_angle_from_mask(mask)
     assert gamma > 0
     assert 0 < angle < 90
+
+
+def test_horizontal_intersections():
+    contour = np.array([[0, 1], [1, -1], [2, 1]], dtype=float)
+    xs = horizontal_intersections(contour, 0.0)
+    assert xs.size == 2
+    assert np.allclose(xs, [0.5, 1.5])
 

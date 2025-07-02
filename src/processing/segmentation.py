@@ -46,17 +46,22 @@ def external_contour_mask(mask: np.ndarray) -> np.ndarray:
 
 
 def find_contours(mask: np.ndarray) -> list[np.ndarray]:
-    """Return contours from a binary mask."""
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    return [c.squeeze(1) for c in contours if c.size > 0]
+    """Return external contours with sub-pixel precision."""
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    result: list[np.ndarray] = []
+    for c in contours:
+        if c.size > 0:
+            result.append(c.squeeze(1).astype(np.float32))
+    return result
 
 
 def largest_contour(mask: np.ndarray) -> np.ndarray | None:
-    """Return the largest external contour or ``None`` if none found."""
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    """Return the largest external contour as floats or ``None`` if none found."""
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     if not contours:
         return None
-    return max(contours, key=cv2.contourArea).squeeze(1)
+    largest = max(contours, key=cv2.contourArea)
+    return largest.squeeze(1).astype(np.float32)
 
 
 def ml_segment(image: np.ndarray) -> np.ndarray:
