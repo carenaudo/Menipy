@@ -16,4 +16,3 @@ setup(
     ],
     entry_points={"console_scripts": ["menipy=main:main"]},
 )
-
