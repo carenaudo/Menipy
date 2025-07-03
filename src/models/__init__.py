@@ -7,6 +7,12 @@ from .properties import (
     estimate_surface_tension,
     contact_angle_from_mask,
 )
+from .surface_tension import (
+    jennings_pallas_beta,
+    surface_tension,
+    bond_number,
+    volume_from_contour,
+)
 
 __all__ = [
     "fit_circle",
@@ -14,5 +20,9 @@ __all__ = [
     "droplet_volume",
     "estimate_surface_tension",
     "contact_angle_from_mask",
+    "jennings_pallas_beta",
+    "surface_tension",
+    "bond_number",
+    "volume_from_contour",
 ]
 
