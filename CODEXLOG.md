@@ -348,3 +348,9 @@ tests added for these features.
 
 **Summary:** Added QFrame to the PySide6.QtWidgets import list in `src/gui/controls.py`. All tests pass.
 
+
+## Entry 57 - Fix metrics argument mismatch
+
+**Task:** Resolve TypeError from `AnalysisTab.set_metrics()` when running drop analysis.
+
+**Summary:** Removed the unsupported `beta` keyword from the `set_metrics` call in `gui/main_window.py`. Tests confirm the GUI now updates metrics without errors.

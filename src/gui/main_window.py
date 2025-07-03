@@ -508,7 +508,6 @@ class MainWindow(QMainWindow):
             volume=metrics["volume_uL"] if metrics["volume_uL"] is not None else 0.0,
             angle=metrics["contact_angle_deg"],
             gamma=metrics["gamma_mN_m"],
-            beta=metrics["beta"],
             s1=metrics["s1"],
             bo=metrics["Bo"],
             wo=metrics["wo"],
