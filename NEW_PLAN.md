@@ -103,13 +103,13 @@ project/
 
 ## 🛠️ Tasks
 
-1. **Create `feature/drop-analysis` branch.**
-2. Implement UI refactor (QTabWidget).
-3. Develop `analysis/needle.py` (+ unit tests).
-4. Develop `analysis/drop.py` (+ unit tests).
-5. Integrate overlays into GUI controller.
-6. Update README & docs.
-7. Verify acceptance criteria, open PR, request review.
+[] 1. **Create `src/analysis/` folder.**
+[] 2. Implement UI refactor (QTabWidget).
+[] 3. Develop `src/analysis/needle.py` (+ unit tests).
+[] 4. Develop `src/analysis/drop.py` (+ unit tests).
+[] 5. Integrate overlays into GUI controller.
+[] 6. Update README & docs.
+[] 7. Verify acceptance criteria, open PR, request review.
 
 ---
 
