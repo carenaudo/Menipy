@@ -212,6 +212,11 @@ def detect_sessile_droplet(
     _, mask = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8), iterations=2)
 
+    try:
+        base = detect_droplet(frame, roi, px_to_mm)
+    except ValueError:
+        base = None
+
     edges = cv2.Canny(mask, 50, 150)
     min_len = int(0.6 * w)
     lines = cv2.HoughLinesP(edges, 1, np.pi / 180, threshold=30, minLineLength=min_len, maxLineGap=5)
@@ -336,6 +341,11 @@ def detect_pendant_droplet(
         mask = thresh if area_a < area_b else inv
 
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8), iterations=2)
+    try:
+        base = detect_droplet(frame, roi, px_to_mm)
+    except ValueError:
+        base = None
+
 
     edges = cv2.Canny(mask, 50, 150)
     ys, xs = np.nonzero(edges)
@@ -386,6 +396,10 @@ def detect_pendant_droplet(
     width_px = contact_right[0] - contact_left[0]
     r_max_mm = 0.5 * width_px * px_to_mm
     projected_area_mm2 = float(np.count_nonzero(mask) * (px_to_mm ** 2))
+    if base is not None:
+        cnt = base.contour_px
+        r_max_mm = base.r_max_mm
+        projected_area_mm2 = base.projected_area_mm2
 
     return PendantDroplet(
         contour_px=cnt,

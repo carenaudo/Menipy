@@ -248,3 +248,6 @@ structure and GUI behaviour. All tests pass.
 **Task:** Implement robust pendant drop detection and add a GUI selector for detection mode.
 
 **Summary:** Added a `PendantDroplet` dataclass with a corresponding `detect_pendant_droplet` function that fits the needle line using RANSAC and extracts geometric metrics from the silhouette. The parameter panel now includes a "Detection Mode" combo box allowing users to choose between sessile and pendant processing. Updated the main window logic to call the selected detector and display the resulting mode. A unit test validates the pendant detector on synthetic data. All tests pass.
+\n## Entry 41 - Pendant detector uses base silhouette
+**Task:** Combine original silhouette detection with pendant drop metrics.
+**Summary:** `detect_pendant_droplet` now calls `detect_droplet` to reuse its contour and area calculations when possible, falling back to the local mask if it fails. Unit tests still pass.
