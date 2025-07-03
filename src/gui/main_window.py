@@ -58,6 +58,12 @@ from ..models.properties import (
     contact_angle_from_mask,
 )
 from ..models.geometry import fit_circle
+from ..analysis import (
+    detect_vertical_edges,
+    extract_external_contour,
+    compute_drop_metrics,
+)
+from .overlay import draw_drop_overlay
 
 
 class MainWindow(QMainWindow):
@@ -121,6 +127,16 @@ class MainWindow(QMainWindow):
         self.analysis_panel = DropAnalysisPanel()
         self.tabs.addTab(self.analysis_panel, "Drop Analysis")
 
+        # Drop analysis button connections
+        self.analysis_panel.needle_region_button.clicked.connect(
+            lambda: self.set_needle_mode(True)
+        )
+        self.analysis_panel.drop_region_button.clicked.connect(
+            lambda: self.set_drop_mode(True)
+        )
+        self.analysis_panel.detect_needle_button.clicked.connect(self.detect_needle)
+        self.analysis_panel.analyze_button.clicked.connect(self.analyze_drop_image)
+
         self.setCentralWidget(splitter)
 
         # Menu actions
@@ -158,6 +174,20 @@ class MainWindow(QMainWindow):
         self.last_mask = None
         self.mask_offset = (0, 0)
         self.model_item = None
+
+        # Drop analysis state
+        self.needle_rect_item = None
+        self.needle_rect = None
+        self._needle_start = None
+        self.drop_rect_item = None
+        self.drop_rect = None
+        self._drop_start = None
+        self.needle_axis_item = None
+        self.drop_contour_item = None
+        self.drop_axis_item = None
+        self.diameter_item = None
+        self.apex_dot_item = None
+        self.px_per_mm_drop = 0.0
 
         self.parameter_panel.calibration_mode.toggled.connect(
             self.set_calibration_mode
@@ -404,6 +434,86 @@ class MainWindow(QMainWindow):
         data = {**self.parameter_panel.values(), **self.metrics_panel.values()}
         pd.DataFrame([data]).to_csv(path, index=False)
 
+    # --- Drop analysis processing -------------------------------------------
+
+    def detect_needle(self) -> None:
+        """Detect the needle axis inside the selected region."""
+        if getattr(self, "image", None) is None or self.needle_rect is None:
+            return
+        x1, y1, x2, y2 = map(int, self.needle_rect)
+        roi = self.image[y1:y2, x1:x2]
+        try:
+            top, bottom, length_px = detect_vertical_edges(roi)
+        except ValueError as exc:
+            QMessageBox.warning(self, "Needle Detection", str(exc))
+            return
+        self.px_per_mm_drop = length_px / max(self.analysis_panel.needle_length.value(), 1e-6)
+        self.analysis_panel.set_metrics(scale=self.px_per_mm_drop)
+        axis = (
+            (top[0] + x1, top[1] + y1),
+            (bottom[0] + x1, bottom[1] + y1),
+        )
+        if self.needle_axis_item is not None:
+            self.graphics_scene.removeItem(self.needle_axis_item)
+        pen = QPen(QColor("yellow"))
+        pen.setWidth(2)
+        self.needle_axis_item = self.graphics_scene.addLine(
+            axis[0][0], axis[0][1], axis[1][0], axis[1][1], pen
+        )
+
+    def analyze_drop_image(self) -> None:
+        """Analyze the drop region and draw overlays."""
+        if (
+            getattr(self, "image", None) is None
+            or self.drop_rect is None
+            or self.px_per_mm_drop <= 0
+        ):
+            return
+        x1, y1, x2, y2 = map(int, self.drop_rect)
+        roi = self.image[y1:y2, x1:x2]
+        try:
+            contour = extract_external_contour(roi)
+        except ValueError as exc:
+            QMessageBox.warning(self, "Drop Analysis", str(exc))
+            return
+        contour += np.array([x1, y1])
+        mode = self.analysis_panel.method_combo.currentText()
+        metrics = compute_drop_metrics(contour.astype(float), self.px_per_mm_drop, mode)
+        self.analysis_panel.set_metrics(
+            height=metrics["height_mm"],
+            diameter=metrics["diameter_mm"],
+            volume=metrics["volume_uL"] if metrics["volume_uL"] is not None else 0.0,
+            angle=metrics["contact_angle_deg"],
+            ift=metrics["ift_mN_m"] if metrics["ift_mN_m"] is not None else 0.0,
+            wo=metrics["wo"],
+        )
+        x_min = int(contour[:, 0].min())
+        x_max = int(contour[:, 0].max())
+        y_min = int(contour[:, 1].min())
+        y_max = int(contour[:, 1].max())
+        diameter_line = ((x_min, metrics["apex"][1]), (x_max, metrics["apex"][1]))
+        axis_line = (
+            metrics["apex"],
+            (metrics["apex"][0], y_min if mode == "pendant" else y_max),
+        )
+        if self.drop_contour_item is not None:
+            self.graphics_scene.removeItem(self.drop_contour_item)
+        if self.diameter_item is not None:
+            self.graphics_scene.removeItem(self.diameter_item)
+        if self.drop_axis_item is not None:
+            self.graphics_scene.removeItem(self.drop_axis_item)
+        if self.apex_dot_item is not None:
+            self.graphics_scene.removeItem(self.apex_dot_item)
+
+        overlay = draw_drop_overlay(
+            self.image,
+            contour,
+            diameter_line=diameter_line,
+            axis_line=axis_line,
+            apex=metrics["apex"],
+        )
+        self.drop_contour_item = self.graphics_scene.addPixmap(overlay)
+
     # --- Calibration drawing handling -------------------------------------------------
 
     def set_calibration_mode(self, enabled: bool) -> None:
@@ -557,6 +667,112 @@ class MainWindow(QMainWindow):
             rect.bottom(),
         )
         self._roi_start = None
+        event.accept()
+
+    # --- Drop analysis drawing modes ---------------------------------------
+
+    def set_needle_mode(self, enabled: bool) -> None:
+        """Enable rectangle drawing for the needle ROI."""
+        if enabled:
+            self.graphics_view.setCursor(Qt.CrossCursor)
+            self.graphics_view.mousePressEvent = self._needle_press
+            self.graphics_view.mouseMoveEvent = self._needle_move
+            self.graphics_view.mouseReleaseEvent = self._needle_release
+        else:
+            self.graphics_view.setCursor(Qt.ArrowCursor)
+            self.graphics_view.mousePressEvent = self._default_press
+            self.graphics_view.mouseMoveEvent = self._default_move
+            self.graphics_view.mouseReleaseEvent = self._default_release
+            if self.needle_rect_item is not None:
+                self.graphics_scene.removeItem(self.needle_rect_item)
+                self.needle_rect_item = None
+            self._needle_start = None
+
+    def _needle_press(self, event):
+        pos = self.graphics_view.mapToScene(event.pos())
+        self._needle_start = pos
+        if self.needle_rect_item is not None:
+            self.graphics_scene.removeItem(self.needle_rect_item)
+        pen = QPen(QColor("blue"))
+        pen.setWidth(2)
+        rect = QRectF(pos, pos)
+        self.needle_rect_item = self.graphics_scene.addRect(rect, pen)
+        event.accept()
+
+    def _needle_move(self, event):
+        if self._needle_start is None or self.needle_rect_item is None:
+            return
+        pos = self.graphics_view.mapToScene(event.pos())
+        rect = QRectF(self._needle_start, pos).normalized()
+        self.needle_rect_item.setRect(rect)
+        event.accept()
+
+    def _needle_release(self, event):
+        if self._needle_start is None or self.needle_rect_item is None:
+            return
+        pos = self.graphics_view.mapToScene(event.pos())
+        rect = QRectF(self._needle_start, pos).normalized()
+        self.needle_rect_item.setRect(rect)
+        self.needle_rect = (
+            rect.left(),
+            rect.top(),
+            rect.right(),
+            rect.bottom(),
+        )
+        self._needle_start = None
+        self.set_needle_mode(False)
+        event.accept()
+
+    def set_drop_mode(self, enabled: bool) -> None:
+        """Enable rectangle drawing for the drop ROI."""
+        if enabled:
+            self.graphics_view.setCursor(Qt.CrossCursor)
+            self.graphics_view.mousePressEvent = self._drop_press
+            self.graphics_view.mouseMoveEvent = self._drop_move
+            self.graphics_view.mouseReleaseEvent = self._drop_release
+        else:
+            self.graphics_view.setCursor(Qt.ArrowCursor)
+            self.graphics_view.mousePressEvent = self._default_press
+            self.graphics_view.mouseMoveEvent = self._default_move
+            self.graphics_view.mouseReleaseEvent = self._default_release
+            if self.drop_rect_item is not None:
+                self.graphics_scene.removeItem(self.drop_rect_item)
+                self.drop_rect_item = None
+            self._drop_start = None
+
+    def _drop_press(self, event):
+        pos = self.graphics_view.mapToScene(event.pos())
+        self._drop_start = pos
+        if self.drop_rect_item is not None:
+            self.graphics_scene.removeItem(self.drop_rect_item)
+        pen = QPen(QColor("green"))
+        pen.setWidth(2)
+        rect = QRectF(pos, pos)
+        self.drop_rect_item = self.graphics_scene.addRect(rect, pen)
+        event.accept()
+
+    def _drop_move(self, event):
+        if self._drop_start is None or self.drop_rect_item is None:
+            return
+        pos = self.graphics_view.mapToScene(event.pos())
+        rect = QRectF(self._drop_start, pos).normalized()
+        self.drop_rect_item.setRect(rect)
+        event.accept()
+
+    def _drop_release(self, event):
+        if self._drop_start is None or self.drop_rect_item is None:
+            return
+        pos = self.graphics_view.mapToScene(event.pos())
+        rect = QRectF(self._drop_start, pos).normalized()
+        self.drop_rect_item.setRect(rect)
+        self.drop_rect = (
+            rect.left(),
+            rect.top(),
+            rect.right(),
+            rect.bottom(),
+        )
+        self._drop_start = None
+        self.set_drop_mode(False)
         event.accept()
 
     def open_calibration(self) -> None:

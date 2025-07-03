@@ -8,6 +8,7 @@ from .controls import (
     MetricsPanel,
     DropAnalysisPanel,
 )
+from .overlay import draw_drop_overlay
 
 __all__ = [
     "MainWindow",
@@ -16,4 +17,5 @@ __all__ = [
     "ParameterPanel",
     "MetricsPanel",
     "DropAnalysisPanel",
+    "draw_drop_overlay",
 ]
