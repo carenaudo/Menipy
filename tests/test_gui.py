@@ -30,6 +30,18 @@ def test_main_window_instantiation():
     app.quit()
 
 
+def test_tab_widget_setup():
+    if QtWidgets is None:
+        pytest.skip("PySide6 not available")
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    window = MainWindow()
+    assert window.tabs.count() == 2
+    assert window.tabs.tabText(0) == "Classic"
+    assert window.tabs.tabText(1) == "Drop Analysis"
+    window.close()
+    app.quit()
+
+
 def test_load_image_retains_size(tmp_path):
     if QtWidgets is None:
         pytest.skip("PySide6 not available")
