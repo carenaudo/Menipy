@@ -154,6 +154,17 @@ def compute_drop_metrics(contour: np.ndarray, px_per_mm: float, mode: str) -> di
     )
     volume_uL = volume_from_contour(contour_mm)
 
+    print(f"height_mm={height_mm}")
+    print(f"diameter_mm={diameter_mm}")
+    print(f"apex={apex}")
+    print(f"radius_apex_mm={radius_apex_mm}")
+    print(f"beta={beta}")
+    print(f"gamma_mN_m={gamma * 1e3}")
+    print(f"Bo={bo}")
+    print(f"volume_uL={volume_uL}")
+    print(f"contact_angle_deg={angle}")
+    print(f"ift_mN_m={ift}")
+
     xs_contact = horizontal_intersections(contour, y_min)
     contact_line: tuple[tuple[int, int], tuple[int, int]] | None = None
     if xs_contact.size >= 2:
