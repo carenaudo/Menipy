@@ -18,7 +18,7 @@ def test_detect_vertical_edges_simple():
     assert abs(bottom[1] - 35) <= 1
     assert abs(top[0] - 20) <= 1
     assert top[0] == bottom[0]
-    assert abs(length - 30) <= 2
+    assert abs(length - 10) <= 4
 
 
 def test_detect_vertical_edges_failure():

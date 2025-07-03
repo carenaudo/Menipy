@@ -54,8 +54,10 @@ def detect_vertical_edges(img_roi: np.ndarray) -> tuple[tuple[int, int], tuple[i
     if len(xs) < 2:
         raise ValueError("Needle edges not detected")
 
-    axis_x = int(round(sum([min(xs), max(xs)]) / 2))
+    left_x = min(xs)
+    right_x = max(xs)
+    axis_x = int(round((left_x + right_x) / 2))
     top_pt = (axis_x, int(y_top))
     bottom_pt = (axis_x, int(y_bottom))
-    length_px = float(np.hypot(bottom_pt[0] - top_pt[0], bottom_pt[1] - top_pt[1]))
+    length_px = float(right_x - left_x)
     return top_pt, bottom_pt, length_px
