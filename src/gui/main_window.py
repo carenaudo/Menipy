@@ -226,6 +226,11 @@ class MainWindow(QMainWindow):
             )
         pixmap = QPixmap.fromImage(rgb)
         self.graphics_scene.clear()
+        self.needle_rect_item = None
+        self.drop_rect_item = None
+        self.needle_rect = None
+        self.drop_rect = None
+        self.analysis_panel.set_regions(needle=None, drop=None)
         self.pixmap_item = self.graphics_scene.addPixmap(pixmap)
         self.graphics_view.resetTransform()
 
@@ -683,9 +688,6 @@ class MainWindow(QMainWindow):
             self.graphics_view.mousePressEvent = self._default_press
             self.graphics_view.mouseMoveEvent = self._default_move
             self.graphics_view.mouseReleaseEvent = self._default_release
-            if self.needle_rect_item is not None:
-                self.graphics_scene.removeItem(self.needle_rect_item)
-                self.needle_rect_item = None
             self._needle_start = None
 
     def _needle_press(self, event):
@@ -719,6 +721,7 @@ class MainWindow(QMainWindow):
             rect.right(),
             rect.bottom(),
         )
+        self.analysis_panel.set_regions(needle=self.needle_rect)
         self._needle_start = None
         self.set_needle_mode(False)
         event.accept()
@@ -735,9 +738,6 @@ class MainWindow(QMainWindow):
             self.graphics_view.mousePressEvent = self._default_press
             self.graphics_view.mouseMoveEvent = self._default_move
             self.graphics_view.mouseReleaseEvent = self._default_release
-            if self.drop_rect_item is not None:
-                self.graphics_scene.removeItem(self.drop_rect_item)
-                self.drop_rect_item = None
             self._drop_start = None
 
     def _drop_press(self, event):
@@ -771,6 +771,7 @@ class MainWindow(QMainWindow):
             rect.right(),
             rect.bottom(),
         )
+        self.analysis_panel.set_regions(drop=self.drop_rect)
         self._drop_start = None
         self.set_drop_mode(False)
         event.accept()

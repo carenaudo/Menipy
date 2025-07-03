@@ -220,6 +220,11 @@ class DropAnalysisPanel(QWidget):
         self.analyze_button = QPushButton("Analyze Image")
         layout.addRow(self.analyze_button)
 
+        self.needle_coords = QLabel("")
+        layout.addRow("Needle ROI", self.needle_coords)
+        self.drop_coords = QLabel("")
+        layout.addRow("Drop ROI", self.drop_coords)
+
         self.scale_label = QLabel("0.0")
         layout.addRow("Scale (px/mm)", self.scale_label)
         self.height_label = QLabel("0.0")
@@ -271,4 +276,22 @@ class DropAnalysisPanel(QWidget):
             "angle": self.angle_label.text(),
             "ift": self.ift_label.text(),
             "wo": self.wo_label.text(),
+        }
+
+    def set_regions(
+        self, *, needle: tuple[float, float, float, float] | None = None, drop: tuple[float, float, float, float] | None = None
+    ) -> None:
+        """Display saved ROI coordinates."""
+        if needle is not None:
+            n_str = ",".join(f"{int(v)}" for v in needle)
+            self.needle_coords.setText(n_str)
+        if drop is not None:
+            d_str = ",".join(f"{int(v)}" for v in drop)
+            self.drop_coords.setText(d_str)
+
+    def regions(self) -> dict[str, str]:
+        """Return stored ROI coordinates as text."""
+        return {
+            "needle": self.needle_coords.text(),
+            "drop": self.drop_coords.text(),
         }
