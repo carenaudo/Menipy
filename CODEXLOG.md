@@ -322,3 +322,10 @@ tests added for these features.
 **Task:** Add surface tension calculation methods and integrate them into drop analysis.
 
 **Summary:** Introduced `surface_tension.py` with Jennings–Pallas form factor, Young–Laplace surface tension, Bond number and contour based volume. `compute_drop_metrics` now outputs `gamma_mN_m`, `beta`, `Bo` and uses the new volume estimator. A minimal Sphinx config generates `docs/pendant_drop_methods.md` from these docstrings. Added unit tests for the new functions.
+
+## Entry 53 - Printing drop metrics for testing
+
+**Task:** Print each derived drop metric to the terminal for testing.
+
+**Summary:** Added print statements in `compute_drop_metrics` so height, diameter, apex, radius, beta, surface tension, Bond number, volume, contact angle and IFT values are displayed whenever metrics are computed. Existing tests continue to pass.
+
