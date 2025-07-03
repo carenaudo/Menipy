@@ -352,3 +352,196 @@ class DropAnalysisPanel(QWidget):
             "needle": self.needle_coords.text(),
             "drop": self.drop_coords.text(),
         }
+
+
+class CalibrationTab(QWidget):
+    """Inputs and ROI controls for calibration and fluid properties."""
+
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+        layout = QFormLayout(self)
+
+        self.needle_length = QDoubleSpinBox()
+        self.needle_length.setRange(0.1, 1000.0)
+        self.needle_length.setValue(1.0)
+        self.needle_length.setSuffix(" mm")
+        layout.addRow("Needle length", self.needle_length)
+
+        self.needle_region_button = QPushButton("Needle Region")
+        layout.addRow(self.needle_region_button)
+        self.needle_coords = QLabel("")
+        layout.addRow("Needle ROI", self.needle_coords)
+
+        self.detect_needle_button = QPushButton("Detect Needle")
+        layout.addRow(self.detect_needle_button)
+
+        self.scale_label = QLabel("0.0")
+        layout.addRow("Scale (px/mm)", self.scale_label)
+
+        self.drop_region_button = QPushButton("Region of Interest")
+        layout.addRow(self.drop_region_button)
+        self.drop_coords = QLabel("")
+        layout.addRow("Drop ROI", self.drop_coords)
+
+        self.air_density = QDoubleSpinBox()
+        self.air_density.setRange(0.0, 5000.0)
+        self.air_density.setValue(1.2)
+        self.air_density.setSuffix(" kg/m³")
+        layout.addRow("Continuous phase (kg/m³)", self.air_density)
+
+        self.liquid_density = QDoubleSpinBox()
+        self.liquid_density.setRange(0.0, 5000.0)
+        self.liquid_density.setValue(1000.0)
+        self.liquid_density.setSuffix(" kg/m³")
+        layout.addRow("Drop phase (kg/m³)", self.liquid_density)
+
+    def set_metrics(self, *, scale: float | None = None) -> None:
+        if scale is not None:
+            self.scale_label.setText(f"{scale:.2f}")
+
+    def set_regions(
+        self,
+        *,
+        needle: tuple[float, float, float, float] | None = None,
+        drop: tuple[float, float, float, float] | None = None,
+    ) -> None:
+        if needle is not None:
+            n_str = ",".join(f"{int(v)}" for v in needle)
+            self.needle_coords.setText(n_str)
+        if drop is not None:
+            d_str = ",".join(f"{int(v)}" for v in drop)
+            self.drop_coords.setText(d_str)
+
+    def regions(self) -> dict[str, str]:
+        return {
+            "needle": self.needle_coords.text(),
+            "drop": self.drop_coords.text(),
+        }
+
+
+class AnalysisTab(QWidget):
+    """Analysis results and controls for a drop method."""
+
+    def __init__(self, show_contact_angle: bool = False, parent=None) -> None:
+        super().__init__(parent)
+        self.show_contact_angle = show_contact_angle
+        layout = QFormLayout(self)
+
+        self.analyze_button = QPushButton("Analyze")
+        layout.addRow(self.analyze_button)
+
+        sep1 = QFrame()
+        sep1.setFrameShape(QFrame.HLine)
+        layout.addRow(sep1)
+
+        self.height_label = QLabel("0.0")
+        layout.addRow("Height (mm)", self.height_label)
+        self.diameter_label = QLabel("0.0")
+        layout.addRow("Max diameter (mm)", self.diameter_label)
+        self.apex_label = QLabel("(0,0)")
+        layout.addRow("Apex (x,y)", self.apex_label)
+        self.radius_apex_label = QLabel("0.0")
+        layout.addRow("Apex radius (mm)", self.radius_apex_label)
+
+        sep2 = QFrame()
+        sep2.setFrameShape(QFrame.HLine)
+        layout.addRow(sep2)
+
+        if show_contact_angle:
+            self.angle_label = QLabel("0.0")
+            layout.addRow("Contact angle (º)", self.angle_label)
+        else:
+            self.angle_label = None
+
+        self.volume_label = QLabel("0.0")
+        layout.addRow("Volume (uL)", self.volume_label)
+        self.asurf_label = QLabel("0.0")
+        layout.addRow("Surface Area (mm²)", self.asurf_label)
+        self.gamma_label = QLabel("0.0")
+        layout.addRow("Surface Tension (mN/m)", self.gamma_label)
+        self.wo_label = QLabel("0.0")
+        layout.addRow("Wo Number", self.wo_label)
+        self.s1_label = QLabel("0.0")
+        layout.addRow("S1", self.s1_label)
+        self.bo_label = QLabel("0.0")
+        layout.addRow("Bond Number", self.bo_label)
+        self.aproj_label = QLabel("0.0")
+        layout.addRow("Aproj (mm²)", self.aproj_label)
+        self.vmax_label = QLabel("0.0")
+        layout.addRow("Vmax (uL)", self.vmax_label)
+        self.wapp_label = QLabel("0.0")
+        layout.addRow("W_app (mN)", self.wapp_label)
+        self.kappa0_label = QLabel("0.0")
+        layout.addRow("ko (1/m)", self.kappa0_label)
+
+    def set_metrics(
+        self,
+        *,
+        height: float | None = None,
+        diameter: float | None = None,
+        apex: tuple[int, int] | None = None,
+        radius: float | None = None,
+        volume: float | None = None,
+        angle: float | None = None,
+        gamma: float | None = None,
+        s1: float | None = None,
+        bo: float | None = None,
+        wo: float | None = None,
+        aproj: float | None = None,
+        asurf: float | None = None,
+        vmax: float | None = None,
+        wapp: float | None = None,
+        kappa0: float | None = None,
+    ) -> None:
+        if height is not None:
+            self.height_label.setText(f"{height:.2f}")
+        if diameter is not None:
+            self.diameter_label.setText(f"{diameter:.2f}")
+        if apex is not None:
+            self.apex_label.setText(f"({apex[0]},{apex[1]})")
+        if radius is not None:
+            self.radius_apex_label.setText(f"{radius:.2f}")
+        if volume is not None:
+            self.volume_label.setText(f"{volume:.2f}")
+        if angle is not None and self.angle_label is not None:
+            self.angle_label.setText(f"{angle:.2f}")
+        if gamma is not None:
+            self.gamma_label.setText(f"{gamma:.2f}")
+        if s1 is not None:
+            self.s1_label.setText(f"{s1:.2f}")
+        if bo is not None:
+            self.bo_label.setText(f"{bo:.2f}")
+        if wo is not None:
+            self.wo_label.setText(f"{wo:.2f}")
+        if aproj is not None:
+            self.aproj_label.setText(f"{aproj:.2f}")
+        if asurf is not None:
+            self.asurf_label.setText(f"{asurf:.2f}")
+        if vmax is not None:
+            self.vmax_label.setText(f"{vmax:.2f}")
+        if wapp is not None:
+            self.wapp_label.setText(f"{wapp:.2f}")
+        if kappa0 is not None:
+            self.kappa0_label.setText(f"{kappa0:.2f}")
+
+    def metrics(self) -> dict[str, str]:
+        data = {
+            "height": self.height_label.text(),
+            "diameter": self.diameter_label.text(),
+            "apex": self.apex_label.text(),
+            "radius": self.radius_apex_label.text(),
+            "volume": self.volume_label.text(),
+            "gamma": self.gamma_label.text(),
+            "s1": self.s1_label.text(),
+            "bo": self.bo_label.text(),
+            "wo": self.wo_label.text(),
+            "aproj": self.aproj_label.text(),
+            "asurf": self.asurf_label.text(),
+            "vmax": self.vmax_label.text(),
+            "wapp": self.wapp_label.text(),
+            "kappa0": self.kappa0_label.text(),
+        }
+        if self.angle_label is not None:
+            data["angle"] = self.angle_label.text()
+        return data
+

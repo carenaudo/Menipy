@@ -40,9 +40,11 @@ def test_tab_widget_setup():
         pytest.skip("PySide6 not available")
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     window = MainWindow()
-    assert window.tabs.count() == 2
+    assert window.tabs.count() == 4
     assert window.tabs.tabText(0) == "Classic"
-    assert window.tabs.tabText(1) == "Drop Analysis"
+    assert window.tabs.tabText(1) == "Calibration"
+    assert window.tabs.tabText(2) == "Pendant drop"
+    assert window.tabs.tabText(3) == "Contact angle"
     window.close()
     app.quit()
 
@@ -486,7 +488,7 @@ def test_drop_analysis_workflow(tmp_path):
     assert window.px_per_mm_drop > 0
     window.drop_rect = (5, 20, 25, 39)
     window.analyze_drop_image()
-    metrics = window.analysis_panel.metrics()
+    metrics = window.pendant_tab.metrics()
     assert float(metrics["height"]) > 0
     assert window.drop_contour_item is not None
     assert window.drop_rect_item is not None
@@ -510,16 +512,16 @@ def test_drop_regions_saved(tmp_path):
     window.load_image(path)
 
     window.needle_rect = (1, 2, 3, 4)
-    window.analysis_panel.set_regions(needle=window.needle_rect)
+    window.calibration_tab.set_regions(needle=window.needle_rect)
     window.drop_rect = (2, 3, 4, 5)
-    window.analysis_panel.set_regions(drop=window.drop_rect)
+    window.calibration_tab.set_regions(drop=window.drop_rect)
 
-    assert window.analysis_panel.regions()["needle"] == "1,2,3,4"
-    assert window.analysis_panel.regions()["drop"] == "2,3,4,5"
+    assert window.calibration_tab.regions()["needle"] == "1,2,3,4"
+    assert window.calibration_tab.regions()["drop"] == "2,3,4,5"
 
     window.load_image(path)
-    assert window.analysis_panel.regions()["needle"] == ""
-    assert window.analysis_panel.regions()["drop"] == ""
+    assert window.calibration_tab.regions()["needle"] == ""
+    assert window.calibration_tab.regions()["drop"] == ""
 
     window.close()
     app.quit()
