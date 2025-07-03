@@ -7,7 +7,8 @@ from .controls import (
     ZoomControl,
     ParameterPanel,
     MetricsPanel,
-    DropAnalysisPanel,
+    CalibrationTab,
+    AnalysisTab,
 )
 from .overlay import draw_drop_overlay
 
@@ -18,6 +19,7 @@ __all__ = [
     "ZoomControl",
     "ParameterPanel",
     "MetricsPanel",
-    "DropAnalysisPanel",
+    "CalibrationTab",
+    "AnalysisTab",
     "draw_drop_overlay",
 ]

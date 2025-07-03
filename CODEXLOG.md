@@ -335,3 +335,9 @@ tests added for these features.
 
 **Summary:** Updated `compute_drop_metrics` to return `s1` along with beta and Bond number. `DropAnalysisPanel` now displays surface tension from `surface_tension()`, plus beta, s1 and Bond number. Tests updated for s1 and pass.
 
+## Entry 55 - GUI tab reorganization
+
+**Task:** Split Drop Analysis controls across Calibration, Pendant drop and Contact angle tabs with fluid property inputs and per-tab analysis mode.
+
+**Summary:** Introduced `CalibrationTab` for calibration settings and `AnalysisTab` for displaying pendant or contact-angle results. `MainWindow` now builds these tabs, selects the method when an Analyze button is pressed and reuses existing drop analysis logic. Tests expect four tabs and read metrics from the pendant tab. All tests pass.
+
