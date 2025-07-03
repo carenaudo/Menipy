@@ -263,3 +263,21 @@ structure and GUI behaviour. All tests pass.
 **Task:** Implement UI refactor using `QTabWidget`.
 
 **Summary:** Main window now contains a tab widget with "Classic" and "Drop Analysis" tabs. Added `DropAnalysisPanel` widget housing workflow controls and result displays. Updated exports and tests to check tab creation. All tests pass.
+
+## Entry 44 - Needle detection module
+
+**Task:** Develop `src/analysis/needle.py` with automated needle edge detection and add unit tests.
+
+**Summary:** Implemented `detect_vertical_edges` to locate the needle axis using Canny and Hough transforms. Exported it through `analysis.__init__` and created `tests/test_analysis.py` covering successful detection and failure cases. All tests pass.
+
+## Entry 45 - Drop contour metrics
+
+**Task:** Implement `src/analysis/drop.py` providing droplet contour extraction and metric calculations with tests.
+
+**Summary:** Added `extract_external_contour` and `compute_drop_metrics` to get the outer droplet boundary and basic geometry. Exported these APIs and expanded `tests/test_analysis.py` with new cases for contour extraction and metric computation. All tests pass.
+
+## Entry 46 - GUI drop analysis integration
+
+**Task:** Integrate drop analysis overlays into the GUI controller.
+
+**Summary:** Added `gui/overlay.py` with `draw_drop_overlay` helper. Updated `MainWindow` to handle needle and drop ROI drawing, call analysis functions, and display overlays and metrics in `DropAnalysisPanel`. Connected workflow buttons and added tests for the overlay function and drop analysis workflow. All tests pass.

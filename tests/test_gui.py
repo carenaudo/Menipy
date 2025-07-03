@@ -3,6 +3,11 @@
 import pytest
 
 try:
+    from src.gui import draw_drop_overlay
+except Exception:
+    draw_drop_overlay = None
+
+try:
     from src.gui import MainWindow
     from PySide6 import QtWidgets
 except Exception as exc:
@@ -446,3 +451,47 @@ def test_save_csv(tmp_path):
     window.close()
     app.quit()
 
+
+
+def test_draw_drop_overlay_pixmap():
+    if QtWidgets is None or draw_drop_overlay is None:
+        pytest.skip("PySide6 not available")
+    import numpy as np
+    contour = np.array([[5, 5], [15, 5], [15, 15], [5, 15]], dtype=float)
+    img = np.zeros((20, 20, 3), dtype=np.uint8)
+    pix = draw_drop_overlay(
+        img,
+        contour,
+        diameter_line=((5, 10), (15, 10)),
+        axis_line=((10, 5), (10, 15)),
+        apex=(10, 10),
+    )
+    assert pix.width() == 20 and pix.height() == 20
+
+
+def test_drop_analysis_workflow(tmp_path):
+    if QtWidgets is None:
+        pytest.skip("PySide6 not available")
+    import numpy as np
+    import cv2
+
+    img = np.zeros((40, 30), dtype=np.uint8)
+    cv2.line(img, (14, 5), (14, 35), 0, 2)
+    cv2.line(img, (16, 5), (16, 35), 0, 2)
+    cv2.circle(img, (15, 30), 8, 255, -1)
+    path = tmp_path / "drop.png"
+    cv2.imwrite(str(path), img)
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    window = MainWindow()
+    window.load_image(path)
+    window.needle_rect = (12, 5, 18, 35)
+    window.detect_needle()
+    assert window.px_per_mm_drop > 0
+    window.drop_rect = (5, 20, 25, 39)
+    window.analyze_drop_image()
+    metrics = window.analysis_panel.metrics()
+    assert float(metrics["height"]) > 0
+    assert window.drop_contour_item is not None
+    window.close()
+    app.quit()
