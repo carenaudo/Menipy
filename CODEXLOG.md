@@ -236,3 +236,9 @@ line segment. The GUI now calls `classify_drop_mode` after detection and shows
 the resulting mode in the metrics panel. Added a label to display this value and
 included it when exporting CSV data. Adjusted unit tests for the updated data
 structure and GUI behaviour. All tests pass.
+
+## Entry 39 - Sessile Droplet Detection
+
+**Task:** Implement a robust geometric detector for sessile drops and expose it through the processing package.
+
+**Summary:** Added `SessileDroplet` dataclass and `detect_sessile_droplet` function implementing substrate line fitting via Hough transform and RANSAC. Updated `__init__` exports. No existing functionality was modified. All tests pass.
