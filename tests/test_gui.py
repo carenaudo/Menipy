@@ -495,3 +495,34 @@ def test_drop_analysis_workflow(tmp_path):
     assert window.drop_contour_item is not None
     window.close()
     app.quit()
+
+
+def test_drop_regions_saved(tmp_path):
+    if QtWidgets is None:
+        pytest.skip("PySide6 not available")
+
+    import numpy as np
+    import cv2
+
+    img = np.zeros((10, 10), dtype=np.uint8)
+    path = tmp_path / "img.png"
+    cv2.imwrite(str(path), img)
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    window = MainWindow()
+    window.load_image(path)
+
+    window.needle_rect = (1, 2, 3, 4)
+    window.analysis_panel.set_regions(needle=window.needle_rect)
+    window.drop_rect = (2, 3, 4, 5)
+    window.analysis_panel.set_regions(drop=window.drop_rect)
+
+    assert window.analysis_panel.regions()["needle"] == "1,2,3,4"
+    assert window.analysis_panel.regions()["drop"] == "2,3,4,5"
+
+    window.load_image(path)
+    assert window.analysis_panel.regions()["needle"] == ""
+    assert window.analysis_panel.regions()["drop"] == ""
+
+    window.close()
+    app.quit()

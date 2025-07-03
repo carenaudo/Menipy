@@ -281,3 +281,9 @@ structure and GUI behaviour. All tests pass.
 **Task:** Integrate drop analysis overlays into the GUI controller.
 
 **Summary:** Added `gui/overlay.py` with `draw_drop_overlay` helper. Updated `MainWindow` to handle needle and drop ROI drawing, call analysis functions, and display overlays and metrics in `DropAnalysisPanel`. Connected workflow buttons and added tests for the overlay function and drop analysis workflow. All tests pass.
+
+## Entry 47 - Persist drop analysis regions
+
+**Task:** Ensure the needle and drop regions drawn in the Drop Analysis tab remain visible and are stored for later use.
+
+**Summary:** Updated `MainWindow` so disabling drawing mode no longer removes ROI rectangles. Added coordinate labels in `DropAnalysisPanel` with `set_regions`/`regions` methods. Rectangles are cleared when a new image loads. Introduced a new test verifying region persistence and reset. All tests pass.
