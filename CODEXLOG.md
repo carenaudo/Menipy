@@ -299,3 +299,14 @@ structure and GUI behaviour. All tests pass.
 **Task:** Update README and documentation.
 
 **Summary:** Added `doc/drop_analysis.md` detailing the workflow and algorithms for the new Drop Analysis tab. README now references the new document and describes the tab features.
+
+## Entry 50 - Drop analysis missing features
+
+**Task:** Implement new metrics and overlays for drop analysis.
+
+**Summary:** Added `_max_horizontal_diameter` in `analysis/drop.py` to locate the
+widest slice and contact line. `compute_drop_metrics` now returns the maximum
+horizontal diameter coordinates, apex radius, and optional contact line.
+`draw_drop_overlay` draws this line and the contact line. GUI panels show the
+"Radius–Apex" metric and render the new overlays. Documentation updated and unit
+tests added for these features.

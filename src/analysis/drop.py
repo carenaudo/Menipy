@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 
 from ..models import droplet_volume, contact_angle_from_mask, estimate_surface_tension
+from ..models.geometry import horizontal_intersections
 
 
 def extract_external_contour(img_roi: np.ndarray) -> np.ndarray:
@@ -39,6 +40,40 @@ def extract_external_contour(img_roi: np.ndarray) -> np.ndarray:
     return contour
 
 
+def _max_horizontal_diameter(contour: np.ndarray) -> tuple[int, float, int, int]:
+    """Return y-position, width and edge x-coordinates of the widest horizontal slice.
+
+    Parameters
+    ----------
+    contour:
+        External contour points ``(x, y)``.
+
+    Returns
+    -------
+    tuple
+        ``(y, width, x_left, x_right)`` values in pixel units.
+    """
+    x_min = int(np.floor(contour[:, 0].min()))
+    y_min = int(np.floor(contour[:, 1].min()))
+    x_max = int(np.ceil(contour[:, 0].max()))
+    y_max = int(np.ceil(contour[:, 1].max()))
+
+    mask = np.zeros((y_max - y_min + 1, x_max - x_min + 1), dtype=np.uint8)
+    shifted = np.round(contour - [x_min, y_min]).astype(np.int32)
+    cv2.drawContours(mask, [shifted], -1, 255, -1)
+
+    left_edges = np.argmax(mask > 0, axis=1)
+    right_edges = mask.shape[1] - 1 - np.argmax(mask[:, ::-1] > 0, axis=1)
+    widths = right_edges - left_edges + 1
+    widths[mask.sum(axis=1) == 0] = 0
+    i = int(widths.argmax())
+    y = y_min + i
+    width = float(widths[i])
+    x_left = x_min + int(left_edges[i])
+    x_right = x_min + int(right_edges[i])
+    return y, width, x_left, x_right
+
+
 def compute_drop_metrics(contour: np.ndarray, px_per_mm: float, mode: str) -> dict:
     """Return basic geometric metrics for a droplet contour.
 
@@ -74,8 +109,10 @@ def compute_drop_metrics(contour: np.ndarray, px_per_mm: float, mode: str) -> di
     y_min = float(contour[:, 1].min())
     y_max = float(contour[:, 1].max())
 
+    y_diam, diam_px, x_left, x_right = _max_horizontal_diameter(contour)
+
     height_mm = (y_max - y_min) / px_per_mm
-    diameter_mm = (x_max - x_min) / px_per_mm
+    diameter_mm = diam_px / px_per_mm
 
     apex_idx = int(np.argmax(contour[:, 1])) if mode == "pendant" else int(np.argmin(contour[:, 1]))
     apex = (int(round(contour[apex_idx, 0])), int(round(contour[apex_idx, 1])))
@@ -95,6 +132,16 @@ def compute_drop_metrics(contour: np.ndarray, px_per_mm: float, mode: str) -> di
     angle = contact_angle_from_mask(mask)
     ift = estimate_surface_tension(mask, 1.0, 1000.0, px_to_mm=px_to_mm)
 
+    y_apex = float(contour[:, 1].max())
+    radius_apex_mm = (y_apex - y_diam) / px_per_mm
+
+    xs_contact = horizontal_intersections(contour, y_min)
+    contact_line: tuple[tuple[int, int], tuple[int, int]] | None = None
+    if xs_contact.size >= 2:
+        x_c_left = int(round(xs_contact.min()))
+        x_c_right = int(round(xs_contact.max()))
+        contact_line = ((x_c_left, int(round(y_min))), (x_c_right, int(round(y_min))))
+
     return {
         "height_mm": float(height_mm),
         "diameter_mm": float(diameter_mm),
@@ -103,4 +150,8 @@ def compute_drop_metrics(contour: np.ndarray, px_per_mm: float, mode: str) -> di
         "contact_angle_deg": float(angle),
         "ift_mN_m": float(ift) if ift is not None else None,
         "wo": 0.0,
+        "diameter_px": float(diam_px),
+        "diameter_line": ((x_left, y_diam), (x_right, y_diam)),
+        "radius_apex_mm": float(radius_apex_mm),
+        "contact_line": contact_line,
     }

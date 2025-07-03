@@ -494,7 +494,9 @@ class MainWindow(QMainWindow):
             return
         contour += np.array([x1, y1])
         mode = self.analysis_panel.method_combo.currentText()
-        metrics = compute_drop_metrics(contour.astype(float), self.px_per_mm_drop, mode)
+        metrics = compute_drop_metrics(
+            contour.astype(float), self.px_per_mm_drop, mode
+        )
         self.analysis_panel.set_metrics(
             height=metrics["height_mm"],
             diameter=metrics["diameter_mm"],
@@ -502,12 +504,14 @@ class MainWindow(QMainWindow):
             angle=metrics["contact_angle_deg"],
             ift=metrics["ift_mN_m"] if metrics["ift_mN_m"] is not None else 0.0,
             wo=metrics["wo"],
+            radius=metrics["radius_apex_mm"],
         )
-        x_min = int(contour[:, 0].min())
-        x_max = int(contour[:, 0].max())
         y_min = int(contour[:, 1].min())
         y_max = int(contour[:, 1].max())
-        diameter_line = ((x_min, metrics["apex"][1]), (x_max, metrics["apex"][1]))
+        diameter_line = (
+            metrics["diameter_line"][0],
+            metrics["diameter_line"][1],
+        )
         axis_line = (
             metrics["apex"],
             (metrics["apex"][0], y_min if mode == "pendant" else y_max),
@@ -526,6 +530,7 @@ class MainWindow(QMainWindow):
             contour,
             diameter_line=diameter_line,
             axis_line=axis_line,
+            contact_line=metrics.get("contact_line"),
             apex=metrics["apex"],
         )
         self.drop_contour_item = self.graphics_scene.addPixmap(overlay)

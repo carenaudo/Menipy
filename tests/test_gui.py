@@ -464,6 +464,7 @@ def test_draw_drop_overlay_pixmap():
         contour,
         diameter_line=((5, 10), (15, 10)),
         axis_line=((10, 5), (10, 15)),
+        contact_line=((5, 5), (15, 5)),
         apex=(10, 10),
     )
     assert pix.width() == 20 and pix.height() == 20
