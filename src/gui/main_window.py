@@ -183,6 +183,7 @@ class MainWindow(QMainWindow):
         self.drop_rect = None
         self._drop_start = None
         self.needle_axis_item = None
+        self.needle_edge_items = []
         self.drop_contour_item = None
         self.drop_axis_item = None
         self.diameter_item = None
@@ -230,6 +231,8 @@ class MainWindow(QMainWindow):
         self.drop_rect_item = None
         self.needle_rect = None
         self.drop_rect = None
+        self.needle_axis_item = None
+        self.needle_edge_items = []
         self.analysis_panel.set_regions(needle=None, drop=None)
         self.pixmap_item = self.graphics_scene.addPixmap(pixmap)
         self.graphics_view.resetTransform()
@@ -454,17 +457,25 @@ class MainWindow(QMainWindow):
             return
         self.px_per_mm_drop = length_px / max(self.analysis_panel.needle_length.value(), 1e-6)
         self.analysis_panel.set_metrics(scale=self.px_per_mm_drop)
-        axis = (
-            (top[0] + x1, top[1] + y1),
-            (bottom[0] + x1, bottom[1] + y1),
-        )
+        axis_x = top[0] + x1
+        y_top = top[1] + y1
+        y_bottom = bottom[1] + y1
+        half_width = length_px / 2.0
+        left_x = int(round(axis_x - half_width))
+        right_x = int(round(axis_x + half_width))
+
         if self.needle_axis_item is not None:
             self.graphics_scene.removeItem(self.needle_axis_item)
+            self.needle_axis_item = None
+        for item in self.needle_edge_items:
+            self.graphics_scene.removeItem(item)
+        self.needle_edge_items.clear()
+
         pen = QPen(QColor("yellow"))
         pen.setWidth(2)
-        self.needle_axis_item = self.graphics_scene.addLine(
-            axis[0][0], axis[0][1], axis[1][0], axis[1][1], pen
-        )
+        left_item = self.graphics_scene.addLine(left_x, y_top, left_x, y_bottom, pen)
+        right_item = self.graphics_scene.addLine(right_x, y_top, right_x, y_bottom, pen)
+        self.needle_edge_items = [left_item, right_item]
 
     def analyze_drop_image(self) -> None:
         """Analyze the drop region and draw overlays."""
