@@ -8,6 +8,12 @@ from ..models import (
     surface_tension,
     bond_number,
     volume_from_contour,
+    vmax_uL,
+    worthington_number,
+    apex_curvature_m_inv,
+    projected_area_mm2,
+    surface_area_mm2,
+    apparent_weight_mN,
 )
 from ..models.geometry import horizontal_intersections
 
@@ -81,7 +87,12 @@ def _max_horizontal_diameter(contour: np.ndarray) -> tuple[int, float, int, int]
     return y, width, x_left, x_right
 
 
-def compute_drop_metrics(contour: np.ndarray, px_per_mm: float, mode: str) -> dict:
+def compute_drop_metrics(
+    contour: np.ndarray,
+    px_per_mm: float,
+    mode: str,
+    needle_diam_mm: float | None = None,
+) -> dict:
     """Return basic geometric metrics for a droplet contour.
 
     Parameters
@@ -93,11 +104,14 @@ def compute_drop_metrics(contour: np.ndarray, px_per_mm: float, mode: str) -> di
     mode:
         ``"pendant"`` or ``"contact-angle"`` specifying orientation.
 
+    needle_diam_mm:
+        Outer diameter of the dispensing needle in millimetres. Required for
+        Worthington number.
+
     Returns
     -------
     dict
-        Dictionary containing height, diameter, apex, volume, contact angle,
-        surface tension and Wo number.
+        Dictionary of geometric and physical metrics for the droplet.
 
     Raises
     ------
@@ -154,6 +168,25 @@ def compute_drop_metrics(contour: np.ndarray, px_per_mm: float, mode: str) -> di
     )
     volume_uL = volume_from_contour(contour_mm)
 
+    # --- Advanced metrics --------------------------------------------------
+    vmax = None
+    wo = None
+    if needle_diam_mm is not None and needle_diam_mm > 0:
+        vmax = vmax_uL(gamma, needle_diam_mm, delta_rho)
+        if volume_uL is not None:
+            wo = worthington_number(volume_uL, vmax)
+
+    kappa0 = apex_curvature_m_inv(r0_mm) if r0_mm > 0 else 0.0
+    aproj = projected_area_mm2(diameter_mm)
+
+    contour_sorted = contour[np.argsort(contour[:, 1])]
+    contour_local = np.column_stack([
+        np.abs(contour_sorted[:, 0] - apex[0]),
+        contour_sorted[:, 1] - apex[1],
+    ])
+    asurf = surface_area_mm2(contour_local, px_per_mm)
+    wapp = apparent_weight_mN(volume_uL, delta_rho) if volume_uL is not None else None
+
     print(f"height_mm={height_mm}")
     print(f"diameter_mm={diameter_mm}")
     print(f"apex={apex}")
@@ -183,7 +216,12 @@ def compute_drop_metrics(contour: np.ndarray, px_per_mm: float, mode: str) -> di
         "beta": float(beta),
         "s1": float(s1),
         "Bo": float(bo),
-        "wo": 0.0,
+        "vmax_uL": float(vmax) if vmax is not None else None,
+        "wo": float(wo) if wo is not None else None,
+        "kappa0_inv_m": float(kappa0),
+        "A_proj_mm2": float(aproj),
+        "A_surf_mm2": float(asurf),
+        "W_app_mN": float(wapp) if wapp is not None else None,
         "diameter_px": float(diam_px),
         "diameter_line": ((x_left, y_diam), (x_right, y_diam)),
         "radius_apex_mm": float(radius_apex_mm),

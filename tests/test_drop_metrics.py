@@ -12,7 +12,7 @@ def test_max_diameter_and_radius_apex():
     roi = img[20:45, 10:40]
     contour = cv2.findContours(roi, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)[0][0].squeeze(1).astype(float)
     contour += np.array([10, 20])
-    metrics = compute_drop_metrics(contour, px_per_mm=5.0, mode="pendant")
+    metrics = compute_drop_metrics(contour, px_per_mm=5.0, mode="pendant", needle_diam_mm=1.0)
     assert pytest.approx(metrics["diameter_px"], abs=1) == 2 * radius
     assert metrics["diameter_line"][0][1] == metrics["diameter_line"][1][1]
     assert metrics["contact_line"] is not None

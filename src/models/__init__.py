@@ -13,6 +13,14 @@ from .surface_tension import (
     bond_number,
     volume_from_contour,
 )
+from .drop_extras import (
+    vmax_uL,
+    worthington_number,
+    apex_curvature_m_inv,
+    projected_area_mm2,
+    surface_area_mm2,
+    apparent_weight_mN,
+)
 
 __all__ = [
     "fit_circle",
@@ -24,5 +32,11 @@ __all__ = [
     "surface_tension",
     "bond_number",
     "volume_from_contour",
+    "vmax_uL",
+    "worthington_number",
+    "apex_curvature_m_inv",
+    "projected_area_mm2",
+    "surface_area_mm2",
+    "apparent_weight_mN",
 ]
 

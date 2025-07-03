@@ -249,6 +249,16 @@ class DropAnalysisPanel(QWidget):
         layout.addRow("Bond number", self.bo_label)
         self.wo_label = QLabel("0.0")
         layout.addRow("Wo number", self.wo_label)
+        self.vmax_label = QLabel("0.0")
+        layout.addRow("Vmax (\u00b5L)", self.vmax_label)
+        self.kappa0_label = QLabel("0.0")
+        layout.addRow("\u03ba₀ (1/m)", self.kappa0_label)
+        self.aproj_label = QLabel("0.0")
+        layout.addRow("A_proj (mm²)", self.aproj_label)
+        self.asurf_label = QLabel("0.0")
+        layout.addRow("A_surf (mm²)", self.asurf_label)
+        self.wapp_label = QLabel("0.0")
+        layout.addRow("W_app (mN)", self.wapp_label)
 
     def set_metrics(
         self,
@@ -263,6 +273,11 @@ class DropAnalysisPanel(QWidget):
         s1: float | None = None,
         bo: float | None = None,
         wo: float | None = None,
+        vmax: float | None = None,
+        kappa0: float | None = None,
+        aproj: float | None = None,
+        asurf: float | None = None,
+        wapp: float | None = None,
         radius: float | None = None,
     ) -> None:
         """Update displayed metric values."""
@@ -287,7 +302,18 @@ class DropAnalysisPanel(QWidget):
         if bo is not None:
             self.bo_label.setText(f"{bo:.2f}")
         if wo is not None:
-            self.wo_label.setText(f"{wo:.2f}")
+            color = "orange" if wo > 0.9 else "black"
+            self.wo_label.setText(f"<span style='color:{color}'>{wo:.2f}</span>")
+        if vmax is not None:
+            self.vmax_label.setText(f"{vmax:.2f}")
+        if kappa0 is not None:
+            self.kappa0_label.setText(f"{kappa0:.2e}")
+        if aproj is not None:
+            self.aproj_label.setText(f"{aproj:.2f}")
+        if asurf is not None:
+            self.asurf_label.setText(f"{asurf:.2f}")
+        if wapp is not None:
+            self.wapp_label.setText(f"{wapp:.2f}")
 
     def metrics(self) -> dict[str, str]:
         return {
@@ -302,6 +328,11 @@ class DropAnalysisPanel(QWidget):
             "s1": self.s1_label.text(),
             "bo": self.bo_label.text(),
             "wo": self.wo_label.text(),
+            "vmax": self.vmax_label.text(),
+            "kappa0": self.kappa0_label.text(),
+            "aproj": self.aproj_label.text(),
+            "asurf": self.asurf_label.text(),
+            "wapp": self.wapp_label.text(),
         }
 
     def set_regions(
