@@ -18,8 +18,6 @@ from PySide6.QtGui import (
 from PySide6.QtWidgets import (
     QApplication,
     QMainWindow,
-    QGraphicsView,
-    QGraphicsScene,
     QFileDialog,
     QMessageBox,
     QSplitter,
@@ -37,6 +35,7 @@ from .controls import (
     MetricsPanel,
     DropAnalysisPanel,
 )
+from .image_view import ImageView
 
 from ..processing.reader import load_image
 from ..processing import (
@@ -79,9 +78,8 @@ class MainWindow(QMainWindow):
         splitter = QSplitter()
 
         # Image display area
-        self.graphics_view = QGraphicsView()
-        self.graphics_scene = QGraphicsScene(self)
-        self.graphics_view.setScene(self.graphics_scene)
+        self.graphics_view = ImageView()
+        self.graphics_scene = self.graphics_view.scene()
         splitter.addWidget(self.graphics_view)
 
         # Control panel wrapped in tabs
@@ -234,12 +232,8 @@ class MainWindow(QMainWindow):
         self.needle_axis_item = None
         self.needle_edge_items = []
         self.analysis_panel.set_regions(needle=None, drop=None)
-        self.pixmap_item = self.graphics_scene.addPixmap(pixmap)
-        self.graphics_view.resetTransform()
-
-        rect = self.pixmap_item.boundingRect()
-        self.graphics_view.setSceneRect(rect)
-        self.graphics_view.setFixedSize(int(rect.width()), int(rect.height()))
+        self.graphics_view.set_pixmap(pixmap)
+        self.pixmap_item = self.graphics_view.pixmap_item
         self.adjustSize()
         self.set_zoom(self.zoom_control.slider.value() / 100.0)
 
@@ -834,8 +828,7 @@ class MainWindow(QMainWindow):
 
     def set_zoom(self, factor: float) -> None:
         """Scale the graphics view by ``factor``."""
-        self.graphics_view.resetTransform()
-        self.graphics_view.scale(factor, factor)
+        self.graphics_view.set_zoom(factor)
 
 
 def main():
