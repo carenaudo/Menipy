@@ -293,3 +293,9 @@ structure and GUI behaviour. All tests pass.
 **Task:** Preserve drop ROI after analysis and define needle length as horizontal distance between edges.
 
 **Summary:** Updated `detect_vertical_edges` to compute width between vertical contours and modified tests accordingly. Drop and needle ROI rectangles now retain visibility by assigning a higher Z value. Added GUI test check for drop ROI persistence. All tests pass.
+
+## Entry 49 - Update docs for drop analysis
+
+**Task:** Update README and documentation.
+
+**Summary:** Added `doc/drop_analysis.md` detailing the workflow and algorithms for the new Drop Analysis tab. README now references the new document and describes the tab features.

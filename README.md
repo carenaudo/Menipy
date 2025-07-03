@@ -8,7 +8,7 @@ These sub-agents read the step-by-step instructions in `PLAN.md` and consult the
 
 - **AGENTS.md** – roles for Documentation, Scaffold, Environment, Processing, Modeling, GUI, Batch, and CI & Packaging agents.
 - **PLAN.md** – a high-level plan detailing the desired directory layout, technology stack, and feature set.
-- **doc/** – supporting Markdown files (`physics_models.md`, `numerical_methods.md`, `image_processing.md`, `gui_design.md`) that supply equations and workflow descriptions for CODEX.
+- **doc/** – supporting Markdown files (`physics_models.md`, `numerical_methods.md`, `image_processing.md`, `gui_design.md`, `drop_analysis.md`) that supply equations and workflow descriptions for CODEX.
 
 By combining these materials with CODEX automation, Menipy aims to become a fully functional droplet shape analysis tool with a PySide6 interface and automated tests, all generated with minimal human interaction.
 
@@ -32,3 +32,11 @@ iterations of the tool.
 ## Image Processing
 
 Segmented masks are cleaned with morphological operations and reduced to the largest external contour. This ensures internal artifacts do not affect volume or fitting calculations.
+
+## Drop Analysis
+
+The GUI includes a **Drop Analysis** tab for pendant and contact-angle modes. After defining
+needle and drop regions, the application detects the needle width, extracts the
+outer drop contour and overlays key features such as the apex and symmetry axis.
+Metrics including height, diameter, volume and surface tension are displayed in
+the panel. Detailed instructions are available in `doc/drop_analysis.md`.
