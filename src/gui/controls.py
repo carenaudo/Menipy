@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QPushButton,
     QComboBox,
+    QFrame,
 )
 
 
