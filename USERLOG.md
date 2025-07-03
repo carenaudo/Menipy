@@ -58,3 +58,6 @@
 
 ## Entry 48 - Drop overlay fixes and needle width
 **Summary:** Did not like how the needle was shown
+
+## Entry 53 - Printing drop metrics for testing
+**Summary:** On the last tasks i made it work as i intended. now i will focus on the results comparing with measurements on industry grade equipment
