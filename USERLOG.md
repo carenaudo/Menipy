@@ -43,3 +43,6 @@
 
 ## Entry 33 - Refactor droplet property functions
 **Summary:** To solve the issues, i generated a prompt using ChatGPT o3 model and the issues descriptions (uploading properties.py file) and used this prompt on CODEX to generate the task to refactor the functions
+
+## Entry 37 - Drop mode classification and ## Entry 38 - Display drop mode in GUI
+**Summary:** To solve add a feature to classify if the droplet is pendant or sessile, i generated a prompt using ChatGPT o3 model and  used this prompt on CODEX to generate the task to add this function. it was made in the same task in 2 promps (chatgpt and add to gui)
