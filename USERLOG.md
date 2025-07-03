@@ -55,3 +55,6 @@
 
 ## Entry 47 - Persist drop analysis regions
 **Summary:** Included a more detailed description on how the needle should be detected and asked to avoid removing the ROI square
+
+## Entry 48 - Drop overlay fixes and needle width
+**Summary:** Did not like how the needle was shown
