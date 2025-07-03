@@ -493,6 +493,7 @@ def test_drop_analysis_workflow(tmp_path):
     metrics = window.analysis_panel.metrics()
     assert float(metrics["height"]) > 0
     assert window.drop_contour_item is not None
+    assert window.drop_rect_item is not None
     window.close()
     app.quit()
 

@@ -699,6 +699,7 @@ class MainWindow(QMainWindow):
         pen.setWidth(2)
         rect = QRectF(pos, pos)
         self.needle_rect_item = self.graphics_scene.addRect(rect, pen)
+        self.needle_rect_item.setZValue(1)
         event.accept()
 
     def _needle_move(self, event):
@@ -749,6 +750,7 @@ class MainWindow(QMainWindow):
         pen.setWidth(2)
         rect = QRectF(pos, pos)
         self.drop_rect_item = self.graphics_scene.addRect(rect, pen)
+        self.drop_rect_item.setZValue(1)
         event.accept()
 
     def _drop_move(self, event):
