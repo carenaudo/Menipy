@@ -329,3 +329,9 @@ tests added for these features.
 
 **Summary:** Added print statements in `compute_drop_metrics` so height, diameter, apex, radius, beta, surface tension, Bond number, volume, contact angle and IFT values are displayed whenever metrics are computed. Existing tests continue to pass.
 
+## Entry 54 - Surface tension metrics in GUI
+
+**Task:** Display surface tension from `surface_tension()` and show beta, Bond number and s1 on the Drop Analysis tab.
+
+**Summary:** Updated `compute_drop_metrics` to return `s1` along with beta and Bond number. `DropAnalysisPanel` now displays surface tension from `surface_tension()`, plus beta, s1 and Bond number. Tests updated for s1 and pass.
+
