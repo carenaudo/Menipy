@@ -489,7 +489,10 @@ class MainWindow(QMainWindow):
         contour += np.array([x1, y1])
         mode = self.analysis_panel.method_combo.currentText()
         metrics = compute_drop_metrics(
-            contour.astype(float), self.px_per_mm_drop, mode
+            contour.astype(float),
+            self.px_per_mm_drop,
+            mode,
+            needle_diam_mm=self.analysis_panel.needle_length.value(),
         )
         self.analysis_panel.set_metrics(
             height=metrics["height_mm"],
@@ -501,6 +504,11 @@ class MainWindow(QMainWindow):
             s1=metrics["s1"],
             bo=metrics["Bo"],
             wo=metrics["wo"],
+            vmax=metrics["vmax_uL"],
+            kappa0=metrics["kappa0_inv_m"],
+            aproj=metrics["A_proj_mm2"],
+            asurf=metrics["A_surf_mm2"],
+            wapp=metrics["W_app_mN"],
             radius=metrics["radius_apex_mm"],
         )
         y_min = int(contour[:, 1].min())

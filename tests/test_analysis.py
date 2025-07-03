@@ -46,7 +46,7 @@ def test_compute_drop_metrics_circle():
     cv2.circle(img, center, radius, 255, -1)
     contour = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)[0][0].squeeze(1).astype(float)
 
-    metrics = compute_drop_metrics(contour, px_per_mm=10.0, mode="pendant")
+    metrics = compute_drop_metrics(contour, px_per_mm=10.0, mode="pendant", needle_diam_mm=1.0)
     assert metrics["apex"] == (20, 30)
     assert pytest.approx(metrics["diameter_mm"], rel=0.05) == 2 * radius / 10.0
     assert pytest.approx(metrics["height_mm"], rel=0.05) == 2 * radius / 10.0
@@ -56,4 +56,4 @@ def test_compute_drop_metrics_circle():
 def test_compute_drop_metrics_invalid_mode():
     contour = np.array([[0, 0], [1, 0], [1, 1]], dtype=float)
     with pytest.raises(ValueError):
-        compute_drop_metrics(contour, px_per_mm=1.0, mode="bad")
+        compute_drop_metrics(contour, px_per_mm=1.0, mode="bad", needle_diam_mm=1.0)
