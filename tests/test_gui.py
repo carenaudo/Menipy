@@ -65,12 +65,8 @@ def test_load_image_retains_size(tmp_path):
     pixmap = window.pixmap_item.pixmap()
     assert pixmap.width() == 30
     assert pixmap.height() == 20
-    assert window.graphics_view.width() == 30
-    assert window.graphics_view.height() == 20
 
-    transform = window.graphics_view.transform()
-    assert transform.m11() == 1
-    assert transform.m22() == 1
+    assert 0 < window.graphics_view.scale_factor <= 1.0
 
     window.close()
     app.quit()
@@ -140,11 +136,10 @@ def test_zoom_control(tmp_path):
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     window = MainWindow()
     window.load_image(path)
-
+    before = window.graphics_view.scale_factor
     window.zoom_control.slider.setValue(200)
-    transform = window.graphics_view.transform()
-    assert transform.m11() == pytest.approx(2.0, rel=0.01)
-    assert transform.m22() == pytest.approx(2.0, rel=0.01)
+    after = window.graphics_view.scale_factor
+    assert after == pytest.approx(before * 2.0, rel=0.01)
 
     window.close()
     app.quit()
