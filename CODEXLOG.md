@@ -341,3 +341,10 @@ tests added for these features.
 
 **Summary:** Introduced `CalibrationTab` for calibration settings and `AnalysisTab` for displaying pendant or contact-angle results. `MainWindow` now builds these tabs, selects the method when an Analyze button is pressed and reuses existing drop analysis logic. Tests expect four tabs and read metrics from the pendant tab. All tests pass.
 
+
+## Entry 56 - Fix QFrame import
+
+**Task:** Resolve NameError when creating AnalysisTab due to missing QFrame import.
+
+**Summary:** Added QFrame to the PySide6.QtWidgets import list in `src/gui/controls.py`. All tests pass.
+
