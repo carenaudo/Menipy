@@ -310,3 +310,9 @@ horizontal diameter coordinates, apex radius, and optional contact line.
 `draw_drop_overlay` draws this line and the contact line. GUI panels show the
 "Radius–Apex" metric and render the new overlays. Documentation updated and unit
 tests added for these features.
+
+## Entry 51 - Auto-fitting ImageView
+
+**Task:** Implement a graphics-based image viewer that keeps the pixmap scaled to the viewport and adapts during zoom and resize.
+
+**Summary:** Added `ImageView` using `QGraphicsView`/`QGraphicsScene` to store the original pixmap and fit it to the widget. The view tracks a scale factor combining fit and zoom, with helper methods for coordinate conversion. Integrated it into `MainWindow` and updated tests. All tests pass.
