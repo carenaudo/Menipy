@@ -33,7 +33,8 @@ from .controls import (
     ZoomControl,
     ParameterPanel,
     MetricsPanel,
-    DropAnalysisPanel,
+    CalibrationTab,
+    AnalysisTab,
 )
 from .image_view import ImageView
 
@@ -98,42 +99,42 @@ class MainWindow(QMainWindow):
         classic_layout.addWidget(self.zoom_control)
 
         self.parameter_panel = ParameterPanel()
-        classic_layout.addWidget(self.parameter_panel)
-
         self.metrics_panel = MetricsPanel()
-        classic_layout.addWidget(self.metrics_panel)
-
         self.process_button = QPushButton("Process")
         self.process_button.clicked.connect(self.process_image)
-        classic_layout.addWidget(self.process_button)
-
         self.calculate_button = QPushButton("Calculate")
         self.calculate_button.clicked.connect(self.calculate_parameters)
-        classic_layout.addWidget(self.calculate_button)
-
         self.draw_button = QPushButton("Draw Model")
         self.draw_button.clicked.connect(self.draw_model)
-        classic_layout.addWidget(self.draw_button)
-
         self.save_csv_button = QPushButton("Save CSV")
         self.save_csv_button.clicked.connect(lambda: self.save_csv())
-        classic_layout.addWidget(self.save_csv_button)
 
         classic_layout.addStretch()
         self.tabs.addTab(classic_widget, "Classic")
 
-        self.analysis_panel = DropAnalysisPanel()
-        self.tabs.addTab(self.analysis_panel, "Drop Analysis")
+        self.calibration_tab = CalibrationTab()
+        self.tabs.addTab(self.calibration_tab, "Calibration")
+
+        self.pendant_tab = AnalysisTab()
+        self.tabs.addTab(self.pendant_tab, "Pendant drop")
+
+        self.contact_tab = AnalysisTab(show_contact_angle=True)
+        self.tabs.addTab(self.contact_tab, "Contact angle")
 
         # Drop analysis button connections
-        self.analysis_panel.needle_region_button.clicked.connect(
+        self.calibration_tab.needle_region_button.clicked.connect(
             lambda: self.set_needle_mode(True)
         )
-        self.analysis_panel.drop_region_button.clicked.connect(
+        self.calibration_tab.drop_region_button.clicked.connect(
             lambda: self.set_drop_mode(True)
         )
-        self.analysis_panel.detect_needle_button.clicked.connect(self.detect_needle)
-        self.analysis_panel.analyze_button.clicked.connect(self.analyze_drop_image)
+        self.calibration_tab.detect_needle_button.clicked.connect(self.detect_needle)
+        self.pendant_tab.analyze_button.clicked.connect(
+            lambda: self._run_analysis("pendant")
+        )
+        self.contact_tab.analyze_button.clicked.connect(
+            lambda: self._run_analysis("contact-angle")
+        )
 
         self.setCentralWidget(splitter)
 
@@ -197,6 +198,12 @@ class MainWindow(QMainWindow):
         self.parameter_panel.calibrate_button.clicked.connect(self.open_calibration)
         self.parameter_panel.roi_mode.toggled.connect(self.set_roi_mode)
 
+        self.analysis_method = "pendant"
+
+    def _run_analysis(self, method: str) -> None:
+        self.analysis_method = method
+        self.analyze_drop_image()
+
     def open_image(self) -> None:
         """Open an image file and display it."""
         path, _ = QFileDialog.getOpenFileName(
@@ -231,7 +238,7 @@ class MainWindow(QMainWindow):
         self.drop_rect = None
         self.needle_axis_item = None
         self.needle_edge_items = []
-        self.analysis_panel.set_regions(needle=None, drop=None)
+        self.calibration_tab.set_regions(needle=None, drop=None)
         self.graphics_view.set_pixmap(pixmap)
         self.pixmap_item = self.graphics_view.pixmap_item
         self.adjustSize()
@@ -449,8 +456,8 @@ class MainWindow(QMainWindow):
         except ValueError as exc:
             QMessageBox.warning(self, "Needle Detection", str(exc))
             return
-        self.px_per_mm_drop = length_px / max(self.analysis_panel.needle_length.value(), 1e-6)
-        self.analysis_panel.set_metrics(scale=self.px_per_mm_drop)
+        self.px_per_mm_drop = length_px / max(self.calibration_tab.needle_length.value(), 1e-6)
+        self.calibration_tab.set_metrics(scale=self.px_per_mm_drop)
         axis_x = top[0] + x1
         y_top = top[1] + y1
         y_bottom = bottom[1] + y1
@@ -487,14 +494,15 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Drop Analysis", str(exc))
             return
         contour += np.array([x1, y1])
-        mode = self.analysis_panel.method_combo.currentText()
+        mode = getattr(self, "analysis_method", "pendant")
         metrics = compute_drop_metrics(
             contour.astype(float),
             self.px_per_mm_drop,
             mode,
-            needle_diam_mm=self.analysis_panel.needle_length.value(),
+            needle_diam_mm=self.calibration_tab.needle_length.value(),
         )
-        self.analysis_panel.set_metrics(
+        panel = self.pendant_tab if mode == "pendant" else self.contact_tab
+        panel.set_metrics(
             height=metrics["height_mm"],
             diameter=metrics["diameter_mm"],
             volume=metrics["volume_uL"] if metrics["volume_uL"] is not None else 0.0,
@@ -743,7 +751,7 @@ class MainWindow(QMainWindow):
             rect.right(),
             rect.bottom(),
         )
-        self.analysis_panel.set_regions(needle=self.needle_rect)
+        self.calibration_tab.set_regions(needle=self.needle_rect)
         self._needle_start = None
         self.set_needle_mode(False)
         event.accept()
@@ -794,7 +802,7 @@ class MainWindow(QMainWindow):
             rect.right(),
             rect.bottom(),
         )
-        self.analysis_panel.set_regions(drop=self.drop_rect)
+        self.calibration_tab.set_regions(drop=self.drop_rect)
         self._drop_start = None
         self.set_drop_mode(False)
         event.accept()
