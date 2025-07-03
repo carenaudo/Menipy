@@ -220,3 +220,19 @@ This file summarizes tasks requested of CODEX and a brief description of how COD
 
 **Summary:** Updated `detect_droplet` for robust polarity handling and apex calculation. `MainWindow.process_image` now calls this function to obtain the mask, contour, apex, and contact line which are drawn on the scene. Metrics such as height, diameter and volume are derived from the returned data. All tests pass.
 
+
+## Entry 37 - Drop mode classification
+
+**Task:** Implement classify_drop_mode function with confidence heuristics.
+
+**Summary:** Added `classify_drop_mode` in `src/processing` to determine whether a droplet is pendant or sessile using the contact line normal and apex position. Exported the function through the processing package and created unit tests covering pendant, sessile, and unknown cases. All tests pass.
+
+## Entry 38 - Display drop mode in GUI
+
+**Task:** Integrate `classify_drop_mode` results into the user interface.
+
+**Summary:** Updated the droplet `Droplet` dataclass to store the full contact
+line segment. The GUI now calls `classify_drop_mode` after detection and shows
+the resulting mode in the metrics panel. Added a label to display this value and
+included it when exporting CSV data. Adjusted unit tests for the updated data
+structure and GUI behaviour. All tests pass.

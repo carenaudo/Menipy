@@ -135,6 +135,9 @@ class MetricsPanel(QWidget):
         self.diameter_label = QLabel("0.0")
         layout.addRow("Diameter", self.diameter_label)
 
+        self.mode_label = QLabel("unknown")
+        layout.addRow("Mode", self.mode_label)
+
     def set_metrics(
         self,
         *,
@@ -144,6 +147,7 @@ class MetricsPanel(QWidget):
         contact_angle: float | None = None,
         height: float | None = None,
         diameter: float | None = None,
+        mode: str | None = None,
     ) -> None:
         """Update displayed metric values."""
         if ift is not None:
@@ -158,6 +162,8 @@ class MetricsPanel(QWidget):
             self.height_label.setText(f"{height:.2f}")
         if diameter is not None:
             self.diameter_label.setText(f"{diameter:.2f}")
+        if mode is not None:
+            self.mode_label.setText(mode)
 
     def values(self) -> dict[str, float]:
         """Return the currently displayed metric values."""
@@ -174,4 +180,5 @@ class MetricsPanel(QWidget):
             "contact_angle": _to_float(self.angle_label),
             "height": _to_float(self.height_label),
             "diameter": _to_float(self.diameter_label),
+            "mode": self.mode_label.text(),
         }

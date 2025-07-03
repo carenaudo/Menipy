@@ -159,13 +159,22 @@ def test_metrics_panel_update():
     window = MainWindow()
 
     panel = window.metrics_panel
-    panel.set_metrics(ift=1.2, wo=0.5, volume=3.4, contact_angle=45.0, height=2.0, diameter=4.0)
+    panel.set_metrics(
+        ift=1.2,
+        wo=0.5,
+        volume=3.4,
+        contact_angle=45.0,
+        height=2.0,
+        diameter=4.0,
+        mode="sessile",
+    )
 
     assert panel.ift_label.text().startswith("1.2")
     assert panel.volume_label.text().startswith("3.4")
 
     metrics = panel.values()
     assert metrics["ift"] == pytest.approx(1.2)
+    assert metrics["mode"] == "sessile"
 
     window.close()
     app.quit()
@@ -333,6 +342,7 @@ def test_process_image_with_roi(tmp_path):
     pixmap = window.mask_item.pixmap()
     assert pixmap.width() == 10
     assert pixmap.height() == 10
+    assert window.metrics_panel.mode_label.text() in {"sessile", "pendant", "unknown"}
 
     window.close()
     app.quit()
@@ -419,6 +429,7 @@ def test_save_csv(tmp_path):
     df = pd.read_csv(out_path)
     assert "air_density" in df.columns
     assert "ift" in df.columns
+    assert "mode" in df.columns
 
     window.close()
     app.quit()
