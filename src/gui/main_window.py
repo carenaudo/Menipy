@@ -33,7 +33,12 @@ import pandas as pd
 from .controls import ZoomControl, ParameterPanel, MetricsPanel
 
 from ..processing.reader import load_image
-from ..processing import detect_droplet, segmentation, classify_drop_mode
+from ..processing import (
+    detect_droplet,
+    detect_sessile_droplet,
+    detect_pendant_droplet,
+    segmentation,
+)
 from ..processing.segmentation import find_contours
 from ..utils import (
     get_calibration,
@@ -211,13 +216,17 @@ class MainWindow(QMainWindow):
         cal = get_calibration()
         px_to_mm = 1.0 / cal.pixels_per_mm
         try:
-            droplet = detect_droplet(self.image, roi, px_to_mm)
+            mode_sel = self.parameter_panel.detection_mode()
+            if mode_sel == "sessile":
+                droplet = detect_sessile_droplet(self.image, roi, px_to_mm)
+                mode = "sessile"
+            else:
+                droplet = detect_pendant_droplet(self.image, roi, px_to_mm)
+                mode = "pendant"
         except ValueError as exc:
             QMessageBox.warning(self, "Detection", str(exc))
             self.last_mask = None
             return
-
-        mode = classify_drop_mode(droplet)
 
         self.last_mask = droplet.mask
         self.mask_offset = (x1, y1)

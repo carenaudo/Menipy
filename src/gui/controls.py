@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
     QDoubleSpinBox,
     QCheckBox,
     QPushButton,
+    QComboBox,
 )
 
 
@@ -69,6 +70,10 @@ class ParameterPanel(QWidget):
         self.roi_mode = QCheckBox("ROI Mode")
         layout.addRow(self.roi_mode)
 
+        self.mode_combo = QComboBox()
+        self.mode_combo.addItems(["pendant", "sessile"])
+        layout.addRow("Detection Mode", self.mode_combo)
+
         self.ref_length = QDoubleSpinBox()
         self.ref_length.setRange(0.1, 100.0)
         self.ref_length.setValue(1.0)
@@ -105,6 +110,10 @@ class ParameterPanel(QWidget):
 
     def calibration_length(self) -> float:
         return self.ref_length.value()
+
+    def detection_mode(self) -> str:
+        """Return the selected droplet detection mode."""
+        return self.mode_combo.currentText()
 
     def set_scale_display(self, px_per_mm: float) -> None:
         self.scale_label.setText(f"{px_per_mm:.2f}")

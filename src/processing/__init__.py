@@ -8,7 +8,14 @@ from .segmentation import (
     largest_contour,
     ml_segment,
 )
-from .detection import Droplet, SessileDroplet, detect_droplet, detect_sessile_droplet
+from .detection import (
+    Droplet,
+    SessileDroplet,
+    PendantDroplet,
+    detect_droplet,
+    detect_sessile_droplet,
+    detect_pendant_droplet,
+)
 from .classification import classify_drop_mode
 
 __all__ = [
@@ -22,7 +29,9 @@ __all__ = [
     "ml_segment",
     "Droplet",
     "SessileDroplet",
+    "PendantDroplet",
     "detect_droplet",
     "detect_sessile_droplet",
+    "detect_pendant_droplet",
     "classify_drop_mode",
 ]

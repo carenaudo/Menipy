@@ -34,6 +34,20 @@ class SessileDroplet:
     mask: np.ndarray
 
 
+@dataclass
+class PendantDroplet:
+    """Output of the robust pendant drop detector."""
+
+    contour_px: np.ndarray
+    needle_px: Tuple[int, int, int, int]
+    contact_px: Tuple[int, int, int, int]
+    apex_px: Tuple[int, int]
+    height_mm: float
+    r_max_mm: float
+    projected_area_mm2: float
+    mask: np.ndarray
+
+
 def detect_droplet(frame: np.ndarray, roi: tuple[int, int, int, int], px_to_mm: float) -> Droplet:
     """Detect droplet silhouette inside ``roi`` and return geometric metrics.
 
@@ -267,6 +281,115 @@ def detect_sessile_droplet(
     return SessileDroplet(
         contour_px=cnt,
         substrate_px=substrate_px,
+        contact_px=contact_px,
+        apex_px=apex,
+        height_mm=height_mm,
+        r_max_mm=r_max_mm,
+        projected_area_mm2=projected_area_mm2,
+        mask=mask,
+    )
+
+
+def detect_pendant_droplet(
+    frame: np.ndarray, roi: tuple[int, int, int, int], px_to_mm: float
+) -> PendantDroplet:
+    """Detect a pendant droplet hanging from a needle line.
+
+    Parameters
+    ----------
+    frame:
+        Original image array.
+    roi:
+        (x0, y0, w, h) region of interest in image coordinates.
+    px_to_mm:
+        Pixel-to-millimetre calibration factor.
+
+    Returns
+    -------
+    PendantDroplet
+        Detected geometric information.
+
+    Raises
+    ------
+    ValueError
+        If the needle line cannot be detected or no contour found.
+    """
+
+    x0, y0, w, h = roi
+    crop = frame[y0 : y0 + h, x0 : x0 + w]
+
+    gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY) if crop.ndim == 3 else crop
+    blur = cv2.GaussianBlur(gray, (5, 5), 0)
+    _, thresh = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    inv = cv2.bitwise_not(thresh)
+    contours_a, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    contours_b, _ = cv2.findContours(inv, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    area_a = max((cv2.contourArea(c) for c in contours_a), default=0)
+    area_b = max((cv2.contourArea(c) for c in contours_b), default=0)
+    if max(area_a, area_b) >= 0.95 * (w * h) and min(area_a, area_b) == 0:
+        raise ValueError("No droplet found in ROI")
+    if area_a == 0:
+        mask = inv
+    elif area_b == 0:
+        mask = thresh
+    else:
+        mask = thresh if area_a < area_b else inv
+
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8), iterations=2)
+
+    edges = cv2.Canny(mask, 50, 150)
+    ys, xs = np.nonzero(edges)
+    pts = np.stack([xs + x0, ys + y0], axis=1).astype(float)
+    pts = pts[pts[:, 1] <= y0 + 0.5 * h]
+    if pts.shape[0] < 2:
+        raise ValueError("Needle line not detected")
+
+    a, b, c = _fit_line_ransac(pts)
+
+    def needle_y_at(x: float) -> float:
+        return -(a * x + c) / b
+
+    x1 = x0
+    y1 = needle_y_at(x1)
+    x2 = x0 + w - 1
+    y2 = needle_y_at(x2)
+    needle_px = (int(round(x1)), int(round(y1)), int(round(x2)), int(round(y2)))
+
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    if not contours:
+        raise ValueError("No droplet found in ROI")
+
+    cnt = max(contours, key=cv2.contourArea).astype(np.float32)
+    cnt[:, 0, 0] += x0
+    cnt[:, 0, 1] += y0
+    cnt = cnt.reshape(-1, 2)
+
+    apex_idx = int(np.argmax(cnt[:, 1]))
+    apex = tuple(int(round(v)) for v in cnt[apex_idx])
+
+    d = np.abs(a * cnt[:, 0] + b * cnt[:, 1] + c) / np.hypot(a, b)
+    idx = np.where(d < 2.0)[0]
+    if idx.size == 0:
+        raise ValueError("Needle line not detected")
+
+    idx2 = np.sort(np.concatenate([idx, idx + len(cnt)]))
+    splits = np.where(np.diff(idx2) > 1)[0] + 1
+    segments = [s for s in np.split(idx2, splits) if s.size > 0]
+    seg = max(segments, key=len)
+    seg = seg % len(cnt)
+    contact_pts = cnt[seg]
+    contact_left = tuple(int(round(v)) for v in contact_pts[0])
+    contact_right = tuple(int(round(v)) for v in contact_pts[-1])
+    contact_px = (*contact_left, *contact_right)
+
+    height_mm = (apex[1] - needle_y_at(apex[0])) * px_to_mm
+    width_px = contact_right[0] - contact_left[0]
+    r_max_mm = 0.5 * width_px * px_to_mm
+    projected_area_mm2 = float(np.count_nonzero(mask) * (px_to_mm ** 2))
+
+    return PendantDroplet(
+        contour_px=cnt,
+        needle_px=needle_px,
         contact_px=contact_px,
         apex_px=apex,
         height_mm=height_mm,
