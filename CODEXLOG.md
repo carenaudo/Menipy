@@ -242,3 +242,9 @@ structure and GUI behaviour. All tests pass.
 **Task:** Implement a robust geometric detector for sessile drops and expose it through the processing package.
 
 **Summary:** Added `SessileDroplet` dataclass and `detect_sessile_droplet` function implementing substrate line fitting via Hough transform and RANSAC. Updated `__init__` exports. No existing functionality was modified. All tests pass.
+
+## Entry 40 - Pendant Drop Detector and Mode Selector
+
+**Task:** Implement robust pendant drop detection and add a GUI selector for detection mode.
+
+**Summary:** Added a `PendantDroplet` dataclass with a corresponding `detect_pendant_droplet` function that fits the needle line using RANSAC and extracts geometric metrics from the silhouette. The parameter panel now includes a "Detection Mode" combo box allowing users to choose between sessile and pendant processing. Updated the main window logic to call the selected detector and display the resulting mode. A unit test validates the pendant detector on synthetic data. All tests pass.

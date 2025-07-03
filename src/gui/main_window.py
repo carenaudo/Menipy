@@ -38,7 +38,6 @@ from ..processing import (
     detect_sessile_droplet,
     detect_pendant_droplet,
     segmentation,
-    classify_drop_mode,
 )
 from ..processing.segmentation import find_contours
 from ..utils import (
