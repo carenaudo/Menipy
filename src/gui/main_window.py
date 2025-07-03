@@ -27,10 +27,16 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QComboBox,
     QPushButton,
+    QTabWidget,
 )
 import pandas as pd
 
-from .controls import ZoomControl, ParameterPanel, MetricsPanel
+from .controls import (
+    ZoomControl,
+    ParameterPanel,
+    MetricsPanel,
+    DropAnalysisPanel,
+)
 
 from ..processing.reader import load_image
 from ..processing import (
@@ -72,42 +78,48 @@ class MainWindow(QMainWindow):
         self.graphics_view.setScene(self.graphics_scene)
         splitter.addWidget(self.graphics_view)
 
-        # Control panel
-        control_widget = QWidget()
-        control_layout = QVBoxLayout(control_widget)
+        # Control panel wrapped in tabs
+        self.tabs = QTabWidget()
+        splitter.addWidget(self.tabs)
+
+        classic_widget = QWidget()
+        classic_layout = QVBoxLayout(classic_widget)
 
         self.algorithm_combo = QComboBox()
         self.algorithm_combo.addItems(["Otsu", "Adaptive"])
-        control_layout.addWidget(self.algorithm_combo)
+        classic_layout.addWidget(self.algorithm_combo)
 
         self.zoom_control = ZoomControl()
         self.zoom_control.zoomChanged.connect(self.set_zoom)
-        control_layout.addWidget(self.zoom_control)
+        classic_layout.addWidget(self.zoom_control)
 
         self.parameter_panel = ParameterPanel()
-        control_layout.addWidget(self.parameter_panel)
+        classic_layout.addWidget(self.parameter_panel)
 
         self.metrics_panel = MetricsPanel()
-        control_layout.addWidget(self.metrics_panel)
+        classic_layout.addWidget(self.metrics_panel)
 
         self.process_button = QPushButton("Process")
         self.process_button.clicked.connect(self.process_image)
-        control_layout.addWidget(self.process_button)
+        classic_layout.addWidget(self.process_button)
 
         self.calculate_button = QPushButton("Calculate")
         self.calculate_button.clicked.connect(self.calculate_parameters)
-        control_layout.addWidget(self.calculate_button)
+        classic_layout.addWidget(self.calculate_button)
 
         self.draw_button = QPushButton("Draw Model")
         self.draw_button.clicked.connect(self.draw_model)
-        control_layout.addWidget(self.draw_button)
+        classic_layout.addWidget(self.draw_button)
 
         self.save_csv_button = QPushButton("Save CSV")
         self.save_csv_button.clicked.connect(lambda: self.save_csv())
-        control_layout.addWidget(self.save_csv_button)
+        classic_layout.addWidget(self.save_csv_button)
 
-        control_layout.addStretch()
-        splitter.addWidget(control_widget)
+        classic_layout.addStretch()
+        self.tabs.addTab(classic_widget, "Classic")
+
+        self.analysis_panel = DropAnalysisPanel()
+        self.tabs.addTab(self.analysis_panel, "Drop Analysis")
 
         self.setCentralWidget(splitter)
 

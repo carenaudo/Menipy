@@ -257,3 +257,9 @@ structure and GUI behaviour. All tests pass.
 **Task:** Create src/analysis directory.
 
 **Summary:** Added new empty package `analysis` with __init__.py to start implementing drop analysis modules as per NEW_PLAN.
+
+## Entry 43 - GUI tab refactor
+
+**Task:** Implement UI refactor using `QTabWidget`.
+
+**Summary:** Main window now contains a tab widget with "Classic" and "Drop Analysis" tabs. Added `DropAnalysisPanel` widget housing workflow controls and result displays. Updated exports and tests to check tab creation. All tests pass.

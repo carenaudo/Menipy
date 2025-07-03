@@ -191,3 +191,84 @@ class MetricsPanel(QWidget):
             "diameter": _to_float(self.diameter_label),
             "mode": self.mode_label.text(),
         }
+
+
+class DropAnalysisPanel(QWidget):
+    """Controls for drop analysis workflow."""
+
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+        layout = QFormLayout(self)
+
+        self.method_combo = QComboBox()
+        self.method_combo.addItems(["pendant", "contact-angle"])
+        layout.addRow("Method", self.method_combo)
+
+        self.needle_region_button = QPushButton("Needle Region")
+        layout.addRow(self.needle_region_button)
+        self.detect_needle_button = QPushButton("Detect Needle")
+        layout.addRow(self.detect_needle_button)
+
+        self.needle_length = QDoubleSpinBox()
+        self.needle_length.setRange(0.1, 1000.0)
+        self.needle_length.setValue(1.0)
+        self.needle_length.setSuffix(" mm")
+        layout.addRow("Needle length", self.needle_length)
+
+        self.drop_region_button = QPushButton("Drop Region")
+        layout.addRow(self.drop_region_button)
+        self.analyze_button = QPushButton("Analyze Image")
+        layout.addRow(self.analyze_button)
+
+        self.scale_label = QLabel("0.0")
+        layout.addRow("Scale (px/mm)", self.scale_label)
+        self.height_label = QLabel("0.0")
+        layout.addRow("Height (mm)", self.height_label)
+        self.diameter_label = QLabel("0.0")
+        layout.addRow("Diameter (mm)", self.diameter_label)
+        self.volume_label = QLabel("0.0")
+        layout.addRow("Volume (\u00b5L)", self.volume_label)
+        self.angle_label = QLabel("0.0")
+        layout.addRow("Contact angle (\u00b0)", self.angle_label)
+        self.ift_label = QLabel("0.0")
+        layout.addRow("IFT (mN/m)", self.ift_label)
+        self.wo_label = QLabel("0.0")
+        layout.addRow("Wo number", self.wo_label)
+
+    def set_metrics(
+        self,
+        *,
+        scale: float | None = None,
+        height: float | None = None,
+        diameter: float | None = None,
+        volume: float | None = None,
+        angle: float | None = None,
+        ift: float | None = None,
+        wo: float | None = None,
+    ) -> None:
+        """Update displayed metric values."""
+        if scale is not None:
+            self.scale_label.setText(f"{scale:.2f}")
+        if height is not None:
+            self.height_label.setText(f"{height:.2f}")
+        if diameter is not None:
+            self.diameter_label.setText(f"{diameter:.2f}")
+        if volume is not None:
+            self.volume_label.setText(f"{volume:.2f}")
+        if angle is not None:
+            self.angle_label.setText(f"{angle:.2f}")
+        if ift is not None:
+            self.ift_label.setText(f"{ift:.2f}")
+        if wo is not None:
+            self.wo_label.setText(f"{wo:.2f}")
+
+    def metrics(self) -> dict[str, str]:
+        return {
+            "scale": self.scale_label.text(),
+            "height": self.height_label.text(),
+            "diameter": self.diameter_label.text(),
+            "volume": self.volume_label.text(),
+            "angle": self.angle_label.text(),
+            "ift": self.ift_label.text(),
+            "wo": self.wo_label.text(),
+        }
