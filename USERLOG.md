@@ -46,3 +46,6 @@
 
 ## Entry 37 - Drop mode classification and ## Entry 38 - Display drop mode in GUI
 **Summary:** To solve add a feature to classify if the droplet is pendant or sessile, i generated a prompt using ChatGPT o3 model and  used this prompt on CODEX to generate the task to add this function. it was made in the same task in 2 promps (chatgpt and add to gui)
+
+## Entry 41 - Pendant detector uses base silhouette
+**Summary:** The previus pull broke some nice features, i asked CODEX to use the original detector function since that worked
