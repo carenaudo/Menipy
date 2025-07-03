@@ -9,7 +9,7 @@ from src.processing.segmentation import (
     find_contours,
     ml_segment,
 )
-from src.processing import detect_droplet
+from src.processing import detect_droplet, detect_pendant_droplet
 
 
 def test_otsu_threshold():
@@ -109,4 +109,19 @@ def test_detect_droplet_failure():
     frame = np.full((100, 100), 255, dtype=np.uint8)
     with pytest.raises(ValueError):
         detect_droplet(frame, (10, 10, 50, 50), 0.1)
+
+
+def test_detect_pendant_droplet_simple():
+    cv2 = __import__("cv2")
+    frame = np.full((200, 200), 255, dtype=np.uint8)
+    x0, y0, w, h = 60, 40, 80, 120
+    radius = 30
+    center = (x0 + w // 2, y0 + radius + 20)
+    cv2.circle(frame, center, radius, 0, -1)
+    y_line = center[1] - radius
+    cv2.line(frame, (x0, y_line), (x0 + w - 1, y_line), 0, 4)
+    droplet = detect_pendant_droplet(frame, (x0, y0, w, h), 0.1)
+
+    assert abs(droplet.apex_px[1] - (center[1] + radius)) <= 1
+    assert abs(droplet.contact_px[1] - y_line) <= 2
 
