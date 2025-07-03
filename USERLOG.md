@@ -52,3 +52,6 @@
 
 ## Entry 46 - GUI drop analysis integration
 **Summary:** The new pipeline do not save the variables of the needle region and the drop region to keep the square drawed and to use it to detect the needle. 
+
+## Entry 47 - Persist drop analysis regions
+**Summary:** Included a more detailed description on how the needle should be detected and asked to avoid removing the ROI square
