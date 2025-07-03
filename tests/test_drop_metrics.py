@@ -17,3 +17,4 @@ def test_max_diameter_and_radius_apex():
     assert metrics["diameter_line"][0][1] == metrics["diameter_line"][1][1]
     assert metrics["contact_line"] is not None
     assert metrics["radius_apex_mm"] > 0
+    assert metrics["s1"] > 0

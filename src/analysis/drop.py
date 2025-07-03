@@ -181,6 +181,7 @@ def compute_drop_metrics(contour: np.ndarray, px_per_mm: float, mode: str) -> di
         "ift_mN_m": float(ift) if ift is not None else None,
         "gamma_mN_m": float(gamma * 1e3),
         "beta": float(beta),
+        "s1": float(s1),
         "Bo": float(bo),
         "wo": 0.0,
         "diameter_px": float(diam_px),

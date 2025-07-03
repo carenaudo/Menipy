@@ -239,8 +239,14 @@ class DropAnalysisPanel(QWidget):
         layout.addRow("Volume (\u00b5L)", self.volume_label)
         self.angle_label = QLabel("0.0")
         layout.addRow("Contact angle (\u00b0)", self.angle_label)
-        self.ift_label = QLabel("0.0")
-        layout.addRow("IFT (mN/m)", self.ift_label)
+        self.gamma_label = QLabel("0.0")
+        layout.addRow("Surface tension (mN/m)", self.gamma_label)
+        self.beta_label = QLabel("0.0")
+        layout.addRow("Beta", self.beta_label)
+        self.s1_label = QLabel("0.0")
+        layout.addRow("s1", self.s1_label)
+        self.bo_label = QLabel("0.0")
+        layout.addRow("Bond number", self.bo_label)
         self.wo_label = QLabel("0.0")
         layout.addRow("Wo number", self.wo_label)
 
@@ -252,7 +258,10 @@ class DropAnalysisPanel(QWidget):
         diameter: float | None = None,
         volume: float | None = None,
         angle: float | None = None,
-        ift: float | None = None,
+        gamma: float | None = None,
+        beta: float | None = None,
+        s1: float | None = None,
+        bo: float | None = None,
         wo: float | None = None,
         radius: float | None = None,
     ) -> None:
@@ -269,8 +278,14 @@ class DropAnalysisPanel(QWidget):
             self.volume_label.setText(f"{volume:.2f}")
         if angle is not None:
             self.angle_label.setText(f"{angle:.2f}")
-        if ift is not None:
-            self.ift_label.setText(f"{ift:.2f}")
+        if gamma is not None:
+            self.gamma_label.setText(f"{gamma:.2f}")
+        if beta is not None:
+            self.beta_label.setText(f"{beta:.2f}")
+        if s1 is not None:
+            self.s1_label.setText(f"{s1:.2f}")
+        if bo is not None:
+            self.bo_label.setText(f"{bo:.2f}")
         if wo is not None:
             self.wo_label.setText(f"{wo:.2f}")
 
@@ -282,7 +297,10 @@ class DropAnalysisPanel(QWidget):
             "radius": self.radius_apex_label.text(),
             "volume": self.volume_label.text(),
             "angle": self.angle_label.text(),
-            "ift": self.ift_label.text(),
+            "gamma": self.gamma_label.text(),
+            "beta": self.beta_label.text(),
+            "s1": self.s1_label.text(),
+            "bo": self.bo_label.text(),
             "wo": self.wo_label.text(),
         }
 
