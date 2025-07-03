@@ -316,3 +316,9 @@ tests added for these features.
 **Task:** Implement a graphics-based image viewer that keeps the pixmap scaled to the viewport and adapts during zoom and resize.
 
 **Summary:** Added `ImageView` using `QGraphicsView`/`QGraphicsScene` to store the original pixmap and fit it to the widget. The view tracks a scale factor combining fit and zoom, with helper methods for coordinate conversion. Integrated it into `MainWindow` and updated tests. All tests pass.
+
+## Entry 52 - Surface tension computations
+
+**Task:** Add surface tension calculation methods and integrate them into drop analysis.
+
+**Summary:** Introduced `surface_tension.py` with Jennings–Pallas form factor, Young–Laplace surface tension, Bond number and contour based volume. `compute_drop_metrics` now outputs `gamma_mN_m`, `beta`, `Bo` and uses the new volume estimator. A minimal Sphinx config generates `docs/pendant_drop_methods.md` from these docstrings. Added unit tests for the new functions.

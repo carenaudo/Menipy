@@ -1,7 +1,14 @@
 import cv2
 import numpy as np
 
-from ..models import droplet_volume, contact_angle_from_mask, estimate_surface_tension
+from ..models import (
+    contact_angle_from_mask,
+    estimate_surface_tension,
+    jennings_pallas_beta,
+    surface_tension,
+    bond_number,
+    volume_from_contour,
+)
 from ..models.geometry import horizontal_intersections
 
 
@@ -126,14 +133,26 @@ def compute_drop_metrics(contour: np.ndarray, px_per_mm: float, mode: str) -> di
     cv2.drawContours(mask, [shifted], -1, 255, -1)
 
     px_to_mm = 1.0 / px_per_mm
-    vol_mm3 = droplet_volume(mask, px_to_mm=px_to_mm)
-    volume_uL = vol_mm3 / 1000.0 if vol_mm3 is not None else None
 
     angle = contact_angle_from_mask(mask)
     ift = estimate_surface_tension(mask, 1.0, 1000.0, px_to_mm=px_to_mm)
 
     y_apex = float(contour[:, 1].max())
     radius_apex_mm = (y_apex - y_diam) / px_per_mm
+
+    # --- Surface tension and related parameters ----------------------------
+    r0_mm = radius_apex_mm
+    s1 = diameter_mm / (2.0 * r0_mm) if r0_mm > 0 else 0.0
+    beta = jennings_pallas_beta(s1)
+    delta_rho = 999.0  # approximate water/air density difference
+    g = 9.80665
+    gamma = surface_tension(delta_rho, g, r0_mm, beta)
+    bo = bond_number(delta_rho, g, r0_mm, gamma)
+
+    contour_mm = np.column_stack(
+        [np.abs(contour[:, 0] - apex[0]) / px_per_mm, (contour[:, 1] - y_min) / px_per_mm]
+    )
+    volume_uL = volume_from_contour(contour_mm)
 
     xs_contact = horizontal_intersections(contour, y_min)
     contact_line: tuple[tuple[int, int], tuple[int, int]] | None = None
@@ -149,6 +168,9 @@ def compute_drop_metrics(contour: np.ndarray, px_per_mm: float, mode: str) -> di
         "volume_uL": float(volume_uL) if volume_uL is not None else None,
         "contact_angle_deg": float(angle),
         "ift_mN_m": float(ift) if ift is not None else None,
+        "gamma_mN_m": float(gamma * 1e3),
+        "beta": float(beta),
+        "Bo": float(bo),
         "wo": 0.0,
         "diameter_px": float(diam_px),
         "diameter_line": ((x_left, y_diam), (x_right, y_diam)),
