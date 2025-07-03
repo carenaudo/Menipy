@@ -49,3 +49,6 @@
 
 ## Entry 41 - Pendant detector uses base silhouette
 **Summary:** The previus pull broke some nice features, i asked CODEX to use the original detector function since that worked
+
+## Entry 46 - GUI drop analysis integration
+**Summary:** The new pipeline do not save the variables of the needle region and the drop region to keep the square drawed and to use it to detect the needle. 
