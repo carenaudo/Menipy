@@ -251,3 +251,9 @@ structure and GUI behaviour. All tests pass.
 \n## Entry 41 - Pendant detector uses base silhouette
 **Task:** Combine original silhouette detection with pendant drop metrics.
 **Summary:** `detect_pendant_droplet` now calls `detect_droplet` to reuse its contour and area calculations when possible, falling back to the local mask if it fails. Unit tests still pass.
+
+## Entry 42 - Initialize analysis package
+
+**Task:** Create src/analysis directory.
+
+**Summary:** Added new empty package `analysis` with __init__.py to start implementing drop analysis modules as per NEW_PLAN.
