@@ -163,6 +163,8 @@ class MetricsPanel(QWidget):
             self.ift_label.setText(f"{ift:.2f}")
         if wo is not None:
             self.wo_label.setText(f"{wo:.2f}")
+        if radius is not None:
+            self.radius_apex_label.setText(f"{radius:.2f}")
         if volume is not None:
             self.volume_label.setText(f"{volume:.2f}")
         if contact_angle is not None:
@@ -231,6 +233,8 @@ class DropAnalysisPanel(QWidget):
         layout.addRow("Height (mm)", self.height_label)
         self.diameter_label = QLabel("0.0")
         layout.addRow("Diameter (mm)", self.diameter_label)
+        self.radius_apex_label = QLabel("0.0")
+        layout.addRow("Radius–Apex (mm)", self.radius_apex_label)
         self.volume_label = QLabel("0.0")
         layout.addRow("Volume (\u00b5L)", self.volume_label)
         self.angle_label = QLabel("0.0")
@@ -250,6 +254,7 @@ class DropAnalysisPanel(QWidget):
         angle: float | None = None,
         ift: float | None = None,
         wo: float | None = None,
+        radius: float | None = None,
     ) -> None:
         """Update displayed metric values."""
         if scale is not None:
@@ -258,6 +263,8 @@ class DropAnalysisPanel(QWidget):
             self.height_label.setText(f"{height:.2f}")
         if diameter is not None:
             self.diameter_label.setText(f"{diameter:.2f}")
+        if radius is not None:
+            self.radius_apex_label.setText(f"{radius:.2f}")
         if volume is not None:
             self.volume_label.setText(f"{volume:.2f}")
         if angle is not None:
@@ -272,6 +279,7 @@ class DropAnalysisPanel(QWidget):
             "scale": self.scale_label.text(),
             "height": self.height_label.text(),
             "diameter": self.diameter_label.text(),
+            "radius": self.radius_apex_label.text(),
             "volume": self.volume_label.text(),
             "angle": self.angle_label.text(),
             "ift": self.ift_label.text(),

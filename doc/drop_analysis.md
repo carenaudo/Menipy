@@ -18,9 +18,11 @@ regions of interest drawn by the user on the main image canvas.
    pixels and combined with the known needle length in mm to obtain the
    pixel-to-mm scale.
 5. Press **Drop Region** and draw a green rectangle enclosing the droplet.
-6. Press **Analyze Image** to extract the external contour and overlay the
-   symmetry axis, apex, and max diameter line. Results are displayed in the
-   panel.
+6. Press **Analyze Image** to extract the external contour. The overlay shows
+   the symmetry axis, apex point, a blue line marking the maximum horizontal
+   diameter at its measured height, and an orange line where the droplet touches
+   the needle. Results are displayed in the panel, including the distance from
+   this diameter to the apex.
 
 ## 3. Algorithms
 
@@ -30,7 +32,10 @@ regions of interest drawn by the user on the main image canvas.
 - **Drop Contour and Metrics** – implemented in `analysis/drop.py`. The outer
   contour is obtained using morphological filtering and `cv2.findContours`.
   Metrics such as height, diameter, volume, contact angle and surface tension
-  are computed assuming axial symmetry.
+  are computed assuming axial symmetry. The routine locates the widest
+  horizontal slice of the contour to determine the true diameter and records the
+  distance from that slice to the apex. When the droplet meets the upper ROI
+  boundary, the contact line is highlighted.
 
 For additional examples, see `examples/pendant_demo.png`.
 
