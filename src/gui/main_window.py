@@ -923,7 +923,6 @@ class MainWindow(QMainWindow):
         if self.substrate_line_item is not None:
             self.graphics_scene.removeItem(self.substrate_line_item)
         self.substrate_line_item = SubstrateLineItem(QLineF(pos, pos))
-        self.substrate_line_item.moved.connect(self.analyze_drop_image)
         self.graphics_scene.addItem(self.substrate_line_item)
         event.accept()
 
@@ -949,7 +948,6 @@ class MainWindow(QMainWindow):
             line.x2(),
             line.y2(),
         )
-        self.substrate_line_item.moved.emit()
         self._substrate_start = None
         self.draw_substrate_action.setChecked(False)
         self.set_substrate_mode(False)

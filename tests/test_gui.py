@@ -557,13 +557,15 @@ def test_substrate_line_updates_metrics(tmp_path):
     window.px_per_mm_drop = 10.0
     window.substrate_line_item = SubstrateLineItem(QLineF(10, 38, 30, 38))
     window.graphics_scene.addItem(window.substrate_line_item)
-    window.substrate_line_item.moved.connect(window.analyze_drop_image)
     window._run_analysis("contact-angle")
     before = window.contact_tab.width_label.text()
     line = window.substrate_line_item.line()
     line.translate(0, -2)
     window.substrate_line_item.setLine(line)
     QtWidgets.QApplication.processEvents()
+    after = window.contact_tab.width_label.text()
+    assert before == after
+    window._run_analysis("contact-angle")
     after = window.contact_tab.width_label.text()
     window.close()
     app.quit()
@@ -594,7 +596,6 @@ def test_contact_tab_draw_button(tmp_path):
         assert warn.called
     window.substrate_line_item = SubstrateLineItem(QLineF(1, 10, 18, 10))
     window.graphics_scene.addItem(window.substrate_line_item)
-    window.substrate_line_item.moved.connect(window.analyze_drop_image)
     with patch("PySide6.QtWidgets.QMessageBox.warning") as warn:
         window._run_analysis("contact-angle")
         assert not warn.called
