@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import math
+from typing import Any
+
 import numpy as np
 
 
@@ -26,7 +28,7 @@ def contour_line_intersections(
     idx = np.where(np.diff(np.sign(d)))[0]
     pts: list[np.ndarray] = []
     for i in idx:
-        p, q = contour_px[i], contour_px[i + 1]
+        p, q = contour_px[i], contour_px[(i + 1) % len(contour_px)]
         dp = a * p[0] + b * p[1] + c
         dq = a * q[0] + b * q[1] + c
         if dp == dq:
@@ -46,19 +48,81 @@ def geom_metrics(
     apex_idx: int,
     px_per_mm: float,
 ) -> dict:
-    """Return geometric metrics relative to a substrate line."""
+    """Return geometric metrics relative to a substrate line.
+
+    The droplet is defined as the contour segment below the line that contains
+    the apex point. The returned dictionary includes the trimmed droplet polygon
+    used for downstream calculations.
+    """
     a, b, c = line_params(p1_px, p2_px)
-    (left, right) = contour_line_intersections(contour_px, a, b, c)
-    w_px = math.hypot(right[0] - left[0], right[1] - left[1])
+
+    # flip sign so the apex lies on the negative side of the line
+    if a * contour_px[apex_idx, 0] + b * contour_px[apex_idx, 1] + c > 0:
+        a, b, c = -a, -b, -c
+
+    left, right = contour_line_intersections(contour_px, a, b, c)
+
+    def _intersection(p: np.ndarray, q: np.ndarray) -> np.ndarray:
+        dp = a * p[0] + b * p[1] + c
+        dq = a * q[0] + b * q[1] + c
+        t = dp / (dp - dq)
+        return p + t * (q - p)
+
+    d = a * contour_px[:, 0] + b * contour_px[:, 1] + c
+    n = contour_px.shape[0]
+
+    # walk backwards from apex until crossing the substrate
+    i = apex_idx
+    while True:
+        j = (i - 1) % n
+        if d[j] > 0 >= d[i]:
+            left_pt = _intersection(contour_px[j], contour_px[i])
+            start_idx = i
+            break
+        i = j
+        if i == apex_idx:
+            raise ValueError("line does not intersect contour")
+
+    # walk forwards from apex until crossing the substrate
+    i = apex_idx
+    while True:
+        j = (i + 1) % n
+        if d[j] > 0 >= d[i]:
+            right_pt = _intersection(contour_px[i], contour_px[j])
+            end_idx = i
+            break
+        i = j
+        if i == apex_idx:
+            raise ValueError("line does not intersect contour")
+
+    # gather contour segment from start_idx..end_idx
+    seg_idx: list[int] = []
+    k = start_idx
+    seg_idx.append(k)
+    while k != end_idx:
+        k = (k + 1) % n
+        seg_idx.append(k)
+    sub_contour = contour_px[seg_idx]
+
+    # insert exact intersection points
+    sub_contour = np.vstack([left_pt, sub_contour, right_pt])
+    droplet_poly = np.vstack([sub_contour, right_pt, left_pt])
+
+    w_px = math.hypot(right_pt[0] - left_pt[0], right_pt[1] - left_pt[1])
     w_mm = w_px / px_per_mm
     rb_mm = w_mm / 2.0
     apex_px = contour_px[apex_idx]
     h_px = abs(a * apex_px[0] + b * apex_px[1] + c)
     h_mm = h_px / px_per_mm
+
     return {
-        "xL_px": float(left[0]),
-        "xR_px": float(right[0]),
+        "xL_px": float(left_pt[0]),
+        "xR_px": float(right_pt[0]),
         "w_mm": float(w_mm),
         "rb_mm": float(rb_mm),
         "h_mm": float(h_mm),
+        "droplet_poly": droplet_poly,
+        "a": float(a),
+        "b": float(b),
+        "c": float(c),
     }

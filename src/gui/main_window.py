@@ -545,13 +545,17 @@ class MainWindow(QMainWindow):
             return
         contour += np.array([x1, y1])
         mode = getattr(self, "analysis_method", "pendant")
+        apex_idx = (
+            int(np.argmin(contour[:, 1]))
+            if mode == "contact-angle"
+            else int(np.argmax(contour[:, 1]))
+        )
         metrics = compute_drop_metrics(
             contour.astype(float),
             self.px_per_mm_drop,
             mode,
             needle_diam_mm=self.calibration_tab.needle_length.value(),
         )
-        apex_idx = int(np.argmin(contour[:, 1])) if mode == "contact-angle" else int(np.argmax(contour[:, 1]))
         if mode == "contact-angle" and self.substrate_line_item is not None:
             p1 = self.substrate_line_item.line().p1()
             p2 = self.substrate_line_item.line().p2()
@@ -562,7 +566,15 @@ class MainWindow(QMainWindow):
                 apex_idx,
                 self.px_per_mm_drop,
             )
+            droplet_poly = extra.pop("droplet_poly")
+            metrics = compute_drop_metrics(
+                droplet_poly.astype(float),
+                self.px_per_mm_drop,
+                mode,
+                needle_diam_mm=self.calibration_tab.needle_length.value(),
+            )
             metrics.update(extra)
+            contour = droplet_poly
         panel = self.pendant_tab if mode == "pendant" else self.contact_tab
         panel.set_metrics(
             height=metrics["height_mm"],
