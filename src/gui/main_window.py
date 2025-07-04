@@ -97,7 +97,6 @@ class MainWindow(QMainWindow):
         self.tabs = QTabWidget()
         self.tabs.setMinimumWidth(250)
         splitter.addWidget(self.tabs)
-        self.tabs.currentChanged.connect(self._update_tool_visibility)
 
         classic_widget = QWidget()
         classic_layout = QVBoxLayout(classic_widget)
@@ -148,6 +147,10 @@ class MainWindow(QMainWindow):
 
         self.contact_tab = AnalysisTab(show_contact_angle=True)
         self.tabs.addTab(self.contact_tab, "Contact angle")
+
+        # Connect after tabs exist so currentChanged doesn't fire early
+        self.tabs.currentChanged.connect(self._update_tool_visibility)
+        self._update_tool_visibility()
 
         # Drop analysis button connections
         self.calibration_tab.needle_region_button.clicked.connect(

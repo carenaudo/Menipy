@@ -391,3 +391,9 @@ tests added for these features.
 
 **Summary:** Added `SubstrateLineItem` for interactive line drawing with a new "Draw Substrate" action. Created `physics.contact_geom` with geometry helpers and integrated them into `MainWindow.analyze_drop_image`. Analysis tabs now show base width, radius and apex height. Tests cover the geometry calculations and GUI update.
 
+
+## Entry 64 - Initialize tool visibility after adding tabs
+
+**Task:** Prevent AttributeError when checking active tab during setup.
+
+**Summary:** Moved the `currentChanged` signal connection in `MainWindow._setup_ui` until after the `contact_tab` is created. This avoids early invocation of `_update_tool_visibility` before the attribute exists, fixing the startup crash.
