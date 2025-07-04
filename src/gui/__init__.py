@@ -11,6 +11,7 @@ from .controls import (
     AnalysisTab,
 )
 from .overlay import draw_drop_overlay
+from .items import SubstrateLineItem
 
 __all__ = [
     "MainWindow",
@@ -22,4 +23,5 @@ __all__ = [
     "CalibrationTab",
     "AnalysisTab",
     "draw_drop_overlay",
+    "SubstrateLineItem",
 ]

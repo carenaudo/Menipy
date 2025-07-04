@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import cv2
 
-from PySide6.QtCore import Qt, QRectF
+from PySide6.QtCore import Qt, QRectF, QLineF
 from PySide6.QtGui import (
     QImage,
     QPixmap,
@@ -65,6 +65,8 @@ from ..analysis import (
     compute_drop_metrics,
 )
 from .overlay import draw_drop_overlay
+from .items import SubstrateLineItem
+from ..physics.contact_geom import geom_metrics
 
 
 class MainWindow(QMainWindow):
@@ -95,6 +97,7 @@ class MainWindow(QMainWindow):
         self.tabs = QTabWidget()
         self.tabs.setMinimumWidth(250)
         splitter.addWidget(self.tabs)
+        self.tabs.currentChanged.connect(self._update_tool_visibility)
 
         classic_widget = QWidget()
         classic_layout = QVBoxLayout(classic_widget)
@@ -180,6 +183,13 @@ class MainWindow(QMainWindow):
         self.use_ml_action.setCheckable(True)
         tools_menu.addAction(self.use_ml_action)
 
+        self.draw_substrate_action = QAction("Draw Substrate", self)
+        self.draw_substrate_action.setCheckable(True)
+        self.draw_substrate_action.triggered.connect(
+            lambda checked: self.set_substrate_mode(checked)
+        )
+        tools_menu.addAction(self.draw_substrate_action)
+
         self.mask_item = None
         self.contour_items = []
         self.calibration_rect_item = None
@@ -214,6 +224,9 @@ class MainWindow(QMainWindow):
         self.diameter_item = None
         self.apex_dot_item = None
         self.px_per_mm_drop = 0.0
+        self.substrate_line_item = None
+        self.substrate_line = None
+        self._substrate_start = None
 
         self.parameter_panel.calibration_mode.toggled.connect(
             self.set_calibration_mode
@@ -523,6 +536,18 @@ class MainWindow(QMainWindow):
             mode,
             needle_diam_mm=self.calibration_tab.needle_length.value(),
         )
+        apex_idx = int(np.argmin(contour[:, 1])) if mode == "contact-angle" else int(np.argmax(contour[:, 1]))
+        if mode == "contact-angle" and self.substrate_line_item is not None:
+            p1 = self.substrate_line_item.line().p1()
+            p2 = self.substrate_line_item.line().p2()
+            extra = geom_metrics(
+                p1.toTuple(),
+                p2.toTuple(),
+                contour.astype(float),
+                apex_idx,
+                self.px_per_mm_drop,
+            )
+            metrics.update(extra)
         panel = self.pendant_tab if mode == "pendant" else self.contact_tab
         panel.set_metrics(
             height=metrics["height_mm"],
@@ -539,6 +564,9 @@ class MainWindow(QMainWindow):
             asurf=metrics["A_surf_mm2"],
             wapp=metrics["W_app_mN"],
             radius=metrics["radius_apex_mm"],
+            width=metrics.get("w_mm"),
+            rbase=metrics.get("rb_mm"),
+            height_line=metrics.get("h_mm"),
         )
         y_min = int(contour[:, 1].min())
         y_max = int(contour[:, 1].max())
@@ -848,23 +876,64 @@ class MainWindow(QMainWindow):
                 "Calibration",
                 f"Calibration set to {cal.pixels_per_mm:.2f} px/mm",
             )
+
+    def _update_tool_visibility(self, index: int | None = None) -> None:
+        is_contact = self.tabs.currentWidget() is self.contact_tab
+        self.draw_substrate_action.setVisible(is_contact)
+        if not is_contact:
+            self.draw_substrate_action.setChecked(False)
+            self.set_substrate_mode(False)
+
+    def set_substrate_mode(self, enabled: bool) -> None:
+        if enabled:
+            self.graphics_view.setCursor(Qt.CrossCursor)
+            self.graphics_view.mousePressEvent = self._substrate_press
+            self.graphics_view.mouseMoveEvent = self._substrate_move
+            self.graphics_view.mouseReleaseEvent = self._substrate_release
         else:
-            if self.calibration_rect is None:
-                QMessageBox.information(self, "Calibration", "Draw calibration box first")
-                return
-            length_mm = self.parameter_panel.calibration_length()
-            try:
-                auto_calibrate(self.image, self.calibration_rect, length_mm)
-            except Exception as exc:
-                QMessageBox.warning(self, "Calibration", str(exc))
-                return
-            cal = get_calibration()
-            self.parameter_panel.set_scale_display(cal.pixels_per_mm)
-            QMessageBox.information(
-                self,
-                "Calibration",
-                f"Calibration set to {cal.pixels_per_mm:.2f} px/mm",
-            )
+            self.graphics_view.setCursor(Qt.ArrowCursor)
+            self.graphics_view.mousePressEvent = self._default_press
+            self.graphics_view.mouseMoveEvent = self._default_move
+            self.graphics_view.mouseReleaseEvent = self._default_release
+            self._substrate_start = None
+
+    def _substrate_press(self, event):
+        pos = self.graphics_view.mapToScene(event.pos())
+        self._substrate_start = pos
+        if self.substrate_line_item is not None:
+            self.graphics_scene.removeItem(self.substrate_line_item)
+        self.substrate_line_item = SubstrateLineItem(QLineF(pos, pos))
+        self.substrate_line_item.moved.connect(self.analyze_drop_image)
+        self.graphics_scene.addItem(self.substrate_line_item)
+        event.accept()
+
+    def _substrate_move(self, event):
+        if self._substrate_start is None or self.substrate_line_item is None:
+            return
+        pos = self.graphics_view.mapToScene(event.pos())
+        line = self.substrate_line_item.line()
+        line.setP2(pos)
+        self.substrate_line_item.setLine(line)
+        event.accept()
+
+    def _substrate_release(self, event):
+        if self._substrate_start is None or self.substrate_line_item is None:
+            return
+        pos = self.graphics_view.mapToScene(event.pos())
+        line = self.substrate_line_item.line()
+        line.setP2(pos)
+        self.substrate_line_item.setLine(line)
+        self.substrate_line = (
+            line.x1(),
+            line.y1(),
+            line.x2(),
+            line.y2(),
+        )
+        self.substrate_line_item.moved.emit()
+        self._substrate_start = None
+        self.draw_substrate_action.setChecked(False)
+        self.set_substrate_mode(False)
+        event.accept()
 
     def set_zoom(self, factor: float) -> None:
         """Scale the graphics view by ``factor``."""

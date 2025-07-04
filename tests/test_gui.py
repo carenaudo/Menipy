@@ -536,3 +536,35 @@ def test_drop_regions_saved(tmp_path):
 
     window.close()
     app.quit()
+
+def test_substrate_line_updates_metrics(tmp_path):
+    if QtWidgets is None:
+        pytest.skip("PySide6 not available")
+    import numpy as np
+    import cv2
+    from PySide6.QtCore import QPoint
+
+    img = np.zeros((40, 40), dtype=np.uint8)
+    cv2.circle(img, (20, 30), 8, 255, -1)
+    path = tmp_path / "drop.png"
+    cv2.imwrite(str(path), img)
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    window = MainWindow()
+    window.load_image(path)
+    window.drop_rect = (10, 20, 30, 39)
+    window.px_per_mm_drop = 10.0
+    window.substrate_line_item = SubstrateLineItem(QLineF(10, 38, 30, 38))
+    window.graphics_scene.addItem(window.substrate_line_item)
+    window.substrate_line_item.moved.connect(window.analyze_drop_image)
+    window._run_analysis("contact-angle")
+    before = window.contact_tab.width_label.text()
+    line = window.substrate_line_item.line()
+    line.translate(0, -2)
+    window.substrate_line_item.setLine(line)
+    QtWidgets.QApplication.processEvents()
+    after = window.contact_tab.width_label.text()
+    window.close()
+    app.quit()
+    assert before != after
+
