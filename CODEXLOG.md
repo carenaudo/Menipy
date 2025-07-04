@@ -397,3 +397,9 @@ tests added for these features.
 **Task:** Prevent AttributeError when checking active tab during setup.
 
 **Summary:** Moved the `currentChanged` signal connection in `MainWindow._setup_ui` until after the `contact_tab` is created. This avoids early invocation of `_update_tool_visibility` before the attribute exists, fixing the startup crash.
+
+## Entry 65 - Fix substrate action init
+
+**Task:** Prevent AttributeError for missing draw_substrate_action.
+
+**Summary:** Moved the initial `_update_tool_visibility()` call to after `draw_substrate_action` is created so the action exists before visibility is set.
