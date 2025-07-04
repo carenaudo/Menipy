@@ -414,3 +414,10 @@ tests added for these features.
 **Task:** Add a "Draw Substrate Line" button to the contact angle tab and require a substrate line before analysis.
 
 **Summary:** Introduced `substrate_button` in `AnalysisTab` and connected it to a new handler in `MainWindow` that enables substrate line drawing. `_run_analysis` now shows a warning if no line is defined when running contact-angle analysis. Added corresponding GUI tests. All tests pass.
+
+## Entry 68 - Fix substrate line signal
+
+**Task:** Remove Qt signal from SubstrateLineItem to avoid runtime errors on PySide6 versions without QObject support.
+
+**Summary:** Replaced the Qt `Signal` with a simple callback-based `CallbackSignal` class in `items.py`. Updated `SubstrateLineItem` to instantiate this custom signal and handle move notifications. All tests pass.
+
