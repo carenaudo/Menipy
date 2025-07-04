@@ -378,3 +378,9 @@ tests added for these features.
 **Task:** Prevent the Clean Detection action from altering the main window dimensions.
 
 **Summary:** Removed the `adjustSize()` call from `MainWindow.clean_detection` so pressing "Clean" no longer resizes the GUI. All tests continue to pass.
+
+## Entry 62 - Contact angle docs
+
+**Task:** Document contact angle analysis functions and update log.
+
+**Summary:** Added `docs/contact_angle_methods.md` with `autofunction` entries for the geometric, spline and ADSA utilities from `src/contact_angle.py`. Inserted a module docstring and logged this update.
