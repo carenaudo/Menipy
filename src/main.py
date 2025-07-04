@@ -9,7 +9,7 @@ def main() -> None:
     """Launch the Menipy GUI application."""
     app = QApplication([])
     window = MainWindow()
-    window.show()
+    window.showMaximized()
     app.exec()
 
 

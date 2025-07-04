@@ -49,6 +49,18 @@ def test_tab_widget_setup():
     app.quit()
 
 
+def test_widget_default_sizes():
+    if QtWidgets is None:
+        pytest.skip("PySide6 not available")
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    window = MainWindow()
+    assert window.graphics_view.minimumWidth() == 200
+    assert window.graphics_view.minimumHeight() == 200
+    assert window.tabs.minimumWidth() == 250
+    window.close()
+    app.quit()
+
+
 def test_load_image_retains_size(tmp_path):
     if QtWidgets is None:
         pytest.skip("PySide6 not available")

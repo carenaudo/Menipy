@@ -354,3 +354,9 @@ tests added for these features.
 **Task:** Resolve TypeError from `AnalysisTab.set_metrics()` when running drop analysis.
 
 **Summary:** Removed the unsupported `beta` keyword from the `set_metrics` call in `gui/main_window.py`. Tests confirm the GUI now updates metrics without errors.
+
+## Entry 58 - GUI defaults
+
+**Task:** Start main window maximized and set default widget sizes.
+
+**Summary:** Modified `src/main.py` to call `showMaximized()` and updated `MainWindow` setup to enforce a 200px minimum image view and 250px tab width. Added splitter size initialization and a test covering these defaults.

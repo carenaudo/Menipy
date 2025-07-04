@@ -80,11 +80,13 @@ class MainWindow(QMainWindow):
 
         # Image display area
         self.graphics_view = ImageView()
+        self.graphics_view.setMinimumSize(200, 200)
         self.graphics_scene = self.graphics_view.scene()
         splitter.addWidget(self.graphics_view)
 
         # Control panel wrapped in tabs
         self.tabs = QTabWidget()
+        self.tabs.setMinimumWidth(250)
         splitter.addWidget(self.tabs)
 
         classic_widget = QWidget()
@@ -137,6 +139,7 @@ class MainWindow(QMainWindow):
         )
 
         self.setCentralWidget(splitter)
+        splitter.setSizes([max(self.width() - 250, 200), 250])
 
         # Menu actions
         open_action = QAction("Open Image", self)
