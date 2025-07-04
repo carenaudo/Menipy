@@ -212,7 +212,8 @@ def test_calibration_box(tmp_path):
 
     import numpy as np
     import cv2
-    from PySide6.QtCore import QPoint
+    from PySide6.QtCore import QPoint, QLineF
+    from src.gui import SubstrateLineItem
 
     img = np.zeros((20, 20, 3), dtype=np.uint8)
     path = tmp_path / "img.png"
@@ -567,4 +568,36 @@ def test_substrate_line_updates_metrics(tmp_path):
     window.close()
     app.quit()
     assert before != after
+
+
+def test_contact_tab_draw_button(tmp_path):
+    if QtWidgets is None:
+        pytest.skip("PySide6 not available")
+    import numpy as np
+    import cv2
+    from unittest.mock import patch
+    from PySide6.QtCore import QLineF
+    from src.gui import SubstrateLineItem
+
+    img = np.zeros((20, 20), dtype=np.uint8)
+    path = tmp_path / "img.png"
+    cv2.imwrite(str(path), img)
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    window = MainWindow()
+    window.load_image(path)
+    assert window.contact_tab.substrate_button is not None
+    window.contact_tab.substrate_button.click()
+    assert window.draw_substrate_action.isChecked()
+    with patch("PySide6.QtWidgets.QMessageBox.warning") as warn:
+        window._run_analysis("contact-angle")
+        assert warn.called
+    window.substrate_line_item = SubstrateLineItem(QLineF(1, 10, 18, 10))
+    window.graphics_scene.addItem(window.substrate_line_item)
+    window.substrate_line_item.moved.connect(window.analyze_drop_image)
+    with patch("PySide6.QtWidgets.QMessageBox.warning") as warn:
+        window._run_analysis("contact-angle")
+        assert not warn.called
+    window.close()
+    app.quit()
 
