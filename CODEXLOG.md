@@ -403,3 +403,8 @@ tests added for these features.
 **Task:** Prevent AttributeError for missing draw_substrate_action.
 
 **Summary:** Moved the initial `_update_tool_visibility()` call to after `draw_substrate_action` is created so the action exists before visibility is set.
+## Entry 66 - Initialize default event handlers
+
+**Task:** Resolve AttributeError when calling set_substrate_mode during window initialization.
+
+**Summary:** Saved the graphics view's default mouse event handlers before calling `_update_tool_visibility` in `_setup_ui`. This ensures `set_substrate_mode(False)` has access to the handlers. All tests pass.
