@@ -90,6 +90,10 @@ class MainWindow(QMainWindow):
         self.graphics_view = ImageView()
         self.graphics_view.setMinimumSize(200, 200)
         self.graphics_scene = self.graphics_view.scene()
+        # Save default mouse handlers before they may be overridden
+        self._default_press = self.graphics_view.mousePressEvent
+        self._default_move = self.graphics_view.mouseMoveEvent
+        self._default_release = self.graphics_view.mouseReleaseEvent
         image_layout.addWidget(self.graphics_view)
         splitter.addWidget(image_container)
 
@@ -205,9 +209,6 @@ class MainWindow(QMainWindow):
         self.roi_rect_item = None
         self.roi_rect = None
         self._roi_start = None
-        self._default_press = self.graphics_view.mousePressEvent
-        self._default_move = self.graphics_view.mouseMoveEvent
-        self._default_release = self.graphics_view.mouseReleaseEvent
 
         self.last_mask = None
         self.mask_offset = (0, 0)
