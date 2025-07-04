@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 from src.physics.contact_geom import geom_metrics
+cv2 = __import__('cv2')
 
 
 def test_circle_geom_metrics():
@@ -21,3 +22,6 @@ def test_circle_geom_metrics():
     metrics = geom_metrics(tuple(p1), tuple(p2), contour_rot, apex_idx, px_per_mm)
     assert metrics["rb_mm"] == pytest.approx(1.0, rel=1e-2)
     assert metrics["h_mm"] == pytest.approx(1.0, rel=2e-2)
+    poly = metrics["droplet_poly"]
+    area_px = cv2.contourArea(poly.astype(np.float32))
+    assert area_px == pytest.approx(0.5 * np.pi * r_px ** 2, rel=1e-2)
