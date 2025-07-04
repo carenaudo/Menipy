@@ -451,8 +451,17 @@ class AnalysisTab(QWidget):
         if show_contact_angle:
             self.angle_label = QLabel("0.0")
             layout.addRow("Contact angle (º)", self.angle_label)
+            self.width_label = QLabel("0.0")
+            layout.addRow("Base width (mm)", self.width_label)
+            self.rb_label = QLabel("0.0")
+            layout.addRow("Base radius (mm)", self.rb_label)
+            self.h_label = QLabel("0.0")
+            layout.addRow("Apex height (mm)", self.h_label)
         else:
             self.angle_label = None
+            self.width_label = None
+            self.rb_label = None
+            self.h_label = None
 
         self.volume_label = QLabel("0.0")
         layout.addRow("Volume (uL)", self.volume_label)
@@ -493,6 +502,9 @@ class AnalysisTab(QWidget):
         vmax: float | None = None,
         wapp: float | None = None,
         kappa0: float | None = None,
+        width: float | None = None,
+        rbase: float | None = None,
+        height_line: float | None = None,
     ) -> None:
         if height is not None:
             self.height_label.setText(f"{height:.2f}")
@@ -524,6 +536,12 @@ class AnalysisTab(QWidget):
             self.wapp_label.setText(f"{wapp:.2f}")
         if kappa0 is not None:
             self.kappa0_label.setText(f"{kappa0:.2f}")
+        if width is not None and self.width_label is not None:
+            self.width_label.setText(f"{width:.2f}")
+        if rbase is not None and self.rb_label is not None:
+            self.rb_label.setText(f"{rbase:.2f}")
+        if height_line is not None and self.h_label is not None:
+            self.h_label.setText(f"{height_line:.2f}")
 
     def metrics(self) -> dict[str, str]:
         data = {
@@ -544,5 +562,8 @@ class AnalysisTab(QWidget):
         }
         if self.angle_label is not None:
             data["angle"] = self.angle_label.text()
+            data["width"] = self.width_label.text()
+            data["rbase"] = self.rb_label.text()
+            data["height_line"] = self.h_label.text()
         return data
 

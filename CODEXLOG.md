@@ -384,3 +384,10 @@ tests added for these features.
 **Task:** Document contact angle analysis functions and update log.
 
 **Summary:** Added `docs/contact_angle_methods.md` with `autofunction` entries for the geometric, spline and ADSA utilities from `src/contact_angle.py`. Inserted a module docstring and logged this update.
+
+## Entry 63 - Substrate line and contact geometry
+
+**Task:** Implement drawing of a substrate line for contact angle analysis and compute related metrics.
+
+**Summary:** Added `SubstrateLineItem` for interactive line drawing with a new "Draw Substrate" action. Created `physics.contact_geom` with geometry helpers and integrated them into `MainWindow.analyze_drop_image`. Analysis tabs now show base width, radius and apex height. Tests cover the geometry calculations and GUI update.
+
