@@ -312,7 +312,6 @@ class MainWindow(QMainWindow):
             self.graphics_scene.removeItem(self.contact_line_item)
             self.contact_line_item = None
         self.last_mask = None
-        self.adjustSize()
         self.set_zoom(self.zoom_control.slider.value() / 100.0)
 
     def _display_image(self, img: np.ndarray) -> None:

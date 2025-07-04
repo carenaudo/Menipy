@@ -372,3 +372,9 @@ tests added for these features.
 **Task:** Resolve AttributeError due to referencing buttons before creation in `MainWindow` setup.
 
 **Summary:** Moved the initialization of `detect_button`, `clean_button`, and filter controls above their layout insertion to ensure attributes exist before use. All tests pass.
+
+## Entry 61 - Stop Clean button resizing window
+
+**Task:** Prevent the Clean Detection action from altering the main window dimensions.
+
+**Summary:** Removed the `adjustSize()` call from `MainWindow.clean_detection` so pressing "Clean" no longer resizes the GUI. All tests continue to pass.
