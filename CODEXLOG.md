@@ -366,3 +366,9 @@ tests added for these features.
 
 **Summary:** Updated `MainWindow` layout to place `ZoomControl` atop the image view. The first tab is now "Detection Test" and includes a segmentation algorithm selector, Detect/Clean buttons, and filter selection with strength slider. Implemented `apply_filter`, `clean_filter`, and `clean_detection` helpers and simplified detection to show segmentation masks. Adjusted tests for the new tab name and ROI processing. All tests pass.
 
+
+## Entry 60 - Fix uninitialized widgets
+
+**Task:** Resolve AttributeError due to referencing buttons before creation in `MainWindow` setup.
+
+**Summary:** Moved the initialization of `detect_button`, `clean_button`, and filter controls above their layout insertion to ensure attributes exist before use. All tests pass.

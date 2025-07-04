@@ -103,16 +103,6 @@ class MainWindow(QMainWindow):
         self.algorithm_combo.addItems(["Otsu", "Adaptive", "ML"])
         classic_layout.addWidget(self.algorithm_combo)
 
-        classic_layout.addWidget(self.detect_button)
-        classic_layout.addWidget(self.clean_button)
-        classic_layout.addWidget(self.filter_combo)
-        classic_layout.addWidget(self.filter_slider)
-        classic_layout.addWidget(self.filter_button)
-        classic_layout.addWidget(self.clean_filter_button)
-
-        self.parameter_panel = ParameterPanel()
-        self.metrics_panel = MetricsPanel()
-
         self.detect_button = QPushButton("Detect")
         self.detect_button.clicked.connect(self.process_image)
         self.clean_button = QPushButton("Clean")
@@ -127,6 +117,16 @@ class MainWindow(QMainWindow):
         self.filter_button.clicked.connect(self.apply_filter)
         self.clean_filter_button = QPushButton("Clean Filter")
         self.clean_filter_button.clicked.connect(self.clean_filter)
+
+        classic_layout.addWidget(self.detect_button)
+        classic_layout.addWidget(self.clean_button)
+        classic_layout.addWidget(self.filter_combo)
+        classic_layout.addWidget(self.filter_slider)
+        classic_layout.addWidget(self.filter_button)
+        classic_layout.addWidget(self.clean_filter_button)
+
+        self.parameter_panel = ParameterPanel()
+        self.metrics_panel = MetricsPanel()
         self.calculate_button = QPushButton("Calculate")
         self.calculate_button.clicked.connect(self.calculate_parameters)
         self.draw_button = QPushButton("Draw Model")
