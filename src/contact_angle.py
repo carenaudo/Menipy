@@ -1,3 +1,5 @@
+"""Contact-angle analysis utilities."""
+
 import math
 import numpy as np
 
