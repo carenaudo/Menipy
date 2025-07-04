@@ -408,3 +408,9 @@ tests added for these features.
 **Task:** Resolve AttributeError when calling set_substrate_mode during window initialization.
 
 **Summary:** Saved the graphics view's default mouse event handlers before calling `_update_tool_visibility` in `_setup_ui`. This ensures `set_substrate_mode(False)` has access to the handlers. All tests pass.
+
+## Entry 67 - Contact tab substrate button
+
+**Task:** Add a "Draw Substrate Line" button to the contact angle tab and require a substrate line before analysis.
+
+**Summary:** Introduced `substrate_button` in `AnalysisTab` and connected it to a new handler in `MainWindow` that enables substrate line drawing. `_run_analysis` now shows a warning if no line is defined when running contact-angle analysis. Added corresponding GUI tests. All tests pass.
