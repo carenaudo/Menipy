@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
     QComboBox,
     QPushButton,
     QTabWidget,
+    QSlider,
 )
 import pandas as pd
 
@@ -78,11 +79,17 @@ class MainWindow(QMainWindow):
         """Create widgets, menus, and layouts."""
         splitter = QSplitter()
 
-        # Image display area
+        # Image display area with zoom slider on top
+        image_container = QWidget()
+        image_layout = QVBoxLayout(image_container)
+        self.zoom_control = ZoomControl()
+        self.zoom_control.zoomChanged.connect(self.set_zoom)
+        image_layout.addWidget(self.zoom_control)
         self.graphics_view = ImageView()
         self.graphics_view.setMinimumSize(200, 200)
         self.graphics_scene = self.graphics_view.scene()
-        splitter.addWidget(self.graphics_view)
+        image_layout.addWidget(self.graphics_view)
+        splitter.addWidget(image_container)
 
         # Control panel wrapped in tabs
         self.tabs = QTabWidget()
@@ -93,17 +100,33 @@ class MainWindow(QMainWindow):
         classic_layout = QVBoxLayout(classic_widget)
 
         self.algorithm_combo = QComboBox()
-        self.algorithm_combo.addItems(["Otsu", "Adaptive"])
+        self.algorithm_combo.addItems(["Otsu", "Adaptive", "ML"])
         classic_layout.addWidget(self.algorithm_combo)
 
-        self.zoom_control = ZoomControl()
-        self.zoom_control.zoomChanged.connect(self.set_zoom)
-        classic_layout.addWidget(self.zoom_control)
+        classic_layout.addWidget(self.detect_button)
+        classic_layout.addWidget(self.clean_button)
+        classic_layout.addWidget(self.filter_combo)
+        classic_layout.addWidget(self.filter_slider)
+        classic_layout.addWidget(self.filter_button)
+        classic_layout.addWidget(self.clean_filter_button)
 
         self.parameter_panel = ParameterPanel()
         self.metrics_panel = MetricsPanel()
-        self.process_button = QPushButton("Process")
-        self.process_button.clicked.connect(self.process_image)
+
+        self.detect_button = QPushButton("Detect")
+        self.detect_button.clicked.connect(self.process_image)
+        self.clean_button = QPushButton("Clean")
+        self.clean_button.clicked.connect(self.clean_detection)
+
+        self.filter_combo = QComboBox()
+        self.filter_combo.addItems(["Gaussian", "Median", "Bilateral"])
+        self.filter_slider = QSlider(Qt.Horizontal)
+        self.filter_slider.setRange(1, 10)
+        self.filter_slider.setValue(1)
+        self.filter_button = QPushButton("Apply Filter")
+        self.filter_button.clicked.connect(self.apply_filter)
+        self.clean_filter_button = QPushButton("Clean Filter")
+        self.clean_filter_button.clicked.connect(self.clean_filter)
         self.calculate_button = QPushButton("Calculate")
         self.calculate_button.clicked.connect(self.calculate_parameters)
         self.draw_button = QPushButton("Draw Model")
@@ -112,7 +135,7 @@ class MainWindow(QMainWindow):
         self.save_csv_button.clicked.connect(lambda: self.save_csv())
 
         classic_layout.addStretch()
-        self.tabs.addTab(classic_widget, "Classic")
+        self.tabs.addTab(classic_widget, "Detection Test")
 
         self.calibration_tab = CalibrationTab()
         self.tabs.addTab(self.calibration_tab, "Calibration")
@@ -217,6 +240,7 @@ class MainWindow(QMainWindow):
 
     def load_image(self, path: Path) -> None:
         self.image = load_image(path)
+        self.original_image = self.image.copy()
         if self.image.ndim == 3:
             rgb = QImage(
                 self.image.data,
@@ -244,55 +268,109 @@ class MainWindow(QMainWindow):
         self.calibration_tab.set_regions(needle=None, drop=None)
         self.graphics_view.set_pixmap(pixmap)
         self.pixmap_item = self.graphics_view.pixmap_item
-        self.adjustSize()
-        self.set_zoom(self.zoom_control.slider.value() / 100.0)
 
-
-    def process_image(self) -> None:
-        """Run segmentation on the loaded image and overlay the mask."""
-        if getattr(self, "image", None) is None:
+    def apply_filter(self) -> None:
+        """Apply the selected filter to the image."""
+        if getattr(self, "original_image", None) is None:
             return
-        image = self.image
-        if self.roi_rect is not None:
-            x1, y1, x2, y2 = map(int, self.roi_rect)
+        img = self.original_image
+        strength = self.filter_slider.value()
+        method = self.filter_combo.currentText()
+        if method == "Gaussian":
+            k = max(1, strength * 2 + 1)
+            filtered = cv2.GaussianBlur(img, (k, k), 0)
+        elif method == "Median":
+            k = max(1, strength * 2 + 1)
+            filtered = cv2.medianBlur(img, k)
+        elif method == "Bilateral":
+            d = max(1, strength * 2 + 1)
+            filtered = cv2.bilateralFilter(img, d, 75, 75)
         else:
-            x1, y1, x2, y2 = 0, 0, image.shape[1], image.shape[0]
-        roi = (x1, y1, x2 - x1, y2 - y1)
+            filtered = img
+        self.image = filtered
+        self._display_image(filtered)
 
-        # Clear previous markers
+    def clean_filter(self) -> None:
+        """Restore the original loaded image."""
+        if getattr(self, "original_image", None) is None:
+            return
+        self.image = self.original_image.copy()
+        self._display_image(self.image)
+
+    def clean_detection(self) -> None:
+        """Remove detection overlays from the scene."""
+        if self.mask_item is not None:
+            self.graphics_scene.removeItem(self.mask_item)
+            self.mask_item = None
+        for item in self.contour_items:
+            self.graphics_scene.removeItem(item)
+        self.contour_items.clear()
         if self.apex_item is not None:
             self.graphics_scene.removeItem(self.apex_item)
             self.apex_item = None
         if self.contact_line_item is not None:
             self.graphics_scene.removeItem(self.contact_line_item)
             self.contact_line_item = None
+        self.last_mask = None
+        self.adjustSize()
+        self.set_zoom(self.zoom_control.slider.value() / 100.0)
 
-        cal = get_calibration()
-        px_to_mm = 1.0 / cal.pixels_per_mm
-        try:
-            mode_sel = self.parameter_panel.detection_mode()
-            if mode_sel == "sessile":
-                droplet = detect_sessile_droplet(self.image, roi, px_to_mm)
-                mode = "sessile"
-            else:
-                droplet = detect_pendant_droplet(self.image, roi, px_to_mm)
-                mode = "pendant"
-        except ValueError as exc:
-            QMessageBox.warning(self, "Detection", str(exc))
-            self.last_mask = None
+    def _display_image(self, img: np.ndarray) -> None:
+        """Display ``img`` in the graphics view and clear overlays."""
+        if img.ndim == 3:
+            rgb = QImage(
+                img.data,
+                img.shape[1],
+                img.shape[0],
+                img.strides[0],
+                QImage.Format_BGR888,
+            )
+        else:
+            rgb = QImage(
+                img.data,
+                img.shape[1],
+                img.shape[0],
+                img.strides[0],
+                QImage.Format_Grayscale8,
+            )
+        pixmap = QPixmap.fromImage(rgb)
+        self.graphics_scene.clear()
+        self.graphics_view.set_pixmap(pixmap)
+        self.pixmap_item = self.graphics_view.pixmap_item
+
+
+    def process_image(self) -> None:
+        """Run selected segmentation on the loaded image and overlay the mask."""
+        if getattr(self, "image", None) is None:
             return
+        image = self.image
+        if self.roi_rect is not None:
+            x1, y1, x2, y2 = map(int, self.roi_rect)
+            roi_img = image[y1:y2, x1:x2]
+        else:
+            x1, y1 = 0, 0
+            roi_img = image
 
-        self.last_mask = droplet.mask
+        algo = self.algorithm_combo.currentText()
+        if algo == "Otsu":
+            mask = segmentation.otsu_threshold(roi_img)
+        elif algo == "Adaptive":
+            mask = segmentation.adaptive_threshold(roi_img)
+        else:
+            mask = segmentation.ml_segment(roi_img)
+
+        mask = segmentation.morphological_cleanup(mask, kernel_size=3, iterations=1)
+        self.last_mask = mask
         self.mask_offset = (x1, y1)
         if self.model_item is not None:
             self.graphics_scene.removeItem(self.model_item)
             self.model_item = None
 
         mask_img = QImage(
-            droplet.mask.data,
-            droplet.mask.shape[1],
-            droplet.mask.shape[0],
-            droplet.mask.strides[0],
+            mask.data,
+            mask.shape[1],
+            mask.shape[0],
+            mask.strides[0],
             QImage.Format_Grayscale8,
         )
         mask_pix = QPixmap.fromImage(mask_img)
@@ -306,64 +384,6 @@ class MainWindow(QMainWindow):
             self.graphics_scene.removeItem(item)
         self.contour_items.clear()
 
-        path = QPainterPath()
-        c = droplet.contour_px
-        path.moveTo(*c[0])
-        for point in c[1:]:
-            path.lineTo(*point)
-        pen = QPen(QColor("red"))
-        pen.setWidth(2)
-        item = self.graphics_scene.addPath(path, pen)
-        self.contour_items.append(item)
-
-        # Apex and contact line markers from silhouette
-        if self.apex_item is not None:
-            self.graphics_scene.removeItem(self.apex_item)
-            self.apex_item = None
-        if self.contact_line_item is not None:
-            self.graphics_scene.removeItem(self.contact_line_item)
-            self.contact_line_item = None
-
-        pen = QPen(QColor("yellow"))
-        brush = QColor("yellow")
-        self.apex_item = self.graphics_scene.addEllipse(
-            droplet.apex_px[0] - 3,
-            droplet.apex_px[1] - 3,
-            6,
-            6,
-            pen,
-            brush,
-        )
-
-        row_y = droplet.contact_px[1] - y1
-        if 0 <= row_y < droplet.mask.shape[0]:
-            cols = np.where(droplet.mask[row_y] > 0)[0]
-            if cols.size >= 2:
-                pen = QPen(QColor("cyan"))
-                pen.setWidth(2)
-                self.contact_line_item = self.graphics_scene.addLine(
-                    droplet.contact_px[0],
-                    droplet.contact_px[1],
-                    droplet.contact_px[2],
-                    droplet.contact_px[3],
-                    pen,
-                )
-        # Basic metrics from the silhouette
-        cal = get_calibration()
-        px_to_mm = 1.0 / cal.pixels_per_mm
-        height = droplet.height_mm
-        diameter = droplet.r_max_mm * 2.0
-        volume = droplet_volume(droplet.mask, px_to_mm=px_to_mm)
-
-        self.metrics_panel.set_metrics(
-            ift=0.0,
-            wo=0.0,
-            volume=volume if volume is not None else 0.0,
-            contact_angle=0.0,
-            height=height,
-            diameter=diameter,
-            mode=mode,
-        )
 
     def calculate_parameters(self) -> None:
         """Calculate surface tension and contact angle from the mask."""
