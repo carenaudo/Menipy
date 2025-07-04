@@ -360,3 +360,9 @@ tests added for these features.
 **Task:** Start main window maximized and set default widget sizes.
 
 **Summary:** Modified `src/main.py` to call `showMaximized()` and updated `MainWindow` setup to enforce a 200px minimum image view and 250px tab width. Added splitter size initialization and a test covering these defaults.
+## Entry 59 - Detection test interface
+
+**Task:** Move zoom control above image area, rename Classic tab, add detection and filter controls with associated buttons.
+
+**Summary:** Updated `MainWindow` layout to place `ZoomControl` atop the image view. The first tab is now "Detection Test" and includes a segmentation algorithm selector, Detect/Clean buttons, and filter selection with strength slider. Implemented `apply_filter`, `clean_filter`, and `clean_detection` helpers and simplified detection to show segmentation masks. Adjusted tests for the new tab name and ROI processing. All tests pass.
+

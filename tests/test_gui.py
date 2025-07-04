@@ -41,7 +41,7 @@ def test_tab_widget_setup():
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     window = MainWindow()
     assert window.tabs.count() == 4
-    assert window.tabs.tabText(0) == "Classic"
+    assert window.tabs.tabText(0) == "Detection Test"
     assert window.tabs.tabText(1) == "Calibration"
     assert window.tabs.tabText(2) == "Pendant drop"
     assert window.tabs.tabText(3) == "Contact angle"
@@ -368,7 +368,6 @@ def test_process_image_with_roi(tmp_path):
     pixmap = window.mask_item.pixmap()
     assert pixmap.width() == 10
     assert pixmap.height() == 10
-    assert window.metrics_panel.mode_label.text() in {"sessile", "pendant", "unknown"}
 
     window.close()
     app.quit()
