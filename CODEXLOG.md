@@ -420,3 +420,4 @@ tests added for these features.
 **Task:** Remove Qt signal from SubstrateLineItem to avoid runtime errors on PySide6 versions without QObject support.
 
 **Summary:** Replaced the Qt `Signal` with a simple callback-based `CallbackSignal` class in `items.py`. Updated `SubstrateLineItem` to instantiate this custom signal and handle move notifications. All tests pass.
+
