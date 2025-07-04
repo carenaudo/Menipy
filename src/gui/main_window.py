@@ -150,7 +150,6 @@ class MainWindow(QMainWindow):
 
         # Connect after tabs exist so currentChanged doesn't fire early
         self.tabs.currentChanged.connect(self._update_tool_visibility)
-        self._update_tool_visibility()
 
         # Drop analysis button connections
         self.calibration_tab.needle_region_button.clicked.connect(
@@ -192,6 +191,7 @@ class MainWindow(QMainWindow):
             lambda checked: self.set_substrate_mode(checked)
         )
         tools_menu.addAction(self.draw_substrate_action)
+        self._update_tool_visibility()
 
         self.mask_item = None
         self.contour_items = []
