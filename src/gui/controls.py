@@ -428,6 +428,12 @@ class AnalysisTab(QWidget):
         self.show_contact_angle = show_contact_angle
         layout = QFormLayout(self)
 
+        if show_contact_angle:
+            self.substrate_button = QPushButton("Draw Substrate Line")
+            layout.addRow(self.substrate_button)
+        else:
+            self.substrate_button = None
+
         self.analyze_button = QPushButton("Analyze")
         layout.addRow(self.analyze_button)
 

@@ -166,6 +166,10 @@ class MainWindow(QMainWindow):
         self.pendant_tab.analyze_button.clicked.connect(
             lambda: self._run_analysis("pendant")
         )
+        if self.contact_tab.substrate_button is not None:
+            self.contact_tab.substrate_button.clicked.connect(
+                self._substrate_button_clicked
+            )
         self.contact_tab.analyze_button.clicked.connect(
             lambda: self._run_analysis("contact-angle")
         )
@@ -245,6 +249,13 @@ class MainWindow(QMainWindow):
 
     def _run_analysis(self, method: str) -> None:
         self.analysis_method = method
+        if method == "contact-angle" and self.substrate_line_item is None:
+            QMessageBox.warning(
+                self,
+                "Contact Angle",
+                "Draw the substrate line before analyzing",
+            )
+            return
         self.analyze_drop_image()
 
     def open_image(self) -> None:
@@ -880,6 +891,11 @@ class MainWindow(QMainWindow):
                 "Calibration",
                 f"Calibration set to {cal.pixels_per_mm:.2f} px/mm",
             )
+
+    def _substrate_button_clicked(self) -> None:
+        """Enable substrate line drawing from the contact tab."""
+        self.draw_substrate_action.setChecked(True)
+        self.set_substrate_mode(True)
 
     def _update_tool_visibility(self, index: int | None = None) -> None:
         is_contact = self.tabs.currentWidget() is self.contact_tab
