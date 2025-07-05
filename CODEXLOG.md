@@ -440,3 +440,9 @@ tests added for these features.
 
 **Summary:** Connected the tab's buttons to substrate drawing and new detection/analysis handlers. Implemented `_ca_detect` and `_ca_analyze` in `MainWindow` using `analyze_sessile`, and updated `_update_tool_visibility` to show the substrate tool on this tab. Added result display in the tab's label. All tests pass.
 \n## Entry 72 - Improved sessile algorithm\n\n**Task:** Enhance CA improved segmentation and metrics following new workflow.\n\n**Summary:** Reworked `analyze_sessile` to apply bilateral filtering, exclusive threshold masks, and droplet-side filtering. The function now extracts the largest contour, computes apex and symmetry axis, and returns overlay and metrics. All tests pass.
+
+## Entry 73 - Remove CA improved tab
+
+**Task:** Remove the CAImproved tab and related code.
+
+**Summary:** Deleted the CAImprovedTab widget, the sessile image processing module and corresponding handlers in `MainWindow`. Updated GUI exports and tests to account for four tabs.
