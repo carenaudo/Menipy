@@ -68,14 +68,8 @@ def symmetry_axis(
     if apex is not None:
         _, foot = project_pts_onto_poly(np.array([apex]), substrate_poly)
         foot = foot[0]
-        idx = int(np.linalg.norm(substrate_poly[:-1] - foot, axis=1).argmin())
-        tangent = substrate_poly[idx + 1] - substrate_poly[idx]
-        normal = np.array([-tangent[1], tangent[0]])
-        if np.allclose(normal, 0):
-            normal = np.array([0.0, -1.0])
-        normal /= np.linalg.norm(normal)
         start = apex
-        end = apex + 1000 * normal
+        end = foot
         return start, end
     xm = 0.5 * (p1[0] + p2[0])
     start = np.array([xm, (p1[1] + p2[1]) / 2])
@@ -140,6 +134,46 @@ def side_of_polyline(pts: np.ndarray, poly: np.ndarray) -> np.ndarray:
     signs = np.sign(cross)
     signs[signs == 0] = 1
     return signs
+
+
+def _polygon_area(poly: np.ndarray) -> float:
+    """Return polygon area using the shoelace formula."""
+    x = poly[:, 0]
+    y = poly[:, 1]
+    return 0.5 * float(np.abs(np.dot(x, np.roll(y, -1)) - np.dot(y, np.roll(x, -1))))
+
+
+def _clip_halfplane(poly: np.ndarray, a: np.ndarray, b: np.ndarray, keep_left: bool) -> np.ndarray:
+    """Clip ``poly`` with the half-plane defined by line ``a``-``b``."""
+    res: list[np.ndarray] = []
+    n = len(poly)
+    ab = b - a
+    for i in range(n):
+        p = poly[i]
+        q = poly[(i + 1) % n]
+        cp_p = np.cross(ab, p - a)
+        cp_q = np.cross(ab, q - a)
+        in_p = cp_p >= 0 if keep_left else cp_p <= 0
+        in_q = cp_q >= 0 if keep_left else cp_q <= 0
+        if in_p:
+            res.append(p)
+        if in_p ^ in_q:
+            t = cp_p / (cp_p - cp_q)
+            res.append(p + t * (q - p))
+    return np.array(res)
+
+
+def symmetry_area_ratio(poly: np.ndarray, a: np.ndarray, b: np.ndarray) -> float:
+    """Return fraction of area on the left side of line ``a``-``b``."""
+    left = _clip_halfplane(poly, a, b, True)
+    right = _clip_halfplane(poly, a, b, False)
+    if len(left) < 3 or len(right) < 3:
+        return 0.0
+    area_left = _polygon_area(left)
+    area_right = _polygon_area(right)
+    if area_left + area_right == 0:
+        return 0.0
+    return area_left / (area_left + area_right)
 
 
 def geom_metrics_alt(
@@ -208,6 +242,7 @@ def geom_metrics_alt(
     _, foot = project_pts_onto_poly(np.array([apex_px]), substrate_poly)
     h_px = np.linalg.norm(apex_px - foot[0])
     h_mm = h_px / px_per_mm
+    ratio = symmetry_area_ratio(droplet_poly, apex_px, foot[0])
 
     return {
         "xL_px": float(p1[0]),
@@ -220,5 +255,6 @@ def geom_metrics_alt(
         "b": float(b),
         "c": float(c),
         "contact_segment": contact_seg,
+        "symmetry_ratio": float(ratio),
     }
 
