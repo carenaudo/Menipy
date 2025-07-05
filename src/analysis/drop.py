@@ -108,6 +108,7 @@ def compute_drop_metrics(
     px_per_mm: float,
     mode: str,
     needle_diam_mm: float | None = None,
+    substrate_line: tuple[tuple[float, float], tuple[float, float]] | None = None,
 ) -> dict:
     """Return basic geometric metrics for a droplet contour.
 
@@ -123,6 +124,11 @@ def compute_drop_metrics(
     needle_diam_mm:
         Outer diameter of the dispensing needle in millimetres. Required for
         Worthington number.
+
+    substrate_line:
+        Optional pair of points defining the substrate line. If provided,
+        contact line and width are measured relative to this line instead of
+        the horizontal axis.
 
     Returns
     -------
@@ -214,12 +220,25 @@ def compute_drop_metrics(
     print(f"contact_angle_deg={angle}")
     print(f"ift_mN_m={ift}")
 
-    xs_contact = horizontal_intersections(contour, y_min)
     contact_line: tuple[tuple[int, int], tuple[int, int]] | None = None
-    if xs_contact.size >= 2:
-        x_c_left = int(round(xs_contact.min()))
-        x_c_right = int(round(xs_contact.max()))
-        contact_line = ((x_c_left, int(round(y_min))), (x_c_right, int(round(y_min))))
+    if substrate_line is not None:
+        from ..physics.contact_geom import line_params, contour_line_intersections
+
+        a, b, c = line_params(substrate_line[0], substrate_line[1])
+        try:
+            left_pt, right_pt = contour_line_intersections(contour, a, b, c)
+            contact_line = (
+                (int(round(left_pt[0])), int(round(left_pt[1]))),
+                (int(round(right_pt[0])), int(round(right_pt[1]))),
+            )
+        except ValueError:
+            contact_line = None
+    else:
+        xs_contact = horizontal_intersections(contour, y_min)
+        if xs_contact.size >= 2:
+            x_c_left = int(round(xs_contact.min()))
+            x_c_right = int(round(xs_contact.max()))
+            contact_line = ((x_c_left, int(round(y_min))), (x_c_right, int(round(y_min))))
 
     return {
         "height_mm": float(height_mm),

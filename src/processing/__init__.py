@@ -16,6 +16,7 @@ from .detection import (
     detect_sessile_droplet,
     detect_pendant_droplet,
 )
+from .substrate import detect_substrate_line, SubstrateNotFoundError
 from .classification import classify_drop_mode
 
 __all__ = [
@@ -33,5 +34,7 @@ __all__ = [
     "detect_droplet",
     "detect_sessile_droplet",
     "detect_pendant_droplet",
+    "detect_substrate_line",
+    "SubstrateNotFoundError",
     "classify_drop_mode",
 ]
