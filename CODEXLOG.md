@@ -452,3 +452,10 @@ tests added for these features.
 **Task:** Add improved contact-angle tab using substrate-based geometry helpers.
 
 **Summary:** Implemented `geom_metrics_alt` and associated utilities in `geometry_alt.py` for polyline intersections and side checks. Updated `MainWindow` to use these metrics when the new tab is active and enhanced the overlay to draw contact segments. Added documentation and tests for the new helpers.
+
+## Entry 75 - Fix ContactAngleTabAlt import
+
+**Task:** Resolve import error for ContactAngleTabAlt in the GUI.
+
+**Summary:** Removed `ContactAngleTabAlt` from the controls import list in `gui/main_window.py` and kept the direct import from `contact_angle_tab_alt`. All tests pass.
+
