@@ -32,11 +32,11 @@ def test_projection_and_axis_tilt():
     rot = np.array([[np.cos(np.pi / 6), -np.sin(np.pi / 6)], [np.sin(np.pi / 6), np.cos(np.pi / 6)]])
     poly_tilt = poly @ rot.T
     apex = np.array([0, 5]) @ rot.T
-    p1 = poly_tilt[0]
-    p2 = poly_tilt[1]
-    s1, s2 = symmetry_axis(apex, poly_tilt, p1, p2)
-    assert s1.shape == (2,)
-    assert s2.shape == (2,)
+    line_dir = poly_tilt[1] - poly_tilt[0]
+    pt, vec = symmetry_axis(apex, line_dir)
+    assert pt.shape == (2,)
+    assert vec.shape == (2,)
+    assert np.isclose(np.linalg.norm(vec), 1.0, rtol=1e-6)
 
 
 
