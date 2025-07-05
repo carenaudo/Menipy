@@ -69,7 +69,7 @@ from .overlay import draw_drop_overlay
 from .items import SubstrateLineItem
 from ..physics.contact_geom import geom_metrics
 
-from ..detectors.geometry_alt import symmetry_axis, geom_metrics_alt
+from ..detectors.geometry_alt import symmetry_axis, geom_metrics_alt, side_of_polyline
 
 
 
@@ -188,6 +188,9 @@ class MainWindow(QMainWindow):
         self.contact_tab_alt.analyze_button.clicked.connect(
             lambda: self._run_analysis("contact-angle-alt")
         )
+        self.contact_tab_alt.side_button.clicked.connect(
+            self._select_side_button_clicked
+        )
 
         self.setCentralWidget(splitter)
         splitter.setSizes([max(self.width() - 250, 200), 250])
@@ -250,6 +253,7 @@ class MainWindow(QMainWindow):
         self.substrate_line_item = None
         self.substrate_line = None
         self._substrate_start = None
+        self._keep_above = None
 
         self.parameter_panel.calibration_mode.toggled.connect(
             self.set_calibration_mode
@@ -582,6 +586,7 @@ class MainWindow(QMainWindow):
                     poly,
                     contour.astype(float),
                     self.px_per_mm_drop,
+                    keep_above=self._keep_above,
                 )
             else:
                 extra = geom_metrics(
@@ -953,6 +958,17 @@ class MainWindow(QMainWindow):
         self.draw_substrate_action.setChecked(True)
         self.set_substrate_mode(True)
 
+    def _select_side_button_clicked(self) -> None:
+        """Enable drop side selection."""
+        if self.substrate_line_item is None:
+            QMessageBox.information(
+                self,
+                "Drop Side",
+                "Draw the substrate line before selecting the drop side",
+            )
+            return
+        self.set_side_select_mode(True)
+
     def _update_tool_visibility(self, index: int | None = None) -> None:
         widget = self.tabs.currentWidget()
         is_contact = widget in {self.contact_tab, self.contact_tab_alt}
@@ -1005,9 +1021,33 @@ class MainWindow(QMainWindow):
             line.x2(),
             line.y2(),
         )
+        self._keep_above = None
         self._substrate_start = None
         self.draw_substrate_action.setChecked(False)
         self.set_substrate_mode(False)
+        event.accept()
+
+    # --- Drop side selection -------------------------------------------------
+
+    def set_side_select_mode(self, enabled: bool) -> None:
+        if enabled:
+            self.graphics_view.setCursor(Qt.CrossCursor)
+            self.graphics_view.mousePressEvent = self._side_select_press
+            self.graphics_view.mouseMoveEvent = self._default_move
+            self.graphics_view.mouseReleaseEvent = self._default_release
+        else:
+            self.graphics_view.setCursor(Qt.ArrowCursor)
+            self.graphics_view.mousePressEvent = self._default_press
+            self.graphics_view.mouseMoveEvent = self._default_move
+            self.graphics_view.mouseReleaseEvent = self._default_release
+
+    def _side_select_press(self, event):
+        pos = self.graphics_view.mapToScene(event.pos())
+        line = self.substrate_line_item.line()
+        poly = np.array([line.p1().toTuple(), line.p2().toTuple()], float)
+        sign = side_of_polyline(np.array([[pos.x(), pos.y()]], float), poly)[0]
+        self._keep_above = bool(sign > 0)
+        self.set_side_select_mode(False)
         event.accept()
 
 

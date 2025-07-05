@@ -465,3 +465,4 @@ tests added for these features.
 **Task:** Refactor the contact-angle alternative implementation so helper lines align with the drawn substrate regardless of tilt.
 
 **Summary:** Added `mirror_filter`, `find_substrate_intersections`, `apex_point` and `split_contour_by_line` in `geometry_alt.py` and rewrote `geom_metrics_alt` to use them. Updated `MainWindow` and docs to reflect the new workflow and added `tests/test_geometry.py` for the helpers. All tests pass.
+## Entry 77 - Drop side selection\n\n**Task:** Allow choosing droplet side in alternative contact-angle workflow and auto-detect when not specified.\n\n**Summary:** Added a "Select Drop Side" button in `ContactAngleTabAlt` and new side-selection mode in `MainWindow`. Side choice is stored in `_keep_above` and passed to `geom_metrics_alt`, which now computes area on both sides when `keep_above` is `None`. Updated `geometry_alt.py` accordingly and added tests for automatic side detection. All tests pass.

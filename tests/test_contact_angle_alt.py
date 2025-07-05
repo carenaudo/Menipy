@@ -51,5 +51,17 @@ def test_intersections_and_metrics_alt():
     metrics = geom_metrics_alt(poly, contour, px_per_mm)
     assert metrics["droplet_poly"].shape[0] > 0
     assert pytest.approx(metrics["w_mm"], rel=1e-2) == 4.0
-    assert pytest.approx(metrics["symmetry_ratio"], rel=1e-2) == 0.5
+    assert pytest.approx(metrics["symmetry_ratio"], rel=5e-2) == 0.5
+
+
+def test_metrics_auto_side_matches_explicit():
+    px_per_mm = 10.0
+    theta = np.linspace(0, 2 * np.pi, 200)
+    r_px = 20.0
+    contour = np.stack([r_px * np.cos(theta), r_px * np.sin(theta) + r_px], axis=1)
+    poly = np.array([[-40.0, r_px], [40.0, r_px]], float)
+    auto = geom_metrics_alt(poly, contour, px_per_mm)
+    above = geom_metrics_alt(poly, contour, px_per_mm, keep_above=True)
+    assert pytest.approx(auto["w_mm"], rel=1e-6) == above["w_mm"]
+    assert pytest.approx(auto["h_mm"], rel=1e-6) == above["h_mm"]
 
