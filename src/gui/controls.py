@@ -573,3 +573,20 @@ class AnalysisTab(QWidget):
             data["height_line"] = self.h_label.text()
         return data
 
+
+class CAImprovedTab(QWidget):
+    """Simplified tab for improved contact-angle analysis."""
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+        layout = QVBoxLayout(self)
+        self.straight_button = QPushButton("Straight")
+        self.multi_button = QPushButton("Multiple")
+        self.detect_button = QPushButton("Detect Contour")
+        self.analyze_button = QPushButton("Analyze")
+        layout.addWidget(self.straight_button)
+        layout.addWidget(self.multi_button)
+        layout.addWidget(self.detect_button)
+        layout.addWidget(self.analyze_button)
+        self.info_label = QLabel("")
+        layout.addWidget(self.info_label)
+
