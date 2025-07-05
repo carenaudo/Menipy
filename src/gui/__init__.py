@@ -12,6 +12,7 @@ from .controls import (
 )
 from .overlay import draw_drop_overlay
 from .items import SubstrateLineItem
+from .contact_angle_tab_alt import ContactAngleTabAlt
 
 __all__ = [
     "MainWindow",
@@ -22,6 +23,7 @@ __all__ = [
     "MetricsPanel",
     "CalibrationTab",
     "AnalysisTab",
+    "ContactAngleTabAlt",
     "draw_drop_overlay",
     "SubstrateLineItem",
 ]

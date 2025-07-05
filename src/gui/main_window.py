@@ -36,6 +36,7 @@ from .controls import (
     MetricsPanel,
     CalibrationTab,
     AnalysisTab,
+    ContactAngleTabAlt,
 )
 from .image_view import ImageView
 
@@ -67,6 +68,7 @@ from ..analysis import (
 from .overlay import draw_drop_overlay
 from .items import SubstrateLineItem
 from ..physics.contact_geom import geom_metrics
+from ..detectors.geometry_alt import symmetry_axis
 
 
 class MainWindow(QMainWindow):
@@ -152,6 +154,9 @@ class MainWindow(QMainWindow):
         self.contact_tab = AnalysisTab(show_contact_angle=True)
         self.tabs.addTab(self.contact_tab, "Contact angle")
 
+        self.contact_tab_alt = ContactAngleTabAlt()
+        self.tabs.addTab(self.contact_tab_alt, "Contact Angle (Alt)")
+
 
         # Connect after tabs exist so currentChanged doesn't fire early
         self.tabs.currentChanged.connect(self._update_tool_visibility)
@@ -173,6 +178,13 @@ class MainWindow(QMainWindow):
             )
         self.contact_tab.analyze_button.clicked.connect(
             lambda: self._run_analysis("contact-angle")
+        )
+        if self.contact_tab_alt.substrate_button is not None:
+            self.contact_tab_alt.substrate_button.clicked.connect(
+                self._substrate_button_clicked
+            )
+        self.contact_tab_alt.analyze_button.clicked.connect(
+            lambda: self._run_analysis("contact-angle-alt")
         )
 
         self.setCentralWidget(splitter)
@@ -250,7 +262,7 @@ class MainWindow(QMainWindow):
 
     def _run_analysis(self, method: str) -> None:
         self.analysis_method = method
-        if method == "contact-angle" and self.substrate_line_item is None:
+        if method in {"contact-angle", "contact-angle-alt"} and self.substrate_line_item is None:
             QMessageBox.warning(
                 self,
                 "Contact Angle",
@@ -548,16 +560,16 @@ class MainWindow(QMainWindow):
         mode = getattr(self, "analysis_method", "pendant")
         apex_idx = (
             int(np.argmin(contour[:, 1]))
-            if mode == "contact-angle"
+            if mode in {"contact-angle", "contact-angle-alt"}
             else int(np.argmax(contour[:, 1]))
         )
         metrics = compute_drop_metrics(
             contour.astype(float),
             self.px_per_mm_drop,
-            mode,
+            mode if mode != "contact-angle-alt" else "contact-angle",
             needle_diam_mm=self.calibration_tab.needle_length.value(),
         )
-        if mode == "contact-angle" and self.substrate_line_item is not None:
+        if mode in {"contact-angle", "contact-angle-alt"} and self.substrate_line_item is not None:
             p1 = self.substrate_line_item.line().p1()
             p2 = self.substrate_line_item.line().p2()
             extra = geom_metrics(
@@ -571,12 +583,17 @@ class MainWindow(QMainWindow):
             metrics = compute_drop_metrics(
                 droplet_poly.astype(float),
                 self.px_per_mm_drop,
-                mode,
+                mode if mode != "contact-angle-alt" else "contact-angle",
                 needle_diam_mm=self.calibration_tab.needle_length.value(),
             )
             metrics.update(extra)
             contour = droplet_poly
-        panel = self.pendant_tab if mode == "pendant" else self.contact_tab
+        if mode == "pendant":
+            panel = self.pendant_tab
+        elif mode == "contact-angle":
+            panel = self.contact_tab
+        else:
+            panel = self.contact_tab_alt
         panel.set_metrics(
             height=metrics["height_mm"],
             diameter=metrics["diameter_mm"],
@@ -602,10 +619,21 @@ class MainWindow(QMainWindow):
             metrics["diameter_line"][0],
             metrics["diameter_line"][1],
         )
-        axis_line = (
-            metrics["apex"],
-            (metrics["apex"][0], y_min if mode == "pendant" else y_max),
-        )
+        if mode == "contact-angle-alt" and self.substrate_line_item is not None:
+            p1 = np.array([metrics["xL_px"], -(metrics["a"] * metrics["xL_px"] + metrics["c"]) / metrics["b"]])
+            p2 = np.array([metrics["xR_px"], -(metrics["a"] * metrics["xR_px"] + metrics["c"]) / metrics["b"]])
+            poly = np.array([
+                self.substrate_line_item.line().p1().toTuple(),
+                self.substrate_line_item.line().p2().toTuple(),
+            ], dtype=float)
+            apex_pt = np.array(metrics["apex"], dtype=float)
+            s1, s2 = symmetry_axis(apex_pt, poly, p1, p2)
+            axis_line = (tuple(np.round(s1).astype(int)), tuple(np.round(s2).astype(int)))
+        else:
+            axis_line = (
+                metrics["apex"],
+                (metrics["apex"][0], y_min if mode == "pendant" else y_max),
+            )
         if self.drop_contour_item is not None:
             self.graphics_scene.removeItem(self.drop_contour_item)
         if self.diameter_item is not None:
@@ -911,7 +939,8 @@ class MainWindow(QMainWindow):
         self.set_substrate_mode(True)
 
     def _update_tool_visibility(self, index: int | None = None) -> None:
-        is_contact = self.tabs.currentWidget() is self.contact_tab
+        widget = self.tabs.currentWidget()
+        is_contact = widget in {self.contact_tab, self.contact_tab_alt}
         self.draw_substrate_action.setVisible(is_contact)
         if not is_contact:
             self.draw_substrate_action.setChecked(False)
