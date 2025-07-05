@@ -38,6 +38,7 @@ from .controls import (
     AnalysisTab,
     ContactAngleTabAlt,
 )
+from .contact_angle_tab_alt import ContactAngleTabAlt
 from .image_view import ImageView
 
 from ..processing.reader import load_image
@@ -68,7 +69,9 @@ from ..analysis import (
 from .overlay import draw_drop_overlay
 from .items import SubstrateLineItem
 from ..physics.contact_geom import geom_metrics
+
 from ..detectors.geometry_alt import symmetry_axis, geom_metrics_alt
+
 
 
 class MainWindow(QMainWindow):
@@ -570,6 +573,7 @@ class MainWindow(QMainWindow):
             needle_diam_mm=self.calibration_tab.needle_length.value(),
         )
         extra = {}
+
         if mode in {"contact-angle", "contact-angle-alt"} and self.substrate_line_item is not None:
             p1 = self.substrate_line_item.line().p1()
             p2 = self.substrate_line_item.line().p2()

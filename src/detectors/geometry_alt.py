@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import numpy as np
 
-from ..physics.contact_geom import line_params
 
+from ..physics.contact_geom import line_params
 
 def trim_poly_between(poly: np.ndarray, p_start: np.ndarray, p_end: np.ndarray) -> np.ndarray:
     """Return polyline segment between ``p_start`` and ``p_end``.
@@ -81,8 +81,7 @@ def symmetry_axis(
     start = np.array([xm, (p1[1] + p2[1]) / 2])
     end = start + np.array([0.0, -1000.0])
     return start, end
-
-
+  
 def _segment_intersection(
     a1: np.ndarray, a2: np.ndarray, b1: np.ndarray, b2: np.ndarray
 ) -> np.ndarray | None:
@@ -222,3 +221,4 @@ def geom_metrics_alt(
         "c": float(c),
         "contact_segment": contact_seg,
     }
+

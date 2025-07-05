@@ -10,6 +10,7 @@ user defined substrate polyline and support tilted setups.
   yields distances and foot points.
 * **symmetry_axis** – computes a symmetry axis perpendicular to the substrate
   through the apex when available.
+
 * **polyline_contour_intersections** – returns ordered intersections between the
   user drawn substrate and the droplet contour.
 * **side_of_polyline** – classifies points as above or below the substrate.

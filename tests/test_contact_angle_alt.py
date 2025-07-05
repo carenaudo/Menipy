@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+
 from src.detectors.geometry_alt import (
     trim_poly_between,
     project_pts_onto_poly,
@@ -8,6 +9,7 @@ from src.detectors.geometry_alt import (
     polyline_contour_intersections,
     geom_metrics_alt,
 )
+
 
 
 def test_trim_between_simple():
@@ -35,6 +37,7 @@ def test_projection_and_axis_tilt():
     s1, s2 = symmetry_axis(apex, poly_tilt, p1, p2)
     assert s1.shape == (2,)
     assert s2.shape == (2,)
+
 
 
 def test_intersections_and_metrics_alt():
