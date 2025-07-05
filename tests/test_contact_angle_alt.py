@@ -48,8 +48,7 @@ def test_intersections_and_metrics_alt():
     poly = np.array([[-40.0, r_px], [40.0, r_px]], float)
     pts = polyline_contour_intersections(poly, contour)
     assert len(pts) >= 2
-    apex_idx = int(np.argmax(contour[:, 1]))
-    metrics = geom_metrics_alt(poly, contour, apex_idx, px_per_mm)
+    metrics = geom_metrics_alt(poly, contour, px_per_mm)
     assert metrics["droplet_poly"].shape[0] > 0
     assert pytest.approx(metrics["w_mm"], rel=1e-2) == 4.0
     assert pytest.approx(metrics["symmetry_ratio"], rel=1e-2) == 0.5

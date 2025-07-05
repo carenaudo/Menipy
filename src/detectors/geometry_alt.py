@@ -136,6 +136,91 @@ def side_of_polyline(pts: np.ndarray, poly: np.ndarray) -> np.ndarray:
     return signs
 
 
+def mirror_filter(
+    contour: np.ndarray,
+    line_pt: np.ndarray,
+    line_dir: np.ndarray,
+    *,
+    keep_above: bool = True,
+) -> np.ndarray:
+    """Return contour points on one side of the substrate line.
+
+    Parameters
+    ----------
+    contour:
+        Polyline of shape ``(N, 2)``.
+    line_pt:
+        A point on the substrate line.
+    line_dir:
+        Direction vector of the substrate line.
+    keep_above:
+        If ``True`` keep points on the left side of ``line_dir``,
+        otherwise keep the right side.
+    """
+    if contour.ndim != 2 or contour.shape[1] != 2:
+        raise ValueError("contour must have shape (N,2)")
+    line_pt = np.asarray(line_pt, float)
+    line_dir = np.asarray(line_dir, float)
+    a = line_pt
+    b = line_pt + line_dir
+    poly = np.vstack([contour, contour[0]])
+    clipped = _clip_halfplane(poly, a, b, keep_left=keep_above)
+    if len(clipped) > 0 and np.allclose(clipped[0], clipped[-1]):
+        clipped = clipped[:-1]
+    return clipped
+
+
+def find_substrate_intersections(
+    contour: np.ndarray, line_pt: np.ndarray, line_dir: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return the two intersection points between contour and line."""
+    if contour.ndim != 2 or contour.shape[1] != 2:
+        raise ValueError("contour must have shape (N,2)")
+    line_pt = np.asarray(line_pt, float)
+    line_dir = np.asarray(line_dir, float)
+    a, b, c = line_params(tuple(line_pt), tuple(line_pt + line_dir))
+    d = a * contour[:, 0] + b * contour[:, 1] + c
+    inter: list[np.ndarray] = []
+    n = len(contour)
+    for i in range(n):
+        p = contour[i]
+        q = contour[(i + 1) % n]
+        dp = d[i]
+        dq = d[(i + 1) % n]
+        if dp == dq:
+            continue
+        if dp * dq <= 0:
+            t = dp / (dp - dq)
+            inter.append(p + t * (q - p))
+    if len(inter) < 2:
+        raise ValueError("line does not intersect contour")
+    inter = np.array(inter)
+    tvals = (inter - line_pt) @ line_dir
+    order = np.argsort(tvals)
+    return inter[order[0]], inter[order[-1]]
+
+
+def apex_point(
+    contour: np.ndarray, line_pt: np.ndarray, line_dir: np.ndarray
+) -> tuple[np.ndarray, int]:
+    """Return the apex point farthest from the line."""
+    if contour.ndim != 2 or contour.shape[1] != 2:
+        raise ValueError("contour must have shape (N,2)")
+    line_pt = np.asarray(line_pt, float)
+    nvec = np.array([-line_dir[1], line_dir[0]], float)
+    nvec /= np.hypot(nvec[0], nvec[1])
+    dist = (contour - line_pt) @ nvec
+    idx = int(np.argmax(np.abs(dist)))
+    return contour[idx], idx
+
+
+def split_contour_by_line(
+    contour: np.ndarray, line_pt: np.ndarray, line_dir: np.ndarray
+) -> np.ndarray:
+    """Return the contour segment above the substrate line."""
+    return mirror_filter(contour, line_pt, line_dir, keep_above=True)
+
+
 def _polygon_area(poly: np.ndarray) -> float:
     """Return polygon area using the shoelace formula."""
     x = poly[:, 0]
@@ -179,69 +264,31 @@ def symmetry_area_ratio(poly: np.ndarray, a: np.ndarray, b: np.ndarray) -> float
 def geom_metrics_alt(
     substrate_poly: np.ndarray,
     contour_px: np.ndarray,
-    apex_idx: int,
     px_per_mm: float,
 ) -> dict:
     """Return geometric metrics relative to a substrate polyline."""
     if px_per_mm <= 0:
         raise ValueError("px_per_mm must be positive")
-    inter = polyline_contour_intersections(substrate_poly, contour_px)
-    if len(inter) < 2:
-        raise ValueError("substrate does not intersect contour")
-    p1, p2 = inter[0], inter[-1]
-    a, b, c = line_params(tuple(p1), tuple(p2))
-    sign = side_of_polyline(np.array([contour_px[apex_idx]]), substrate_poly)[0]
-    if sign * (a * contour_px[apex_idx, 0] + b * contour_px[apex_idx, 1] + c) > 0:
-        a, b, c = -a, -b, -c
-    d = a * contour_px[:, 0] + b * contour_px[:, 1] + c
-    n = contour_px.shape[0]
-    def _intersection(p: np.ndarray, q: np.ndarray) -> np.ndarray:
-        dp = a * p[0] + b * p[1] + c
-        dq = a * q[0] + b * q[1] + c
-        t = dp / (dp - dq)
-        return p + t * (q - p)
 
-    i = apex_idx
-    while True:
-        j = (i - 1) % n
-        if sign * d[j] > 0 >= sign * d[i]:
-            left_pt = _intersection(contour_px[j], contour_px[i])
-            start_idx = i
-            break
-        i = j
-        if i == apex_idx:
-            raise ValueError("polyline does not intersect contour")
+    line_pt = substrate_poly[0]
+    line_dir = substrate_poly[-1] - substrate_poly[0]
 
-    i = apex_idx
-    while True:
-        j = (i + 1) % n
-        if sign * d[j] > 0 >= sign * d[i]:
-            right_pt = _intersection(contour_px[i], contour_px[j])
-            end_idx = i
-            break
-        i = j
-        if i == apex_idx:
-            raise ValueError("polyline does not intersect contour")
+    p1, p2 = find_substrate_intersections(contour_px, line_pt, line_dir)
+    droplet_contour = split_contour_by_line(contour_px, line_pt, line_dir)
+    apex_px, _ = apex_point(droplet_contour, line_pt, line_dir)
 
-    seg_idx: list[int] = []
-    k = start_idx
-    seg_idx.append(k)
-    while k != end_idx:
-        k = (k + 1) % n
-        seg_idx.append(k)
-    sub_contour = contour_px[seg_idx]
-
-    sub_contour = np.vstack([left_pt, sub_contour, right_pt])
     contact_seg = trim_poly_between(substrate_poly, p1, p2)
-    droplet_poly = np.vstack([sub_contour, contact_seg[::-1]])
+    droplet_poly = np.vstack([droplet_contour, contact_seg[::-1]])
 
+    a, b, c = line_params(tuple(p1), tuple(p2))
+    h_px = abs(a * apex_px[0] + b * apex_px[1] + c)
     w_px = np.linalg.norm(p2 - p1)
+
     w_mm = w_px / px_per_mm
     rb_mm = w_mm / 2.0
-    apex_px = contour_px[apex_idx]
-    _, foot = project_pts_onto_poly(np.array([apex_px]), substrate_poly)
-    h_px = np.linalg.norm(apex_px - foot[0])
     h_mm = h_px / px_per_mm
+
+    _, foot = project_pts_onto_poly(np.array([apex_px]), substrate_poly)
     ratio = symmetry_area_ratio(droplet_poly, apex_px, foot[0])
 
     return {
@@ -256,5 +303,6 @@ def geom_metrics_alt(
         "c": float(c),
         "contact_segment": contact_seg,
         "symmetry_ratio": float(ratio),
+        "apex": (int(round(apex_px[0])), int(round(apex_px[1]))),
     }
 

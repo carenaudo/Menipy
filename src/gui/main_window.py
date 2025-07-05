@@ -581,7 +581,6 @@ class MainWindow(QMainWindow):
                 extra = geom_metrics_alt(
                     poly,
                     contour.astype(float),
-                    apex_idx,
                     self.px_per_mm_drop,
                 )
             else:
