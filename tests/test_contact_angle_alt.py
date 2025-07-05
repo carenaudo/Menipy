@@ -52,4 +52,5 @@ def test_intersections_and_metrics_alt():
     metrics = geom_metrics_alt(poly, contour, apex_idx, px_per_mm)
     assert metrics["droplet_poly"].shape[0] > 0
     assert pytest.approx(metrics["w_mm"], rel=1e-2) == 4.0
+    assert pytest.approx(metrics["symmetry_ratio"], rel=1e-2) == 0.5
 

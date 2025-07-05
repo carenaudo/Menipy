@@ -87,6 +87,22 @@ def _max_horizontal_diameter(contour: np.ndarray) -> tuple[int, float, int, int]
     return y, width, x_left, x_right
 
 
+def find_apex_index(contour: np.ndarray, mode: str) -> int:
+    """Return the index of the apex point.
+
+    If multiple points share the extremal distance, the middle index is
+    selected instead of the first occurrence.
+    """
+    if mode == "pendant":
+        y_ext = contour[:, 1].max()
+        candidates = np.where(contour[:, 1] == y_ext)[0]
+    else:
+        y_ext = contour[:, 1].min()
+        candidates = np.where(contour[:, 1] == y_ext)[0]
+    mid = len(candidates) // 2
+    return int(candidates[mid])
+
+
 def compute_drop_metrics(
     contour: np.ndarray,
     px_per_mm: float,
@@ -135,7 +151,7 @@ def compute_drop_metrics(
     height_mm = (y_max - y_min) / px_per_mm
     diameter_mm = diam_px / px_per_mm
 
-    apex_idx = int(np.argmax(contour[:, 1])) if mode == "pendant" else int(np.argmin(contour[:, 1]))
+    apex_idx = find_apex_index(contour, mode)
     apex = (int(round(contour[apex_idx, 0])), int(round(contour[apex_idx, 1])))
 
     xi = int(np.floor(x_min))

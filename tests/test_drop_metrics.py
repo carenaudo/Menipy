@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from src.analysis.drop import compute_drop_metrics
+from src.analysis.drop import compute_drop_metrics, find_apex_index
 
 
 def test_max_diameter_and_radius_apex():
@@ -18,3 +18,15 @@ def test_max_diameter_and_radius_apex():
     assert metrics["contact_line"] is not None
     assert metrics["radius_apex_mm"] > 0
     assert metrics["s1"] > 0
+
+
+def test_find_apex_index_median():
+    contour = np.array([
+        [0, 0],
+        [5, 0],
+        [10, 0],
+        [10, 10],
+        [0, 10],
+    ], float)
+    idx = find_apex_index(contour, "contact-angle")
+    assert idx == 1
