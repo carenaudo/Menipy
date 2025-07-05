@@ -36,6 +36,7 @@ from .controls import (
     MetricsPanel,
     CalibrationTab,
     AnalysisTab,
+    ContactAngleTabAlt,
 )
 from .contact_angle_tab_alt import ContactAngleTabAlt
 from .image_view import ImageView
@@ -68,7 +69,9 @@ from ..analysis import (
 from .overlay import draw_drop_overlay
 from .items import SubstrateLineItem
 from ..physics.contact_geom import geom_metrics
-from ..detectors.geometry_alt import symmetry_axis
+
+from ..detectors.geometry_alt import symmetry_axis, geom_metrics_alt
+
 
 
 class MainWindow(QMainWindow):
@@ -569,16 +572,27 @@ class MainWindow(QMainWindow):
             mode if mode != "contact-angle-alt" else "contact-angle",
             needle_diam_mm=self.calibration_tab.needle_length.value(),
         )
+        extra = {}
+
         if mode in {"contact-angle", "contact-angle-alt"} and self.substrate_line_item is not None:
             p1 = self.substrate_line_item.line().p1()
             p2 = self.substrate_line_item.line().p2()
-            extra = geom_metrics(
-                p1.toTuple(),
-                p2.toTuple(),
-                contour.astype(float),
-                apex_idx,
-                self.px_per_mm_drop,
-            )
+            if mode == "contact-angle-alt":
+                poly = np.array([p1.toTuple(), p2.toTuple()], dtype=float)
+                extra = geom_metrics_alt(
+                    poly,
+                    contour.astype(float),
+                    apex_idx,
+                    self.px_per_mm_drop,
+                )
+            else:
+                extra = geom_metrics(
+                    p1.toTuple(),
+                    p2.toTuple(),
+                    contour.astype(float),
+                    apex_idx,
+                    self.px_per_mm_drop,
+                )
             droplet_poly = extra.pop("droplet_poly")
             metrics = compute_drop_metrics(
                 droplet_poly.astype(float),
@@ -643,12 +657,15 @@ class MainWindow(QMainWindow):
         if self.apex_dot_item is not None:
             self.graphics_scene.removeItem(self.apex_dot_item)
 
+        contact_geom = (
+            extra.get("contact_segment") if mode == "contact-angle-alt" else metrics.get("contact_line")
+        )
         overlay = draw_drop_overlay(
             self.image,
             contour,
             diameter_line=diameter_line,
             axis_line=axis_line,
-            contact_line=metrics.get("contact_line"),
+            contact_line=contact_geom,
             apex=metrics["apex"],
         )
         self.drop_contour_item = self.graphics_scene.addPixmap(overlay)

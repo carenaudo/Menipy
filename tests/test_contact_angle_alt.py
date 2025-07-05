@@ -1,7 +1,15 @@
 import numpy as np
 import pytest
 
-from src.detectors.geometry_alt import trim_poly_between, project_pts_onto_poly, symmetry_axis
+
+from src.detectors.geometry_alt import (
+    trim_poly_between,
+    project_pts_onto_poly,
+    symmetry_axis,
+    polyline_contour_intersections,
+    geom_metrics_alt,
+)
+
 
 
 def test_trim_between_simple():
@@ -29,4 +37,19 @@ def test_projection_and_axis_tilt():
     s1, s2 = symmetry_axis(apex, poly_tilt, p1, p2)
     assert s1.shape == (2,)
     assert s2.shape == (2,)
+
+
+
+def test_intersections_and_metrics_alt():
+    px_per_mm = 10.0
+    theta = np.linspace(0, 2 * np.pi, 200)
+    r_px = 20.0
+    contour = np.stack([r_px * np.cos(theta), r_px * np.sin(theta) + r_px], axis=1)
+    poly = np.array([[-40.0, r_px], [40.0, r_px]], float)
+    pts = polyline_contour_intersections(poly, contour)
+    assert len(pts) >= 2
+    apex_idx = int(np.argmax(contour[:, 1]))
+    metrics = geom_metrics_alt(poly, contour, apex_idx, px_per_mm)
+    assert metrics["droplet_poly"].shape[0] > 0
+    assert pytest.approx(metrics["w_mm"], rel=1e-2) == 4.0
 

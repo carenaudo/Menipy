@@ -18,7 +18,7 @@ def draw_drop_overlay(
     *,
     diameter_line: tuple[tuple[int, int], tuple[int, int]] | None = None,
     axis_line: tuple[tuple[int, int], tuple[int, int]] | None = None,
-    contact_line: tuple[tuple[int, int], tuple[int, int]] | None = None,
+    contact_line: tuple[tuple[int, int], tuple[int, int]] | np.ndarray | None = None,
     apex: tuple[int, int] | None = None,
 ) -> QPixmap:
     """Return a ``QPixmap`` of ``image`` with droplet overlays drawn.
@@ -44,7 +44,11 @@ def draw_drop_overlay(
     if axis_line is not None:
         cv2.line(canvas, axis_line[0], axis_line[1], (0, 0, 255), 2)
     if contact_line is not None:
-        cv2.line(canvas, contact_line[0], contact_line[1], (0, 165, 255), 2)
+        if isinstance(contact_line, np.ndarray):
+            pts = np.round(contact_line).astype(np.int32)
+            cv2.polylines(canvas, [pts], False, (0, 165, 255), 2)
+        else:
+            cv2.line(canvas, contact_line[0], contact_line[1], (0, 165, 255), 2)
     if apex is not None:
         cv2.circle(canvas, apex, 3, (255, 255, 0), -1)
     return QPixmap.fromImage(_to_qimage(canvas))

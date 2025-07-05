@@ -446,3 +446,9 @@ tests added for these features.
 **Task:** Remove the CAImproved tab and related code.
 
 **Summary:** Deleted the CAImprovedTab widget, the sessile image processing module and corresponding handlers in `MainWindow`. Updated GUI exports and tests to account for four tabs.
+
+## Entry 74 - Contact angle alt geometry
+
+**Task:** Add improved contact-angle tab using substrate-based geometry helpers.
+
+**Summary:** Implemented `geom_metrics_alt` and associated utilities in `geometry_alt.py` for polyline intersections and side checks. Updated `MainWindow` to use these metrics when the new tab is active and enhanced the overlay to draw contact segments. Added documentation and tests for the new helpers.
