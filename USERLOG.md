@@ -61,3 +61,6 @@
 
 ## Entry 53 - Printing drop metrics for testing
 **Summary:** On the last tasks i made it work as i intended. now i will focus on the results comparing with measurements on industry grade equipment
+
+## Entry 72 - Improved sessile algorithm
+**Summary:** It clearly do not work the detection. so i asked to delete the generated code related to CAImproved Tab
