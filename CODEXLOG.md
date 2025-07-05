@@ -433,3 +433,9 @@ tests added for these features.
 **Task:** Delete large binary test image and corresponding tests that blocked PR creation.
 
 **Summary:** Removed `doc/Images/example sessile 1.png` and tests relying on it. The sessile-drop analysis module and GUI remain. All other tests pass.
+
+## Entry 71 - Activate CA improved tab buttons
+
+**Task:** Fix the CAImproved tab where the buttons performed no actions.
+
+**Summary:** Connected the tab's buttons to substrate drawing and new detection/analysis handlers. Implemented `_ca_detect` and `_ca_analyze` in `MainWindow` using `analyze_sessile`, and updated `_update_tool_visibility` to show the substrate tool on this tab. Added result display in the tab's label. All tests pass.
