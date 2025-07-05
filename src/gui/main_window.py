@@ -36,7 +36,6 @@ from .controls import (
     MetricsPanel,
     CalibrationTab,
     AnalysisTab,
-    ContactAngleTabAlt,
 )
 from .contact_angle_tab_alt import ContactAngleTabAlt
 from .image_view import ImageView
