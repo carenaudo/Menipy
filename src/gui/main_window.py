@@ -36,6 +36,7 @@ from .controls import (
     MetricsPanel,
     CalibrationTab,
     AnalysisTab,
+    CAImprovedTab,
 )
 from .image_view import ImageView
 
@@ -151,6 +152,9 @@ class MainWindow(QMainWindow):
 
         self.contact_tab = AnalysisTab(show_contact_angle=True)
         self.tabs.addTab(self.contact_tab, "Contact angle")
+
+        self.ca_improved_tab = CAImprovedTab()
+        self.tabs.addTab(self.ca_improved_tab, "CA improved")
 
         # Connect after tabs exist so currentChanged doesn't fire early
         self.tabs.currentChanged.connect(self._update_tool_visibility)
