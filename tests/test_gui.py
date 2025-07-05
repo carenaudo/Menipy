@@ -40,11 +40,12 @@ def test_tab_widget_setup():
         pytest.skip("PySide6 not available")
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     window = MainWindow()
-    assert window.tabs.count() == 4
+    assert window.tabs.count() == 5
     assert window.tabs.tabText(0) == "Detection Test"
     assert window.tabs.tabText(1) == "Calibration"
     assert window.tabs.tabText(2) == "Pendant drop"
     assert window.tabs.tabText(3) == "Contact angle"
+    assert window.tabs.tabText(4) == "CA improved"
     window.close()
     app.quit()
 

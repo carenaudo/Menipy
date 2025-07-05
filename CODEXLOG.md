@@ -421,3 +421,15 @@ tests added for these features.
 
 **Summary:** Replaced the Qt `Signal` with a simple callback-based `CallbackSignal` class in `items.py`. Updated `SubstrateLineItem` to instantiate this custom signal and handle move notifications. All tests pass.
 
+
+## Entry 69 - Sessile-drop analysis
+
+**Task:** Implement robust sessile-drop analysis with new GUI tab.
+
+**Summary:** Added `image_proc.sessile` with `analyze_sessile` to compute contact line, droplet mask, apex and symmetry axis. Created a CA improved tab in the GUI and wrote tests for contact line points, mask cleanup, apex alignment and metric baselines. All tests pass.
+
+## Entry 70 - Remove example image
+
+**Task:** Delete large binary test image and corresponding tests that blocked PR creation.
+
+**Summary:** Removed `doc/Images/example sessile 1.png` and tests relying on it. The sessile-drop analysis module and GUI remain. All other tests pass.
