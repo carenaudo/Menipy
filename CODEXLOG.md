@@ -459,3 +459,9 @@ tests added for these features.
 
 **Summary:** Removed `ContactAngleTabAlt` from the controls import list in `gui/main_window.py` and kept the direct import from `contact_angle_tab_alt`. All tests pass.
 
+
+## Entry 76 - Robust substrate geometry
+
+**Task:** Refactor the contact-angle alternative implementation so helper lines align with the drawn substrate regardless of tilt.
+
+**Summary:** Added `mirror_filter`, `find_substrate_intersections`, `apex_point` and `split_contour_by_line` in `geometry_alt.py` and rewrote `geom_metrics_alt` to use them. Updated `MainWindow` and docs to reflect the new workflow and added `tests/test_geometry.py` for the helpers. All tests pass.
