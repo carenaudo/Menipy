@@ -574,6 +574,12 @@ class MainWindow(QMainWindow):
             self.px_per_mm_drop,
             mode if mode != "contact-angle-alt" else "contact-angle",
             needle_diam_mm=self.calibration_tab.needle_length.value(),
+            substrate_line=(
+                self.substrate_line_item.line().p1().toTuple(),
+                self.substrate_line_item.line().p2().toTuple(),
+            )
+            if self.substrate_line_item is not None
+            else None,
         )
         extra = {}
 
@@ -602,6 +608,10 @@ class MainWindow(QMainWindow):
                 self.px_per_mm_drop,
                 mode if mode != "contact-angle-alt" else "contact-angle",
                 needle_diam_mm=self.calibration_tab.needle_length.value(),
+                substrate_line=(
+                    self.substrate_line_item.line().p1().toTuple(),
+                    self.substrate_line_item.line().p2().toTuple(),
+                ),
             )
             metrics.update(extra)
             contour = droplet_poly
