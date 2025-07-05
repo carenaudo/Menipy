@@ -215,10 +215,14 @@ def apex_point(
 
 
 def split_contour_by_line(
-    contour: np.ndarray, line_pt: np.ndarray, line_dir: np.ndarray
+    contour: np.ndarray,
+    line_pt: np.ndarray,
+    line_dir: np.ndarray,
+    *,
+    keep_above: bool = True,
 ) -> np.ndarray:
-    """Return the contour segment above the substrate line."""
-    return mirror_filter(contour, line_pt, line_dir, keep_above=True)
+    """Return the contour segment on one side of the substrate line."""
+    return mirror_filter(contour, line_pt, line_dir, keep_above=keep_above)
 
 
 def _polygon_area(poly: np.ndarray) -> float:
@@ -265,6 +269,8 @@ def geom_metrics_alt(
     substrate_poly: np.ndarray,
     contour_px: np.ndarray,
     px_per_mm: float,
+    *,
+    keep_above: bool | None = None,
 ) -> dict:
     """Return geometric metrics relative to a substrate polyline."""
     if px_per_mm <= 0:
@@ -274,11 +280,27 @@ def geom_metrics_alt(
     line_dir = substrate_poly[-1] - substrate_poly[0]
 
     p1, p2 = find_substrate_intersections(contour_px, line_pt, line_dir)
-    droplet_contour = split_contour_by_line(contour_px, line_pt, line_dir)
-    apex_px, _ = apex_point(droplet_contour, line_pt, line_dir)
-
     contact_seg = trim_poly_between(substrate_poly, p1, p2)
-    droplet_poly = np.vstack([droplet_contour, contact_seg[::-1]])
+
+    if keep_above is None:
+        cont_above = split_contour_by_line(contour_px, line_pt, line_dir, keep_above=True)
+        poly_above = np.vstack([cont_above, contact_seg[::-1]])
+        area_above = _polygon_area(poly_above) if len(poly_above) >= 3 else 0.0
+
+        cont_below = split_contour_by_line(contour_px, line_pt, line_dir, keep_above=False)
+        poly_below = np.vstack([cont_below, contact_seg[::-1]])
+        area_below = _polygon_area(poly_below) if len(poly_below) >= 3 else 0.0
+
+        keep_above = area_above >= area_below
+        droplet_contour = cont_above if keep_above else cont_below
+        droplet_poly = poly_above if keep_above else poly_below
+    else:
+        droplet_contour = split_contour_by_line(
+            contour_px, line_pt, line_dir, keep_above=keep_above
+        )
+        droplet_poly = np.vstack([droplet_contour, contact_seg[::-1]])
+
+    apex_px, _ = apex_point(droplet_contour, line_pt, line_dir)
 
     a, b, c = line_params(tuple(p1), tuple(p2))
     h_px = abs(a * apex_px[0] + b * apex_px[1] + c)
