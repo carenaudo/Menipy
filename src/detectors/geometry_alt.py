@@ -5,7 +5,10 @@ from __future__ import annotations
 import numpy as np
 
 
-from ..physics.contact_geom import line_params
+from ..physics.contact_geom import (
+    line_params,
+    contour_line_intersections,
+)
 
 def trim_poly_between(poly: np.ndarray, p_start: np.ndarray, p_end: np.ndarray) -> np.ndarray:
     """Return polyline segment between ``p_start`` and ``p_end``.
@@ -58,23 +61,16 @@ def project_pts_onto_poly(pts: np.ndarray, poly: np.ndarray) -> tuple[np.ndarray
     return dists, foots
 
 
-def symmetry_axis(
-    apex: np.ndarray | None,
-    substrate_poly: np.ndarray,
-    p1: np.ndarray,
-    p2: np.ndarray,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Return two points defining the symmetry axis."""
-    if apex is not None:
-        _, foot = project_pts_onto_poly(np.array([apex]), substrate_poly)
-        foot = foot[0]
-        start = apex
-        end = foot
-        return start, end
-    xm = 0.5 * (p1[0] + p2[0])
-    start = np.array([xm, (p1[1] + p2[1]) / 2])
-    end = start + np.array([0.0, -1000.0])
-    return start, end
+def symmetry_axis(apex: np.ndarray, line_dir: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Return a point and unit vector defining the symmetry axis."""
+    apex = np.asarray(apex, float)
+    line_dir = np.asarray(line_dir, float)
+    nvec = np.array([-line_dir[1], line_dir[0]], float)
+    norm = np.hypot(nvec[0], nvec[1])
+    if norm == 0:
+        raise ValueError("line_dir cannot be zero")
+    nvec /= norm
+    return apex, nvec
   
 def _segment_intersection(
     a1: np.ndarray, a2: np.ndarray, b1: np.ndarray, b2: np.ndarray
@@ -201,17 +197,50 @@ def find_substrate_intersections(
 
 
 def apex_point(
-    contour: np.ndarray, line_pt: np.ndarray, line_dir: np.ndarray
+    contour: np.ndarray, line_pt: np.ndarray, line_dir: np.ndarray, mode: str
 ) -> tuple[np.ndarray, int]:
-    """Return the apex point farthest from the line."""
+    """Return the droplet apex relative to the substrate line.
+
+    Parameters
+    ----------
+    contour:
+        Contour points ``(x, y)``.
+    line_pt:
+        A point on the substrate line.
+    line_dir:
+        Direction vector of the substrate line.
+    mode:
+        ``"sessile"`` or ``"pendant"`` to select the sign of the normal.
+    """
     if contour.ndim != 2 or contour.shape[1] != 2:
         raise ValueError("contour must have shape (N,2)")
+    if mode not in {"sessile", "pendant"}:
+        raise ValueError("mode must be 'sessile' or 'pendant'")
+
     line_pt = np.asarray(line_pt, float)
+    line_dir = np.asarray(line_dir, float)
     nvec = np.array([-line_dir[1], line_dir[0]], float)
     nvec /= np.hypot(nvec[0], nvec[1])
+
     dist = (contour - line_pt) @ nvec
-    idx = int(np.argmax(np.abs(dist)))
-    return contour[idx], idx
+    idx = int(np.argmax(dist)) if mode == "sessile" else int(np.argmin(dist))
+    apex = contour[idx]
+
+    # refine by averaging symmetric intersections when available
+    axis_pt, axis_dir = symmetry_axis(apex, line_dir)
+    a, b, c = line_params(tuple(axis_pt), tuple(axis_pt + axis_dir))
+    try:
+        left, right = contour_line_intersections(contour, a, b, c)
+    except ValueError:
+        return apex, idx
+
+    dl = (left - line_pt) @ nvec
+    dr = (right - line_pt) @ nvec
+    if np.isclose(dl, dr, atol=1.0):
+        apex = 0.5 * (left + right)
+    else:
+        apex = left if (dl > dr if mode == "sessile" else dl < dr) else right
+    return apex, idx
 
 
 def split_contour_by_line(
@@ -300,7 +329,8 @@ def geom_metrics_alt(
         )
         droplet_poly = np.vstack([droplet_contour, contact_seg[::-1]])
 
-    apex_px, _ = apex_point(droplet_contour, line_pt, line_dir)
+    mode = "sessile" if keep_above else "pendant"
+    apex_px, _ = apex_point(droplet_contour, line_pt, line_dir, mode)
 
     a, b, c = line_params(tuple(p1), tuple(p2))
     h_px = abs(a * apex_px[0] + b * apex_px[1] + c)

@@ -647,20 +647,32 @@ class MainWindow(QMainWindow):
             metrics["diameter_line"][1],
         )
         if mode == "contact-angle-alt" and self.substrate_line_item is not None:
-            p1 = np.array([metrics["xL_px"], -(metrics["a"] * metrics["xL_px"] + metrics["c"]) / metrics["b"]])
-            p2 = np.array([metrics["xR_px"], -(metrics["a"] * metrics["xR_px"] + metrics["c"]) / metrics["b"]])
-            poly = np.array([
-                self.substrate_line_item.line().p1().toTuple(),
-                self.substrate_line_item.line().p2().toTuple(),
-            ], dtype=float)
-            apex_pt = np.array(metrics["apex"], dtype=float)
-            s1, s2 = symmetry_axis(apex_pt, poly, p1, p2)
-            axis_line = (tuple(np.round(s1).astype(int)), tuple(np.round(s2).astype(int)))
+            p1 = np.array([
+                metrics["xL_px"],
+                -(metrics["a"] * metrics["xL_px"] + metrics["c"]) / metrics["b"],
+            ])
+            p2 = np.array([
+                metrics["xR_px"],
+                -(metrics["a"] * metrics["xR_px"] + metrics["c"]) / metrics["b"],
+            ])
+            line_dir = p2 - p1
+        elif self.substrate_line_item is not None:
+            line_dir = np.array(
+                self.substrate_line_item.line().p2().toTuple(), float
+            ) - np.array(self.substrate_line_item.line().p1().toTuple(), float)
+            p1 = np.array(diameter_line[0], float)
+            p2 = np.array(diameter_line[1], float)
         else:
-            axis_line = (
-                metrics["apex"],
-                (metrics["apex"][0], y_min if mode == "pendant" else y_max),
-            )
+            line_dir = np.array([1.0, 0.0])
+            p1 = np.array(diameter_line[0], float)
+            p2 = np.array(diameter_line[1], float)
+
+        apex_pt = np.array(metrics["apex"], dtype=float)
+        _, axis_vec = symmetry_axis(apex_pt, line_dir)
+        axis_len = 1.2 * np.linalg.norm(p2 - p1)
+        s1 = apex_pt - 0.5 * axis_len * axis_vec
+        s2 = apex_pt + 0.5 * axis_len * axis_vec
+        axis_line = (tuple(np.round(s1).astype(int)), tuple(np.round(s2).astype(int)))
         if self.drop_contour_item is not None:
             self.graphics_scene.removeItem(self.drop_contour_item)
         if self.diameter_item is not None:

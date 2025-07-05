@@ -8,8 +8,8 @@ user defined substrate polyline and support tilted setups.
   in drawing order.
 * **project_pts_onto_poly** – projects arbitrary points onto a polyline and
   yields distances and foot points.
-* **symmetry_axis** – computes a symmetry axis perpendicular to the substrate
-  through the apex when available.
+* **symmetry_axis** – returns the apex point and a unit vector normal to the
+  substrate line.
 
 * **polyline_contour_intersections** – returns ordered intersections between the
   user drawn substrate and the droplet contour.
