@@ -36,7 +36,6 @@ from .controls import (
     MetricsPanel,
     CalibrationTab,
     AnalysisTab,
-    CAImprovedTab,
 )
 from .image_view import ImageView
 
@@ -66,7 +65,6 @@ from ..analysis import (
     compute_drop_metrics,
 )
 from .overlay import draw_drop_overlay
-from ..image_proc.sessile import analyze_sessile
 from .items import SubstrateLineItem
 from ..physics.contact_geom import geom_metrics
 
@@ -154,8 +152,6 @@ class MainWindow(QMainWindow):
         self.contact_tab = AnalysisTab(show_contact_angle=True)
         self.tabs.addTab(self.contact_tab, "Contact angle")
 
-        self.ca_improved_tab = CAImprovedTab()
-        self.tabs.addTab(self.ca_improved_tab, "CA improved")
 
         # Connect after tabs exist so currentChanged doesn't fire early
         self.tabs.currentChanged.connect(self._update_tool_visibility)
@@ -178,16 +174,6 @@ class MainWindow(QMainWindow):
         self.contact_tab.analyze_button.clicked.connect(
             lambda: self._run_analysis("contact-angle")
         )
-        self.ca_improved_tab.straight_button.clicked.connect(
-            self._substrate_button_clicked
-        )
-        self.ca_improved_tab.multi_button.clicked.connect(
-            self._substrate_button_clicked
-        )
-        self.ca_improved_tab.detect_button.clicked.connect(
-            self._ca_detect
-        )
-        self.ca_improved_tab.analyze_button.clicked.connect(self._ca_analyze)
 
         self.setCentralWidget(splitter)
         splitter.setSizes([max(self.width() - 250, 200), 250])
@@ -925,7 +911,7 @@ class MainWindow(QMainWindow):
         self.set_substrate_mode(True)
 
     def _update_tool_visibility(self, index: int | None = None) -> None:
-        is_contact = self.tabs.currentWidget() in (self.contact_tab, self.ca_improved_tab)
+        is_contact = self.tabs.currentWidget() is self.contact_tab
         self.draw_substrate_action.setVisible(is_contact)
         if not is_contact:
             self.draw_substrate_action.setChecked(False)
@@ -980,37 +966,6 @@ class MainWindow(QMainWindow):
         self.set_substrate_mode(False)
         event.accept()
 
-    def _ca_detect(self) -> None:
-        """Detect droplet contour using the sessile analysis helper."""
-        if getattr(self, "image", None) is None or self.substrate_line_item is None:
-            return
-        p1 = self.substrate_line_item.line().p1().toTuple()
-        p2 = self.substrate_line_item.line().p2().toTuple()
-        poly = np.array([p1, p2], dtype=float)
-        try:
-            self.ca_result = analyze_sessile(self.image, poly)
-        except Exception as exc:
-            QMessageBox.warning(self, "CA Improved", str(exc))
-            return
-        arr = self.ca_result.overlay
-        fmt = QImage.Format_BGR888 if arr.ndim == 3 else QImage.Format_Grayscale8
-        qimg = QImage(arr.data, arr.shape[1], arr.shape[0], arr.strides[0], fmt).copy()
-        pixmap = QPixmap.fromImage(qimg)
-        if self.drop_contour_item is not None:
-            self.graphics_scene.removeItem(self.drop_contour_item)
-        self.drop_contour_item = self.graphics_scene.addPixmap(pixmap)
-        self.ca_improved_tab.info_label.setText("Contour detected")
-
-    def _ca_analyze(self) -> None:
-        """Analyze current image using sessile workflow and show metrics."""
-        if getattr(self, "ca_result", None) is None:
-            self._ca_detect()
-            if getattr(self, "ca_result", None) is None:
-                return
-        res = self.ca_result
-        self.ca_improved_tab.info_label.setText(
-            f"h={res.height_mm:.2f}mm w={res.width_mm:.2f}mm V={res.volume_uL:.2f}uL"
-        )
 
     def set_zoom(self, factor: float) -> None:
         """Scale the graphics view by ``factor``."""

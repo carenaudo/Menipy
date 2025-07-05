@@ -9,7 +9,6 @@ from .controls import (
     MetricsPanel,
     CalibrationTab,
     AnalysisTab,
-    CAImprovedTab,
 )
 from .overlay import draw_drop_overlay
 from .items import SubstrateLineItem
@@ -23,7 +22,6 @@ __all__ = [
     "MetricsPanel",
     "CalibrationTab",
     "AnalysisTab",
-    "CAImprovedTab",
     "draw_drop_overlay",
     "SubstrateLineItem",
 ]
