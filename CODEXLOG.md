@@ -632,3 +632,4 @@ fixed.
 **Task:** Ensure Clear Analysis fully resets drawing modes and calibration items.
 
 **Summary:** Updated `clear_analysis` to disable drawing modes, remove calibration items, and reset internal state. Added a regression test verifying that all overlays are gone and drawing works after clearing.
+
