@@ -16,3 +16,6 @@ class ContactAngleTabAlt(AnalysisTab):
         self.side_button = QPushButton("Select Drop Side")
         self.layout().insertRow(1, self.side_button)
 
+        self.detect_substrate_button = QPushButton("Detect Substrate Line")
+        self.layout().insertRow(2, self.detect_substrate_button)
+

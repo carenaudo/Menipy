@@ -70,7 +70,7 @@ from .overlay import draw_drop_overlay
 from .items import SubstrateLineItem
 from ..physics.contact_geom import geom_metrics
 
-from ..detectors.geometry_alt import symmetry_axis, geom_metrics_alt, side_of_polyline
+from ..detectors.geometry_alt import geom_metrics_alt, side_of_polyline
 
 
 
@@ -193,6 +193,10 @@ class MainWindow(QMainWindow):
         if self.contact_tab_alt.substrate_button is not None:
             self.contact_tab_alt.substrate_button.clicked.connect(
                 self._substrate_button_clicked
+            )
+        if hasattr(self.contact_tab_alt, "detect_substrate_button"):
+            self.contact_tab_alt.detect_substrate_button.clicked.connect(
+                self._detect_substrate_line
             )
         self.contact_tab_alt.analyze_button.clicked.connect(
             lambda: self._run_analysis("contact-angle-alt")
@@ -700,11 +704,13 @@ class MainWindow(QMainWindow):
             p2 = np.array(diameter_line[1], float)
 
         apex_pt = np.array(metrics["apex"], dtype=float)
-        _, axis_vec = symmetry_axis(apex_pt, line_dir)
-        axis_len = 1.2 * np.linalg.norm(p2 - p1)
-        s1 = apex_pt - 0.5 * axis_len * axis_vec
-        s2 = apex_pt + 0.5 * axis_len * axis_vec
-        axis_line = (tuple(np.round(s1).astype(int)), tuple(np.round(s2).astype(int)))
+        t = np.dot(apex_pt - p1, line_dir) / np.dot(line_dir, line_dir)
+        t = np.clip(t, 0.0, 1.0)
+        foot_pt = p1 + t * line_dir
+        axis_line = (
+            tuple(np.round(foot_pt).astype(int)),
+            tuple(np.round(apex_pt).astype(int)),
+        )
         if self.drop_contour_item is not None:
             self.graphics_scene.removeItem(self.drop_contour_item)
         if self.diameter_item is not None:
