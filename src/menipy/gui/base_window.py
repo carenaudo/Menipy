@@ -418,6 +418,11 @@ class BaseMainWindow(QMainWindow):
         self._substrate_start = None
         self._keep_above = None
         self.px_per_mm_drop = 0.0
+        self.parameter_panel.set_scale_display(0.0)
+        self.calibration_tab.clear_metrics()
+        self.pendant_tab.clear_metrics()
+        self.contact_tab.clear_metrics()
+        self.metrics_panel.clear_metrics()
 
     def _display_image(self, img: np.ndarray) -> None:
         """Display ``img`` in the graphics view and clear overlays."""

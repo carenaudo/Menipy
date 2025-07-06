@@ -740,4 +740,28 @@ def test_clear_analysis_resets_state(tmp_path):
     window.close()
     app.quit()
 
+def test_clear_analysis_resets_metrics(tmp_path):
+    if QtWidgets is None:
+        pytest.skip("PySide6 not available")
+    import numpy as np
+    import cv2
 
+    img = np.zeros((20, 20, 3), dtype=np.uint8)
+    path = tmp_path / "img.png"
+    cv2.imwrite(str(path), img)
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    window = MainWindow()
+    window.load_image(path)
+
+    window.pendant_tab.set_metrics(height=1.0)
+    window.contact_tab.set_metrics(diameter=2.0)
+    window.metrics_panel.set_metrics(ift=3.0, contact_angle=40.0)
+
+    window.clear_analysis_button.click()
+
+    assert window.metrics_panel.ift_label.text() == "0.0"
+    assert window.pendant_tab.height_label.text() == "0.0"
+    assert window.contact_tab.diameter_label.text() == "0.0"
+    window.close()
+    app.quit()

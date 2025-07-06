@@ -633,3 +633,8 @@ fixed.
 
 **Summary:** Updated `clear_analysis` to disable drawing modes, remove calibration items, and reset internal state. Added a regression test verifying that all overlays are gone and drawing works after clearing.
 
+## Entry 105 - Reset metrics on clear
+
+**Task:** Ensure analysis metrics and result overlays fully reset when clearing.
+
+**Summary:** Added `clear_metrics` helpers to GUI panels and updated `clear_analysis` to reset scale and metrics displays. New tests verify metric labels return to defaults after clearing. All tests pass.
