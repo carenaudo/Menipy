@@ -1,7 +1,7 @@
 import numpy as np
 
-from src.models.geometry import fit_circle, horizontal_intersections
-from src.models.properties import (
+from menipy.models.geometry import fit_circle, horizontal_intersections
+from menipy.models.properties import (
     droplet_volume,
     estimate_surface_tension,
     contact_angle_from_mask,

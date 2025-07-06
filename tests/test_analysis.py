@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from src.analysis import (
+from menipy.analysis import (
     detect_vertical_edges,
     extract_external_contour,
     compute_drop_metrics,

@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 
-from src.detectors.geometry_alt import (
+from menipy.detectors.geometry_alt import (
     trim_poly_between,
     project_pts_onto_poly,
     symmetry_axis,

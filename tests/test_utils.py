@@ -1,6 +1,6 @@
 import pytest
 
-from src.utils import (
+from menipy.calibration import (
     set_calibration,
     get_calibration,
     calibrate_from_points,

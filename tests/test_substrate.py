@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from src.processing import detect_substrate_line, SubstrateNotFoundError
+from menipy.processing import detect_substrate_line, SubstrateNotFoundError
 
 
 def _synthetic_image(angle_deg: float = 0.0, mode: str = "sessile"):

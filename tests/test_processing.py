@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from src.processing.segmentation import (
+from menipy.processing.segmentation import (
     otsu_threshold,
     adaptive_threshold,
     morphological_cleanup,
@@ -9,7 +9,7 @@ from src.processing.segmentation import (
     find_contours,
     ml_segment,
 )
-from src.processing import detect_droplet, detect_pendant_droplet
+from menipy.processing import detect_droplet, detect_pendant_droplet
 
 
 def test_otsu_threshold():

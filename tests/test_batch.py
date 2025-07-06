@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from src.batch import run_batch
+from menipy.batch import run_batch
 
 
 def test_run_batch(tmp_path):

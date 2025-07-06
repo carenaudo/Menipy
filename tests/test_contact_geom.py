@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from src.physics.contact_geom import geom_metrics
+from menipy.physics.contact_geom import geom_metrics
 cv2 = __import__('cv2')
 
 

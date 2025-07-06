@@ -3,12 +3,12 @@
 import pytest
 
 try:
-    from src.gui import draw_drop_overlay
+    from menipy.gui import draw_drop_overlay
 except Exception:
     draw_drop_overlay = None
 
 try:
-    from src.gui import MainWindow
+    from menipy.gui import MainWindow
     from PySide6 import QtWidgets
 except Exception as exc:
     MainWindow = None
@@ -213,7 +213,7 @@ def test_calibration_box(tmp_path):
     import numpy as np
     import cv2
     from PySide6.QtCore import QPoint, QLineF
-    from src.gui import SubstrateLineItem
+    from menipy.gui import SubstrateLineItem
 
     img = np.zeros((20, 20, 3), dtype=np.uint8)
     path = tmp_path / "img.png"
@@ -580,7 +580,7 @@ def test_contact_tab_draw_button(tmp_path):
     import cv2
     from unittest.mock import patch
     from PySide6.QtCore import QLineF
-    from src.gui import SubstrateLineItem
+    from menipy.gui import SubstrateLineItem
 
     img = np.zeros((20, 20), dtype=np.uint8)
     path = tmp_path / "img.png"
@@ -640,7 +640,7 @@ def test_contact_tab_side_button(tmp_path):
     import cv2
     from unittest.mock import patch
     from PySide6.QtCore import QLineF
-    from src.gui import SubstrateLineItem
+    from menipy.gui import SubstrateLineItem
 
     img = np.zeros((20, 20), dtype=np.uint8)
     path = tmp_path / "img.png"

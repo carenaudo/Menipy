@@ -560,3 +560,6 @@ verified that existing tests still pass.
 
 **Summary:** Added `sharpen_filter` in `menipy.sharpen_plugin` and registered it as a built-in plugin. Extended the `MainWindow` facade with a plugin manager dialog listing available plugins. Active plugins are applied after loading images. Updated plugin tests for the built-in filter.
 
+\n## Entry 93 - Remove legacy src
+
+**Task:** Eliminate old src package in favor of the fully featured menipy implementation.\n\n**Summary:** Deleted the legacy `src` tree and renamed `src_alt` to `src`. Reinstated necessary modules (GUI, processing, detection) under `menipy` and updated the test suite to import from the new package. Added `tests/conftest.py` to ensure the package is importable. All tests pass.
