@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
 from pathlib import Path
 
 from .. import plugins
-from menipy.gui.main_window import MainWindow as LegacyMainWindow
+from menipy.gui.base_window import BaseMainWindow
 from menipy.gui.items import SubstrateLineItem
 from menipy.gui.overlay import draw_drop_overlay
 from ..detection.needle import detect_vertical_edges
@@ -44,7 +44,7 @@ class PluginDialog(QDialog):
         layout.addWidget(close_btn)
 
 
-class MainWindow(LegacyMainWindow):
+class MainWindow(BaseMainWindow):
     """Main window using refactored detection and analysis modules."""
 
     def __init__(self, *args, **kwargs):

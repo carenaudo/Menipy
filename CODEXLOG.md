@@ -588,3 +588,17 @@ verified that existing tests still pass.
 **Task:** Check for remaining import errors after exposing `main()` entry point.
 
 **Summary:** Ran the test suite (53 passed) and executed `python -m src`. The command failed due to missing system library `libEGL.so.1`, indicating a runtime environment issue rather than a Python import error. No additional import errors were found.
+
+## Entry 99 - Refactored UI default
+
+**Task:** Replace legacy GUI exports with the refactored version.
+
+**Summary:** Renamed `gui/main_window.py` to `_legacy_main_window.py` and updated `ui.main_window` to import from the new private module. `menipy.gui.__init__` now exposes `ui.MainWindow`, ensuring the plugin menu is always available. All tests pass.
+
+## Entry 100 - Modularize main window
+
+**Task:** Remove legacy implementation and import the refactored window.
+
+**Summary:** Replaced `_legacy_main_window.py` with `base_window.py` containing a
+`BaseMainWindow` class. The refactored UI now subclasses this base class and all
+imports use the new module. The old file was deleted.
