@@ -496,3 +496,9 @@ tests added for these features.
 
 **Summary:** Added a "Select Drop Side" button to `contact_tab` in `MainWindow` and wired it to `_select_side_button_clicked`. Updated the tab widget test to expect the extra tab and created a GUI test for the new button. All tests pass.
 
+
+## Entry 83 - Remove Contact Angle Alt Tab
+
+**Task:** Remove the temporary Contact Angle Alt tab now that the main contact angle tab works.
+
+**Summary:** Deleted `contact_angle_tab_alt.py` and references to the alternative tab in `MainWindow`, exports and GUI tests. Updated documentation and README accordingly. All tests pass.
