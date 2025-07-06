@@ -508,3 +508,55 @@ tests added for these features.
 **Task:** Add overlay markers for the substrate contact points P1 and P2.
 
 **Summary:** Extended `draw_drop_overlay` with a ``contact_pts`` parameter to draw yellow dots at the intersection points. Updated `MainWindow.analyze_drop_image` to pass the contact points from ``compute_drop_metrics`` and adjusted the GUI test. All tests pass.
+
+## Entry 85 - Start CODEX refactor plan
+
+**Task:** Begin phase 0 of CODEX_REFACTOR_PLAN by creating a discovery tool.
+
+**Summary:** Added `scripts/generate_legacy_map.py` to analyze import
+relationships in the legacy `src` directory and produce
+`docs/legacy_map.html`. Executed the script to generate the file and
+verified that existing tests still pass.
+
+## Entry 86 - Scaffold refactor package
+
+**Task:** Continue with phase 1 of CODEX_REFACTOR_PLAN by creating the src_alt skeleton.
+
+**Summary:** Added the `src_alt/optical_goniometry` package with stub modules and a minimal CLI. Created an import test under `src_alt/tests` and ensured all tests pass.
+
+## Entry 87 - Rename new package and begin utilities port
+
+**Task:** Rename the refactored package from `optical_goniometry` to `menipy` and start phase 2 of the refactor plan.
+
+**Summary:** All stubs were moved under `src_alt/menipy` and import tests updated. Implemented initial utilities by porting calibration routines, image loader, and a preprocessing function. Added parity tests to verify these functions match the legacy implementations. All tests pass.
+
+## Entry 88 - Port detection modules
+
+**Task:** Continue phase 3 by porting calibration and detection code to the new package.
+
+**Summary:** Implemented needle, substrate and droplet detection algorithms in `menipy.detection`. Added parity tests comparing against the legacy modules to ensure identical results. All tests pass.
+
+
+## Entry 89 - Port analysis modules
+
+**Task:** Continue phase 4 of CODEX_REFACTOR_PLAN by porting drop analysis algorithms.
+
+**Summary:** Added implementations of `compute_drop_metrics` and related helpers in `menipy.analysis.commons`. Exposed wrapper functions for pendant and sessile modes and created parity tests verifying results match the legacy `src` modules. Updated detection tests for non-deterministic contact line ordering. All tests pass.
+
+## Entry 90 - UI facade with refactored modules
+
+**Task:** Continue the refactor by wiring the new `menipy` analysis and detection code into a UI facade.
+
+**Summary:** Created a subclass of the legacy `MainWindow` that calls refactored detection and analysis functions. Updated package exports and added a basic GUI instantiation test. Adjusted import tests and stabilized pendant detection parity with a fixed RNG. All tests pass.
+## Entry 91 - Plugin hook implementation
+
+**Task:** Implement plugin discovery mechanism as per refactor plan.
+
+**Summary:** Added `menipy.plugins.load_plugins` which queries the `og.analysis` entry point group using `importlib.metadata` and populates a global `PLUGINS` registry. Implemented unit test with patched entry points to ensure plugins are loaded correctly.
+
+## Entry 92 - Example plugin and manager
+
+**Task:** Implement a sample sharpening plugin and GUI menu to enable plugins.
+
+**Summary:** Added `sharpen_filter` in `menipy.sharpen_plugin` and registered it as a built-in plugin. Extended the `MainWindow` facade with a plugin manager dialog listing available plugins. Active plugins are applied after loading images. Updated plugin tests for the built-in filter.
+

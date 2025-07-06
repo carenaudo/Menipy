@@ -1,0 +1,43 @@
+<html>
+<head><meta charset="utf-8"><title>Legacy Module Map</title></head>
+<body>
+<h1>Legacy Module Map</h1>
+<table border="1" cellpadding="4" cellspacing="0">
+<tr><th>Module</th><th>Imports</th></tr>
+<tr><td>analysis.__init__</td><td>drop, needle</td></tr>
+<tr><td>analysis.drop</td><td>cv2, models, models.geometry, numpy, physics.contact_geom</td></tr>
+<tr><td>analysis.needle</td><td>cv2, numpy</td></tr>
+<tr><td>batch</td><td>__future__, pandas, pathlib, processing.reader, processing.segmentation, typing</td></tr>
+<tr><td>contact_angle</td><td>math, numpy</td></tr>
+<tr><td>detectors.geometry_alt</td><td>__future__, numpy, physics.contact_geom</td></tr>
+<tr><td>gui.__init__</td><td>calibration_dialog, controls, image_view, items, main_window, overlay</td></tr>
+<tr><td>gui.calibration_dialog</td><td>PySide6.QtCore, PySide6.QtGui, PySide6.QtWidgets, __future__, dataclasses, typing, utils</td></tr>
+<tr><td>gui.controls</td><td>PySide6.QtCore, PySide6.QtWidgets</td></tr>
+<tr><td>gui.image_view</td><td>PySide6.QtCore, PySide6.QtGui, PySide6.QtWidgets, __future__</td></tr>
+<tr><td>gui.items</td><td>PySide6</td></tr>
+<tr><td>gui.main_window</td><td>PySide6.QtCore, PySide6.QtGui, PySide6.QtWidgets, analysis, controls, cv2, detectors.geometry_alt, image_view, items, models.geometry, models.properties, numpy, overlay, pandas, pathlib, physics.contact_geom, processing, processing.reader, processing.segmentation, utils</td></tr>
+<tr><td>gui.overlay</td><td>PySide6.QtGui, cv2, numpy</td></tr>
+<tr><td>main</td><td>PySide6.QtWidgets, gui.main_window</td></tr>
+<tr><td>models.__init__</td><td>drop_extras, geometry, physics, properties, surface_tension</td></tr>
+<tr><td>models.drop_extras</td><td>math, numpy</td></tr>
+<tr><td>models.geometry</td><td>numpy, numpy.linalg, typing</td></tr>
+<tr><td>models.physics</td><td>numpy, scipy.integrate, typing</td></tr>
+<tr><td>models.properties</td><td>__future__, cv2, geometry, numpy, processing.segmentation, typing</td></tr>
+<tr><td>models.properties2</td><td>__future__, cv2, geometry, numpy, processing.segmentation, typing, utils</td></tr>
+<tr><td>models.surface_tension</td><td>__future__, numpy, numpy.typing</td></tr>
+<tr><td>physics.__init__</td><td>contact_geom</td></tr>
+<tr><td>physics.contact_geom</td><td>__future__, math, numpy, typing</td></tr>
+<tr><td>processing.__init__</td><td>classification, detection, reader, segmentation, substrate</td></tr>
+<tr><td>processing.classification</td><td>detection, numpy, typing, utils</td></tr>
+<tr><td>processing.detection</td><td>__future__, cv2, dataclasses, numpy, typing</td></tr>
+<tr><td>processing.geometry</td><td>__future__, numpy</td></tr>
+<tr><td>processing.metrics</td><td>__future__, models.properties, numpy, region, typing</td></tr>
+<tr><td>processing.reader</td><td>cv2, numpy, pathlib, typing</td></tr>
+<tr><td>processing.region</td><td>__future__, cv2, numpy, typing</td></tr>
+<tr><td>processing.segmentation</td><td>cv2, numpy, skimage</td></tr>
+<tr><td>processing.substrate</td><td>__future__, cv2, geometry, numpy, skimage.measure, typing</td></tr>
+<tr><td>utils.__init__</td><td>calibration</td></tr>
+<tr><td>utils.calibration</td><td>cv2, dataclasses, math, numpy</td></tr>
+</table>
+</body>
+</html>
