@@ -662,3 +662,27 @@ def test_contact_tab_side_button(tmp_path):
     app.quit()
 
 
+def test_clear_analysis_button(tmp_path):
+    if QtWidgets is None:
+        pytest.skip("PySide6 not available")
+    import numpy as np
+    import cv2
+
+    img = np.zeros((20, 20, 3), dtype=np.uint8)
+    path = tmp_path / "img.png"
+    cv2.imwrite(str(path), img)
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    window = MainWindow()
+    window.load_image(path)
+    window.filter_slider.setValue(2)
+    window.apply_filter()
+    window.process_image()
+    assert window.mask_item is not None
+    window.clear_analysis_button.click()
+    assert window.mask_item is None
+    assert np.array_equal(window.image, window.original_image)
+    window.close()
+    app.quit()
+
+

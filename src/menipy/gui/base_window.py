@@ -100,6 +100,9 @@ class BaseMainWindow(QMainWindow):
         self._default_move = self.graphics_view.mouseMoveEvent
         self._default_release = self.graphics_view.mouseReleaseEvent
         image_layout.addWidget(self.graphics_view)
+        self.clear_analysis_button = QPushButton("Clear Analysis")
+        self.clear_analysis_button.clicked.connect(self.clear_analysis)
+        image_layout.addWidget(self.clear_analysis_button)
         splitter.addWidget(image_container)
 
         # Control panel wrapped in tabs
@@ -361,6 +364,42 @@ class BaseMainWindow(QMainWindow):
             self.contact_line_item = None
         self.last_mask = None
         self.set_zoom(self.zoom_control.slider.value() / 100.0)
+
+    def clear_analysis(self) -> None:
+        """Restore the image and remove all overlays."""
+        self.clean_filter()
+        self.clean_detection()
+        for item in (
+            self.needle_axis_item,
+            self.drop_contour_item,
+            self.drop_axis_item,
+            self.diameter_item,
+            self.apex_dot_item,
+            self.substrate_line_item,
+            self.model_item,
+            self.roi_rect_item,
+            self.needle_rect_item,
+            self.drop_rect_item,
+        ):
+            if item is not None:
+                self.graphics_scene.removeItem(item)
+        for item in self.needle_edge_items:
+            self.graphics_scene.removeItem(item)
+        self.needle_edge_items.clear()
+        self.needle_axis_item = None
+        self.drop_contour_item = None
+        self.drop_axis_item = None
+        self.diameter_item = None
+        self.apex_dot_item = None
+        self.substrate_line_item = None
+        self.model_item = None
+        self.roi_rect_item = None
+        self.roi_rect = None
+        self.needle_rect_item = None
+        self.needle_rect = None
+        self.drop_rect_item = None
+        self.drop_rect = None
+        self.px_per_mm_drop = 0.0
 
     def _display_image(self, img: np.ndarray) -> None:
         """Display ``img`` in the graphics view and clear overlays."""
