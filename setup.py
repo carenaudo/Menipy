@@ -13,5 +13,5 @@ setup(
         "opencv-python>=4.7.0.72",
         "PySide6>=6.5.1",
     ],
-    entry_points={"console_scripts": ["menipy=menipy.cli:main"]},
+    entry_points={"console_scripts": ["menipy=menipy.gui:main"]},
 )

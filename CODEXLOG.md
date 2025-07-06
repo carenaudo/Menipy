@@ -563,3 +563,16 @@ verified that existing tests still pass.
 \n## Entry 93 - Remove legacy src
 
 **Task:** Eliminate old src package in favor of the fully featured menipy implementation.\n\n**Summary:** Deleted the legacy `src` tree and renamed `src_alt` to `src`. Reinstated necessary modules (GUI, processing, detection) under `menipy` and updated the test suite to import from the new package. Added `tests/conftest.py` to ensure the package is importable. All tests pass.
+## Entry 94 - Verify no legacy code\n\n**Task:** Remove all legacy code leaving only the alt implementation and rename the folder to src.\n\n**Summary:** Reviewed the repository and confirmed the previous migration already deleted the legacy src tree and renamed `src_alt` to `src`. All modules now reside under `src/menipy`, with alt geometry utilities in `detectors/geometry_alt.py`. No additional legacy code was present. Test suite executed successfully.
+
+## Entry 95 - GUI entry point
+
+**Task:** Ensure running the package launches the new GUI implementation.
+
+**Summary:** Updated `src/__main__.py` to invoke `menipy.gui.main` and changed the console script in `setup.py` so the `menipy` command opens the graphical interface by default.
+
+## Entry 96 - Remove unused files
+
+**Task:** Clean up remaining unused modules.
+
+**Summary:** Deleted obsolete `io` and `preprocessing` packages, the unused `properties2.py` module, and placeholder UI subpackages. Tests continue to pass, confirming these modules were not required.
