@@ -582,3 +582,9 @@ verified that existing tests still pass.
 **Task:** Fix ModuleNotFoundError when executing `python -m src`.
 
 **Summary:** Modified `src/__main__.py` to use a relative import of `menipy.gui` so running the package with `python -m src` resolves the internal package correctly. Tests still pass.
+
+## Entry 98 - Verify imports
+
+**Task:** Check for remaining import errors after exposing `main()` entry point.
+
+**Summary:** Ran the test suite (53 passed) and executed `python -m src`. The command failed due to missing system library `libEGL.so.1`, indicating a runtime environment issue rather than a Python import error. No additional import errors were found.

@@ -13,6 +13,16 @@ from .controls import (
 from .overlay import draw_drop_overlay
 from .items import SubstrateLineItem
 
+
+def main() -> None:
+    """Launch the Menipy GUI application."""
+    from PySide6.QtWidgets import QApplication
+
+    app = QApplication.instance() or QApplication([])
+    window = MainWindow()
+    window.showMaximized()
+    app.exec()
+
 __all__ = [
     "MainWindow",
     "ImageView",
@@ -24,4 +34,5 @@ __all__ = [
     "AnalysisTab",
     "draw_drop_overlay",
     "SubstrateLineItem",
+    "main",
 ]
