@@ -13,13 +13,13 @@ from PySide6.QtWidgets import (
 )
 from pathlib import Path
 
-from menipy import plugins
+from .. import plugins
 from src.gui.main_window import MainWindow as LegacyMainWindow
 from src.gui.items import SubstrateLineItem
 from src.gui.overlay import draw_drop_overlay
-from menipy.detection.needle import detect_vertical_edges
-from menipy.detection.substrate import detect_substrate_line
-from menipy.analysis.commons import (
+from ..detection.needle import detect_vertical_edges
+from ..detection.substrate import detect_substrate_line
+from ..analysis.commons import (
     extract_external_contour,
     compute_drop_metrics,
 )
