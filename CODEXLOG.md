@@ -643,3 +643,8 @@ fixed.
 **Task:** Adjust overlay drawing so pendant and sessile analyses have distinct visuals and remove unintended red axis line on pendant drops.**
 
 **Summary:** Updated `BaseMainWindow` and `ui.main_window` to only compute and draw the axis line for contact-angle analyses. Pendant overlays now receive center and contact lines only in pendant mode. This eliminates the diagonal red line and keeps sessile visuals unchanged. All tests pass (53 passed).
+## Entry 107 - Refactor overlay pipelines
+
+**Task:** Fully separate pendant and sessile analysis drawing and geometry logic.
+
+**Summary:** Introduced new `pipelines` package with dedicated geometry and drawing modules for pendant and sessile workflows. Updated GUI to call these pipelines when analyzing images, preventing cross-mode overlay contamination. All 53 tests still pass.

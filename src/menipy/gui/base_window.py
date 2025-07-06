@@ -64,9 +64,15 @@ from ..models.geometry import fit_circle
 from ..analysis import (
     detect_vertical_edges,
     extract_external_contour,
-    compute_drop_metrics,
 )
-from .overlay import draw_drop_overlay
+from ..pipelines import (
+    analyze_pendant,
+    analyze_sessile,
+    draw_pendant_overlays,
+    draw_sessile_overlays,
+)
+from ..pipelines.pendant import HelperBundle as PendantHelpers
+from ..pipelines.sessile import HelperBundle as SessileHelpers
 from .items import SubstrateLineItem
 from ..physics.contact_geom import geom_metrics
 
@@ -655,54 +661,55 @@ class BaseMainWindow(QMainWindow):
         except ValueError as exc:
             QMessageBox.warning(self, "Drop Analysis", str(exc))
             return
-        contour += np.array([x1, y1])
         mode = getattr(self, "analysis_method", "pendant")
-        apex_idx = (
-            int(np.argmin(contour[:, 1]))
-            if mode == "contact-angle"
-            else int(np.argmax(contour[:, 1]))
-        )
-        metrics = compute_drop_metrics(
-            contour.astype(float),
-            self.px_per_mm_drop,
-            mode,
-            needle_diam_mm=self.calibration_tab.needle_length.value(),
-            substrate_line=(
+        if mode == "pendant":
+            helpers = PendantHelpers(
+                px_per_mm=self.px_per_mm_drop,
+                needle_diam_mm=self.calibration_tab.needle_length.value(),
+            )
+            pm = analyze_pendant(roi, helpers)
+            pm.contour += np.array([x1, y1])
+            pm.apex = (pm.apex[0] + x1, pm.apex[1] + y1)
+            pm.diameter_line = (
+                (pm.diameter_line[0][0] + x1, pm.diameter_line[0][1] + y1),
+                (pm.diameter_line[1][0] + x1, pm.diameter_line[1][1] + y1),
+            )
+            if pm.diameter_center is not None:
+                pm.diameter_center = (
+                    pm.diameter_center[0] + x1,
+                    pm.diameter_center[1] + y1,
+                )
+            if pm.contact_line is not None:
+                pm.contact_line = (
+                    (pm.contact_line[0][0] + x1, pm.contact_line[0][1] + y1),
+                    (pm.contact_line[1][0] + x1, pm.contact_line[1][1] + y1),
+                )
+            metrics = pm.derived
+            panel = self.pendant_tab
+            overlay = draw_pendant_overlays(self.image, pm)
+        else:
+            helpers = SessileHelpers(px_per_mm=self.px_per_mm_drop)
+            substrate = (
                 self.substrate_line_item.line().p1().toTuple(),
                 self.substrate_line_item.line().p2().toTuple(),
+            ) if self.substrate_line_item is not None else ((0, 0), (1, 0))
+            sm = analyze_sessile(roi, helpers, substrate)
+            sm.contour += np.array([x1, y1])
+            sm.apex = (sm.apex[0] + x1, sm.apex[1] + y1)
+            sm.diameter_line = (
+                (sm.diameter_line[0][0] + x1, sm.diameter_line[0][1] + y1),
+                (sm.diameter_line[1][0] + x1, sm.diameter_line[1][1] + y1),
             )
-            if self.substrate_line_item is not None
-            else None,
-        )
-        extra = {}
-
-        if mode == "contact-angle" and self.substrate_line_item is not None:
-            p1 = self.substrate_line_item.line().p1()
-            p2 = self.substrate_line_item.line().p2()
-            extra = geom_metrics(
-                p1.toTuple(),
-                p2.toTuple(),
-                contour.astype(float),
-                apex_idx,
-                self.px_per_mm_drop,
+            sm.p1 = (sm.p1[0] + x1, sm.p1[1] + y1)
+            sm.p2 = (sm.p2[0] + x1, sm.p2[1] + y1)
+            sm.substrate_line = (
+                (sm.substrate_line[0][0] + x1, sm.substrate_line[0][1] + y1),
+                (sm.substrate_line[1][0] + x1, sm.substrate_line[1][1] + y1),
             )
-            droplet_poly = extra.pop("droplet_poly")
-            metrics = compute_drop_metrics(
-                droplet_poly.astype(float),
-                self.px_per_mm_drop,
-                mode,
-                needle_diam_mm=self.calibration_tab.needle_length.value(),
-                substrate_line=(
-                    self.substrate_line_item.line().p1().toTuple(),
-                    self.substrate_line_item.line().p2().toTuple(),
-                ),
-            )
-            metrics.update(extra)
-            contour = droplet_poly
-        if mode == "pendant":
-            panel = self.pendant_tab
-        else:
+            metrics = sm.derived
             panel = self.contact_tab
+            overlay = draw_sessile_overlays(self.image, sm)
+
         panel.set_metrics(
             height=metrics["height_mm"],
             diameter=metrics["diameter_mm"],
@@ -724,29 +731,7 @@ class BaseMainWindow(QMainWindow):
             apex_to_diam=metrics.get("apex_to_diam_mm") if mode == "pendant" else None,
             contact_to_diam=metrics.get("contact_to_diam_mm") if mode == "pendant" else None,
         )
-        diameter_line = (
-            metrics["diameter_line"][0],
-            metrics["diameter_line"][1],
-        )
-        axis_line = None
-        if mode == "contact-angle":
-            if self.substrate_line_item is not None:
-                line_dir = np.array(
-                    self.substrate_line_item.line().p2().toTuple(), float
-                ) - np.array(self.substrate_line_item.line().p1().toTuple(), float)
-            else:
-                line_dir = np.array([1.0, 0.0])
-            p1 = np.array(diameter_line[0], float)
-            p2 = np.array(diameter_line[1], float)
 
-            apex_pt = np.array(metrics["apex"], dtype=float)
-            t = np.dot(apex_pt - p1, line_dir) / np.dot(line_dir, line_dir)
-            t = np.clip(t, 0.0, 1.0)
-            foot_pt = p1 + t * line_dir
-            axis_line = (
-                tuple(np.round(foot_pt).astype(int)),
-                tuple(np.round(apex_pt).astype(int)),
-            )
         if self.drop_contour_item is not None:
             self.graphics_scene.removeItem(self.drop_contour_item)
         if self.diameter_item is not None:
@@ -756,31 +741,6 @@ class BaseMainWindow(QMainWindow):
         if self.apex_dot_item is not None:
             self.graphics_scene.removeItem(self.apex_dot_item)
 
-        center_pt = metrics.get("diameter_center") if mode == "pendant" else None
-        contact_line = metrics.get("contact_line") if mode == "pendant" else None
-        center_apex_line = None
-        center_contact_line = None
-        if mode == "pendant" and center_pt is not None:
-            center_apex_line = (center_pt, metrics["apex"])
-            if contact_line is not None:
-                cl_center = (
-                    (contact_line[0][0] + contact_line[1][0]) // 2,
-                    (contact_line[0][1] + contact_line[1][1]) // 2,
-                )
-                center_contact_line = (center_pt, cl_center)
-
-        overlay = draw_drop_overlay(
-            self.image,
-            contour,
-            diameter_line=diameter_line,
-            axis_line=axis_line,
-            contact_line=contact_line,
-            apex=metrics["apex"],
-            contact_pts=contact_line,
-            center_pt=center_pt,
-            center_apex_line=center_apex_line,
-            center_contact_line=center_contact_line,
-        )
         self.drop_contour_item = self.graphics_scene.addPixmap(overlay)
 
     # --- Calibration drawing handling -------------------------------------------------
