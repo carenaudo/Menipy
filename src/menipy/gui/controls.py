@@ -195,6 +195,18 @@ class MetricsPanel(QWidget):
             "mode": self.mode_label.text(),
         }
 
+    def clear_metrics(self) -> None:
+        """Reset all displayed values to defaults."""
+        self.set_metrics(
+            ift=0.0,
+            wo=0.0,
+            volume=0.0,
+            contact_angle=0.0,
+            height=0.0,
+            diameter=0.0,
+            mode="unknown",
+        )
+
 
 class DropAnalysisPanel(QWidget):
     """Controls for drop analysis workflow."""
@@ -419,6 +431,12 @@ class CalibrationTab(QWidget):
             "drop": self.drop_coords.text(),
         }
 
+    def clear_metrics(self) -> None:
+        """Reset scale and ROI display."""
+        self.set_metrics(scale=0.0)
+        self.needle_coords.setText("")
+        self.drop_coords.setText("")
+
 
 class AnalysisTab(QWidget):
     """Analysis results and controls for a drop method."""
@@ -572,6 +590,29 @@ class AnalysisTab(QWidget):
             data["rbase"] = self.rb_label.text()
             data["height_line"] = self.h_label.text()
         return data
+
+    def clear_metrics(self) -> None:
+        """Reset displayed analysis results to defaults."""
+        self.set_metrics(
+            height=0.0,
+            diameter=0.0,
+            apex=(0, 0),
+            radius=0.0,
+            volume=0.0,
+            angle=0.0,
+            gamma=0.0,
+            s1=0.0,
+            bo=0.0,
+            wo=0.0,
+            aproj=0.0,
+            asurf=0.0,
+            vmax=0.0,
+            wapp=0.0,
+            kappa0=0.0,
+            width=0.0,
+            rbase=0.0,
+            height_line=0.0,
+        )
 
 
 

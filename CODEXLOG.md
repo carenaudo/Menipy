@@ -620,3 +620,21 @@ fixed.
 **Task:** Provide a clear way to return the viewer to the unmodified image.
 
 **Summary:** Added a `Clear Analysis` button below the image view that calls a new `clear_analysis` method. This routine restores the original image, removes detection and analysis overlays, and resets related state. Tests were updated with a new case ensuring the button works. All tests pass.
+
+## Entry 103 - Fix drawing after clear
+
+**Task:** Resolve crash when drawing needle ROI after using Clear Analysis.
+
+**Summary:** Updated `_display_image` to reset ROI and overlay references so cleared items do not leave dangling Qt objects. Tests pass.
+
+## Entry 104 - Reset all overlays on clear
+
+**Task:** Ensure Clear Analysis fully resets drawing modes and calibration items.
+
+**Summary:** Updated `clear_analysis` to disable drawing modes, remove calibration items, and reset internal state. Added a regression test verifying that all overlays are gone and drawing works after clearing.
+
+## Entry 105 - Reset metrics on clear
+
+**Task:** Ensure analysis metrics and result overlays fully reset when clearing.
+
+**Summary:** Added `clear_metrics` helpers to GUI panels and updated `clear_analysis` to reset scale and metrics displays. New tests verify metric labels return to defaults after clearing. All tests pass.
