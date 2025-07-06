@@ -602,3 +602,14 @@ verified that existing tests still pass.
 **Summary:** Replaced `_legacy_main_window.py` with `base_window.py` containing a
 `BaseMainWindow` class. The refactored UI now subclasses this base class and all
 imports use the new module. The old file was deleted.
+
+## Entry 101 - Fix package imports
+
+**Task:** Resolve `ModuleNotFoundError` when launching the GUI with
+`python -m src`.
+
+**Summary:** Changed absolute imports in `ui/main_window.py` to package
+relative imports so the module works when the project is executed as a
+module without installation. Tests pass and running `python -m src`
+fails only due to missing GUI libraries, confirming the import issue is
+fixed.

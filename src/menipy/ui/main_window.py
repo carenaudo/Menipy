@@ -14,16 +14,16 @@ from PySide6.QtWidgets import (
 from pathlib import Path
 
 from .. import plugins
-from menipy.gui.base_window import BaseMainWindow
-from menipy.gui.items import SubstrateLineItem
-from menipy.gui.overlay import draw_drop_overlay
+from ..gui.base_window import BaseMainWindow
+from ..gui.items import SubstrateLineItem
+from ..gui.overlay import draw_drop_overlay
 from ..detection.needle import detect_vertical_edges
 from ..detection.substrate import detect_substrate_line
 from ..analysis.commons import (
     extract_external_contour,
     compute_drop_metrics,
 )
-from menipy.physics.contact_geom import geom_metrics
+from ..physics.contact_geom import geom_metrics
 
 
 class PluginDialog(QDialog):
