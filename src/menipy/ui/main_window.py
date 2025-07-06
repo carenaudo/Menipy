@@ -161,6 +161,7 @@ class MainWindow(BaseMainWindow):
         contour += np.array([x1, y1])
         mode = getattr(self, "analysis_method", "pendant")
 
+        if mode == "pendant":
             helpers = PendantHelpers(
                 px_per_mm=self.px_per_mm_drop,
                 needle_diam_mm=self.calibration_tab.needle_length.value(),
