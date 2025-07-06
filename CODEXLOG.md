@@ -529,3 +529,10 @@ verified that existing tests still pass.
 **Task:** Rename the refactored package from `optical_goniometry` to `menipy` and start phase 2 of the refactor plan.
 
 **Summary:** All stubs were moved under `src_alt/menipy` and import tests updated. Implemented initial utilities by porting calibration routines, image loader, and a preprocessing function. Added parity tests to verify these functions match the legacy implementations. All tests pass.
+
+## Entry 88 - Port detection modules
+
+**Task:** Continue phase 3 by porting calibration and detection code to the new package.
+
+**Summary:** Implemented needle, substrate and droplet detection algorithms in `menipy.detection`. Added parity tests comparing against the legacy modules to ensure identical results. All tests pass.
+
