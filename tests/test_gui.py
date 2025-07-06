@@ -602,3 +602,32 @@ def test_contact_tab_draw_button(tmp_path):
     window.close()
     app.quit()
 
+
+def test_contact_tab_detect_button(tmp_path):
+    if QtWidgets is None:
+        pytest.skip("PySide6 not available")
+    import numpy as np
+    import cv2
+
+    img = np.full((40, 40), 255, dtype=np.uint8)
+    cv2.line(img, (2, 30), (38, 30), 0, 2)
+    cv2.circle(img, (20, 24), 6, 0, -1)
+    path = tmp_path / "img.png"
+    cv2.imwrite(str(path), img)
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    window = MainWindow()
+    window.load_image(path)
+    window.drop_rect = (0, 10, 39, 39)
+    window.contact_tab.detect_substrate_button.click()
+    assert window.substrate_line_item is not None
+    line = window.substrate_line_item.line()
+    ang = np.degrees(np.arctan2(line.y2() - line.y1(), line.x2() - line.x1()))
+    if ang > 90.0:
+        ang -= 180.0
+    elif ang < -90.0:
+        ang += 180.0
+    assert abs(ang) <= 5.0
+    window.close()
+    app.quit()
+
