@@ -159,6 +159,8 @@ class MainWindow(QMainWindow):
             "Detect Substrate Line"
         )
         self.contact_tab.layout().insertRow(1, self.contact_tab.detect_substrate_button)
+        self.contact_tab.side_button = QPushButton("Select Drop Side")
+        self.contact_tab.layout().insertRow(2, self.contact_tab.side_button)
         self.tabs.addTab(self.contact_tab, "Contact angle")
 
         self.contact_tab_alt = ContactAngleTabAlt()
@@ -186,6 +188,10 @@ class MainWindow(QMainWindow):
         if hasattr(self.contact_tab, "detect_substrate_button"):
             self.contact_tab.detect_substrate_button.clicked.connect(
                 self._detect_substrate_line
+            )
+        if hasattr(self.contact_tab, "side_button"):
+            self.contact_tab.side_button.clicked.connect(
+                self._select_side_button_clicked
             )
         self.contact_tab.analyze_button.clicked.connect(
             lambda: self._run_analysis("contact-angle")

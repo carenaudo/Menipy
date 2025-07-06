@@ -40,11 +40,12 @@ def test_tab_widget_setup():
         pytest.skip("PySide6 not available")
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     window = MainWindow()
-    assert window.tabs.count() == 4
+    assert window.tabs.count() == 5
     assert window.tabs.tabText(0) == "Detection Test"
     assert window.tabs.tabText(1) == "Calibration"
     assert window.tabs.tabText(2) == "Pendant drop"
     assert window.tabs.tabText(3) == "Contact angle"
+    assert window.tabs.tabText(4) == "Contact Angle (Alt)"
     window.close()
     app.quit()
 
@@ -628,6 +629,35 @@ def test_contact_tab_detect_button(tmp_path):
     elif ang < -90.0:
         ang += 180.0
     assert abs(ang) <= 5.0
+    window.close()
+    app.quit()
+
+
+def test_contact_tab_side_button(tmp_path):
+    if QtWidgets is None:
+        pytest.skip("PySide6 not available")
+    import numpy as np
+    import cv2
+    from unittest.mock import patch
+    from PySide6.QtCore import QLineF
+    from src.gui import SubstrateLineItem
+
+    img = np.zeros((20, 20), dtype=np.uint8)
+    path = tmp_path / "img.png"
+    cv2.imwrite(str(path), img)
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    window = MainWindow()
+    window.load_image(path)
+    assert window.contact_tab.side_button is not None
+    with patch("PySide6.QtWidgets.QMessageBox.information") as info:
+        window.contact_tab.side_button.click()
+        assert info.called
+    window.substrate_line_item = SubstrateLineItem(QLineF(1, 10, 18, 10))
+    window.graphics_scene.addItem(window.substrate_line_item)
+    with patch("PySide6.QtWidgets.QMessageBox.information") as info:
+        window.contact_tab.side_button.click()
+        assert not info.called
     window.close()
     app.quit()
 

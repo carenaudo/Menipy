@@ -490,3 +490,9 @@ tests added for these features.
 
 **Summary:** Added `region.close_droplet` with half-plane filtering, intersection clustering and mask closing. Implemented `metrics_sessile` and `metrics_pendant` to compute diameter, apex, height and volume via the new helper. Created `tests/test_contact_region.py` with regression cases. All tests pass.
 
+## Entry 82 - Contact tab side selection
+
+**Task:** Let users choose the droplet side in the regular Contact Angle workflow.
+
+**Summary:** Added a "Select Drop Side" button to `contact_tab` in `MainWindow` and wired it to `_select_side_button_clicked`. Updated the tab widget test to expect the extra tab and created a GUI test for the new button. All tests pass.
+
