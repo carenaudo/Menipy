@@ -517,3 +517,9 @@ tests added for these features.
 relationships in the legacy `src` directory and produce
 `docs/legacy_map.html`. Executed the script to generate the file and
 verified that existing tests still pass.
+
+## Entry 86 - Scaffold refactor package
+
+**Task:** Continue with phase 1 of CODEX_REFACTOR_PLAN by creating the src_alt skeleton.
+
+**Summary:** Added the `src_alt/optical_goniometry` package with stub modules and a minimal CLI. Created an import test under `src_alt/tests` and ensured all tests pass.
