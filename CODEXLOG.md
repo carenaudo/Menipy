@@ -554,3 +554,9 @@ verified that existing tests still pass.
 
 **Summary:** Added `menipy.plugins.load_plugins` which queries the `og.analysis` entry point group using `importlib.metadata` and populates a global `PLUGINS` registry. Implemented unit test with patched entry points to ensure plugins are loaded correctly.
 
+## Entry 92 - Example plugin and manager
+
+**Task:** Implement a sample sharpening plugin and GUI menu to enable plugins.
+
+**Summary:** Added `sharpen_filter` in `menipy.sharpen_plugin` and registered it as a built-in plugin. Extended the `MainWindow` facade with a plugin manager dialog listing available plugins. Active plugins are applied after loading images. Updated plugin tests for the built-in filter.
+

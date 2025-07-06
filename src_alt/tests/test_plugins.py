@@ -35,4 +35,15 @@ def test_load_plugins(monkeypatch):
     plugins.load_plugins()
 
     assert plugins.PLUGINS["dummy"] is dummy_obj
+    from menipy.sharpen_plugin import sharpen_filter
+    assert plugins.PLUGINS["sharpen"] is sharpen_filter
+
+
+def test_sharpen_filter_shape() -> None:
+    import numpy as np
+    from menipy.sharpen_plugin import sharpen_filter
+
+    img = np.zeros((5, 5, 3), dtype=np.uint8)
+    out = sharpen_filter(img)
+    assert out.shape == img.shape
 

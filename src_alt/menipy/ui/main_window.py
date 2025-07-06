@@ -3,9 +3,17 @@ from __future__ import annotations
 import numpy as np
 import cv2
 from PySide6.QtCore import QLineF, Qt
-from PySide6.QtGui import QColor, QPen
-from PySide6.QtWidgets import QMessageBox
+from PySide6.QtGui import QColor, QPen, QAction
+from PySide6.QtWidgets import (
+    QMessageBox,
+    QDialog,
+    QVBoxLayout,
+    QCheckBox,
+    QPushButton,
+)
+from pathlib import Path
 
+from menipy import plugins
 from src.gui.main_window import MainWindow as LegacyMainWindow
 from src.gui.items import SubstrateLineItem
 from src.gui.overlay import draw_drop_overlay
@@ -18,8 +26,65 @@ from menipy.analysis.commons import (
 from src.physics.contact_geom import geom_metrics
 
 
+class PluginDialog(QDialog):
+    """Dialog listing available plugins with check boxes."""
+
+    def __init__(self, parent, plugins_map: dict[str, object], active: set[str]):
+        super().__init__(parent)
+        self.setWindowTitle("Plugins")
+        layout = QVBoxLayout(self)
+        self.checks: dict[str, QCheckBox] = {}
+        for name in plugins_map:
+            cb = QCheckBox(name)
+            cb.setChecked(name in active)
+            layout.addWidget(cb)
+            self.checks[name] = cb
+        close_btn = QPushButton("Close")
+        close_btn.clicked.connect(self.accept)
+        layout.addWidget(close_btn)
+
+
 class MainWindow(LegacyMainWindow):
     """Main window using refactored detection and analysis modules."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        plugins.load_plugins()
+        self.active_plugins: set[str] = set()
+
+        plugin_menu = self.menuBar().addMenu("Plugins")
+        manage_action = QAction("Manage Plugins", self)
+        manage_action.triggered.connect(self.open_plugin_manager)
+        plugin_menu.addAction(manage_action)
+
+    def open_plugin_manager(self) -> None:
+        dlg = PluginDialog(self, plugins.PLUGINS, self.active_plugins)
+        if dlg.exec():
+            self.active_plugins = {
+                name for name, cb in dlg.checks.items() if cb.isChecked()
+            }
+            if getattr(self, "original_image", None) is not None:
+                self._apply_plugins()
+
+    def _apply_plugins(self) -> None:
+        img = self.original_image.copy()
+        for name in list(self.active_plugins):
+            func = plugins.PLUGINS.get(name)
+            if callable(func):
+                try:
+                    img = func(img)
+                except Exception as exc:  # pragma: no cover - runtime safety
+                    QMessageBox.warning(self, "Plugin Error", str(exc))
+            else:
+                self.active_plugins.discard(name)
+        self.image = img
+        self._display_image(img)
+
+    def load_image(self, path: Path) -> None:  # type: ignore[override]
+        super().load_image(path)
+        if self.active_plugins:
+            self._apply_plugins()
+
 
     def detect_needle(self) -> None:  # type: ignore[override]
         if getattr(self, "image", None) is None or self.needle_rect is None:

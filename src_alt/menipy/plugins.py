@@ -11,6 +11,8 @@ from __future__ import annotations
 from importlib import metadata
 import warnings
 
+from .sharpen_plugin import sharpen_filter
+
 PLUGINS: dict[str, object] = {}
 
 
@@ -23,6 +25,8 @@ def load_plugins() -> None:
     """
 
     PLUGINS.clear()
+    # Register built-in plugins first
+    PLUGINS["sharpen"] = sharpen_filter
 
     try:
         entries = metadata.entry_points(group="og.analysis")
