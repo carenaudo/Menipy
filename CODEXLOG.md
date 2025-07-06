@@ -542,3 +542,9 @@ verified that existing tests still pass.
 **Task:** Continue phase 4 of CODEX_REFACTOR_PLAN by porting drop analysis algorithms.
 
 **Summary:** Added implementations of `compute_drop_metrics` and related helpers in `menipy.analysis.commons`. Exposed wrapper functions for pendant and sessile modes and created parity tests verifying results match the legacy `src` modules. Updated detection tests for non-deterministic contact line ordering. All tests pass.
+
+## Entry 90 - UI facade with refactored modules
+
+**Task:** Continue the refactor by wiring the new `menipy` analysis and detection code into a UI facade.
+
+**Summary:** Created a subclass of the legacy `MainWindow` that calls refactored detection and analysis functions. Updated package exports and added a basic GUI instantiation test. Adjusted import tests and stabilized pendant detection parity with a fixed RNG. All tests pass.

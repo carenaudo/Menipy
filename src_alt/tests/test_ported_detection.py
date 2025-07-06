@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
+import numpy.random as npr
 import cv2
 
 from menipy.detection.needle import detect_vertical_edges as new_detect_needle
@@ -61,8 +62,13 @@ def test_detect_pendant_droplet_parity() -> None:
     cv2.circle(frame, center, radius, 0, -1)
     y_line = center[1] - radius
     cv2.line(frame, (x0, y_line), (x0 + w - 1, y_line), 0, 3)
+    orig = npr.default_rng
+    rng = npr.default_rng(0)
+    npr.default_rng = lambda *_args, **_kw: rng  # type: ignore
     new = new_detect_pendant_droplet(frame, (x0, y0, w, h), 0.1)
+    npr.default_rng = lambda *_args, **_kw: rng  # type: ignore
     old = legacy_detect_pendant_droplet(frame, (x0, y0, w, h), 0.1)
+    npr.default_rng = orig
     assert new.apex_px == old.apex_px
     assert np.allclose(new.contour_px, old.contour_px)
     assert np.isclose(new.r_max_mm, old.r_max_mm)
