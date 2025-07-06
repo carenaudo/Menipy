@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from menipy.analysis.drop import compute_drop_metrics, find_apex_index
+from menipy.analysis import compute_drop_metrics, find_apex_index
 
 
 def test_max_diameter_and_radius_apex():
@@ -18,6 +18,10 @@ def test_max_diameter_and_radius_apex():
     assert metrics["contact_line"] is not None
     assert metrics["radius_apex_mm"] > 0
     assert metrics["s1"] > 0
+    assert metrics["diameter_center"] == (25, 30)
+    assert pytest.approx(metrics["apex_to_diam_mm"], abs=0.1) == 2.0
+    assert pytest.approx(metrics["contact_to_diam_mm"], abs=0.1) == 2.0
+    assert pytest.approx(metrics["apex_to_contact_mm"], abs=0.1) == 4.0
 
 
 def test_find_apex_index_median():

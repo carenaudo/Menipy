@@ -247,6 +247,16 @@ class MainWindow(BaseMainWindow):
             self.graphics_scene.removeItem(self.apex_dot_item)
 
         contact_line = metrics.get("contact_line")
+        center_pt = metrics.get("diameter_center")
+        center_apex_line = (center_pt, metrics["apex"]) if center_pt is not None else None
+        center_contact_line = None
+        if center_pt is not None and contact_line is not None:
+            cl_center = (
+                (contact_line[0][0] + contact_line[1][0]) // 2,
+                (contact_line[0][1] + contact_line[1][1]) // 2,
+            )
+            center_contact_line = (center_pt, cl_center)
+
         overlay = draw_drop_overlay(
             self.image,
             contour,
@@ -255,6 +265,9 @@ class MainWindow(BaseMainWindow):
             contact_line=contact_line,
             apex=metrics["apex"],
             contact_pts=contact_line,
+            center_pt=center_pt,
+            center_apex_line=center_apex_line,
+            center_contact_line=center_contact_line,
         )
         self.drop_contour_item = self.graphics_scene.addPixmap(overlay)
 

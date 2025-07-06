@@ -155,6 +155,7 @@ def compute_drop_metrics(
     asurf = surface_area_mm2(contour_local, px_per_mm)
     wapp = apparent_weight_mN(volume_uL, delta_rho) if volume_uL is not None else None
 
+    diameter_center = (int(round((x_left + x_right) / 2)), int(round(y_diam)))
     contact_line: tuple[tuple[int, int], tuple[int, int]] | None = None
     if substrate_line is not None:
         from ..physics.contact_geom import line_params, contour_line_intersections
@@ -177,6 +178,14 @@ def compute_drop_metrics(
             x_c_right = int(round(xs_contact.max()))
             contact_line = ((x_c_left, int(round(y_min))), (x_c_right, int(round(y_min))))
 
+    apex_to_diam_mm = abs(apex[1] - y_diam) / px_per_mm
+    contact_to_diam_mm = None
+    apex_to_contact_mm = None
+    if contact_line is not None:
+        y_contact = (contact_line[0][1] + contact_line[1][1]) / 2
+        contact_to_diam_mm = abs(y_contact - y_diam) / px_per_mm
+        apex_to_contact_mm = abs(apex[1] - y_contact) / px_per_mm
+
     return {
         "height_mm": float(height_mm),
         "diameter_mm": float(diameter_mm),
@@ -196,7 +205,11 @@ def compute_drop_metrics(
         "W_app_mN": float(wapp) if wapp is not None else None,
         "diameter_px": float(diam_px),
         "diameter_line": ((x_left, y_diam), (x_right, y_diam)),
+        "diameter_center": diameter_center,
         "radius_apex_mm": float(radius_apex_mm),
+        "apex_to_diam_mm": float(apex_to_diam_mm),
+        "contact_to_diam_mm": float(contact_to_diam_mm) if contact_to_diam_mm is not None else None,
+        "apex_to_contact_mm": float(apex_to_contact_mm) if apex_to_contact_mm is not None else None,
         "contact_line": contact_line,
     }
 

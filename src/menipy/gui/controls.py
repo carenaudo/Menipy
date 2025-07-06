@@ -467,6 +467,14 @@ class AnalysisTab(QWidget):
         layout.addRow("Apex (x,y)", self.apex_label)
         self.radius_apex_label = QLabel("0.0")
         layout.addRow("Apex radius (mm)", self.radius_apex_label)
+        if not show_contact_angle:
+            self.apex_diam_label = QLabel("0.0")
+            layout.addRow("Apex→diam (mm)", self.apex_diam_label)
+            self.contact_diam_label = QLabel("0.0")
+            layout.addRow("Needle→diam (mm)", self.contact_diam_label)
+        else:
+            self.apex_diam_label = None
+            self.contact_diam_label = None
 
         sep2 = QFrame()
         sep2.setFrameShape(QFrame.HLine)
@@ -529,6 +537,8 @@ class AnalysisTab(QWidget):
         width: float | None = None,
         rbase: float | None = None,
         height_line: float | None = None,
+        apex_to_diam: float | None = None,
+        contact_to_diam: float | None = None,
     ) -> None:
         if height is not None:
             self.height_label.setText(f"{height:.2f}")
@@ -566,6 +576,10 @@ class AnalysisTab(QWidget):
             self.rb_label.setText(f"{rbase:.2f}")
         if height_line is not None and self.h_label is not None:
             self.h_label.setText(f"{height_line:.2f}")
+        if apex_to_diam is not None and self.apex_diam_label is not None:
+            self.apex_diam_label.setText(f"{apex_to_diam:.2f}")
+        if contact_to_diam is not None and self.contact_diam_label is not None:
+            self.contact_diam_label.setText(f"{contact_to_diam:.2f}")
 
     def metrics(self) -> dict[str, str]:
         data = {
@@ -589,6 +603,10 @@ class AnalysisTab(QWidget):
             data["width"] = self.width_label.text()
             data["rbase"] = self.rb_label.text()
             data["height_line"] = self.h_label.text()
+        if self.apex_diam_label is not None:
+            data["apex_to_diam"] = self.apex_diam_label.text()
+        if self.contact_diam_label is not None:
+            data["contact_to_diam"] = self.contact_diam_label.text()
         return data
 
     def clear_metrics(self) -> None:
@@ -612,6 +630,8 @@ class AnalysisTab(QWidget):
             width=0.0,
             rbase=0.0,
             height_line=0.0,
+            apex_to_diam=0.0,
+            contact_to_diam=0.0,
         )
 
 

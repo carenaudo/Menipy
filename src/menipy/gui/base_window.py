@@ -721,6 +721,8 @@ class BaseMainWindow(QMainWindow):
             width=metrics.get("w_mm"),
             rbase=metrics.get("rb_mm"),
             height_line=metrics.get("h_mm"),
+            apex_to_diam=metrics.get("apex_to_diam_mm") if mode == "pendant" else None,
+            contact_to_diam=metrics.get("contact_to_diam_mm") if mode == "pendant" else None,
         )
         y_min = int(contour[:, 1].min())
         y_max = int(contour[:, 1].max())
@@ -756,14 +758,30 @@ class BaseMainWindow(QMainWindow):
         if self.apex_dot_item is not None:
             self.graphics_scene.removeItem(self.apex_dot_item)
 
+        center_pt = metrics.get("diameter_center") if mode == "pendant" else None
+        contact_line = metrics.get("contact_line") if mode == "pendant" else None
+        center_apex_line = None
+        center_contact_line = None
+        if mode == "pendant" and center_pt is not None:
+            center_apex_line = (center_pt, metrics["apex"])
+            if contact_line is not None:
+                cl_center = (
+                    (contact_line[0][0] + contact_line[1][0]) // 2,
+                    (contact_line[0][1] + contact_line[1][1]) // 2,
+                )
+                center_contact_line = (center_pt, cl_center)
+
         overlay = draw_drop_overlay(
             self.image,
             contour,
             diameter_line=diameter_line,
             axis_line=axis_line,
-            contact_line=None,
+            contact_line=contact_line,
             apex=metrics["apex"],
-            contact_pts=metrics.get("contact_line"),
+            contact_pts=contact_line,
+            center_pt=center_pt,
+            center_apex_line=center_apex_line,
+            center_contact_line=center_contact_line,
         )
         self.drop_contour_item = self.graphics_scene.addPixmap(overlay)
 
