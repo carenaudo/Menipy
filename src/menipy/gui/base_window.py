@@ -724,31 +724,29 @@ class BaseMainWindow(QMainWindow):
             apex_to_diam=metrics.get("apex_to_diam_mm") if mode == "pendant" else None,
             contact_to_diam=metrics.get("contact_to_diam_mm") if mode == "pendant" else None,
         )
-        y_min = int(contour[:, 1].min())
-        y_max = int(contour[:, 1].max())
         diameter_line = (
             metrics["diameter_line"][0],
             metrics["diameter_line"][1],
         )
-        if self.substrate_line_item is not None:
-            line_dir = np.array(
-                self.substrate_line_item.line().p2().toTuple(), float
-            ) - np.array(self.substrate_line_item.line().p1().toTuple(), float)
-            p1 = np.array(diameter_line[0], float)
-            p2 = np.array(diameter_line[1], float)
-        else:
-            line_dir = np.array([1.0, 0.0])
+        axis_line = None
+        if mode == "contact-angle":
+            if self.substrate_line_item is not None:
+                line_dir = np.array(
+                    self.substrate_line_item.line().p2().toTuple(), float
+                ) - np.array(self.substrate_line_item.line().p1().toTuple(), float)
+            else:
+                line_dir = np.array([1.0, 0.0])
             p1 = np.array(diameter_line[0], float)
             p2 = np.array(diameter_line[1], float)
 
-        apex_pt = np.array(metrics["apex"], dtype=float)
-        t = np.dot(apex_pt - p1, line_dir) / np.dot(line_dir, line_dir)
-        t = np.clip(t, 0.0, 1.0)
-        foot_pt = p1 + t * line_dir
-        axis_line = (
-            tuple(np.round(foot_pt).astype(int)),
-            tuple(np.round(apex_pt).astype(int)),
-        )
+            apex_pt = np.array(metrics["apex"], dtype=float)
+            t = np.dot(apex_pt - p1, line_dir) / np.dot(line_dir, line_dir)
+            t = np.clip(t, 0.0, 1.0)
+            foot_pt = p1 + t * line_dir
+            axis_line = (
+                tuple(np.round(foot_pt).astype(int)),
+                tuple(np.round(apex_pt).astype(int)),
+            )
         if self.drop_contour_item is not None:
             self.graphics_scene.removeItem(self.drop_contour_item)
         if self.diameter_item is not None:

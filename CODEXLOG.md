@@ -638,3 +638,8 @@ fixed.
 **Task:** Ensure analysis metrics and result overlays fully reset when clearing.
 
 **Summary:** Added `clear_metrics` helpers to GUI panels and updated `clear_analysis` to reset scale and metrics displays. New tests verify metric labels return to defaults after clearing. All tests pass.
+## Entry 106 - Separate pendant overlays and remove stray axis line
+
+**Task:** Adjust overlay drawing so pendant and sessile analyses have distinct visuals and remove unintended red axis line on pendant drops.**
+
+**Summary:** Updated `BaseMainWindow` and `ui.main_window` to only compute and draw the axis line for contact-angle analyses. Pendant overlays now receive center and contact lines only in pendant mode. This eliminates the diagonal red line and keeps sessile visuals unchanged. All tests pass (53 passed).
