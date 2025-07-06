@@ -17,7 +17,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from ..utils import calibrate_from_points
+# Calibration helpers were moved to the dedicated package
+from ..calibration import calibrate_from_points
 
 
 @dataclass

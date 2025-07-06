@@ -48,7 +48,8 @@ from ..processing import (
     detect_substrate_line,
 )
 from ..processing.segmentation import find_contours
-from ..utils import (
+# Import calibration utilities from the dedicated package
+from ..calibration import (
     get_calibration,
     pixels_to_mm,
     auto_calibrate,
