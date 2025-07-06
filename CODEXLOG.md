@@ -548,3 +548,9 @@ verified that existing tests still pass.
 **Task:** Continue the refactor by wiring the new `menipy` analysis and detection code into a UI facade.
 
 **Summary:** Created a subclass of the legacy `MainWindow` that calls refactored detection and analysis functions. Updated package exports and added a basic GUI instantiation test. Adjusted import tests and stabilized pendant detection parity with a fixed RNG. All tests pass.
+## Entry 91 - Plugin hook implementation
+
+**Task:** Implement plugin discovery mechanism as per refactor plan.
+
+**Summary:** Added `menipy.plugins.load_plugins` which queries the `og.analysis` entry point group using `importlib.metadata` and populates a global `PLUGINS` registry. Implemented unit test with patched entry points to ensure plugins are loaded correctly.
+
