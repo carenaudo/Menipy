@@ -484,3 +484,9 @@ tests added for these features.
 **Task:** Confirm the alternative contact-angle tab uses the apex projection fix and keeps the dashed substrate line after analysis.
 
 **Summary:** Added a GUI test checking that `_run_analysis("contact-angle-alt")` leaves the same `SubstrateLineItem` with a dashed pen. Updated `README.md` to mention the *Contact Angle (Alt)* tab and clarified in `doc/contact_angle_alt.md` that `geom_metrics_alt` provides the projected symmetry axis. All tests continue to pass.
+## Entry 81 - Robust contact region
+
+**Task:** Implement robust contact-region extraction and mode-specific metrics.
+
+**Summary:** Added `region.close_droplet` with half-plane filtering, intersection clustering and mask closing. Implemented `metrics_sessile` and `metrics_pendant` to compute diameter, apex, height and volume via the new helper. Created `tests/test_contact_region.py` with regression cases. All tests pass.
+
