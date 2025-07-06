@@ -740,7 +740,6 @@ def test_clear_analysis_resets_state(tmp_path):
     window.close()
     app.quit()
 
-
 def test_clear_analysis_resets_metrics(tmp_path):
     if QtWidgets is None:
         pytest.skip("PySide6 not available")
@@ -766,5 +765,3 @@ def test_clear_analysis_resets_metrics(tmp_path):
     assert window.contact_tab.diameter_label.text() == "0.0"
     window.close()
     app.quit()
-
-
