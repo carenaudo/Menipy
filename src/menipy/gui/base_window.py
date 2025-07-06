@@ -421,6 +421,13 @@ class BaseMainWindow(QMainWindow):
             )
         pixmap = QPixmap.fromImage(rgb)
         self.graphics_scene.clear()
+        self.needle_rect_item = None
+        self.drop_rect_item = None
+        self.needle_rect = None
+        self.drop_rect = None
+        self.needle_axis_item = None
+        self.needle_edge_items = []
+        self.calibration_tab.set_regions(needle=None, drop=None)
         self.graphics_view.set_pixmap(pixmap)
         self.pixmap_item = self.graphics_view.pixmap_item
 
