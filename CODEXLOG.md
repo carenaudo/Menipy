@@ -648,3 +648,9 @@ fixed.
 **Task:** Fully separate pendant and sessile analysis drawing and geometry logic.
 
 **Summary:** Introduced new `pipelines` package with dedicated geometry and drawing modules for pendant and sessile workflows. Updated GUI to call these pipelines when analyzing images, preventing cross-mode overlay contamination. All 53 tests still pass.
+
+## Entry 108 - Fix analyze_drop_image indentation
+
+**Task:** Resolve IndentationError when executing `python -m src`.
+
+**Summary:** Added missing `if mode == "pendant":` line in `ui/main_window.py` to correctly open the analysis branch. Tests run successfully (53 passed).
