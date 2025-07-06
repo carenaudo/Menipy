@@ -29,6 +29,7 @@ MODULES = [
     "menipy.metrics.metrics",
     "menipy.ui.main_window",
     "menipy.cli",
+    "menipy.gui",
     "menipy.utils",
     "menipy.plugins",
 ]
