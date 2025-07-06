@@ -576,3 +576,9 @@ verified that existing tests still pass.
 **Task:** Clean up remaining unused modules.
 
 **Summary:** Deleted obsolete `io` and `preprocessing` packages, the unused `properties2.py` module, and placeholder UI subpackages. Tests continue to pass, confirming these modules were not required.
+
+## Entry 97 - Relative import for src
+
+**Task:** Fix ModuleNotFoundError when executing `python -m src`.
+
+**Summary:** Modified `src/__main__.py` to use a relative import of `menipy.gui` so running the package with `python -m src` resolves the internal package correctly. Tests still pass.
