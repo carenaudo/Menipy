@@ -1,6 +1,6 @@
-"""Run the optical_goniometry CLI."""
+"""Run the Menipy CLI."""
 
-from optical_goniometry.cli import main
+from menipy.cli import main
 
 
 if __name__ == "__main__":

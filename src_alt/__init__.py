@@ -1,5 +1,5 @@
-"""Refactored optical goniometry package stubs."""
+"""Refactored Menipy package stubs."""
 
-# The package is organized under ``optical_goniometry``.
+# The package is organized under ``menipy``.
 
-__all__ = ["optical_goniometry"]
+__all__ = ["menipy"]

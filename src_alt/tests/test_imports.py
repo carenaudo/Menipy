@@ -1,4 +1,4 @@
-"""Ensure :mod:`optical_goniometry` can be imported.
+"""Ensure :mod:`menipy` can be imported.
 
 This test simply attempts to import each top-level module to verify that
 the scaffolded package layout is discoverable by Python.
@@ -15,21 +15,21 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 MODULES = [
-    "optical_goniometry",
-    "optical_goniometry.io.loaders",
-    "optical_goniometry.preprocessing.preprocess",
-    "optical_goniometry.calibration.calibrator",
-    "optical_goniometry.detection.needle",
-    "optical_goniometry.detection.droplet",
-    "optical_goniometry.detection.substrate",
-    "optical_goniometry.analysis.pendant",
-    "optical_goniometry.analysis.sessile",
-    "optical_goniometry.analysis.commons",
-    "optical_goniometry.metrics.metrics",
-    "optical_goniometry.ui.main_window",
-    "optical_goniometry.cli",
-    "optical_goniometry.utils",
-    "optical_goniometry.plugins",
+    "menipy",
+    "menipy.io.loaders",
+    "menipy.preprocessing.preprocess",
+    "menipy.calibration.calibrator",
+    "menipy.detection.needle",
+    "menipy.detection.droplet",
+    "menipy.detection.substrate",
+    "menipy.analysis.pendant",
+    "menipy.analysis.sessile",
+    "menipy.analysis.commons",
+    "menipy.metrics.metrics",
+    "menipy.ui.main_window",
+    "menipy.cli",
+    "menipy.utils",
+    "menipy.plugins",
 ]
 
 

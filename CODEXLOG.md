@@ -523,3 +523,9 @@ verified that existing tests still pass.
 **Task:** Continue with phase 1 of CODEX_REFACTOR_PLAN by creating the src_alt skeleton.
 
 **Summary:** Added the `src_alt/optical_goniometry` package with stub modules and a minimal CLI. Created an import test under `src_alt/tests` and ensured all tests pass.
+
+## Entry 87 - Rename new package and begin utilities port
+
+**Task:** Rename the refactored package from `optical_goniometry` to `menipy` and start phase 2 of the refactor plan.
+
+**Summary:** All stubs were moved under `src_alt/menipy` and import tests updated. Implemented initial utilities by porting calibration routines, image loader, and a preprocessing function. Added parity tests to verify these functions match the legacy implementations. All tests pass.
