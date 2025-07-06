@@ -570,3 +570,9 @@ verified that existing tests still pass.
 **Task:** Ensure running the package launches the new GUI implementation.
 
 **Summary:** Updated `src/__main__.py` to invoke `menipy.gui.main` and changed the console script in `setup.py` so the `menipy` command opens the graphical interface by default.
+
+## Entry 96 - Remove unused files
+
+**Task:** Clean up remaining unused modules.
+
+**Summary:** Deleted obsolete `io` and `preprocessing` packages, the unused `properties2.py` module, and placeholder UI subpackages. Tests continue to pass, confirming these modules were not required.
