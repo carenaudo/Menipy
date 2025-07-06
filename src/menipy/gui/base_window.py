@@ -74,7 +74,7 @@ from ..detectors.geometry_alt import side_of_polyline
 
 
 
-class MainWindow(QMainWindow):
+class BaseMainWindow(QMainWindow):
     """Main application window with image view and control panel."""
 
     def __init__(self, parent=None):
@@ -1084,7 +1084,7 @@ class MainWindow(QMainWindow):
 def main():
     """Launch the Menipy GUI application."""
     app = QApplication([])
-    window = MainWindow()
+    window = BaseMainWindow()
     window.show()
     app.exec()
 
