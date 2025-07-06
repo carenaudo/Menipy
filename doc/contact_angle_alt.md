@@ -27,7 +27,4 @@ user defined substrate polyline and support tilted setups.
   substrate to the apex so no extra lines connect the contact points to the
   apex.
 
-The GUI exposes these features via a new tab labelled *Contact Angle (Alt)*.
-The tab mirrors the original controls but stores additional debug information in
-`debug_overlay_alt` when activated.
 

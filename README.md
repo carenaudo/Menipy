@@ -39,7 +39,4 @@ The GUI includes a **Drop Analysis** tab for pendant and contact-angle modes. Af
 needle and drop regions, the application detects the needle width, extracts the
 outer drop contour and overlays key features such as the apex and symmetry axis.
 Metrics including height, diameter, volume and surface tension are displayed in
-the panel. A separate *Contact Angle (Alt)* tab offers the same workflow using
-substrate-based geometry. Its symmetry axis projects the apex onto the substrate
-so the dashed substrate line remains visible. Detailed instructions are
-available in `doc/drop_analysis.md`.
+the panel. Detailed instructions are available in `doc/drop_analysis.md`.
