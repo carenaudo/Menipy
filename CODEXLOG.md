@@ -472,3 +472,15 @@ tests added for these features.
 **Task:** Add a "Detect Substrate Line" button to the Contact Angle tab and wire it to the Hough-based detection routine.
 
 **Summary:** Inserted a new button in `MainWindow` that runs `detect_substrate_line` on the drop ROI and draws the resulting line. Added `_detect_substrate_line` helper and a GUI test verifying the line orientation. Updated imports and signal connections. All tests pass.
+
+## Entry 79 - Contact angle alt overlay fix
+
+**Task:** Keep substrate line appearance when analyzing and ensure alt tab uses latest detection logic.
+
+**Summary:** Stopped drawing the contact line overlay in `analyze_drop_image` so the dashed substrate item remains light blue after analysis. All tests pass.
+
+## Entry 80 - Preserve substrate line and document alt tab
+
+**Task:** Confirm the alternative contact-angle tab uses the apex projection fix and keeps the dashed substrate line after analysis.
+
+**Summary:** Added a GUI test checking that `_run_analysis("contact-angle-alt")` leaves the same `SubstrateLineItem` with a dashed pen. Updated `README.md` to mention the *Contact Angle (Alt)* tab and clarified in `doc/contact_angle_alt.md` that `geom_metrics_alt` provides the projected symmetry axis. All tests continue to pass.

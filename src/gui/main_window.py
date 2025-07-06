@@ -720,15 +720,12 @@ class MainWindow(QMainWindow):
         if self.apex_dot_item is not None:
             self.graphics_scene.removeItem(self.apex_dot_item)
 
-        contact_geom = (
-            extra.get("contact_segment") if mode == "contact-angle-alt" else metrics.get("contact_line")
-        )
         overlay = draw_drop_overlay(
             self.image,
             contour,
             diameter_line=diameter_line,
             axis_line=axis_line,
-            contact_line=contact_geom,
+            contact_line=None,
             apex=metrics["apex"],
         )
         self.drop_contour_item = self.graphics_scene.addPixmap(overlay)
