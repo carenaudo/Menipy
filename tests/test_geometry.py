@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from src.detectors.geometry_alt import (
+from menipy.detectors.geometry_alt import (
     mirror_filter,
     find_substrate_intersections,
     apex_point,

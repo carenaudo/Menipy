@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from src.analysis.drop import compute_drop_metrics, find_apex_index
+from menipy.analysis.drop import compute_drop_metrics, find_apex_index
 
 
 def test_max_diameter_and_radius_apex():

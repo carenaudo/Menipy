@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from src.models.surface_tension import (
+from menipy.models.surface_tension import (
     jennings_pallas_beta,
     surface_tension,
     bond_number,

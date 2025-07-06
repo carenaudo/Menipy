@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 
-from src import contact_angle as ca
+from menipy import contact_angle as ca
 
 
 def test_height_width_ca():

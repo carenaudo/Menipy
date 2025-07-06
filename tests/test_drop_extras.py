@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from src.models.drop_extras import (
+from menipy.models.drop_extras import (
     vmax_uL,
     worthington_number,
     apex_curvature_m_inv,

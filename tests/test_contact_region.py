@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from src.processing.region import close_droplet
-from src.processing.metrics import metrics_sessile, metrics_pendant
+from menipy.processing.region import close_droplet
+from menipy.processing.metrics import metrics_sessile, metrics_pendant
 
 
 def _circle_contour(r=20.0, n=200):

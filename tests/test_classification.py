@@ -1,7 +1,7 @@
 import numpy as np
 from dataclasses import dataclass
 
-from src.processing import classify_drop_mode
+from menipy.processing import classify_drop_mode
 
 @dataclass
 class DummyDroplet:
