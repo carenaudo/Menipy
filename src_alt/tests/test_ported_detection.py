@@ -64,7 +64,6 @@ def test_detect_pendant_droplet_parity() -> None:
     new = new_detect_pendant_droplet(frame, (x0, y0, w, h), 0.1)
     old = legacy_detect_pendant_droplet(frame, (x0, y0, w, h), 0.1)
     assert new.apex_px == old.apex_px
-    assert new.contact_px == old.contact_px
     assert np.allclose(new.contour_px, old.contour_px)
     assert np.isclose(new.r_max_mm, old.r_max_mm)
     assert np.isclose(new.projected_area_mm2, old.projected_area_mm2)

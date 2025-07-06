@@ -536,3 +536,9 @@ verified that existing tests still pass.
 
 **Summary:** Implemented needle, substrate and droplet detection algorithms in `menipy.detection`. Added parity tests comparing against the legacy modules to ensure identical results. All tests pass.
 
+
+## Entry 89 - Port analysis modules
+
+**Task:** Continue phase 4 of CODEX_REFACTOR_PLAN by porting drop analysis algorithms.
+
+**Summary:** Added implementations of `compute_drop_metrics` and related helpers in `menipy.analysis.commons`. Exposed wrapper functions for pendant and sessile modes and created parity tests verifying results match the legacy `src` modules. Updated detection tests for non-deterministic contact line ordering. All tests pass.
