@@ -613,3 +613,10 @@ relative imports so the module works when the project is executed as a
 module without installation. Tests pass and running `python -m src`
 fails only due to missing GUI libraries, confirming the import issue is
 fixed.
+
+
+## Entry 102 - Add analysis reset button
+
+**Task:** Provide a clear way to return the viewer to the unmodified image.
+
+**Summary:** Added a `Clear Analysis` button below the image view that calls a new `clear_analysis` method. This routine restores the original image, removes detection and analysis overlays, and resets related state. Tests were updated with a new case ensuring the button works. All tests pass.
