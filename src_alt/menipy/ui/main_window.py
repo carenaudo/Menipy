@@ -246,14 +246,15 @@ class MainWindow(LegacyMainWindow):
         if self.apex_dot_item is not None:
             self.graphics_scene.removeItem(self.apex_dot_item)
 
+        contact_line = metrics.get("contact_line")
         overlay = draw_drop_overlay(
             self.image,
             contour,
             diameter_line=diameter_line,
             axis_line=axis_line,
-            contact_line=None,
+            contact_line=contact_line,
             apex=metrics["apex"],
-            contact_pts=metrics.get("contact_line"),
+            contact_pts=contact_line,
         )
         self.drop_contour_item = self.graphics_scene.addPixmap(overlay)
 

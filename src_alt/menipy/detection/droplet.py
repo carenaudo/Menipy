@@ -221,23 +221,28 @@ def detect_sessile_droplet(
     apex_idx = int(np.argmin(cnt[:, 1]))
     apex = tuple(int(round(v)) for v in cnt[apex_idx])
 
-    d = np.abs(a * cnt[:, 0] + b * cnt[:, 1] + c) / np.hypot(a, b)
-    idx = np.where(d < 1.0)[0]
-    if idx.size == 0:
+    from ..physics.contact_geom import contour_line_intersections, geom_metrics, line_params
+
+    try:
+        left_pt, right_pt = contour_line_intersections(cnt, a, b, c)
+    except ValueError:
         raise ValueError("Surface line not detected")
 
-    idx2 = np.sort(np.concatenate([idx, idx + len(cnt)]))
-    splits = np.where(np.diff(idx2) > 1)[0] + 1
-    segments = [s for s in np.split(idx2, splits) if s.size > 0]
-    seg = max(segments, key=len)
-    seg = seg % len(cnt)
-    contact_pts = cnt[seg]
-    contact_left = tuple(int(round(v)) for v in contact_pts[0])
-    contact_right = tuple(int(round(v)) for v in contact_pts[-1])
-    contact_px = (*contact_left, *contact_right)
+    geo = geom_metrics((x1, y1), (x2, y2), cnt, apex_idx, 1.0)
+    cnt = geo["droplet_poly"][:-2]
+    left_pt = np.array(geo.get("P1_px", left_pt))
+    right_pt = np.array(geo.get("P2_px", right_pt))
 
-    height_mm = (substrate_y_at(apex[0]) - apex[1]) * px_to_mm
-    width_px = contact_right[0] - contact_left[0]
+    contact_px = (
+        int(round(left_pt[0])),
+        int(round(left_pt[1])),
+        int(round(right_pt[0])),
+        int(round(right_pt[1])),
+    )
+
+    a_c, b_c, c_c = line_params(left_pt, right_pt)
+    height_mm = abs(a_c * apex[0] + b_c * apex[1] + c_c) * px_to_mm
+    width_px = float(np.hypot(right_pt[0] - left_pt[0], right_pt[1] - left_pt[1]))
     r_max_mm = 0.5 * width_px * px_to_mm
     projected_area_mm2 = float(np.count_nonzero(mask) * (px_to_mm ** 2))
 
