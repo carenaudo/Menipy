@@ -508,3 +508,12 @@ tests added for these features.
 **Task:** Add overlay markers for the substrate contact points P1 and P2.
 
 **Summary:** Extended `draw_drop_overlay` with a ``contact_pts`` parameter to draw yellow dots at the intersection points. Updated `MainWindow.analyze_drop_image` to pass the contact points from ``compute_drop_metrics`` and adjusted the GUI test. All tests pass.
+
+## Entry 85 - Start CODEX refactor plan
+
+**Task:** Begin phase 0 of CODEX_REFACTOR_PLAN by creating a discovery tool.
+
+**Summary:** Added `scripts/generate_legacy_map.py` to analyze import
+relationships in the legacy `src` directory and produce
+`docs/legacy_map.html`. Executed the script to generate the file and
+verified that existing tests still pass.
