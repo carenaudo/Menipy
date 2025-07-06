@@ -218,25 +218,25 @@ class MainWindow(BaseMainWindow):
             metrics["diameter_line"][0],
             metrics["diameter_line"][1],
         )
-        if self.substrate_line_item is not None:
-            line_dir = np.array(
-                self.substrate_line_item.line().p2().toTuple(), float
-            ) - np.array(self.substrate_line_item.line().p1().toTuple(), float)
-            p1 = np.array(diameter_line[0], float)
-            p2 = np.array(diameter_line[1], float)
-        else:
-            line_dir = np.array([1.0, 0.0])
+        axis_line = None
+        if mode == "contact-angle":
+            if self.substrate_line_item is not None:
+                line_dir = np.array(
+                    self.substrate_line_item.line().p2().toTuple(), float
+                ) - np.array(self.substrate_line_item.line().p1().toTuple(), float)
+            else:
+                line_dir = np.array([1.0, 0.0])
             p1 = np.array(diameter_line[0], float)
             p2 = np.array(diameter_line[1], float)
 
-        apex_pt = np.array(metrics["apex"], dtype=float)
-        t = np.dot(apex_pt - p1, line_dir) / np.dot(line_dir, line_dir)
-        t = np.clip(t, 0.0, 1.0)
-        foot_pt = p1 + t * line_dir
-        axis_line = (
-            tuple(np.round(foot_pt).astype(int)),
-            tuple(np.round(apex_pt).astype(int)),
-        )
+            apex_pt = np.array(metrics["apex"], dtype=float)
+            t = np.dot(apex_pt - p1, line_dir) / np.dot(line_dir, line_dir)
+            t = np.clip(t, 0.0, 1.0)
+            foot_pt = p1 + t * line_dir
+            axis_line = (
+                tuple(np.round(foot_pt).astype(int)),
+                tuple(np.round(apex_pt).astype(int)),
+            )
         if self.drop_contour_item is not None:
             self.graphics_scene.removeItem(self.drop_contour_item)
         if self.diameter_item is not None:
@@ -246,16 +246,18 @@ class MainWindow(BaseMainWindow):
         if self.apex_dot_item is not None:
             self.graphics_scene.removeItem(self.apex_dot_item)
 
-        contact_line = metrics.get("contact_line")
-        center_pt = metrics.get("diameter_center")
-        center_apex_line = (center_pt, metrics["apex"]) if center_pt is not None else None
+        contact_line = metrics.get("contact_line") if mode == "pendant" else None
+        center_pt = metrics.get("diameter_center") if mode == "pendant" else None
+        center_apex_line = None
         center_contact_line = None
-        if center_pt is not None and contact_line is not None:
-            cl_center = (
-                (contact_line[0][0] + contact_line[1][0]) // 2,
-                (contact_line[0][1] + contact_line[1][1]) // 2,
-            )
-            center_contact_line = (center_pt, cl_center)
+        if mode == "pendant" and center_pt is not None:
+            center_apex_line = (center_pt, metrics["apex"])
+            if contact_line is not None:
+                cl_center = (
+                    (contact_line[0][0] + contact_line[1][0]) // 2,
+                    (contact_line[0][1] + contact_line[1][1]) // 2,
+                )
+                center_contact_line = (center_pt, cl_center)
 
         overlay = draw_drop_overlay(
             self.image,
