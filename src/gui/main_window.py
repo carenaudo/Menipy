@@ -693,6 +693,7 @@ class MainWindow(QMainWindow):
             axis_line=axis_line,
             contact_line=None,
             apex=metrics["apex"],
+            contact_pts=metrics.get("contact_line"),
         )
         self.drop_contour_item = self.graphics_scene.addPixmap(overlay)
 
