@@ -367,6 +367,12 @@ class BaseMainWindow(QMainWindow):
 
     def clear_analysis(self) -> None:
         """Restore the image and remove all overlays."""
+        self.set_calibration_mode(False)
+        self.set_roi_mode(False)
+        self.set_needle_mode(False)
+        self.set_drop_mode(False)
+        self.set_substrate_mode(False)
+        self.set_side_select_mode(False)
         self.clean_filter()
         self.clean_detection()
         for item in (
@@ -380,6 +386,8 @@ class BaseMainWindow(QMainWindow):
             self.roi_rect_item,
             self.needle_rect_item,
             self.drop_rect_item,
+            self.calibration_rect_item,
+            self.calibration_line_item,
         ):
             if item is not None:
                 self.graphics_scene.removeItem(item)
@@ -399,6 +407,16 @@ class BaseMainWindow(QMainWindow):
         self.needle_rect = None
         self.drop_rect_item = None
         self.drop_rect = None
+        self.calibration_rect_item = None
+        self.calibration_rect = None
+        self.calibration_line_item = None
+        self.calibration_line = None
+        self._roi_start = None
+        self._needle_start = None
+        self._drop_start = None
+        self._calib_start = None
+        self._substrate_start = None
+        self._keep_above = None
         self.px_per_mm_drop = 0.0
 
     def _display_image(self, img: np.ndarray) -> None:

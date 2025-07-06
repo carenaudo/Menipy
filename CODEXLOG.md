@@ -626,3 +626,10 @@ fixed.
 **Task:** Resolve crash when drawing needle ROI after using Clear Analysis.
 
 **Summary:** Updated `_display_image` to reset ROI and overlay references so cleared items do not leave dangling Qt objects. Tests pass.
+
+## Entry 104 - Reset all overlays on clear
+
+**Task:** Ensure Clear Analysis fully resets drawing modes and calibration items.
+
+**Summary:** Updated `clear_analysis` to disable drawing modes, remove calibration items, and reset internal state. Added a regression test verifying that all overlays are gone and drawing works after clearing.
+

@@ -686,3 +686,58 @@ def test_clear_analysis_button(tmp_path):
     app.quit()
 
 
+def test_clear_analysis_resets_state(tmp_path):
+    if QtWidgets is None:
+        pytest.skip("PySide6 not available")
+    import numpy as np
+    import cv2
+    from PySide6.QtCore import QPoint
+
+    class DummyEvent:
+        def __init__(self, x, y):
+            self._pos = QPoint(x, y)
+
+        def pos(self):
+            return self._pos
+
+        def accept(self):
+            pass
+
+    img = np.zeros((20, 20, 3), dtype=np.uint8)
+    path = tmp_path / "img.png"
+    cv2.imwrite(str(path), img)
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    window = MainWindow()
+    window.load_image(path)
+
+    window.set_needle_mode(True)
+    window._needle_press(DummyEvent(1, 1))
+    window._needle_move(DummyEvent(5, 5))
+    window._needle_release(DummyEvent(5, 5))
+    window.parameter_panel.calibration_mode.setChecked(True)
+    window.parameter_panel.manual_toggle.setChecked(True)
+    window._line_press(DummyEvent(0, 0))
+    window._line_move(DummyEvent(10, 0))
+    window._line_release(DummyEvent(10, 0))
+
+    assert window.needle_rect_item is not None
+    assert window.calibration_line_item is not None
+
+    window.clear_analysis_button.click()
+
+    assert window.needle_rect_item is None
+    assert window.calibration_line_item is None
+    assert window.roi_rect_item is None
+    assert window.mask_item is None
+    assert np.array_equal(window.image, window.original_image)
+
+    window.set_needle_mode(True)
+    window._needle_press(DummyEvent(2, 2))
+    window._needle_move(DummyEvent(6, 6))
+    window._needle_release(DummyEvent(6, 6))
+    assert window.needle_rect is not None
+    window.close()
+    app.quit()
+
+
