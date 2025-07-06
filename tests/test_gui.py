@@ -475,6 +475,7 @@ def test_draw_drop_overlay_pixmap():
         axis_line=((10, 5), (10, 15)),
         contact_line=((5, 5), (15, 5)),
         apex=(10, 10),
+        contact_pts=((5, 5), (15, 5)),
     )
     assert pix.width() == 20 and pix.height() == 20
 

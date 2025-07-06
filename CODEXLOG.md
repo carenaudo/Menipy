@@ -502,3 +502,9 @@ tests added for these features.
 **Task:** Remove the temporary Contact Angle Alt tab now that the main contact angle tab works.
 
 **Summary:** Deleted `contact_angle_tab_alt.py` and references to the alternative tab in `MainWindow`, exports and GUI tests. Updated documentation and README accordingly. All tests pass.
+
+## Entry 84 - Highlight contact points
+
+**Task:** Add overlay markers for the substrate contact points P1 and P2.
+
+**Summary:** Extended `draw_drop_overlay` with a ``contact_pts`` parameter to draw yellow dots at the intersection points. Updated `MainWindow.analyze_drop_image` to pass the contact points from ``compute_drop_metrics`` and adjusted the GUI test. All tests pass.
