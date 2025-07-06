@@ -23,7 +23,9 @@ user defined substrate polyline and support tilted setups.
   ``P1`` and ``P2``.
 * **geom_metrics_alt** – computes contact-line, height and width relative to the
   substrate polyline and returns the trimmed droplet polygon. It now returns the
-  detected apex as well.
+  detected apex as well, and provides the projected symmetry axis from the
+  substrate to the apex so no extra lines connect the contact points to the
+  apex.
 
 The GUI exposes these features via a new tab labelled *Contact Angle (Alt)*.
 The tab mirrors the original controls but stores additional debug information in
