@@ -46,6 +46,7 @@ from ..processing import (
     detect_sessile_droplet,
     detect_pendant_droplet,
     segmentation,
+    detect_substrate_line,
 )
 from ..processing.segmentation import find_contours
 from ..utils import (
@@ -154,6 +155,10 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self.pendant_tab, "Pendant drop")
 
         self.contact_tab = AnalysisTab(show_contact_angle=True)
+        self.contact_tab.detect_substrate_button = QPushButton(
+            "Detect Substrate Line"
+        )
+        self.contact_tab.layout().insertRow(1, self.contact_tab.detect_substrate_button)
         self.tabs.addTab(self.contact_tab, "Contact angle")
 
         self.contact_tab_alt = ContactAngleTabAlt()
@@ -177,6 +182,10 @@ class MainWindow(QMainWindow):
         if self.contact_tab.substrate_button is not None:
             self.contact_tab.substrate_button.clicked.connect(
                 self._substrate_button_clicked
+            )
+        if hasattr(self.contact_tab, "detect_substrate_button"):
+            self.contact_tab.detect_substrate_button.clicked.connect(
+                self._detect_substrate_line
             )
         self.contact_tab.analyze_button.clicked.connect(
             lambda: self._run_analysis("contact-angle")
@@ -546,6 +555,29 @@ class MainWindow(QMainWindow):
         left_item = self.graphics_scene.addLine(left_x, y_top, left_x, y_bottom, pen)
         right_item = self.graphics_scene.addLine(right_x, y_top, right_x, y_bottom, pen)
         self.needle_edge_items = [left_item, right_item]
+
+    def _detect_substrate_line(self) -> None:
+        """Automatically detect the substrate line inside the drop ROI."""
+        if getattr(self, "image", None) is None or self.drop_rect is None:
+            return
+        x1, y1, x2, y2 = map(int, self.drop_rect)
+        roi = self.image[y1:y2, x1:x2]
+        gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY) if roi.ndim == 3 else roi
+        mask = np.zeros_like(gray)
+        try:
+            p1, p2 = detect_substrate_line(gray, mask, "sessile")
+        except Exception as exc:  # SubstrateNotFoundError or ValueError
+            QMessageBox.warning(self, "Substrate Detection", str(exc))
+            return
+        p1 += np.array([x1, y1], float)
+        p2 += np.array([x1, y1], float)
+        linef = QLineF(p1[0], p1[1], p2[0], p2[1])
+        if self.substrate_line_item is not None:
+            self.graphics_scene.removeItem(self.substrate_line_item)
+        self.substrate_line_item = SubstrateLineItem(linef)
+        self.graphics_scene.addItem(self.substrate_line_item)
+        self.substrate_line = (linef.x1(), linef.y1(), linef.x2(), linef.y2())
+        self._keep_above = None
 
     def analyze_drop_image(self) -> None:
         """Analyze the drop region and draw overlays."""
