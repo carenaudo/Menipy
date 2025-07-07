@@ -64,3 +64,6 @@
 
 ## Entry 72 - Improved sessile algorithm
 **Summary:** It clearly do not work the detection. so i asked to delete the generated code related to CAImproved Tab
+
+## Entry 90 - UI facade with refactored modules
+**Summary:** From this task and forward, i started to get to greedy on how to do this. 
