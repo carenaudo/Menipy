@@ -654,3 +654,8 @@ fixed.
 **Task:** Resolve IndentationError when executing `python -m src`.
 
 **Summary:** Added missing `if mode == "pendant":` line in `ui/main_window.py` to correctly open the analysis branch. Tests run successfully (53 passed).
+## Entry 109 - Fix overlay import path
+
+**Task:** Resolve `ModuleNotFoundError` for `src.menipy.pipelines.overlay` when executing `python -m src`.
+
+**Summary:** Updated pendant and sessile drawing pipelines to import `draw_drop_overlay` from `menipy.gui` rather than a non-existent local module. All tests pass (53 passed).
