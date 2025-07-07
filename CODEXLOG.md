@@ -659,3 +659,8 @@ fixed.
 **Task:** Resolve `ModuleNotFoundError` for `src.menipy.pipelines.overlay` when executing `python -m src`.
 
 **Summary:** Updated pendant and sessile drawing pipelines to import `draw_drop_overlay` from `menipy.gui` rather than a non-existent local module. All tests pass (53 passed).
+## Entry 110 - Correct relative import depth
+
+**Task:** Address `ModuleNotFoundError` when running the GUI due to incorrect relative imports in drawing pipelines.
+
+**Summary:** Updated `pendant/drawing.py` and `sessile/drawing.py` to import `draw_drop_overlay` from `menipy.gui` using `...gui` so the package resolves correctly. All tests pass (53 passed).
