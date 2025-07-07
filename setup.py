@@ -11,6 +11,7 @@ setup(
         "pandas>=1.5.3",
         "scikit-image>=0.19.3",
         "opencv-python>=4.7.0.72",
+        "matplotlib>=3.5.0",
         "PySide6>=6.5.1",
     ],
     entry_points={"console_scripts": ["menipy=menipy.gui:main"]},

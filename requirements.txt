@@ -7,6 +7,9 @@ numpy
 scipy
 pandas
 
+# Plotting
+matplotlib
+
 # GUI framework
 PySide6
 
