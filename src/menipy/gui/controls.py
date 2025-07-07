@@ -171,14 +171,15 @@ class MetricsPanel(QWidget):
         if contact_angle is not None:
             self.angle_label.setText(f"{contact_angle:.2f}")
         if height is not None:
-            self.height_label.setText(f"{height:.2f}")
+            self.height_label.setText(f"{height:.4f}")
         if diameter is not None:
-            self.diameter_label.setText(f"{diameter:.2f}")
+            self.diameter_label.setText(f"{diameter:.4f}")
         if mode is not None:
             self.mode_label.setText(mode)
 
     def values(self) -> dict[str, float]:
         """Return the currently displayed metric values."""
+
         def _to_float(label: QLabel) -> float:
             try:
                 return float(label.text())
@@ -297,13 +298,13 @@ class DropAnalysisPanel(QWidget):
         if scale is not None:
             self.scale_label.setText(f"{scale:.2f}")
         if height is not None:
-            self.height_label.setText(f"{height:.2f}")
+            self.height_label.setText(f"{height:.4f}")
         if diameter is not None:
-            self.diameter_label.setText(f"{diameter:.2f}")
+            self.diameter_label.setText(f"{diameter:.4f}")
         if radius is not None:
-            self.radius_apex_label.setText(f"{radius:.2f}")
+            self.radius_apex_label.setText(f"{radius:.4f}")
         if volume is not None:
-            self.volume_label.setText(f"{volume:.2f}")
+            self.volume_label.setText(f"{volume:.4f}")
         if angle is not None:
             self.angle_label.setText(f"{angle:.2f}")
         if gamma is not None:
@@ -359,7 +360,10 @@ class DropAnalysisPanel(QWidget):
         }
 
     def set_regions(
-        self, *, needle: tuple[float, float, float, float] | None = None, drop: tuple[float, float, float, float] | None = None
+        self,
+        *,
+        needle: tuple[float, float, float, float] | None = None,
+        drop: tuple[float, float, float, float] | None = None,
     ) -> None:
         """Display saved ROI coordinates."""
         if needle is not None:
@@ -451,7 +455,13 @@ class CalibrationTab(QWidget):
 class AnalysisTab(QWidget):
     """Analysis results and controls for a drop method."""
 
-    def __init__(self, show_contact_angle: bool = False, parent=None) -> None:
+    def __init__(
+        self,
+        show_contact_angle: bool = False,
+        *,
+        save_profiles: bool = False,
+        parent=None,
+    ) -> None:
         super().__init__(parent)
         self.show_contact_angle = show_contact_angle
         layout = QFormLayout(self)
@@ -462,6 +472,12 @@ class AnalysisTab(QWidget):
         else:
             self.substrate_button = None
 
+        if save_profiles:
+            self.save_profiles_checkbox = QCheckBox("Save Profiles")
+            layout.addRow(self.save_profiles_checkbox)
+        else:
+            self.save_profiles_checkbox = None
+
         self.analyze_button = QPushButton("Analyze")
         layout.addRow(self.analyze_button)
 
@@ -469,18 +485,18 @@ class AnalysisTab(QWidget):
         sep1.setFrameShape(QFrame.HLine)
         layout.addRow(sep1)
 
-        self.height_label = QLabel("0.0")
+        self.height_label = QLabel("0.0000")
         layout.addRow("Height (mm)", self.height_label)
-        self.diameter_label = QLabel("0.0")
+        self.diameter_label = QLabel("0.0000")
         layout.addRow("Max diameter (mm)", self.diameter_label)
         self.apex_label = QLabel("(0,0)")
         layout.addRow("Apex (x,y)", self.apex_label)
-        self.radius_apex_label = QLabel("0.0")
+        self.radius_apex_label = QLabel("0.0000")
         layout.addRow("Apex radius (mm)", self.radius_apex_label)
         if not show_contact_angle:
-            self.apex_diam_label = QLabel("0.0")
+            self.apex_diam_label = QLabel("0.0000")
             layout.addRow("Apex→diam (mm)", self.apex_diam_label)
-            self.contact_diam_label = QLabel("0.0")
+            self.contact_diam_label = QLabel("0.0000")
             layout.addRow("Needle→diam (mm)", self.contact_diam_label)
         else:
             self.apex_diam_label = None
@@ -491,13 +507,13 @@ class AnalysisTab(QWidget):
         layout.addRow(sep2)
 
         if show_contact_angle:
-            self.angle_label = QLabel("0.0")
+            self.angle_label = QLabel("0.0000")
             layout.addRow("Contact angle (º)", self.angle_label)
-            self.width_label = QLabel("0.0")
+            self.width_label = QLabel("0.0000")
             layout.addRow("Base width (mm)", self.width_label)
-            self.rb_label = QLabel("0.0")
+            self.rb_label = QLabel("0.0000")
             layout.addRow("Base radius (mm)", self.rb_label)
-            self.h_label = QLabel("0.0")
+            self.h_label = QLabel("0.0000")
             layout.addRow("Apex height (mm)", self.h_label)
         else:
             self.angle_label = None
@@ -505,35 +521,35 @@ class AnalysisTab(QWidget):
             self.rb_label = None
             self.h_label = None
 
-        self.volume_label = QLabel("0.0")
+        self.volume_label = QLabel("0.0000")
         layout.addRow("Volume (uL)", self.volume_label)
-        self.asurf_label = QLabel("0.0")
+        self.asurf_label = QLabel("0.0000")
         layout.addRow("Surface Area (mm²)", self.asurf_label)
-        self.gamma_label = QLabel("0.0")
+        self.gamma_label = QLabel("0.0000")
         layout.addRow("Surface Tension (mN/m)", self.gamma_label)
-        self.wo_label = QLabel("0.0")
+        self.wo_label = QLabel("0.0000")
         layout.addRow("Wo Number", self.wo_label)
-        self.s1_label = QLabel("0.0")
+        self.s1_label = QLabel("0.0000")
         layout.addRow("S1", self.s1_label)
-        self.bo_label = QLabel("0.0")
+        self.bo_label = QLabel("0.0000")
         layout.addRow("Bond Number", self.bo_label)
-        self.aproj_label = QLabel("0.0")
+        self.aproj_label = QLabel("0.0000")
         layout.addRow("Aproj (mm²)", self.aproj_label)
-        self.aproj_left_label = QLabel("0.0")
+        self.aproj_left_label = QLabel("0.0000")
         layout.addRow("Aproj L (mm²)", self.aproj_left_label)
-        self.aproj_right_label = QLabel("0.0")
+        self.aproj_right_label = QLabel("0.0000")
         layout.addRow("Aproj R (mm²)", self.aproj_right_label)
-        self.vmax_label = QLabel("0.0")
+        self.vmax_label = QLabel("0.0000")
         layout.addRow("Vmax (uL)", self.vmax_label)
-        self.wapp_label = QLabel("0.0")
+        self.wapp_label = QLabel("0.0000")
         layout.addRow("W_app (mN)", self.wapp_label)
-        self.kappa0_label = QLabel("0.0")
+        self.kappa0_label = QLabel("0.0000")
         layout.addRow("ko (1/m)", self.kappa0_label)
-        self.asurf_mean_label = QLabel("0.0")
+        self.asurf_mean_label = QLabel("0.0000")
         layout.addRow("Surface A mean (mm²)", self.asurf_mean_label)
-        self.asurf_left_label = QLabel("0.0")
+        self.asurf_left_label = QLabel("0.0000")
         layout.addRow("Surface A L (mm²)", self.asurf_left_label)
-        self.asurf_right_label = QLabel("0.0")
+        self.asurf_right_label = QLabel("0.0000")
         layout.addRow("Surface A R (mm²)", self.asurf_right_label)
 
     def set_metrics(
@@ -566,45 +582,55 @@ class AnalysisTab(QWidget):
         contact_to_diam: float | None = None,
     ) -> None:
         if height is not None:
-            self.height_label.setText(f"{height:.2f}")
+            self.height_label.setText(f"{height:.4f}")
         if diameter is not None:
-            self.diameter_label.setText(f"{diameter:.2f}")
+            self.diameter_label.setText(f"{diameter:.4f}")
         if apex is not None:
             self.apex_label.setText(f"({apex[0]},{apex[1]})")
         if radius is not None:
-            self.radius_apex_label.setText(f"{radius:.2f}")
+            self.radius_apex_label.setText(f"{radius:.4f}")
         if volume is not None:
-            self.volume_label.setText(f"{volume:.2f}")
+            self.volume_label.setText(f"{volume:.4f}")
         if angle is not None and self.angle_label is not None:
-            self.angle_label.setText(f"{angle:.2f}")
+            self.angle_label.setText(f"{angle:.4f}")
         if gamma is not None:
-            self.gamma_label.setText(f"{gamma:.2f}")
+            self.gamma_label.setText(f"{gamma:.4f}")
         if s1 is not None:
-            self.s1_label.setText(f"{s1:.2f}")
+            self.s1_label.setText(f"{s1:.4f}")
         if bo is not None:
-            self.bo_label.setText(f"{bo:.2f}")
+            self.bo_label.setText(f"{bo:.4f}")
         if wo is not None:
-            self.wo_label.setText(f"{wo:.2f}")
+            self.wo_label.setText(f"{wo:.4f}")
         if aproj is not None:
-            self.aproj_label.setText(f"{aproj:.2f}")
+            self.aproj_label.setText(f"{aproj:.4f}")
+        if aproj_left is not None:
+            self.aproj_left_label.setText(f"{aproj_left:.4f}")
+        if aproj_right is not None:
+            self.aproj_right_label.setText(f"{aproj_right:.4f}")
         if asurf is not None:
-            self.asurf_label.setText(f"{asurf:.2f}")
+            self.asurf_label.setText(f"{asurf:.4f}")
+        if asurf_mean is not None:
+            self.asurf_mean_label.setText(f"{asurf_mean:.4f}")
+        if asurf_left is not None:
+            self.asurf_left_label.setText(f"{asurf_left:.4f}")
+        if asurf_right is not None:
+            self.asurf_right_label.setText(f"{asurf_right:.4f}")
         if vmax is not None:
-            self.vmax_label.setText(f"{vmax:.2f}")
+            self.vmax_label.setText(f"{vmax:.4f}")
         if wapp is not None:
-            self.wapp_label.setText(f"{wapp:.2f}")
+            self.wapp_label.setText(f"{wapp:.4f}")
         if kappa0 is not None:
-            self.kappa0_label.setText(f"{kappa0:.2f}")
+            self.kappa0_label.setText(f"{kappa0:.4f}")
         if width is not None and self.width_label is not None:
-            self.width_label.setText(f"{width:.2f}")
+            self.width_label.setText(f"{width:.4f}")
         if rbase is not None and self.rb_label is not None:
-            self.rb_label.setText(f"{rbase:.2f}")
+            self.rb_label.setText(f"{rbase:.4f}")
         if height_line is not None and self.h_label is not None:
-            self.h_label.setText(f"{height_line:.2f}")
+            self.h_label.setText(f"{height_line:.4f}")
         if apex_to_diam is not None and self.apex_diam_label is not None:
-            self.apex_diam_label.setText(f"{apex_to_diam:.2f}")
+            self.apex_diam_label.setText(f"{apex_to_diam:.4f}")
         if contact_to_diam is not None and self.contact_diam_label is not None:
-            self.contact_diam_label.setText(f"{contact_to_diam:.2f}")
+            self.contact_diam_label.setText(f"{contact_to_diam:.4f}")
 
     def metrics(self) -> dict[str, str]:
         data = {
@@ -668,6 +694,3 @@ class AnalysisTab(QWidget):
             apex_to_diam=0.0,
             contact_to_diam=0.0,
         )
-
-
-

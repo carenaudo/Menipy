@@ -160,7 +160,7 @@ class BaseMainWindow(QMainWindow):
         self.calibration_tab = CalibrationTab()
         self.tabs.addTab(self.calibration_tab, "Calibration")
 
-        self.pendant_tab = AnalysisTab()
+        self.pendant_tab = AnalysisTab(save_profiles=True)
         self.tabs.addTab(self.pendant_tab, "Pendant drop")
 
         self.contact_tab = AnalysisTab(show_contact_angle=True)

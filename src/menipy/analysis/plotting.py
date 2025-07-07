@@ -79,4 +79,53 @@ def save_contour_sides_image(
     plt.close(fig)
 
 
-__all__ = ["save_contour_sides_image"]
+from datetime import datetime
+from pathlib import Path
+
+
+def save_contour_side_profiles(
+    contour: np.ndarray, apex_idx: int, out_dir: str, fmt: str = "png"
+) -> list[str]:
+    """Save separate left and right profile plots.
+
+    Parameters
+    ----------
+    contour:
+        External contour points ``(x, y)``.
+    apex_idx:
+        Index of the apex point within ``contour``.
+    out_dir:
+        Directory where the images will be saved.
+    fmt:
+        Image format (``"png"`` or ``"jpg"``).
+    """
+
+    import importlib
+
+    if importlib.util.find_spec("matplotlib") is None:
+        raise RuntimeError("matplotlib is required for plotting")
+
+    import matplotlib
+
+    matplotlib.use("Agg")  # ensure headless backend
+    import matplotlib.pyplot as plt
+
+    left, right = _side_contours(contour, apex_idx)
+    out_paths = []
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    out_path = Path(out_dir)
+    out_path.mkdir(parents=True, exist_ok=True)
+    for data, side, color in [(left, "left", "r"), (right, "right", "b")]:
+        fig, ax = plt.subplots()
+        ax.plot(data[:, 0], data[:, 1], f"{color}-", linewidth=2, label=side)
+        ax.set_aspect("equal")
+        ax.invert_yaxis()
+        ax.legend()
+        file_path = out_path / f"{ts}_{side}.{fmt}"
+        fig.savefig(file_path, format=fmt)
+        out_paths.append(str(file_path))
+        plt.close(fig)
+    return out_paths
+
+
+__all__ = ["save_contour_sides_image", "save_contour_side_profiles"]

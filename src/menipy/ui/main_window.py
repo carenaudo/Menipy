@@ -247,3 +247,13 @@ class MainWindow(BaseMainWindow):
         if self.apex_dot_item is not None:
             self.graphics_scene.removeItem(self.apex_dot_item)
         self.drop_contour_item = self.graphics_scene.addPixmap(overlay)
+        if (
+            mode == "pendant"
+            and getattr(self.pendant_tab, "save_profiles_checkbox", None) is not None
+            and self.pendant_tab.save_profiles_checkbox.isChecked()
+        ):
+            from pathlib import Path
+            from ..analysis import find_apex_index, save_contour_side_profiles
+
+            apex_idx = find_apex_index(pm.contour.astype(float), "pendant")
+            save_contour_side_profiles(pm.contour.astype(float), apex_idx, str(Path("plot")))
