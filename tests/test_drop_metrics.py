@@ -25,9 +25,16 @@ def test_max_diameter_and_radius_apex():
     assert pytest.approx(metrics["apex_to_contact_mm"], abs=0.1) == 4.0
     # projected area of the circular drop
     assert metrics["A_proj_mm2"] > 0
+    assert metrics["A_proj_left_mm2"] > 0
+    assert metrics["A_proj_right_mm2"] > 0
     assert metrics["needle_area_mm2"] is not None
     assert metrics["needle_area_mm2"] >= 0
     assert metrics["A_surf_mm2"] > 0
+    assert metrics["A_surf_left_mm2"] > 0
+    assert metrics["A_surf_right_mm2"] > 0
+    assert metrics["A_surf_mean_mm2"] == pytest.approx(
+        0.5 * (metrics["A_surf_left_mm2"] + metrics["A_surf_right_mm2"]), rel=1e-2
+    )
 
 
 def test_find_apex_index_median():

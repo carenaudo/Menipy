@@ -224,12 +224,19 @@ class MainWindow(BaseMainWindow):
             vmax=metrics["vmax_uL"],
             kappa0=metrics["kappa0_inv_m"],
             aproj=metrics["A_proj_mm2"],
+            aproj_left=metrics["A_proj_left_mm2"],
+            aproj_right=metrics["A_proj_right_mm2"],
             asurf=metrics["A_surf_mm2"],
+            asurf_mean=metrics["A_surf_mean_mm2"],
+            asurf_left=metrics["A_surf_left_mm2"],
+            asurf_right=metrics["A_surf_right_mm2"],
             wapp=metrics["W_app_mN"],
             radius=metrics["radius_apex_mm"],
             width=metrics.get("w_mm"),
             rbase=metrics.get("rb_mm"),
             height_line=metrics.get("h_mm"),
+            apex_to_diam=metrics.get("apex_to_diam_mm"),
+            contact_to_diam=metrics.get("contact_to_diam_mm"),
         )
         if self.drop_contour_item is not None:
             self.graphics_scene.removeItem(self.drop_contour_item)

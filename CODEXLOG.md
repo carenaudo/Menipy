@@ -684,3 +684,9 @@ initialization. All tests still pass (53 passed).
 **Task:** Fix droplet surface area calculation and add projected area and needle area metrics.
 
 **Summary:** Updated `compute_drop_metrics` to derive projected area from the filled mask, compute the needle contact area and subtract it from the surface of revolution. The true surface area function now handles duplicate z values. Added `needle_area_mm2` to the returned metrics and adjusted tests to check for the new fields. All tests pass (53 passed).
+
+## Entry 114 - Symmetry side area metrics
+
+**Task:** Report surface and projected areas for each side of the drop and expose missing distances in the GUI.
+
+**Summary:** `compute_drop_metrics` now splits the droplet mask about the apex to calculate left and right projected areas and surfaces of revolution. It returns these along with their mean. The `AnalysisTab` UI gained labels for the new metrics and now displays the apex-to-diameter and needle-to-diameter distances. `MainWindow` passes the additional values when updating the panel. Tests updated to verify the new keys. All tests pass (53 passed).
