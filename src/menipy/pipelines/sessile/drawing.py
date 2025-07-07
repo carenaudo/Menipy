@@ -3,7 +3,10 @@ from __future__ import annotations
 import numpy as np
 from PySide6.QtGui import QPixmap
 
-from ...gui import draw_drop_overlay
+# Import the overlay helper directly to avoid a circular import with the
+# ``gui`` package's ``__init__`` when this module is imported from within that
+# package.
+from ...gui.overlay import draw_drop_overlay
 from .geometry import SessileMetrics
 
 

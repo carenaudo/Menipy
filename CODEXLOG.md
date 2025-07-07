@@ -664,3 +664,12 @@ fixed.
 **Task:** Address `ModuleNotFoundError` when running the GUI due to incorrect relative imports in drawing pipelines.
 
 **Summary:** Updated `pendant/drawing.py` and `sessile/drawing.py` to import `draw_drop_overlay` from `menipy.gui` using `...gui` so the package resolves correctly. All tests pass (53 passed).
+
+## Entry 111 - Break GUI import cycle
+
+**Task:** Resolve circular import error when running `python -m src`.
+
+**Summary:** Updated pendant and sessile drawing pipelines to import
+`draw_drop_overlay` from `menipy.gui.overlay` rather than the package root.
+This prevents `gui/__init__` from re-importing the pipelines during
+initialization. All tests still pass (53 passed).

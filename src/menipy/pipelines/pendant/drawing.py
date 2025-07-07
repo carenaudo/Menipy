@@ -3,7 +3,11 @@ from __future__ import annotations
 import numpy as np
 from PySide6.QtGui import QPixmap
 
-from ...gui import draw_drop_overlay
+# Import the overlay helper directly to avoid triggering the ``gui`` package
+# initialization while this module is imported. Importing from ``...gui`` would
+# execute ``gui/__init__.py`` which pulls in the pipelines package again and
+# leads to a circular import when running ``python -m src``.
+from ...gui.overlay import draw_drop_overlay
 from .geometry import PendantMetrics
 
 
