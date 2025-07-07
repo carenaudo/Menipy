@@ -679,3 +679,8 @@ initialization. All tests still pass (53 passed).
 
 **Summary:** Adjusted `analyze_drop_image` in `ui/main_window.py` and `gui/base_window.py` to subtract the ROI origin from the substrate line before calling `analyze_sessile`. This ensures the line intersects the local contour. All tests pass (53 passed).
 
+## Entry 113 - Pendant drop surface metrics
+
+**Task:** Fix droplet surface area calculation and add projected area and needle area metrics.
+
+**Summary:** Updated `compute_drop_metrics` to derive projected area from the filled mask, compute the needle contact area and subtract it from the surface of revolution. The true surface area function now handles duplicate z values. Added `needle_area_mm2` to the returned metrics and adjusted tests to check for the new fields. All tests pass (53 passed).

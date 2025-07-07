@@ -111,7 +111,6 @@ def compute_drop_metrics(
         vmax_uL,
         worthington_number,
         apex_curvature_m_inv,
-        projected_area_mm2,
         surface_area_mm2,
         apparent_weight_mN,
     )
@@ -145,12 +144,12 @@ def compute_drop_metrics(
             wo = worthington_number(volume_uL, vmax)
 
     kappa0 = apex_curvature_m_inv(r0_mm) if r0_mm > 0 else 0.0
-    aproj = projected_area_mm2(diameter_mm)
+    aproj = np.count_nonzero(mask) * (px_to_mm ** 2)
 
     contour_sorted = contour[np.argsort(contour[:, 1])]
     contour_local = np.column_stack([
         np.abs(contour_sorted[:, 0] - apex[0]),
-        contour_sorted[:, 1] - apex[1],
+        contour_sorted[:, 1] - y_min,
     ])
     asurf = surface_area_mm2(contour_local, px_per_mm)
     wapp = apparent_weight_mN(volume_uL, delta_rho) if volume_uL is not None else None
@@ -181,10 +180,16 @@ def compute_drop_metrics(
     apex_to_diam_mm = abs(apex[1] - y_diam) / px_per_mm
     contact_to_diam_mm = None
     apex_to_contact_mm = None
+    contact_diam_mm = None
     if contact_line is not None:
         y_contact = (contact_line[0][1] + contact_line[1][1]) / 2
         contact_to_diam_mm = abs(y_contact - y_diam) / px_per_mm
         apex_to_contact_mm = abs(apex[1] - y_contact) / px_per_mm
+        contact_diam_mm = abs(contact_line[1][0] - contact_line[0][0]) / px_per_mm
+        needle_area_mm2 = PI * (contact_diam_mm / 2.0) ** 2
+        asurf -= needle_area_mm2
+    else:
+        needle_area_mm2 = None
 
     return {
         "height_mm": float(height_mm),
@@ -201,6 +206,7 @@ def compute_drop_metrics(
         "wo": float(wo) if wo is not None else None,
         "kappa0_inv_m": float(kappa0),
         "A_proj_mm2": float(aproj),
+        "needle_area_mm2": float(needle_area_mm2) if needle_area_mm2 is not None else None,
         "A_surf_mm2": float(asurf),
         "W_app_mN": float(wapp) if wapp is not None else None,
         "diameter_px": float(diam_px),

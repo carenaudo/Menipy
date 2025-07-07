@@ -31,7 +31,9 @@ def surface_area_mm2(contour_px: np.ndarray, px_per_mm: float) -> float:
     z_mm = contour_px[:, 1] / px_per_mm
     order = np.argsort(z_mm)
     r_mm, z_mm = r_mm[order], z_mm[order]
-    dr_dz = np.gradient(r_mm, z_mm)
+    z_mm, unique_idx = np.unique(z_mm, return_index=True)
+    r_mm = r_mm[unique_idx]
+    dr_dz = np.gradient(r_mm, z_mm, edge_order=2)
     integrand = r_mm * np.sqrt(1.0 + dr_dz ** 2)
     A_mm2 = 2.0 * math.pi * np.trapz(integrand, z_mm)
     return A_mm2
