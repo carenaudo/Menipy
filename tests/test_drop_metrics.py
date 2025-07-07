@@ -37,6 +37,18 @@ def test_max_diameter_and_radius_apex():
     )
 
 
+def test_projected_area_consistency():
+    cv2 = __import__('cv2')
+    img = np.zeros((30, 30), dtype=np.uint8)
+    cv2.circle(img, (15, 15), 8, 255, -1)
+    contour = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)[0][0].squeeze(1).astype(float)
+    metrics = compute_drop_metrics(contour, px_per_mm=5.0, mode="pendant")
+    total = metrics["A_proj_mm2"]
+    left = metrics["A_proj_left_mm2"]
+    right = metrics["A_proj_right_mm2"]
+    assert math.isclose(total, left + right, rel_tol=0.05)
+
+
 def test_find_apex_index_median():
     contour = np.array([
         [0, 0],
