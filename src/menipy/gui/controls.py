@@ -323,8 +323,18 @@ class DropAnalysisPanel(QWidget):
             self.kappa0_label.setText(f"{kappa0:.2e}")
         if aproj is not None:
             self.aproj_label.setText(f"{aproj:.2f}")
+        if aproj_left is not None:
+            self.aproj_left_label.setText(f"{aproj_left:.2f}")
+        if aproj_right is not None:
+            self.aproj_right_label.setText(f"{aproj_right:.2f}")
         if asurf is not None:
             self.asurf_label.setText(f"{asurf:.2f}")
+        if asurf_mean is not None:
+            self.asurf_mean_label.setText(f"{asurf_mean:.2f}")
+        if asurf_left is not None:
+            self.asurf_left_label.setText(f"{asurf_left:.2f}")
+        if asurf_right is not None:
+            self.asurf_right_label.setText(f"{asurf_right:.2f}")
         if wapp is not None:
             self.wapp_label.setText(f"{wapp:.2f}")
 
@@ -509,12 +519,22 @@ class AnalysisTab(QWidget):
         layout.addRow("Bond Number", self.bo_label)
         self.aproj_label = QLabel("0.0")
         layout.addRow("Aproj (mm²)", self.aproj_label)
+        self.aproj_left_label = QLabel("0.0")
+        layout.addRow("Aproj L (mm²)", self.aproj_left_label)
+        self.aproj_right_label = QLabel("0.0")
+        layout.addRow("Aproj R (mm²)", self.aproj_right_label)
         self.vmax_label = QLabel("0.0")
         layout.addRow("Vmax (uL)", self.vmax_label)
         self.wapp_label = QLabel("0.0")
         layout.addRow("W_app (mN)", self.wapp_label)
         self.kappa0_label = QLabel("0.0")
         layout.addRow("ko (1/m)", self.kappa0_label)
+        self.asurf_mean_label = QLabel("0.0")
+        layout.addRow("Surface A mean (mm²)", self.asurf_mean_label)
+        self.asurf_left_label = QLabel("0.0")
+        layout.addRow("Surface A L (mm²)", self.asurf_left_label)
+        self.asurf_right_label = QLabel("0.0")
+        layout.addRow("Surface A R (mm²)", self.asurf_right_label)
 
     def set_metrics(
         self,
@@ -530,7 +550,12 @@ class AnalysisTab(QWidget):
         bo: float | None = None,
         wo: float | None = None,
         aproj: float | None = None,
+        aproj_left: float | None = None,
+        aproj_right: float | None = None,
         asurf: float | None = None,
+        asurf_mean: float | None = None,
+        asurf_left: float | None = None,
+        asurf_right: float | None = None,
         vmax: float | None = None,
         wapp: float | None = None,
         kappa0: float | None = None,
@@ -593,7 +618,12 @@ class AnalysisTab(QWidget):
             "bo": self.bo_label.text(),
             "wo": self.wo_label.text(),
             "aproj": self.aproj_label.text(),
+            "aproj_left": self.aproj_left_label.text(),
+            "aproj_right": self.aproj_right_label.text(),
             "asurf": self.asurf_label.text(),
+            "asurf_mean": self.asurf_mean_label.text(),
+            "asurf_left": self.asurf_left_label.text(),
+            "asurf_right": self.asurf_right_label.text(),
             "vmax": self.vmax_label.text(),
             "wapp": self.wapp_label.text(),
             "kappa0": self.kappa0_label.text(),
@@ -623,7 +653,12 @@ class AnalysisTab(QWidget):
             bo=0.0,
             wo=0.0,
             aproj=0.0,
+            aproj_left=0.0,
+            aproj_right=0.0,
             asurf=0.0,
+            asurf_mean=0.0,
+            asurf_left=0.0,
+            asurf_right=0.0,
             vmax=0.0,
             wapp=0.0,
             kappa0=0.0,

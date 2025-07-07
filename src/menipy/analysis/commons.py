@@ -152,6 +152,22 @@ def compute_drop_metrics(
         contour_sorted[:, 1] - y_min,
     ])
     asurf = surface_area_mm2(contour_local, px_per_mm)
+
+    axis_x = apex[0] - xi
+    left_edges = np.argmax(mask > 0, axis=1)
+    right_edges = mask.shape[1] - 1 - np.argmax(mask[:, ::-1] > 0, axis=1)
+    rows = np.where(mask.sum(axis=1) > 0)[0]
+    r_left = np.maximum(axis_x - left_edges[rows], 0)
+    r_right = np.maximum(right_edges[rows] - axis_x, 0)
+    z = rows.astype(float)
+    prof_left = np.column_stack([r_left, z])
+    prof_right = np.column_stack([r_right, z])
+    asurf_left = surface_area_mm2(prof_left, px_per_mm)
+    asurf_right = surface_area_mm2(prof_right, px_per_mm)
+    asurf_mean = 0.5 * (asurf_left + asurf_right)
+    aproj_left = r_left.sum() * (px_to_mm ** 2)
+    aproj_right = r_right.sum() * (px_to_mm ** 2)
+
     wapp = apparent_weight_mN(volume_uL, delta_rho) if volume_uL is not None else None
 
     diameter_center = (int(round((x_left + x_right) / 2)), int(round(y_diam)))
@@ -206,8 +222,13 @@ def compute_drop_metrics(
         "wo": float(wo) if wo is not None else None,
         "kappa0_inv_m": float(kappa0),
         "A_proj_mm2": float(aproj),
+        "A_proj_left_mm2": float(aproj_left),
+        "A_proj_right_mm2": float(aproj_right),
         "needle_area_mm2": float(needle_area_mm2) if needle_area_mm2 is not None else None,
         "A_surf_mm2": float(asurf),
+        "A_surf_left_mm2": float(asurf_left),
+        "A_surf_right_mm2": float(asurf_right),
+        "A_surf_mean_mm2": float(asurf_mean),
         "W_app_mN": float(wapp) if wapp is not None else None,
         "diameter_px": float(diam_px),
         "diameter_line": ((x_left, y_diam), (x_right, y_diam)),
