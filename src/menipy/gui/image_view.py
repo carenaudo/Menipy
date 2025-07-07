@@ -50,6 +50,8 @@ class ImageView(QGraphicsView):
         if view_rect.isEmpty():
             return
         pm = self._pixmap_item.pixmap()
+        if pm.isNull() or pm.width() == 0 or pm.height() == 0:
+            return
         scale_x = view_rect.width() / pm.width()
         scale_y = view_rect.height() / pm.height()
         self._scale = min(scale_x, scale_y, 1.0)
