@@ -144,7 +144,6 @@ def compute_drop_metrics(
             wo = worthington_number(volume_uL, vmax)
 
     kappa0 = apex_curvature_m_inv(r0_mm) if r0_mm > 0 else 0.0
-    aproj = np.count_nonzero(mask) * (px_to_mm ** 2)
 
     contour_sorted = contour[np.argsort(contour[:, 1])]
     contour_local = np.column_stack([
@@ -174,6 +173,7 @@ def compute_drop_metrics(
     asurf_mean = 0.5 * (asurf_left + asurf_right)
     aproj_left = r_left.sum() * (px_to_mm ** 2)
     aproj_right = r_right.sum() * (px_to_mm ** 2)
+    aproj = (r_left + r_right).sum() * (px_to_mm ** 2)
 
     wapp = apparent_weight_mN(volume_uL, delta_rho) if volume_uL is not None else None
 
