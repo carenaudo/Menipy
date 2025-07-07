@@ -690,3 +690,9 @@ initialization. All tests still pass (53 passed).
 **Task:** Report surface and projected areas for each side of the drop and expose missing distances in the GUI.
 
 **Summary:** `compute_drop_metrics` now splits the droplet mask about the apex to calculate left and right projected areas and surfaces of revolution. It returns these along with their mean. The `AnalysisTab` UI gained labels for the new metrics and now displays the apex-to-diameter and needle-to-diameter distances. `MainWindow` passes the additional values when updating the panel. Tests updated to verify the new keys. All tests pass (53 passed).
+
+## Entry 115 - Debug surface area steps
+
+**Task:** Add print statements to display intermediate values when computing left and right surface areas.
+
+**Summary:** Updated `compute_drop_metrics` in `analysis/commons.py` to print the profile points and resulting surface areas for each side. All tests pass (53 passed).
