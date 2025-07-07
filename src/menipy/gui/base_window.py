@@ -689,10 +689,14 @@ class BaseMainWindow(QMainWindow):
             overlay = draw_pendant_overlays(self.image, pm)
         else:
             helpers = SessileHelpers(px_per_mm=self.px_per_mm_drop)
-            substrate = (
-                self.substrate_line_item.line().p1().toTuple(),
-                self.substrate_line_item.line().p2().toTuple(),
-            ) if self.substrate_line_item is not None else ((0, 0), (1, 0))
+            if self.substrate_line_item is not None:
+                line = self.substrate_line_item.line()
+                substrate = (
+                    (line.x1() - x1, line.y1() - y1),
+                    (line.x2() - x1, line.y2() - y1),
+                )
+            else:
+                substrate = ((0, 0), (1, 0))
             sm = analyze_sessile(roi, helpers, substrate)
             sm.contour += np.array([x1, y1])
             sm.apex = (sm.apex[0] + x1, sm.apex[1] + y1)

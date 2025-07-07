@@ -673,3 +673,9 @@ fixed.
 `draw_drop_overlay` from `menipy.gui.overlay` rather than the package root.
 This prevents `gui/__init__` from re-importing the pipelines during
 initialization. All tests still pass (53 passed).
+## Entry 112 - Fix substrate line offset
+
+**Task:** Resolve ValueError when analyzing sessile drops due to mismatched substrate line coordinates.
+
+**Summary:** Adjusted `analyze_drop_image` in `ui/main_window.py` and `gui/base_window.py` to subtract the ROI origin from the substrate line before calling `analyze_sessile`. This ensures the line intersects the local contour. All tests pass (53 passed).
+
