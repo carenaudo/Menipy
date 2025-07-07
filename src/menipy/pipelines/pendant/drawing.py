@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 from PySide6.QtGui import QPixmap
 
-from ..gui import draw_drop_overlay
+from ...gui import draw_drop_overlay
 from .geometry import PendantMetrics
 
 
