@@ -1,6 +1,7 @@
 """Tests for gui module."""
 
 import pytest
+import importlib
 
 try:
     from menipy.gui import draw_drop_overlay
@@ -33,6 +34,40 @@ def test_main_window_instantiation():
     assert window.algorithm_combo.count() >= 2
     window.close()
     app.quit()
+
+
+def test_save_profiles_option(tmp_path):
+    if QtWidgets is None:
+        pytest.skip("PySide6 not available")
+    if importlib.util.find_spec("matplotlib") is None:
+        pytest.skip("matplotlib not available")
+
+    import numpy as np
+    import cv2
+    import os
+
+    img = np.zeros((20, 20), dtype=np.uint8)
+    cv2.circle(img, (10, 15), 5, 255, -1)
+    path = tmp_path / "img.png"
+    cv2.imwrite(str(path), img)
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    window = MainWindow()
+    window.load_image(path)
+    window.drop_rect = (5, 10, 15, 19)
+    window.px_per_mm_drop = 10.0
+    window.pendant_tab.save_profiles_checkbox.setChecked(True)
+    window.analyze_drop_image()
+    window.close()
+    app.quit()
+    os.chdir(cwd)
+
+    plot_dir = tmp_path / "plot"
+    files = list(plot_dir.glob("*.png"))
+    assert len(files) == 2
 
 
 def test_tab_widget_setup():
@@ -461,11 +496,11 @@ def test_save_csv(tmp_path):
     app.quit()
 
 
-
 def test_draw_drop_overlay_pixmap():
     if QtWidgets is None or draw_drop_overlay is None:
         pytest.skip("PySide6 not available")
     import numpy as np
+
     contour = np.array([[5, 5], [15, 5], [15, 15], [5, 15]], dtype=float)
     img = np.zeros((20, 20, 3), dtype=np.uint8)
     pix = draw_drop_overlay(
@@ -541,6 +576,7 @@ def test_drop_regions_saved(tmp_path):
 
     window.close()
     app.quit()
+
 
 def test_substrate_line_updates_metrics(tmp_path):
     if QtWidgets is None:
@@ -743,6 +779,7 @@ def test_clear_analysis_resets_state(tmp_path):
     window.close()
     app.quit()
 
+
 def test_clear_analysis_resets_metrics(tmp_path):
     if QtWidgets is None:
         pytest.skip("PySide6 not available")
@@ -764,7 +801,7 @@ def test_clear_analysis_resets_metrics(tmp_path):
     window.clear_analysis_button.click()
 
     assert window.metrics_panel.ift_label.text() == "0.0"
-    assert window.pendant_tab.height_label.text() == "0.0"
-    assert window.contact_tab.diameter_label.text() == "0.0"
+    assert window.pendant_tab.height_label.text() == "0.0000"
+    assert window.contact_tab.diameter_label.text() == "0.0000"
     window.close()
     app.quit()

@@ -702,3 +702,14 @@ initialization. All tests still pass (53 passed).
 
 **Summary:** Added `save_contour_sides_image` in `analysis/plotting.py` to plot left and right contours using matplotlib. Introduced a test that saves a PNG when matplotlib is available. Matplotlib was re-added to `requirements.txt` and `setup.py`. All tests pass (53 passed, 29 skipped).
 
+## Entry 117 - Save contour profiles from GUI
+
+**Task:** Add option to save left and right pendant drop profiles using matplotlib.
+
+**Summary:** Extended `analysis.plotting` with `save_contour_side_profiles` to export individual side plots. The `AnalysisTab` now shows a "Save Profiles" checkbox (enabled for pendant tab). `MainWindow` saves images to a `plot/` directory when the option is checked. Updated tests verify image output and new plotting function. All tests pass.
+
+## Entry 118 - Show precise surface areas
+
+**Task:** Display left, right and mean surface areas with higher precision and fix GUI default values.
+
+**Summary:** Updated `AnalysisTab` labels to default to "0.0000" and changed `set_metrics` to format values with four decimal places. Tests adjusted for the new precision. All tests pass (55 passed, 29 skipped).
