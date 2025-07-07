@@ -162,8 +162,15 @@ def compute_drop_metrics(
     z = rows.astype(float)
     prof_left = np.column_stack([r_left, z])
     prof_right = np.column_stack([r_right, z])
+
+    print("Left profile points:", prof_left)
     asurf_left = surface_area_mm2(prof_left, px_per_mm)
+    print("Computed left surface area:", asurf_left)
+
+    print("Right profile points:", prof_right)
     asurf_right = surface_area_mm2(prof_right, px_per_mm)
+    print("Computed right surface area:", asurf_right)
+
     asurf_mean = 0.5 * (asurf_left + asurf_right)
     aproj_left = r_left.sum() * (px_to_mm ** 2)
     aproj_right = r_right.sum() * (px_to_mm ** 2)
