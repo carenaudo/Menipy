@@ -696,3 +696,9 @@ initialization. All tests still pass (53 passed).
 **Task:** Add print statements to display intermediate values when computing left and right surface areas.
 
 **Summary:** Updated `compute_drop_metrics` in `analysis/commons.py` to print the profile points and resulting surface areas for each side. All tests pass (53 passed).
+## Entry 116 - Side contour plotting
+
+**Task:** Use matplotlib to generate an image of the droplet contour split by the apex.
+
+**Summary:** Added `save_contour_sides_image` in `analysis/plotting.py` to plot left and right contours using matplotlib. Introduced a test that saves a PNG when matplotlib is available. Matplotlib was re-added to `requirements.txt` and `setup.py`. All tests pass (53 passed, 29 skipped).
+
