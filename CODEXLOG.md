@@ -746,3 +746,9 @@ initialization. All tests still pass (53 passed).
 **Task:** Improve sessile contact detection to remove opposite-side noise and ensure contact points lie within the drawn substrate segment.
 
 **Summary:** Updated `contact_points_from_spline` in `analysis/sessile.py` to filter points on the apex side of the substrate, clamp spline intersections to the segment length and handle edge ordering. Added unit test `test_contact_points_clamped_to_segment` verifying that short substrate lines yield contact points on the endpoints. All tests pass (62 passed, 29 skipped).
+
+## Entry 125 - Fix intersection detection
+
+**Task:** Resolve ValueError when line visibly intersects contour.
+
+**Summary:** Updated `contour_line_intersections` to check the wrap-around segment and removed redundant error check. Added regression test `test_intersections_wraparound_edge` ensuring intersection points on the closing edge are found. All tests pass (63 passed, 29 skipped).
