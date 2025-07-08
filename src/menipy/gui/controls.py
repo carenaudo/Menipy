@@ -523,8 +523,12 @@ class AnalysisTab(QWidget):
 
         self.volume_label = QLabel("0.0000")
         layout.addRow("Volume (uL)", self.volume_label)
+        self.asurf_mean_label = QLabel("0.0000")
+        if not show_contact_angle:
+            layout.addRow("Mean Droplet Surface Area (mm²)", self.asurf_mean_label)
         self.asurf_label = QLabel("0.0000")
-        layout.addRow("Surface Area (mm²)", self.asurf_label)
+        if show_contact_angle:
+            layout.addRow("Surface Area (mm²)", self.asurf_label)
         self.gamma_label = QLabel("0.0000")
         layout.addRow("Surface Tension (mN/m)", self.gamma_label)
         self.wo_label = QLabel("0.0000")
@@ -545,8 +549,8 @@ class AnalysisTab(QWidget):
         layout.addRow("W_app (mN)", self.wapp_label)
         self.kappa0_label = QLabel("0.0000")
         layout.addRow("ko (1/m)", self.kappa0_label)
-        self.asurf_mean_label = QLabel("0.0000")
-        layout.addRow("Surface A mean (mm²)", self.asurf_mean_label)
+        if show_contact_angle:
+            layout.addRow("Surface A mean (mm²)", self.asurf_mean_label)
         self.asurf_left_label = QLabel("0.0000")
         layout.addRow("Surface A L (mm²)", self.asurf_left_label)
         self.asurf_right_label = QLabel("0.0000")
