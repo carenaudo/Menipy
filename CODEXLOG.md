@@ -718,3 +718,9 @@ initialization. All tests still pass (53 passed).
 **Task:** Reorder metrics on pendant drop tab and rename mean surface area.
 
 **Summary:** Updated `AnalysisTab` layout so pendant mode now shows "Mean Droplet Surface Area (mm²)" directly below the volume metric and hides the generic surface area row. Contact angle mode retains the original layout. All tests pass (56 passed, 29 skipped).
+
+## Entry 120 - Spline contact points
+
+**Task:** Implement sessile drop contact-point computation using spline extrapolation.**
+
+**Summary:** Added `contact_points_from_spline` in `analysis/sessile.py` to filter contour points, fit smoothed cubic splines and compute intersections with a substrate line. Created `tests/test_spline_contact.py` covering basic and rotated cases. All tests pass (58 passed, 29 skipped).
