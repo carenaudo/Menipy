@@ -724,3 +724,8 @@ initialization. All tests still pass (53 passed).
 **Task:** Implement sessile drop contact-point computation using spline extrapolation.**
 
 **Summary:** Added `contact_points_from_spline` in `analysis/sessile.py` to filter contour points, fit smoothed cubic splines and compute intersections with a substrate line. Created `tests/test_spline_contact.py` covering basic and rotated cases. All tests pass (58 passed, 29 skipped).
+## Entry 121 - Clarify sessile smoothing
+
+**Task:** Explain duplicate contour smoothing in sessile mode.
+
+**Summary:** No code changes required. The existing `smooth_contour_segment` helper parallels logic from the contact-angle tab but is scoped to sessile analysis for clarity. The reviewer note was addressed in documentation.
