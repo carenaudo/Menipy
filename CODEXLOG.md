@@ -740,3 +740,9 @@ initialization. All tests still pass (53 passed).
 **Task:** Fix ImportError from `pipelines.sessile.geometry` failing to import `smooth_contour_segment` via `menipy.analysis`.
 
 **Summary:** Added `smooth_contour_segment` to `analysis.__init__` imports and the `__all__` list so helper modules can access it directly from the package.
+
+## Entry 124 - Clamp sessile contact line
+
+**Task:** Improve sessile contact detection to remove opposite-side noise and ensure contact points lie within the drawn substrate segment.
+
+**Summary:** Updated `contact_points_from_spline` in `analysis/sessile.py` to filter points on the apex side of the substrate, clamp spline intersections to the segment length and handle edge ordering. Added unit test `test_contact_points_clamped_to_segment` verifying that short substrate lines yield contact points on the endpoints. All tests pass (62 passed, 29 skipped).
