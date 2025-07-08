@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from menipy.physics.contact_geom import geom_metrics
+from menipy.physics.contact_geom import geom_metrics, contour_line_intersections, line_params
 cv2 = __import__('cv2')
 
 
@@ -25,3 +25,21 @@ def test_circle_geom_metrics():
     poly = metrics["droplet_poly"]
     area_px = cv2.contourArea(poly.astype(np.float32))
     assert area_px == pytest.approx(0.5 * np.pi * r_px ** 2, rel=1e-2)
+
+
+def test_intersections_wraparound_edge():
+    contour = np.array(
+        [
+            [0.0, 0.0],
+            [1.0, 0.0],
+            [1.0, 1.0],
+            [0.0, 1.0],
+        ],
+        float,
+    )
+    p1 = (-0.5, 0.5)
+    p2 = (1.5, 0.5)
+    a, b, c = line_params(p1, p2)
+    left, right = contour_line_intersections(contour, a, b, c)
+    pts = {tuple(np.round(pt, 6)) for pt in (left, right)}
+    assert pts == {(0.0, 0.5), (1.0, 0.5)}

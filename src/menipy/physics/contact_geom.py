@@ -25,7 +25,11 @@ def contour_line_intersections(
 ) -> tuple[np.ndarray, np.ndarray]:
     """Return the two contour-line intersection points (left, right)."""
     d = a * contour_px[:, 0] + b * contour_px[:, 1] + c
-    idx = np.where(np.diff(np.sign(d)))[0]
+    sign_d = np.sign(d)
+    idx = np.where(np.diff(sign_d))[0].tolist()
+    if sign_d[-1] != sign_d[0]:
+        idx.append(len(sign_d) - 1)
+
     pts: list[np.ndarray] = []
     for i in idx:
         p, q = contour_px[i], contour_px[(i + 1) % len(contour_px)]
@@ -35,8 +39,7 @@ def contour_line_intersections(
             continue
         t = dp / (dp - dq)
         pts.append(p + t * (q - p))
-    if not pts:
-        raise ValueError("Line does not intersect contour")
+
     if not pts:
         raise ValueError("Line does not intersect contour")
 
