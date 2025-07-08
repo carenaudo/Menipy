@@ -4,7 +4,11 @@ from dataclasses import dataclass
 from typing import Literal
 import numpy as np
 
-from ...analysis import extract_external_contour, compute_sessile_metrics
+from ...analysis import (
+    extract_external_contour,
+    compute_sessile_metrics,
+    smooth_contour_segment,
+)
 
 
 @dataclass
@@ -31,12 +35,20 @@ def analyze(
 ) -> SessileMetrics:
     """Return sessile-drop metrics and geometry from ``frame``."""
     contour = extract_external_contour(frame)
+    try:
+        clean_contour, p1_fit, p2_fit = smooth_contour_segment(
+            contour.astype(float), substrate, drop_side if drop_side != "auto" else "left"
+        )
+    except Exception:
+        clean_contour = contour.astype(float)
+        p1_fit, p2_fit = (0.0, 0.0), (0.0, 0.0)
+
     metrics = compute_sessile_metrics(
-        contour.astype(float), helpers.px_per_mm, substrate_line=substrate
+        clean_contour.astype(float), helpers.px_per_mm, substrate_line=substrate
     )
-    p1, p2 = metrics["contact_line"] if metrics.get("contact_line") else ((0, 0), (0, 0))
+    p1, p2 = metrics.get("contact_line", (p1_fit, p2_fit))
     return SessileMetrics(
-        contour=contour,
+        contour=clean_contour.astype(float),
         apex=metrics["apex"],
         diameter_line=metrics["diameter_line"],
         p1=p1,
