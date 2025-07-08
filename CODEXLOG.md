@@ -729,3 +729,8 @@ initialization. All tests still pass (53 passed).
 **Task:** Explain duplicate contour smoothing in sessile mode.
 
 **Summary:** No code changes required. The existing `smooth_contour_segment` helper parallels logic from the contact-angle tab but is scoped to sessile analysis for clarity. The reviewer note was addressed in documentation.
+## Entry 122 - Refine sessile contour
+
+**Task:** Improve sessile mode contour detection so the selected side stops at the substrate and excludes points below it.
+
+**Summary:** Added `remove_island_points`, `find_spline_roots`, and `select_left_and_right_roots` helpers in `analysis/sessile.py`. Updated `smooth_contour_segment` to filter by side, drop points near the substrate, remove small clusters, and keep only spline segments above the line. Added unit test `test_sessile_segment` verifying side filtering and no points below the substrate. All tests pass (61 passed, 29 skipped).
