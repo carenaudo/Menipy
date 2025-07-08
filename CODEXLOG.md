@@ -713,3 +713,8 @@ initialization. All tests still pass (53 passed).
 **Task:** Display left, right and mean surface areas with higher precision and fix GUI default values.
 
 **Summary:** Updated `AnalysisTab` labels to default to "0.0000" and changed `set_metrics` to format values with four decimal places. Tests adjusted for the new precision. All tests pass (55 passed, 29 skipped).
+## Entry 119 - Adjust pendant surface metrics
+
+**Task:** Reorder metrics on pendant drop tab and rename mean surface area.
+
+**Summary:** Updated `AnalysisTab` layout so pendant mode now shows "Mean Droplet Surface Area (mm²)" directly below the volume metric and hides the generic surface area row. Contact angle mode retains the original layout. All tests pass (56 passed, 29 skipped).
