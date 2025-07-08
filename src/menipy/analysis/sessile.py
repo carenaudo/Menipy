@@ -64,13 +64,20 @@ def contact_points_from_spline(
         ]
     )
     contour_t = (contour - p1) @ rot.T
+    L = float(np.hypot(d[0], d[1]))
 
-    mask = np.abs(contour_t[:, 1]) >= delta
+    apex_idx = find_apex_index(contour, "contact-angle")
+    apex_y = float((contour[apex_idx] - p1) @ rot.T[1])
+    dist = contour_t[:, 1]
+    if apex_y > 0:
+        dist = -dist
+
+    mask = dist <= -delta
     filtered = contour_t[mask]
     if len(filtered) < 4:
         raise ValueError("Too few points after filtering")
 
-    apex_idx = int(np.argmax(filtered[:, 1]))
+    apex_idx = int(np.argmin(filtered[:, 1]))
     x_apex = filtered[apex_idx, 0]
 
     left = filtered[filtered[:, 0] <= x_apex]
@@ -83,6 +90,11 @@ def contact_points_from_spline(
 
     x_l = float(spl_l(0.0))
     x_r = float(spl_r(0.0))
+
+    x_l = max(0.0, min(L, x_l))
+    x_r = max(0.0, min(L, x_r))
+    if x_l > x_r:
+        x_l, x_r = 0.0, L
 
     contact_l = np.array([x_l, 0.0]) @ rot + p1
     contact_r = np.array([x_r, 0.0]) @ rot + p1

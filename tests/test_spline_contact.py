@@ -31,3 +31,11 @@ def test_contact_points_rotated():
     assert abs(a * p1[0] + b * p1[1] + c) < 1e-2
     assert abs(a * p2[0] + b * p2[1] + c) < 1e-2
     assert p1[0] < p2[0]
+
+
+def test_contact_points_clamped_to_segment():
+    contour = _circle_contour()
+    line = ((-10.0, 0.0), (10.0, 0.0))
+    p1, p2 = contact_points_from_spline(contour, line, delta=0.5)
+    assert np.allclose(p1, (-10.0, 0.0), atol=1e-6)
+    assert np.allclose(p2, (10.0, 0.0), atol=1e-6)
