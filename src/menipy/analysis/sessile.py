@@ -27,6 +27,16 @@ def compute_metrics(
         substrate_line=substrate_line,
     )
     metrics.update(geo)
+
+    try:
+        cp1, cp2 = contact_points_from_spline(contour, substrate_line, delta=0.5)
+        metrics["contact_line"] = (
+            (int(round(cp1[0])), int(round(cp1[1]))),
+            (int(round(cp2[0])), int(round(cp2[1]))),
+        )
+    except Exception:
+        pass
+
     return metrics
 
 __all__ = ["compute_metrics"]
