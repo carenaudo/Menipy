@@ -114,6 +114,80 @@ def _largest_cluster(points: np.ndarray, eps: float = 3.0) -> np.ndarray:
     return points[np.array(largest)]
 
 
+def remove_island_points(
+    points: np.ndarray,
+    *,
+    eps: float = 2.0,
+    min_size: int = 5,
+) -> np.ndarray:
+    """Return ``points`` without small isolated clusters."""
+
+    if len(points) == 0:
+        return points
+    remaining = list(range(len(points)))
+    clusters: list[list[int]] = []
+    while remaining:
+        seed = remaining.pop()
+        cluster = [seed]
+        queue = [seed]
+        while queue:
+            idx = queue.pop()
+            for j in list(remaining):
+                if np.linalg.norm(points[j] - points[idx]) <= eps:
+                    remaining.remove(j)
+                    cluster.append(j)
+                    queue.append(j)
+        clusters.append(cluster)
+
+    keep_idx: list[int] = []
+    for cluster in clusters:
+        if len(cluster) >= min_size:
+            keep_idx.extend(cluster)
+
+    if not keep_idx:
+        return points
+    return points[np.array(sorted(keep_idx))]
+
+
+def find_spline_roots(spline, y0: float) -> np.ndarray:
+    """Return the ``x`` positions where ``spline(x) == y0``."""
+
+    xs = np.linspace(spline.x[0], spline.x[-1], 1000)
+    ys = spline(xs) - y0
+    sign = np.sign(ys)
+    idx = np.where(np.diff(sign))[0]
+    roots: list[float] = []
+    for i in idx:
+        x0, x1 = xs[i], xs[i + 1]
+        y0_, y1_ = ys[i], ys[i + 1]
+        if y1_ == y0_:
+            roots.append(x0)
+        else:
+            roots.append(x0 - y0_ * (x1 - x0) / (y1_ - y0_))
+    return np.sort(np.array(roots))
+
+
+def select_left_and_right_roots(roots: np.ndarray, center_x: float) -> tuple[float, float]:
+    """Return the nearest left/right roots around ``center_x``."""
+
+    if len(roots) < 2:
+        raise ValueError("need at least two roots")
+    left = roots[roots <= center_x]
+    right = roots[roots >= center_x]
+    if left.size == 0:
+        left_x = roots[0]
+    else:
+        left_x = left.max()
+    if right.size == 0:
+        right_x = roots[-1]
+    else:
+        right_x = right.min()
+    if left_x >= right_x:
+        left_x = roots[0]
+        right_x = roots[-1]
+    return float(left_x), float(right_x)
+
+
 def smooth_contour_segment(
     contour: np.ndarray,
     line: tuple[tuple[float, float], tuple[float, float]],
@@ -141,7 +215,7 @@ def smooth_contour_segment(
     a, b, c = line_params((0.0, 0.0), (float(np.hypot(d[0], d[1])), 0.0))
     dist = a * cont[:, 0] + b * cont[:, 1] + c
 
-    mask = dist <= -delta
+    mask = dist < -delta
     cont = cont[mask]
     if len(cont) == 0:
         raise ValueError("no contour points after base filtering")
@@ -155,10 +229,9 @@ def smooth_contour_segment(
     if len(cont) == 0:
         raise ValueError("no contour points after side filtering")
 
-    cont = _largest_cluster(cont)
-    if len(cont) < min_cluster:
-        # fall back to all points if cluster too small
-        cont = cont
+    cont = remove_island_points(cont, eps=3.0, min_size=min_cluster)
+    if len(cont) == 0:
+        raise ValueError("no contour points after clustering")
 
     order = np.argsort(cont[:, 0])
     cont_sorted = cont[order]
@@ -169,30 +242,13 @@ def smooth_contour_segment(
 
     spline = CubicSpline(xs, ys)
 
-    xs_sample = np.linspace(xs.min(), xs.max(), 1000)
-    ys_sample = spline(xs_sample)
-    sign = np.sign(ys_sample)
-    idx_root = np.where(np.diff(sign))[0]
-    if len(idx_root) == 0:
-        raise ValueError("spline does not intersect substrate")
-
-    roots: list[float] = []
-    for i in idx_root:
-        x0, x1 = xs_sample[i], xs_sample[i + 1]
-        y0, y1 = ys_sample[i], ys_sample[i + 1]
-        if y1 == y0:
-            root_x = x0
-        else:
-            root_x = x0 - y0 * (x1 - x0) / (y1 - y0)
-        roots.append(root_x)
-    roots = np.array(roots)
-    roots.sort()
-    xl = roots[0]
-    xr = roots[-1] if len(roots) > 1 else roots[0]
+    roots = find_spline_roots(spline, 0.0)
+    xl, xr = select_left_and_right_roots(roots, center_x)
 
     x_clean = np.linspace(xl, xr, 200)
     y_clean = spline(x_clean)
-    clean = np.stack([x_clean, y_clean], axis=1)
+    clean = [(x, y) for x, y in zip(x_clean, y_clean) if y < 0.0]
+    clean = np.asarray(clean, float)
 
     P1 = np.array([xl, 0.0]) @ rot + p1
     P2 = np.array([xr, 0.0]) @ rot + p1
