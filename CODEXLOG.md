@@ -734,3 +734,9 @@ initialization. All tests still pass (53 passed).
 **Task:** Improve sessile mode contour detection so the selected side stops at the substrate and excludes points below it.
 
 **Summary:** Added `remove_island_points`, `find_spline_roots`, and `select_left_and_right_roots` helpers in `analysis/sessile.py`. Updated `smooth_contour_segment` to filter by side, drop points near the substrate, remove small clusters, and keep only spline segments above the line. Added unit test `test_sessile_segment` verifying side filtering and no points below the substrate. All tests pass (61 passed, 29 skipped).
+
+## Entry 123 - Export sessile smoothing
+
+**Task:** Fix ImportError from `pipelines.sessile.geometry` failing to import `smooth_contour_segment` via `menipy.analysis`.
+
+**Summary:** Added `smooth_contour_segment` to `analysis.__init__` imports and the `__all__` list so helper modules can access it directly from the package.
