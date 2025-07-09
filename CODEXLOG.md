@@ -758,3 +758,20 @@ initialization. All tests still pass (53 passed).
 **Task:** Add manual contact point selection for sessile pipeline.
 
 **Summary:** Implemented `contour_line_intersection_near` helper and extended sessile geometry analysis to accept manually marked contact points. Updated GUI with a "Mark Contact Points" button enabling two-click selection and passing coordinates to the analysis. Added a unit test `test_intersection_near_selects_correct_point`. All tests pass (64 passed, 29 skipped).
+
+## Entry 127 - Alternative contact angle tab
+
+**Task:** Create an alternative contact angle analysis pipeline and GUI tab duplicating sessile functionality.
+
+**Summary:** Duplicated sessile analysis and drawing modules to *_alt.py versions and exposed them via package __init__ files. Added a new "Contact angle Alt" tab in the GUI with identical controls and hooked it to the new pipeline. Updated analysis method logic to handle the new mode. All tests pass.
+
+## Entry 128 - Alternate sessile workflow
+
+**Task:** Implement alternate sessile droplet analysis functions.
+
+**Summary:** Added filtering and geometry helpers in `geometry_alt.py` and rewrote `analyze` to use them. Created `test_alt_workflow.py` with synthetic cases. All tests pass.
+## Entry 129 - Outside angles
+
+**Task:** Compute outside contact angles and slopes for alt sessile droplets.
+
+**Summary:** Added `compute_contact_angles` helper returning spherical and slope-based contact angles at P1/P2. Integrated it into the alt sessile analysis pipeline and added unit test `test_contact_angle_computation`. All tests pass (64 passed, 34 skipped).

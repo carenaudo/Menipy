@@ -176,6 +176,15 @@ class BaseMainWindow(QMainWindow):
         self.contact_tab.layout().insertRow(3, self.contact_tab.contact_pts_button)
         self.tabs.addTab(self.contact_tab, "Contact angle")
 
+        self.contact_tab_alt = AnalysisTab(show_contact_angle=True)
+        self.contact_tab_alt.detect_substrate_button = QPushButton("Detect Substrate Line")
+        self.contact_tab_alt.layout().insertRow(1, self.contact_tab_alt.detect_substrate_button)
+        self.contact_tab_alt.side_button = QPushButton("Select Drop Side")
+        self.contact_tab_alt.layout().insertRow(2, self.contact_tab_alt.side_button)
+        self.contact_tab_alt.contact_pts_button = QPushButton("Mark Contact Points")
+        self.contact_tab_alt.layout().insertRow(3, self.contact_tab_alt.contact_pts_button)
+        self.tabs.addTab(self.contact_tab_alt, "Contact angle Alt")
+
         # Connect after tabs exist so currentChanged doesn't fire early
         self.tabs.currentChanged.connect(self._update_tool_visibility)
 
@@ -208,6 +217,25 @@ class BaseMainWindow(QMainWindow):
             )
         self.contact_tab.analyze_button.clicked.connect(
             lambda: self._run_analysis("contact-angle")
+        )
+        if self.contact_tab_alt.substrate_button is not None:
+            self.contact_tab_alt.substrate_button.clicked.connect(
+                self._substrate_button_clicked
+            )
+        if hasattr(self.contact_tab_alt, "detect_substrate_button"):
+            self.contact_tab_alt.detect_substrate_button.clicked.connect(
+                self._detect_substrate_line
+            )
+        if hasattr(self.contact_tab_alt, "side_button"):
+            self.contact_tab_alt.side_button.clicked.connect(
+                self._select_side_button_clicked
+            )
+        if hasattr(self.contact_tab_alt, "contact_pts_button"):
+            self.contact_tab_alt.contact_pts_button.clicked.connect(
+                self._contact_pts_button_clicked
+            )
+        self.contact_tab_alt.analyze_button.clicked.connect(
+            lambda: self._run_analysis("contact-angle-alt")
         )
 
         self.setCentralWidget(splitter)
@@ -289,7 +317,7 @@ class BaseMainWindow(QMainWindow):
 
     def _run_analysis(self, method: str) -> None:
         self.analysis_method = method
-        if method == "contact-angle" and self.substrate_line_item is None:
+        if method in {"contact-angle", "contact-angle-alt"} and self.substrate_line_item is None:
             QMessageBox.warning(
                 self,
                 "Contact Angle",
@@ -1083,7 +1111,7 @@ class BaseMainWindow(QMainWindow):
 
     def _update_tool_visibility(self, index: int | None = None) -> None:
         widget = self.tabs.currentWidget()
-        is_contact = widget is self.contact_tab
+        is_contact = widget in {self.contact_tab, self.contact_tab_alt}
         self.draw_substrate_action.setVisible(is_contact)
         if not is_contact:
             self.draw_substrate_action.setChecked(False)
