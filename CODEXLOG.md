@@ -764,3 +764,9 @@ initialization. All tests still pass (53 passed).
 **Task:** Create an alternative contact angle analysis pipeline and GUI tab duplicating sessile functionality.
 
 **Summary:** Duplicated sessile analysis and drawing modules to *_alt.py versions and exposed them via package __init__ files. Added a new "Contact angle Alt" tab in the GUI with identical controls and hooked it to the new pipeline. Updated analysis method logic to handle the new mode. All tests pass.
+
+## Entry 128 - Alternate sessile workflow
+
+**Task:** Implement alternate sessile droplet analysis functions.
+
+**Summary:** Added filtering and geometry helpers in `geometry_alt.py` and rewrote `analyze` to use them. Created `test_alt_workflow.py` with synthetic cases. All tests pass.
