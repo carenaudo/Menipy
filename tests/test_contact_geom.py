@@ -1,7 +1,12 @@
 import numpy as np
 import pytest
 
-from menipy.physics.contact_geom import geom_metrics, contour_line_intersections, line_params
+from menipy.physics.contact_geom import (
+    geom_metrics,
+    contour_line_intersections,
+    contour_line_intersection_near,
+    line_params,
+)
 cv2 = __import__('cv2')
 
 
@@ -43,3 +48,22 @@ def test_intersections_wraparound_edge():
     left, right = contour_line_intersections(contour, a, b, c)
     pts = {tuple(np.round(pt, 6)) for pt in (left, right)}
     assert pts == {(0.0, 0.5), (1.0, 0.5)}
+
+
+def test_intersection_near_selects_correct_point():
+    contour = np.array(
+        [
+            [0.0, 0.0],
+            [2.0, 0.0],
+            [2.0, 1.0],
+            [0.0, 1.0],
+        ],
+        float,
+    )
+    p1 = (-1.0, 0.5)
+    p2 = (3.0, 0.5)
+    a, b, c = line_params(p1, p2)
+    left, _ = contour_line_intersection_near(contour, a, b, c, (0.1, 0.5))
+    right, _ = contour_line_intersection_near(contour, a, b, c, (1.9, 0.5))
+    assert np.allclose(left, [0.0, 0.5])
+    assert np.allclose(right, [2.0, 0.5])
