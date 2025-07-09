@@ -4,6 +4,7 @@ from pathlib import Path
 
 import numpy as np
 import cv2
+from typing import Any
 
 from PySide6.QtCore import Qt, QRectF, QLineF
 from PySide6.QtGui import (
@@ -13,6 +14,7 @@ from PySide6.QtGui import (
     QPainter,
     QPainterPath,
     QPen,
+    QBrush,
     QColor,
 )
 from PySide6.QtWidgets import (
@@ -170,6 +172,8 @@ class BaseMainWindow(QMainWindow):
         self.contact_tab.layout().insertRow(1, self.contact_tab.detect_substrate_button)
         self.contact_tab.side_button = QPushButton("Select Drop Side")
         self.contact_tab.layout().insertRow(2, self.contact_tab.side_button)
+        self.contact_tab.contact_pts_button = QPushButton("Mark Contact Points")
+        self.contact_tab.layout().insertRow(3, self.contact_tab.contact_pts_button)
         self.tabs.addTab(self.contact_tab, "Contact angle")
 
         # Connect after tabs exist so currentChanged doesn't fire early
@@ -197,6 +201,10 @@ class BaseMainWindow(QMainWindow):
         if hasattr(self.contact_tab, "side_button"):
             self.contact_tab.side_button.clicked.connect(
                 self._select_side_button_clicked
+            )
+        if hasattr(self.contact_tab, "contact_pts_button"):
+            self.contact_tab.contact_pts_button.clicked.connect(
+                self._contact_pts_button_clicked
             )
         self.contact_tab.analyze_button.clicked.connect(
             lambda: self._run_analysis("contact-angle")
@@ -259,6 +267,9 @@ class BaseMainWindow(QMainWindow):
         self.drop_axis_item = None
         self.diameter_item = None
         self.apex_dot_item = None
+        self.manual_p1 = None
+        self.manual_p2 = None
+        self._contact_pt_items: list[Any] = []
         self.px_per_mm_drop = 0.0
         self.substrate_line_item = None
         self.substrate_line = None
@@ -423,6 +434,11 @@ class BaseMainWindow(QMainWindow):
         self._calib_start = None
         self._substrate_start = None
         self._keep_above = None
+        self.manual_p1 = None
+        self.manual_p2 = None
+        for item in self._contact_pt_items:
+            self.graphics_scene.removeItem(item)
+        self._contact_pt_items.clear()
         self.px_per_mm_drop = 0.0
         self.parameter_panel.set_scale_display(0.0)
         self.calibration_tab.clear_metrics()
@@ -697,7 +713,13 @@ class BaseMainWindow(QMainWindow):
                 )
             else:
                 substrate = ((0, 0), (1, 0))
-            sm = analyze_sessile(roi, helpers, substrate)
+            cp = None
+            if self.manual_p1 is not None and self.manual_p2 is not None:
+                cp = (
+                    (self.manual_p1[0] - x1, self.manual_p1[1] - y1),
+                    (self.manual_p2[0] - x1, self.manual_p2[1] - y1),
+                )
+            sm = analyze_sessile(roi, helpers, substrate, contact_points=cp)
             sm.contour += np.array([x1, y1])
             sm.apex = (sm.apex[0] + x1, sm.apex[1] + y1)
             sm.diameter_line = (
@@ -1048,6 +1070,17 @@ class BaseMainWindow(QMainWindow):
             return
         self.set_side_select_mode(True)
 
+    def _contact_pts_button_clicked(self) -> None:
+        """Enable manual contact-point selection."""
+        if self.substrate_line_item is None:
+            QMessageBox.information(
+                self,
+                "Contact Points",
+                "Draw the substrate line before marking contact points",
+            )
+            return
+        self.set_contact_pts_mode(True)
+
     def _update_tool_visibility(self, index: int | None = None) -> None:
         widget = self.tabs.currentWidget()
         is_contact = widget is self.contact_tab
@@ -1127,6 +1160,43 @@ class BaseMainWindow(QMainWindow):
         sign = side_of_polyline(np.array([[pos.x(), pos.y()]], float), poly)[0]
         self._keep_above = bool(sign > 0)
         self.set_side_select_mode(False)
+        event.accept()
+
+    # --- Manual contact point selection -------------------------------------
+
+    def set_contact_pts_mode(self, enabled: bool) -> None:
+        if enabled:
+            self.manual_p1 = None
+            self.manual_p2 = None
+            for item in self._contact_pt_items:
+                self.graphics_scene.removeItem(item)
+            self._contact_pt_items.clear()
+            self.graphics_view.setCursor(Qt.CrossCursor)
+            self.graphics_view.mousePressEvent = self._contact_pts_press
+            self.graphics_view.mouseMoveEvent = self._default_move
+            self.graphics_view.mouseReleaseEvent = self._default_release
+        else:
+            self.graphics_view.setCursor(Qt.ArrowCursor)
+            self.graphics_view.mousePressEvent = self._default_press
+            self.graphics_view.mouseMoveEvent = self._default_move
+            self.graphics_view.mouseReleaseEvent = self._default_release
+
+    def _contact_pts_press(self, event):
+        pos = self.graphics_view.mapToScene(event.pos())
+        ellipse = self.graphics_scene.addEllipse(
+            pos.x() - 2,
+            pos.y() - 2,
+            4,
+            4,
+            QPen(QColor("yellow")),
+            QBrush(QColor("yellow")),
+        )
+        self._contact_pt_items.append(ellipse)
+        if self.manual_p1 is None:
+            self.manual_p1 = (pos.x(), pos.y())
+        elif self.manual_p2 is None:
+            self.manual_p2 = (pos.x(), pos.y())
+            self.set_contact_pts_mode(False)
         event.accept()
 
 

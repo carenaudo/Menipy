@@ -49,6 +49,65 @@ def contour_line_intersections(
     return np.array(pts[0]), np.array(pts[-1])
 
 
+def contour_line_intersection_near(
+    contour_px: np.ndarray,
+    a: float,
+    b: float,
+    c: float,
+    ref: tuple[float, float],
+) -> tuple[np.ndarray, int]:
+    """Return the contour-line intersection closest to ``ref``.
+
+    Parameters
+    ----------
+    contour_px:
+        Closed contour points ``(x, y)``.
+    a, b, c:
+        Line parameters such that ``ax + by + c = 0``.
+    ref:
+        Reference point used to select the nearest intersection.
+
+    Returns
+    -------
+    (point, index)
+        ``point`` is the intersection coordinates and ``index`` is the index of
+        the contour segment preceding the intersection.
+    """
+
+    d = a * contour_px[:, 0] + b * contour_px[:, 1] + c
+    sign = np.sign(d)
+    idx = np.where(np.diff(sign))[0].tolist()
+    if sign[-1] != sign[0]:
+        idx.append(len(sign) - 1)
+
+    if not idx:
+        raise ValueError("Line does not intersect contour")
+
+    ref_pt = np.asarray(ref, float)
+    best_pt: np.ndarray | None = None
+    best_idx = -1
+    best_dist = np.inf
+
+    for i in idx:
+        p, q = contour_px[i], contour_px[(i + 1) % len(contour_px)]
+        dp = a * p[0] + b * p[1] + c
+        dq = a * q[0] + b * q[1] + c
+        if dp == dq:
+            continue
+        t = dp / (dp - dq)
+        inter = p + t * (q - p)
+        dist = float(np.hypot(*(inter - ref_pt)))
+        if dist < best_dist:
+            best_dist = dist
+            best_pt = inter
+            best_idx = i
+
+    if best_pt is None:
+        raise ValueError("Line does not intersect contour")
+
+    return best_pt, best_idx
+
+
 def geom_metrics(
     p1_px: tuple[float, float],
     p2_px: tuple[float, float],

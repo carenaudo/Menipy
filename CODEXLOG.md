@@ -752,3 +752,9 @@ initialization. All tests still pass (53 passed).
 **Task:** Resolve ValueError when line visibly intersects contour.
 
 **Summary:** Updated `contour_line_intersections` to check the wrap-around segment and removed redundant error check. Added regression test `test_intersections_wraparound_edge` ensuring intersection points on the closing edge are found. All tests pass (63 passed, 29 skipped).
+
+## Entry 126 - Manual contact points
+
+**Task:** Add manual contact point selection for sessile pipeline.
+
+**Summary:** Implemented `contour_line_intersection_near` helper and extended sessile geometry analysis to accept manually marked contact points. Updated GUI with a "Mark Contact Points" button enabling two-click selection and passing coordinates to the analysis. Added a unit test `test_intersection_near_selects_correct_point`. All tests pass (64 passed, 29 skipped).

@@ -32,6 +32,7 @@ def analyze(
     helpers: HelperBundle,
     substrate: tuple[tuple[int, int], tuple[int, int]],
     drop_side: Literal["left", "right", "auto"] = "auto",
+    contact_points: tuple[tuple[int, int], tuple[int, int]] | None = None,
 ) -> SessileMetrics:
     """Return sessile-drop metrics and geometry from ``frame``."""
     contour = extract_external_contour(frame)
@@ -43,10 +44,30 @@ def analyze(
         clean_contour = contour.astype(float)
         p1_fit, p2_fit = (0.0, 0.0), (0.0, 0.0)
 
+    if contact_points is not None:
+        from ...physics.contact_geom import (
+            contour_line_intersection_near,
+            line_params,
+        )
+
+        (m1, m2) = contact_points
+        a, b, c = line_params(substrate[0], substrate[1])
+        try:
+            left_pt, _ = contour_line_intersection_near(
+                clean_contour.astype(float), a, b, c, m1
+            )
+            right_pt, _ = contour_line_intersection_near(
+                clean_contour.astype(float), a, b, c, m2
+            )
+            p1_fit, p2_fit = tuple(left_pt), tuple(right_pt)
+        except Exception:
+            pass
+
     metrics = compute_sessile_metrics(
         clean_contour.astype(float), helpers.px_per_mm, substrate_line=substrate
     )
     p1, p2 = metrics.get("contact_line", (p1_fit, p2_fit))
+    metrics["contact_line"] = (p1, p2)
     return SessileMetrics(
         contour=clean_contour.astype(float),
         apex=metrics["apex"],
