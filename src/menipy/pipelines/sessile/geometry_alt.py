@@ -31,27 +31,34 @@ def exclude_near_line(
     p2: tuple[int, int],
     radius: float = 5.0,
 ) -> list[np.ndarray]:
-    """Return contours not touching ``line`` outside a tolerance around P1/P2."""
+    """Return contours not touching ``line`` outside ``p1``/``p2`` segment."""
+
     a, b, c = line_params(line[0], line[1])
-    allowed = [np.array(p1, float), np.array(p2, float)]
+    p1 = np.asarray(p1, float)
+    p2 = np.asarray(p2, float)
+    seg = p2 - p1
+    seg_len_sq = float(seg.dot(seg)) or 1.0
     res: list[np.ndarray] = []
+
     for cts in contours:
         d = np.abs(a * cts[:, 0] + b * cts[:, 1] + c) / (a * a + b * b) ** 0.5
         if d.min() >= radius:
             res.append(cts)
             continue
+
         mask = d < radius
         pts = cts[mask]
         if len(pts) == 0:
             res.append(cts)
             continue
-        keep = True
-        for p in pts:
-            if all(np.linalg.norm(p - q) > radius for q in allowed):
-                keep = False
-                break
-        if keep:
-            res.append(cts)
+
+        t = ((pts - p1) @ seg) / seg_len_sq
+        outside = (t < 0.0) | (t > 1.0)
+        if np.any(outside):
+            continue
+
+        res.append(cts)
+
     return res
 
 
