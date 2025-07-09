@@ -7,6 +7,7 @@ import cv2
 
 from ...analysis import compute_sessile_metrics_alt
 from ...physics.contact_geom import line_params
+import math
 
 
 def filter_contours_by_size(
@@ -161,6 +162,59 @@ def annotate_results(
     )
 
 
+def _nearest_index(contour: np.ndarray, pt: np.ndarray) -> int:
+    """Return index of contour point closest to ``pt``."""
+    d = np.linalg.norm(contour - pt, axis=1)
+    return int(d.argmin())
+
+
+def compute_contact_angles(
+    contour: np.ndarray,
+    p1: np.ndarray,
+    p2: np.ndarray,
+    base_diameter_mm: float,
+    apex_height_mm: float,
+    line: tuple[tuple[float, float], tuple[float, float]],
+    window: int = 5,
+) -> dict[str, float]:
+    """Return outside contact angles and local slopes at ``p1`` and ``p2``."""
+
+    a = base_diameter_mm / 2.0
+    h = apex_height_mm
+    if h <= 0:
+        R = float("inf")
+    else:
+        R = (a ** 2 + h ** 2) / (2 * h)
+
+    theta_sph = math.degrees(math.acos(max(min((R - h) / R, 1.0), -1.0))) if R != float("inf") else 0.0
+
+    idx1 = _nearest_index(contour, p1)
+    idx2 = _nearest_index(contour, p2)
+    pts1 = np.vstack([
+        contour[(idx1 + i) % len(contour)] for i in range(-window, window + 1)
+    ])
+    pts2 = np.vstack([
+        contour[(idx2 + i) % len(contour)] for i in range(-window, window + 1)
+    ])
+    vx1, vy1, _, _ = cv2.fitLine(pts1.astype(np.float32), cv2.DIST_L2, 0, 0.01, 0.01)
+    vx2, vy2, _, _ = cv2.fitLine(pts2.astype(np.float32), cv2.DIST_L2, 0, 0.01, 0.01)
+
+    slope1 = float(vy1) / float(vx1) if float(vx1) != 0 else float("inf")
+    slope2 = float(vy2) / float(vx2) if float(vx2) != 0 else float("inf")
+
+    theta_slope1 = math.degrees(math.atan(abs(slope1)))
+    theta_slope2 = math.degrees(math.atan(abs(slope2)))
+
+    return {
+        "theta_spherical_p1": theta_sph,
+        "theta_spherical_p2": theta_sph,
+        "slope_p1": slope1,
+        "slope_p2": slope2,
+        "theta_slope_p1": theta_slope1,
+        "theta_slope_p2": theta_slope2,
+    }
+
+
 @dataclass
 class HelperBundle:
     px_per_mm: float
@@ -213,6 +267,15 @@ def analyze(
         (int(round(cp1[0])), int(round(cp1[1]))),
         (int(round(cp2[0])), int(round(cp2[1]))),
     )
+    extra = compute_contact_angles(
+        clean_contour.astype(float),
+        cp1,
+        cp2,
+        metrics.get("w_mm", 0.0),
+        metrics.get("h_mm", 0.0),
+        substrate,
+    )
+    metrics.update(extra)
     return SessileMetrics(
         contour=clean_contour.astype(float),
         apex=(int(round(apex_pt[0])), int(round(apex_pt[1]))),
@@ -235,4 +298,5 @@ __all__ = [
     "find_contact_points",
     "compute_apex",
     "annotate_results",
+    "compute_contact_angles",
 ]

@@ -770,3 +770,8 @@ initialization. All tests still pass (53 passed).
 **Task:** Implement alternate sessile droplet analysis functions.
 
 **Summary:** Added filtering and geometry helpers in `geometry_alt.py` and rewrote `analyze` to use them. Created `test_alt_workflow.py` with synthetic cases. All tests pass.
+## Entry 129 - Outside angles
+
+**Task:** Compute outside contact angles and slopes for alt sessile droplets.
+
+**Summary:** Added `compute_contact_angles` helper returning spherical and slope-based contact angles at P1/P2. Integrated it into the alt sessile analysis pipeline and added unit test `test_contact_angle_computation`. All tests pass (64 passed, 34 skipped).

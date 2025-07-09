@@ -7,6 +7,7 @@ try:
         project_onto_line,
         find_contact_points,
         compute_apex,
+        compute_contact_angles,
         analyze,
         HelperBundle,
     )
@@ -15,6 +16,7 @@ except Exception as exc:  # pragma: no cover - dependency issue
     project_onto_line = None
     find_contact_points = None
     compute_apex = None
+    compute_contact_angles = None
     analyze = None
     HelperBundle = None
     missing_dependency = exc
@@ -63,3 +65,16 @@ def test_analyze_simple_circle():
     res = analyze(img, helpers, ((40, 60), (60, 60)), contact_points=((45, 60), (55, 60)))
     d_px = np.linalg.norm(np.subtract(res.p1, res.p2))
     assert pytest.approx(d_px, rel=1e-2) == 20.0
+
+
+def test_contact_angle_computation():
+    if compute_contact_angles is None:
+        pytest.skip(f"PySide6 not available: {missing_dependency}")
+    theta = np.linspace(0, 2 * np.pi, 200)
+    contour = np.stack([10 * np.cos(theta) + 50, 10 * np.sin(theta) + 60], axis=1)
+    p1 = np.array([40.0, 60.0])
+    p2 = np.array([60.0, 60.0])
+    res = compute_contact_angles(contour, p1, p2, 2.0, 1.0, (p1, p2))
+    assert "theta_spherical_p1" in res
+    assert pytest.approx(res["theta_spherical_p1"], rel=1e-2) == 90.0
+    assert pytest.approx(res["theta_slope_p1"], rel=1e-1) == 90.0
