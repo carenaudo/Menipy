@@ -805,3 +805,35 @@ def test_clear_analysis_resets_metrics(tmp_path):
     assert window.contact_tab.diameter_label.text() == "0.0000"
     window.close()
     app.quit()
+
+
+def test_contact_angle_alt_metrics(tmp_path):
+    if QtWidgets is None:
+        pytest.skip("PySide6 not available")
+
+    import numpy as np
+    import cv2
+    from PySide6.QtCore import QLineF
+    from menipy.gui import SubstrateLineItem
+
+    img = np.zeros((40, 40), dtype=np.uint8)
+    cv2.circle(img, (20, 30), 8, 255, -1)
+    path = tmp_path / "drop.png"
+    cv2.imwrite(str(path), img)
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    window = MainWindow()
+    window.load_image(path)
+    window.drop_rect = (10, 20, 30, 39)
+    window.px_per_mm_drop = 10.0
+    window.substrate_line_item = SubstrateLineItem(QLineF(10, 38, 30, 38))
+    window.graphics_scene.addItem(window.substrate_line_item)
+    window._run_analysis("contact-angle-alt")
+
+    txt1 = window.contact_tab_alt.angle_p1_label.text()
+    txt2 = window.contact_tab_alt.angle_p2_label.text()
+    assert float(txt1) > 0
+    assert float(txt2) > 0
+
+    window.close()
+    app.quit()

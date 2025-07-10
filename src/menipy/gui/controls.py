@@ -509,6 +509,10 @@ class AnalysisTab(QWidget):
         if show_contact_angle:
             self.angle_label = QLabel("0.0000")
             layout.addRow("Contact angle (º)", self.angle_label)
+            self.angle_p1_label = QLabel("0.0000")
+            layout.addRow("Angle P1 (º)", self.angle_p1_label)
+            self.angle_p2_label = QLabel("0.0000")
+            layout.addRow("Angle P2 (º)", self.angle_p2_label)
             self.width_label = QLabel("0.0000")
             layout.addRow("Base width (mm)", self.width_label)
             self.rb_label = QLabel("0.0000")
@@ -517,6 +521,8 @@ class AnalysisTab(QWidget):
             layout.addRow("Apex height (mm)", self.h_label)
         else:
             self.angle_label = None
+            self.angle_p1_label = None
+            self.angle_p2_label = None
             self.width_label = None
             self.rb_label = None
             self.h_label = None
@@ -584,6 +590,8 @@ class AnalysisTab(QWidget):
         height_line: float | None = None,
         apex_to_diam: float | None = None,
         contact_to_diam: float | None = None,
+        angle_p1: float | None = None,
+        angle_p2: float | None = None,
     ) -> None:
         if height is not None:
             self.height_label.setText(f"{height:.4f}")
@@ -635,6 +643,10 @@ class AnalysisTab(QWidget):
             self.apex_diam_label.setText(f"{apex_to_diam:.4f}")
         if contact_to_diam is not None and self.contact_diam_label is not None:
             self.contact_diam_label.setText(f"{contact_to_diam:.4f}")
+        if angle_p1 is not None and self.angle_p1_label is not None:
+            self.angle_p1_label.setText(f"{angle_p1:.4f}")
+        if angle_p2 is not None and self.angle_p2_label is not None:
+            self.angle_p2_label.setText(f"{angle_p2:.4f}")
 
     def metrics(self) -> dict[str, str]:
         data = {
@@ -667,6 +679,10 @@ class AnalysisTab(QWidget):
             data["apex_to_diam"] = self.apex_diam_label.text()
         if self.contact_diam_label is not None:
             data["contact_to_diam"] = self.contact_diam_label.text()
+        if self.angle_p1_label is not None:
+            data["angle_p1"] = self.angle_p1_label.text()
+        if self.angle_p2_label is not None:
+            data["angle_p2"] = self.angle_p2_label.text()
         return data
 
     def clear_metrics(self) -> None:
@@ -697,4 +713,6 @@ class AnalysisTab(QWidget):
             height_line=0.0,
             apex_to_diam=0.0,
             contact_to_diam=0.0,
+            angle_p1=0.0,
+            angle_p2=0.0,
         )
