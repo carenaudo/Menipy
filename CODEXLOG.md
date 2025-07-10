@@ -775,3 +775,9 @@ initialization. All tests still pass (53 passed).
 **Task:** Compute outside contact angles and slopes for alt sessile droplets.
 
 **Summary:** Added `compute_contact_angles` helper returning spherical and slope-based contact angles at P1/P2. Integrated it into the alt sessile analysis pipeline and added unit test `test_contact_angle_computation`. All tests pass (64 passed, 34 skipped).
+
+## Entry 130 - Robust line filtering
+
+**Task:** Fix droplet detection failure when contact line touches the substrate.
+
+**Summary:** Updated `exclude_near_line` to keep contours that touch the line segment between contact points. Regression tests pass (64 passed, 34 skipped).
