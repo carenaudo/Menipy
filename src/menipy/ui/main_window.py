@@ -265,6 +265,8 @@ class MainWindow(BaseMainWindow):
             height_line=metrics.get("h_mm"),
             apex_to_diam=metrics.get("apex_to_diam_mm"),
             contact_to_diam=metrics.get("contact_to_diam_mm"),
+            angle_p1=metrics.get("theta_slope_p1"),
+            angle_p2=metrics.get("theta_slope_p2"),
         )
         if self.drop_contour_item is not None:
             self.graphics_scene.removeItem(self.drop_contour_item)
