@@ -781,3 +781,15 @@ initialization. All tests still pass (53 passed).
 **Task:** Fix droplet detection failure when contact line touches the substrate.
 
 **Summary:** Updated `exclude_near_line` to keep contours that touch the line segment between contact points. Regression tests pass (64 passed, 34 skipped).
+
+## Entry 131 - Contour cleanup
+
+**Task:** Implement droplet contour preprocessing for the alt sessile method.
+
+**Summary:** Added `clean_droplet_contour` in `geometry_alt.py` to mask substrate pixels, remove noise and isolate the main droplet. Modified `analyze` to use this helper and created unit test `test_clean_droplet_contour_basic`. All tests pass.
+
+## Entry 132 - Alt tab contour cleanup
+
+**Task:** Ensure substrate artifacts are removed when analyzing in the alternative contact-angle tab.
+
+**Summary:** Updated tests with `test_analyze_removes_substrate_noise` verifying `clean_droplet_contour` runs within the alt sessile pipeline. No code changes required in the GUI. All tests pass.

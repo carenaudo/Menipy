@@ -71,6 +71,63 @@ def extract_outer_contour(mask: np.ndarray) -> np.ndarray:
     return largest.squeeze(1).astype(float)
 
 
+def clean_droplet_contour(
+    binary_image: np.ndarray,
+    substrate_y: int,
+    min_area: int = 100,
+    min_dist: int = 5,
+    kernel_size: tuple[int, int] = (3, 3),
+    aspect_ratio_range: tuple[float, float] = (0.5, 3.0),
+) -> list[np.ndarray]:
+    """Return clean droplet contours above ``substrate_y``.
+
+    The input ``binary_image`` is assumed to contain a rough droplet mask. This
+    helper removes any pixels touching or below the substrate line, performs
+    morphological cleanup, keeps only the largest connected component and
+    filters the resulting contours by distance from the substrate, area and
+    aspect ratio.
+    """
+
+    if binary_image.ndim == 3:
+        gray = cv2.cvtColor(binary_image, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = binary_image
+
+    _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+    mask = np.ones_like(binary, dtype=np.uint8) * 255
+    mask[substrate_y:, :] = 0
+    cleaned = cv2.bitwise_and(binary, mask)
+
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, kernel_size)
+    cleaned = cv2.morphologyEx(cleaned, cv2.MORPH_CLOSE, kernel)
+    cleaned = cv2.morphologyEx(cleaned, cv2.MORPH_OPEN, kernel)
+
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(cleaned)
+    if num_labels <= 1:
+        return []
+    largest = np.argmax(stats[1:, cv2.CC_STAT_AREA]) + 1
+    cleaned = (labels == largest).astype(np.uint8) * 255
+
+    contours, _ = cv2.findContours(cleaned, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    final_contours: list[np.ndarray] = []
+    ar_min, ar_max = aspect_ratio_range
+    for cnt in contours:
+        if np.min(cnt[:, :, 1]) >= substrate_y - min_dist:
+            continue
+        area = cv2.contourArea(cnt)
+        if area < min_area:
+            continue
+        x, y, w, h = cv2.boundingRect(cnt)
+        ar = w / float(h) if h > 0 else 0.0
+        if not (ar_min <= ar <= ar_max):
+            continue
+        final_contours.append(cnt.squeeze(1).astype(float))
+
+    return final_contours
+
+
 def project_onto_line(
     pts: np.ndarray, line: tuple[tuple[float, float], tuple[float, float]]
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -250,19 +307,14 @@ def analyze(
     _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     mask = cv2.bitwise_not(thresh)
 
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    contours = [c.squeeze(1) for c in contours if c.size > 0]
-    area_est = mask.shape[0] * mask.shape[1]
-    contours = filter_contours_by_size(contours, 10.0, area_est)
-    p1_guess = contact_points[0] if contact_points else substrate[0]
-    p2_guess = contact_points[1] if contact_points else substrate[1]
-    contours = exclude_near_line(contours, substrate, p1_guess, p2_guess)
+    substrate_y = int(round((substrate[0][1] + substrate[1][1]) / 2))
+    contours = clean_droplet_contour(mask, substrate_y)
     if not contours:
         raise ValueError("no droplet region detected")
+    clean_contour = max(contours, key=cv2.contourArea)
 
-    mask_clean = np.zeros_like(mask)
-    cv2.drawContours(mask_clean, [contours[0].astype(np.int32)], -1, 255, -1)
-    clean_contour = extract_outer_contour(mask_clean)
+    p1_guess = contact_points[0] if contact_points else substrate[0]
+    p2_guess = contact_points[1] if contact_points else substrate[1]
 
     cp1, cp2 = find_contact_points(clean_contour, substrate, p1_guess, p2_guess)
     apex_pt = compute_apex(clean_contour, substrate, cp1, cp2)
@@ -301,6 +353,7 @@ __all__ = [
     "filter_contours_by_size",
     "exclude_near_line",
     "extract_outer_contour",
+    "clean_droplet_contour",
     "project_onto_line",
     "find_contact_points",
     "compute_apex",
