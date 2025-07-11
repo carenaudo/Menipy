@@ -309,9 +309,13 @@ def analyze(
 
     substrate_y = int(round((substrate[0][1] + substrate[1][1]) / 2))
     contours = clean_droplet_contour(mask, substrate_y)
-    if not contours:
-        raise ValueError("no droplet region detected")
-    clean_contour = max(contours, key=cv2.contourArea)
+    if contours:
+        clean_contour = max(contours, key=cv2.contourArea)
+    else:
+        try:
+            clean_contour = extract_outer_contour(mask)
+        except ValueError:
+            raise ValueError("no droplet region detected") from None
 
     p1_guess = contact_points[0] if contact_points else substrate[0]
     p2_guess = contact_points[1] if contact_points else substrate[1]
