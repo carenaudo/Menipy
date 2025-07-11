@@ -8,6 +8,7 @@ try:
         find_contact_points,
         compute_apex,
         compute_contact_angles,
+        clean_droplet_contour,
         analyze,
         HelperBundle,
     )
@@ -19,6 +20,7 @@ except Exception as exc:  # pragma: no cover - dependency issue
     compute_contact_angles = None
     analyze = None
     HelperBundle = None
+    clean_droplet_contour = None
     missing_dependency = exc
 else:
     missing_dependency = None
@@ -32,6 +34,19 @@ def test_filter_contours_by_size():
     res = filter_contours_by_size([c1, c2], 0.5, 2.0)
     assert len(res) == 1
     assert np.allclose(res[0], c1)
+
+
+def test_clean_droplet_contour_basic():
+    if clean_droplet_contour is None:
+        pytest.skip(f"PySide6 not available: {missing_dependency}")
+    img = np.zeros((80, 100), np.uint8)
+    cv2.circle(img, (50, 30), 20, 255, -1)
+    img[70:, :] = 255  # noise below substrate
+    contours = clean_droplet_contour(img, 60, min_area=50)
+    assert len(contours) == 1
+    cnt = contours[0]
+    assert cnt.shape[1] == 2
+    assert cnt[:, 1].max() < 60
 
 
 def test_project_onto_line():
