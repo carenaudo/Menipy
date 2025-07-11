@@ -49,6 +49,17 @@ def test_clean_droplet_contour_basic():
     assert cnt[:, 1].max() < 60
 
 
+def test_analyze_removes_substrate_noise():
+    if analyze is None:
+        pytest.skip(f"PySide6 not available: {missing_dependency}")
+    img = np.zeros((80, 100), np.uint8)
+    cv2.circle(img, (50, 30), 20, 255, -1)
+    img[70:, :] = 255
+    helpers = HelperBundle(px_per_mm=10.0)
+    res = analyze(img, helpers, ((40, 60), (60, 60)))
+    assert res.contour[:, 1].max() < 60
+
+
 def test_project_onto_line():
     if project_onto_line is None:
         pytest.skip(f"PySide6 not available: {missing_dependency}")
