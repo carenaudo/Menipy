@@ -82,6 +82,21 @@ def test_find_apex_and_contact():
     assert apex[1] < 60.0
 
 
+def test_find_contact_points_ignores_below_substrate():
+    if find_contact_points is None:
+        pytest.skip(f"PySide6 not available: {missing_dependency}")
+    theta = np.linspace(0, 2 * np.pi, 200)
+    base = np.stack([10 * np.cos(theta) + 50, 10 * np.sin(theta) + 60], axis=1)
+    noise = np.array([[55.0, 65.0], [56.0, 70.0], [54.0, 62.0]])
+    contour = np.vstack([base, noise])
+    line = ((40.0, 60.0), (60.0, 60.0))
+    p1, p2 = find_contact_points(contour, line, (40, 60), (60, 60))
+    assert p1[0] < 41
+    assert p2[0] > 59
+    assert p1[1] <= 60.0
+    assert p2[1] <= 60.0
+
+
 def test_analyze_simple_circle():
     if analyze is None:
         pytest.skip(f"PySide6 not available: {missing_dependency}")

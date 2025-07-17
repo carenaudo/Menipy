@@ -792,4 +792,10 @@ initialization. All tests still pass (53 passed).
 
 **Task:** Ensure substrate artifacts are removed when analyzing in the alternative contact-angle tab.
 
+
 **Summary:** Updated tests with `test_analyze_removes_substrate_noise` verifying `clean_droplet_contour` runs within the alt sessile pipeline. No code changes required in the GUI. All tests pass.
+## Entry 133 - Alt sessile contact points
+
+**Task:** Correct alternative Sessile Drop Contact Point and filter false contours.
+
+**Summary:** Improved `find_contact_points` to discard contour pixels below the substrate line and select the leftmost and rightmost valid contact points. Added regression test `test_find_contact_points_ignores_below_substrate`.

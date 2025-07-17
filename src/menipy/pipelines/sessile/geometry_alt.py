@@ -149,29 +149,53 @@ def find_contact_points(
     line: tuple[tuple[float, float], tuple[float, float]],
     guess1: tuple[int, int],
     guess2: tuple[int, int],
-    tol: float = 5.0,
+    tol: float = 2.0,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Return ordered contact points nearest to ``guess1`` and ``guess2``."""
-    from ...detectors.geometry_alt import polyline_contour_intersections
+    """Return ordered contact points along ``line``.
 
-    poly = np.array([line[0], line[1]], float)
-    pts = polyline_contour_intersections(poly, contour)
-    if len(pts) < 2:
-        raise ValueError("line does not intersect contour twice")
-    arr = np.array(pts)
-    g1 = np.array(guess1, float)
-    g2 = np.array(guess2, float)
-    d1 = np.linalg.norm(arr - g1, axis=1)
-    d2 = np.linalg.norm(arr - g2, axis=1)
-    i1 = int(d1.argmin())
-    i2 = int(d2.argmin())
-    if d1[i1] > tol:
-        i1 = 0
-    if d2[i2] > tol:
-        i2 = len(arr) - 1
-    if i1 > i2:
-        i1, i2 = i2, i1
-    return arr[i1], arr[i2]
+    This version filters out contour fragments below the substrate line and
+    selects the extreme points on the left and right side whose vertical
+    distance from the line is within ``tol`` pixels.
+    """
+
+    contour = np.asarray(contour, float)
+    p1 = np.asarray(line[0], float)
+    p2 = np.asarray(line[1], float)
+    dx = p2[0] - p1[0]
+    dy = p2[1] - p1[1]
+    if dx == 0:
+        slope = float("inf")
+    else:
+        slope = dy / dx
+
+    def y_on_line(x: np.ndarray) -> np.ndarray:
+        return p1[1] + slope * (x - p1[0])
+
+    ys_line = y_on_line(contour[:, 0])
+    delta = contour[:, 1] - ys_line
+    mask = delta <= tol
+    if not np.any(mask):
+        raise ValueError("no contour points near substrate line")
+
+    cont = contour[mask]
+    delta = delta[mask]
+    near_mask = np.abs(delta) <= tol
+    cont_near = cont[near_mask]
+    if len(cont_near) == 0:
+        cont_near = cont
+
+    x_center = (p1[0] + p2[0]) / 2.0
+    left = cont_near[cont_near[:, 0] <= x_center]
+    right = cont_near[cont_near[:, 0] >= x_center]
+    if len(left) == 0:
+        left = cont_near
+    if len(right) == 0:
+        right = cont_near
+
+    idx_left = int(np.argmin(left[:, 0]))
+    idx_right = int(np.argmax(right[:, 0]))
+
+    return left[idx_left], right[idx_right]
 
 
 def compute_apex(
