@@ -799,3 +799,9 @@ initialization. All tests still pass (53 passed).
 **Task:** Correct alternative Sessile Drop Contact Point and filter false contours.
 
 **Summary:** Improved `find_contact_points` to discard contour pixels below the substrate line and select the leftmost and rightmost valid contact points. Added regression test `test_find_contact_points_ignores_below_substrate`.
+## Entry 134 - P1 and Apex refinement
+
+**Task:** Ensure left contact point aligns with user guess and apex is centered.
+
+**Summary:** Updated `find_contact_points` to pick points along the substrate line nearest to user guesses using projections. Modified `compute_apex` to favor the upper-most point when multiple maxima exist and choose the candidate centered by `x`. Unit test `test_find_apex_and_contact` passes.
+

@@ -153,9 +153,10 @@ def find_contact_points(
 ) -> tuple[np.ndarray, np.ndarray]:
     """Return ordered contact points along ``line``.
 
-    This version filters out contour fragments below the substrate line and
-    selects the extreme points on the left and right side whose vertical
-    distance from the line is within ``tol`` pixels.
+    Contour points more than ``tol`` pixels below the substrate line are
+    discarded. The remaining points closest to the user provided guesses
+    ``guess1`` and ``guess2`` are selected, prioritizing minimal vertical
+    distance to the line and then horizontal proximity to the guesses.
     """
 
     contour = np.asarray(contour, float)
@@ -184,18 +185,30 @@ def find_contact_points(
     if len(cont_near) == 0:
         cont_near = cont
 
-    x_center = (p1[0] + p2[0]) / 2.0
-    left = cont_near[cont_near[:, 0] <= x_center]
-    right = cont_near[cont_near[:, 0] >= x_center]
-    if len(left) == 0:
-        left = cont_near
-    if len(right) == 0:
-        right = cont_near
+    g1 = np.asarray(guess1, float)
+    g2 = np.asarray(guess2, float)
 
-    idx_left = int(np.argmin(left[:, 0]))
-    idx_right = int(np.argmax(right[:, 0]))
+    y_line = y_on_line(cont_near[:, 0])
+    vert_dist = np.abs(cont_near[:, 1] - y_line)
+    _, foots = project_onto_line(cont_near, line)
 
-    return left[idx_left], right[idx_right]
+    def _select(pt: np.ndarray) -> np.ndarray:
+        x_diff = np.abs(foots[:, 0] - pt[0])
+        mask_close = vert_dist <= tol
+        if np.any(mask_close):
+            idx_pool = np.where(mask_close)[0]
+        else:
+            idx_pool = np.arange(len(foots))
+        idx = idx_pool[np.argmin(x_diff[idx_pool])]
+        return foots[idx]
+
+    p_left = _select(g1)
+    p_right = _select(g2)
+
+    if p_left[0] > p_right[0]:
+        p_left, p_right = p_right, p_left
+
+    return p_left, p_right
 
 
 def compute_apex(
@@ -204,7 +217,13 @@ def compute_apex(
     p1: np.ndarray,
     p2: np.ndarray,
 ) -> np.ndarray:
-    """Return apex point between ``p1`` and ``p2``."""
+    """Return apex point between ``p1`` and ``p2``.
+
+    The apex is chosen as the contour point between the contact points that has
+    the maximum perpendicular distance to the substrate line. If several points
+    share this maximum distance, the one whose ``x`` coordinate is closest to the
+    average ``x`` of those candidates is returned.
+    """
     _, foots = project_onto_line(contour, line)
     line_pt = np.asarray(line[0], float)
     line_dir = np.asarray(line[1], float) - line_pt
@@ -221,8 +240,18 @@ def compute_apex(
     seg = contour[mask]
     dist = np.abs(np.cross(line_dir, seg - line_pt)) / np.linalg.norm(line_dir)
     m = dist.max()
-    idxs = np.where(dist == m)[0]
-    apex = seg[idxs[len(idxs) // 2]]
+    idxs = np.where(np.isclose(dist, m))[0]
+    seg_max = seg[idxs]
+    # prefer points above the substrate line
+    y_min = seg_max[:, 1].min()
+    idxs = idxs[np.isclose(seg_max[:, 1], y_min)]
+    if len(idxs) == 1:
+        apex = seg[idxs[0]]
+    else:
+        xs = seg[idxs, 0]
+        x_target = xs.mean()
+        idx = idxs[np.argmin(np.abs(xs - x_target))]
+        apex = seg[idx]
     return apex
 
 
