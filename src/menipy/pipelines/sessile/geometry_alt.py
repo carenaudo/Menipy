@@ -7,6 +7,7 @@ import cv2
 
 from ...analysis import compute_sessile_metrics_alt
 from ...physics.contact_geom import line_params
+from ...detectors.geometry_alt import split_contour_by_line
 import math
 
 
@@ -352,7 +353,7 @@ def analyze(
     frame: np.ndarray,
     helpers: HelperBundle,
     substrate: tuple[tuple[int, int], tuple[int, int]],
-    drop_side: Literal["left", "right", "auto"] = "auto",
+    drop_side: Literal["above", "below", "auto"] = "auto",
     contact_points: tuple[tuple[int, int], tuple[int, int]] | None = None,
 ) -> SessileMetrics:
     """Return sessile-drop metrics and geometry from ``frame``."""
@@ -370,6 +371,15 @@ def analyze(
         except ValueError:
             raise ValueError("no droplet region detected") from None
 
+    keep_above: bool | None = None
+    if drop_side != "auto":
+        keep_above = drop_side == "above"
+        line_pt = np.asarray(substrate[0], float)
+        line_dir = np.subtract(substrate[1], substrate[0])
+        clean_contour = split_contour_by_line(
+            clean_contour.astype(float), line_pt, line_dir, keep_above=keep_above
+        )
+
     p1_guess = contact_points[0] if contact_points else substrate[0]
     p2_guess = contact_points[1] if contact_points else substrate[1]
 
@@ -377,7 +387,10 @@ def analyze(
     apex_pt = compute_apex(clean_contour, substrate, cp1, cp2)
 
     metrics = compute_sessile_metrics_alt(
-        clean_contour.astype(float), helpers.px_per_mm, substrate_line=substrate
+        clean_contour.astype(float),
+        helpers.px_per_mm,
+        substrate_line=substrate,
+        keep_above=keep_above,
     )
     metrics["contact_line"] = (
         (int(round(cp1[0])), int(round(cp1[1]))),
