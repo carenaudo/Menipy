@@ -10,10 +10,29 @@ from ..models.properties import droplet_volume
 from .region import close_droplet, _signed_distance
 
 
-def _apex_point(contour: np.ndarray, line_pt: np.ndarray, line_dir: np.ndarray, mode: str) -> np.ndarray:
+def _apex_point(
+    contour: np.ndarray, line_pt: np.ndarray, line_dir: np.ndarray, mode: str
+) -> np.ndarray:
+    """Return the apex relative to ``line_pt``/``line_dir``.
+
+    When several contour points share the extreme distance to the substrate
+    line, their mean coordinate is used.  This ensures a centred apex for
+    symmetric silhouettes.
+    """
+
     dist = _signed_distance(contour, line_pt, line_dir)
-    idx = int(np.argmax(dist)) if mode == "sessile" else int(np.argmin(dist))
-    return contour[idx]
+    if mode == "sessile":
+        extreme = dist.max()
+        idxs = np.where(np.isclose(dist, extreme))[0]
+    else:
+        extreme = dist.min()
+        idxs = np.where(np.isclose(dist, extreme))[0]
+
+    pts = contour[idxs]
+    if len(idxs) == 1:
+        return pts[0]
+
+    return pts.mean(axis=0)
 
 
 def metrics_sessile(

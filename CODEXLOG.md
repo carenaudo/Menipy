@@ -811,3 +811,8 @@ initialization. All tests still pass (53 passed).
 
 **Summary:** Deleted the regular contact angle tab from `BaseMainWindow` and adjusted logic to rely solely on the alternative implementation. The remaining tabs are now ordered as Calibration, Pendant Drop, Contact Angle Alt and Detection Test. Updated control options, analysis methods, and GUI tests accordingly.
 
+## Entry 136 - Apex midpoint rule
+
+**Task:** Ensure apex selection centers multiple candidates.
+
+**Summary:** Updated `_apex_point` in `processing.metrics` to average the horizontal positions when multiple contour points share the extreme distance to the substrate line. Added test `test_apex_point_middle` verifying that sessile and pendant metrics return the centered apex.

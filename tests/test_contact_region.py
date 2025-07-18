@@ -45,3 +45,22 @@ def test_metrics_pendant_basic():
     assert pytest.approx(m["diameter_mm"], rel=1e-2) == 4.0
     assert pytest.approx(m["height_mm"], rel=1e-2) == 2.0
 
+
+def test_apex_point_middle():
+    contour = np.array(
+        [
+            [0, 0],
+            [5, 0],
+            [10, 0],
+            [10, 10],
+            [0, 10],
+        ],
+        float,
+    )
+    line_sess = ((10.0, 10.0), (0.0, 10.0))
+    line_pend = ((10.0, 0.0), (0.0, 0.0))
+    sess = metrics_sessile(contour, line_sess, px_per_mm=1.0)
+    pend = metrics_pendant(contour, line_pend, px_per_mm=1.0)
+    assert sess["apex"] == (5, 0)
+    assert pend["apex"] == (5, 10)
+
