@@ -188,32 +188,6 @@ class MainWindow(BaseMainWindow):
             metrics = pm.derived
             panel = self.pendant_tab
             overlay = draw_pendant_overlays(self.image, pm)
-        elif mode == "contact-angle":
-            helpers = SessileHelpers(px_per_mm=self.px_per_mm_drop)
-            if self.substrate_line_item is not None:
-                line = self.substrate_line_item.line()
-                substrate = (
-                    (line.x1() - x1, line.y1() - y1),
-                    (line.x2() - x1, line.y2() - y1),
-                )
-            else:
-                substrate = ((0, 0), (1, 0))
-            sm = analyze_sessile(roi, helpers, substrate)
-            sm.contour += np.array([x1, y1])
-            sm.apex = (sm.apex[0] + x1, sm.apex[1] + y1)
-            sm.diameter_line = (
-                (sm.diameter_line[0][0] + x1, sm.diameter_line[0][1] + y1),
-                (sm.diameter_line[1][0] + x1, sm.diameter_line[1][1] + y1),
-            )
-            sm.p1 = (sm.p1[0] + x1, sm.p1[1] + y1)
-            sm.p2 = (sm.p2[0] + x1, sm.p2[1] + y1)
-            sm.substrate_line = (
-                (sm.substrate_line[0][0] + x1, sm.substrate_line[0][1] + y1),
-                (sm.substrate_line[1][0] + x1, sm.substrate_line[1][1] + y1),
-            )
-            metrics = sm.derived
-            panel = self.contact_tab
-            overlay = draw_sessile_overlays(self.image, sm)
         else:
             helpers = SessileHelpers(px_per_mm=self.px_per_mm_drop)
             if self.substrate_line_item is not None:

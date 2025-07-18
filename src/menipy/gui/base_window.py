@@ -157,24 +157,12 @@ class BaseMainWindow(QMainWindow):
         self.save_csv_button.clicked.connect(lambda: self.save_csv())
 
         classic_layout.addStretch()
-        self.tabs.addTab(classic_widget, "Detection Test")
 
         self.calibration_tab = CalibrationTab()
         self.tabs.addTab(self.calibration_tab, "Calibration")
 
         self.pendant_tab = AnalysisTab(save_profiles=True)
         self.tabs.addTab(self.pendant_tab, "Pendant drop")
-
-        self.contact_tab = AnalysisTab(show_contact_angle=True)
-        self.contact_tab.detect_substrate_button = QPushButton(
-            "Detect Substrate Line"
-        )
-        self.contact_tab.layout().insertRow(1, self.contact_tab.detect_substrate_button)
-        self.contact_tab.side_button = QPushButton("Select Drop Side")
-        self.contact_tab.layout().insertRow(2, self.contact_tab.side_button)
-        self.contact_tab.contact_pts_button = QPushButton("Mark Contact Points")
-        self.contact_tab.layout().insertRow(3, self.contact_tab.contact_pts_button)
-        self.tabs.addTab(self.contact_tab, "Contact angle")
 
         self.contact_tab_alt = AnalysisTab(show_contact_angle=True)
         self.contact_tab_alt.detect_substrate_button = QPushButton("Detect Substrate Line")
@@ -184,6 +172,8 @@ class BaseMainWindow(QMainWindow):
         self.contact_tab_alt.contact_pts_button = QPushButton("Mark Contact Points")
         self.contact_tab_alt.layout().insertRow(3, self.contact_tab_alt.contact_pts_button)
         self.tabs.addTab(self.contact_tab_alt, "Contact angle Alt")
+
+        self.tabs.addTab(classic_widget, "Detection Test")
 
         # Connect after tabs exist so currentChanged doesn't fire early
         self.tabs.currentChanged.connect(self._update_tool_visibility)
@@ -198,25 +188,6 @@ class BaseMainWindow(QMainWindow):
         self.calibration_tab.detect_needle_button.clicked.connect(self.detect_needle)
         self.pendant_tab.analyze_button.clicked.connect(
             lambda: self._run_analysis("pendant")
-        )
-        if self.contact_tab.substrate_button is not None:
-            self.contact_tab.substrate_button.clicked.connect(
-                self._substrate_button_clicked
-            )
-        if hasattr(self.contact_tab, "detect_substrate_button"):
-            self.contact_tab.detect_substrate_button.clicked.connect(
-                self._detect_substrate_line
-            )
-        if hasattr(self.contact_tab, "side_button"):
-            self.contact_tab.side_button.clicked.connect(
-                self._select_side_button_clicked
-            )
-        if hasattr(self.contact_tab, "contact_pts_button"):
-            self.contact_tab.contact_pts_button.clicked.connect(
-                self._contact_pts_button_clicked
-            )
-        self.contact_tab.analyze_button.clicked.connect(
-            lambda: self._run_analysis("contact-angle")
         )
         if self.contact_tab_alt.substrate_button is not None:
             self.contact_tab_alt.substrate_button.clicked.connect(
@@ -317,7 +288,7 @@ class BaseMainWindow(QMainWindow):
 
     def _run_analysis(self, method: str) -> None:
         self.analysis_method = method
-        if method in {"contact-angle", "contact-angle-alt"} and self.substrate_line_item is None:
+        if method == "contact-angle-alt" and self.substrate_line_item is None:
             QMessageBox.warning(
                 self,
                 "Contact Angle",
@@ -471,7 +442,7 @@ class BaseMainWindow(QMainWindow):
         self.parameter_panel.set_scale_display(0.0)
         self.calibration_tab.clear_metrics()
         self.pendant_tab.clear_metrics()
-        self.contact_tab.clear_metrics()
+        self.contact_tab_alt.clear_metrics()
         self.metrics_panel.clear_metrics()
 
     def _display_image(self, img: np.ndarray) -> None:
@@ -747,7 +718,7 @@ class BaseMainWindow(QMainWindow):
                     (self.manual_p1[0] - x1, self.manual_p1[1] - y1),
                     (self.manual_p2[0] - x1, self.manual_p2[1] - y1),
                 )
-            sm = analyze_sessile(roi, helpers, substrate, contact_points=cp)
+            sm = analyze_sessile_alt(roi, helpers, substrate, contact_points=cp)
             sm.contour += np.array([x1, y1])
             sm.apex = (sm.apex[0] + x1, sm.apex[1] + y1)
             sm.diameter_line = (
@@ -761,8 +732,8 @@ class BaseMainWindow(QMainWindow):
                 (sm.substrate_line[1][0] + x1, sm.substrate_line[1][1] + y1),
             )
             metrics = sm.derived
-            panel = self.contact_tab
-            overlay = draw_sessile_overlays(self.image, sm)
+            panel = self.contact_tab_alt
+            overlay = draw_sessile_overlays_alt(self.image, sm)
 
         panel.set_metrics(
             height=metrics["height_mm"],
@@ -1113,7 +1084,7 @@ class BaseMainWindow(QMainWindow):
 
     def _update_tool_visibility(self, index: int | None = None) -> None:
         widget = self.tabs.currentWidget()
-        is_contact = widget in {self.contact_tab, self.contact_tab_alt}
+        is_contact = widget is self.contact_tab_alt
         self.draw_substrate_action.setVisible(is_contact)
         if not is_contact:
             self.draw_substrate_action.setChecked(False)

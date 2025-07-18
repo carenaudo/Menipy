@@ -805,3 +805,9 @@ initialization. All tests still pass (53 passed).
 
 **Summary:** Updated `find_contact_points` to pick points along the substrate line nearest to user guesses using projections. Modified `compute_apex` to favor the upper-most point when multiple maxima exist and choose the candidate centered by `x`. Unit test `test_find_apex_and_contact` passes.
 
+## Entry 135 - Remove legacy contact angle tab
+
+**Task:** Drop the obsolete contact-angle tab and reorder GUI tabs.
+
+**Summary:** Deleted the regular contact angle tab from `BaseMainWindow` and adjusted logic to rely solely on the alternative implementation. The remaining tabs are now ordered as Calibration, Pendant Drop, Contact Angle Alt and Detection Test. Updated control options, analysis methods, and GUI tests accordingly.
+

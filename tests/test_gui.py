@@ -76,10 +76,10 @@ def test_tab_widget_setup():
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     window = MainWindow()
     assert window.tabs.count() == 4
-    assert window.tabs.tabText(0) == "Detection Test"
-    assert window.tabs.tabText(1) == "Calibration"
-    assert window.tabs.tabText(2) == "Pendant drop"
-    assert window.tabs.tabText(3) == "Contact angle"
+    assert window.tabs.tabText(0) == "Calibration"
+    assert window.tabs.tabText(1) == "Pendant drop"
+    assert window.tabs.tabText(2) == "Contact angle Alt"
+    assert window.tabs.tabText(3) == "Detection Test"
     window.close()
     app.quit()
 
@@ -597,16 +597,16 @@ def test_substrate_line_updates_metrics(tmp_path):
     window.px_per_mm_drop = 10.0
     window.substrate_line_item = SubstrateLineItem(QLineF(10, 38, 30, 38))
     window.graphics_scene.addItem(window.substrate_line_item)
-    window._run_analysis("contact-angle")
-    before = window.contact_tab.width_label.text()
+    window._run_analysis("contact-angle-alt")
+    before = window.contact_tab_alt.width_label.text()
     line = window.substrate_line_item.line()
     line.translate(0, -2)
     window.substrate_line_item.setLine(line)
     QtWidgets.QApplication.processEvents()
-    after = window.contact_tab.width_label.text()
+    after = window.contact_tab_alt.width_label.text()
     assert before == after
-    window._run_analysis("contact-angle")
-    after = window.contact_tab.width_label.text()
+    window._run_analysis("contact-angle-alt")
+    after = window.contact_tab_alt.width_label.text()
     window.close()
     app.quit()
     assert before != after
@@ -628,16 +628,16 @@ def test_contact_tab_draw_button(tmp_path):
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     window = MainWindow()
     window.load_image(path)
-    assert window.contact_tab.substrate_button is not None
-    window.contact_tab.substrate_button.click()
+    assert window.contact_tab_alt.substrate_button is not None
+    window.contact_tab_alt.substrate_button.click()
     assert window.draw_substrate_action.isChecked()
     with patch("PySide6.QtWidgets.QMessageBox.warning") as warn:
-        window._run_analysis("contact-angle")
+        window._run_analysis("contact-angle-alt")
         assert warn.called
     window.substrate_line_item = SubstrateLineItem(QLineF(1, 10, 18, 10))
     window.graphics_scene.addItem(window.substrate_line_item)
     with patch("PySide6.QtWidgets.QMessageBox.warning") as warn:
-        window._run_analysis("contact-angle")
+        window._run_analysis("contact-angle-alt")
         assert not warn.called
     window.close()
     app.quit()
@@ -659,7 +659,7 @@ def test_contact_tab_detect_button(tmp_path):
     window = MainWindow()
     window.load_image(path)
     window.drop_rect = (0, 10, 39, 39)
-    window.contact_tab.detect_substrate_button.click()
+    window.contact_tab_alt.detect_substrate_button.click()
     assert window.substrate_line_item is not None
     line = window.substrate_line_item.line()
     ang = np.degrees(np.arctan2(line.y2() - line.y1(), line.x2() - line.x1()))
@@ -688,14 +688,14 @@ def test_contact_tab_side_button(tmp_path):
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     window = MainWindow()
     window.load_image(path)
-    assert window.contact_tab.side_button is not None
+    assert window.contact_tab_alt.side_button is not None
     with patch("PySide6.QtWidgets.QMessageBox.information") as info:
-        window.contact_tab.side_button.click()
+        window.contact_tab_alt.side_button.click()
         assert info.called
     window.substrate_line_item = SubstrateLineItem(QLineF(1, 10, 18, 10))
     window.graphics_scene.addItem(window.substrate_line_item)
     with patch("PySide6.QtWidgets.QMessageBox.information") as info:
-        window.contact_tab.side_button.click()
+        window.contact_tab_alt.side_button.click()
         assert not info.called
     window.close()
     app.quit()
@@ -795,14 +795,14 @@ def test_clear_analysis_resets_metrics(tmp_path):
     window.load_image(path)
 
     window.pendant_tab.set_metrics(height=1.0)
-    window.contact_tab.set_metrics(diameter=2.0)
+    window.contact_tab_alt.set_metrics(diameter=2.0)
     window.metrics_panel.set_metrics(ift=3.0, contact_angle=40.0)
 
     window.clear_analysis_button.click()
 
     assert window.metrics_panel.ift_label.text() == "0.0"
     assert window.pendant_tab.height_label.text() == "0.0000"
-    assert window.contact_tab.diameter_label.text() == "0.0000"
+    assert window.contact_tab_alt.diameter_label.text() == "0.0000"
     window.close()
     app.quit()
 
