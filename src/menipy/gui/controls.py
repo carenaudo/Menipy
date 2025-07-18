@@ -217,7 +217,7 @@ class DropAnalysisPanel(QWidget):
         layout = QFormLayout(self)
 
         self.method_combo = QComboBox()
-        self.method_combo.addItems(["pendant", "contact-angle"])
+        self.method_combo.addItems(["pendant", "contact-angle-alt"])
         layout.addRow("Method", self.method_combo)
 
         self.needle_region_button = QPushButton("Needle Region")
