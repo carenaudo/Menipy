@@ -816,3 +816,8 @@ initialization. All tests still pass (53 passed).
 **Task:** Ensure apex selection centers multiple candidates.
 
 **Summary:** Updated `_apex_point` in `processing.metrics` to average the horizontal positions when multiple contour points share the extreme distance to the substrate line. Added test `test_apex_point_middle` verifying that sessile and pendant metrics return the centered apex.
+## Entry 137 - Pendant apex median
+
+**Task:** Select the central apex when multiple pendant candidates exist.
+
+**Summary:** Modified `_apex_point` to return the candidate whose projection on the substrate line lies in the middle of all extreme points. `find_apex_index` now mirrors this by choosing the median-x point when several share the extremal height.

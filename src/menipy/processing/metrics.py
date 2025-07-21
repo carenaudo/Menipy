@@ -15,9 +15,11 @@ def _apex_point(
 ) -> np.ndarray:
     """Return the apex relative to ``line_pt``/``line_dir``.
 
-    When several contour points share the extreme distance to the substrate
-    line, their mean coordinate is used.  This ensures a centred apex for
-    symmetric silhouettes.
+    The apex is taken as the contour point with the largest (sessile) or
+    smallest (pendant) signed distance to the substrate line.  If several
+    points share that extreme distance, the candidate whose projection onto
+    the substrate line is in the middle of the group is returned.  This
+    avoids biasing the apex toward either side when a flat region occurs.
     """
 
     dist = _signed_distance(contour, line_pt, line_dir)
@@ -32,7 +34,11 @@ def _apex_point(
     if len(idxs) == 1:
         return pts[0]
 
-    return pts.mean(axis=0)
+    # choose the candidate centred along the substrate direction
+    t = (pts - line_pt) @ line_dir
+    order = np.argsort(t)
+    mid = len(order) // 2
+    return pts[order[mid]]
 
 
 def metrics_sessile(
