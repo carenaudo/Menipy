@@ -54,15 +54,24 @@ def _max_horizontal_diameter(contour: np.ndarray) -> tuple[int, float, int, int]
 
 
 def find_apex_index(contour: np.ndarray, mode: str) -> int:
-    """Return the index of the apex point."""
+    """Return the index of the apex point.
+
+    When multiple points share the extremal y-coordinate, the candidate whose
+    ``x`` value is in the middle of the group is selected.  This mirrors the
+    behaviour of :func:`_apex_point` and keeps the apex centred.
+    """
     if mode == "pendant":
         y_ext = contour[:, 1].max()
-        candidates = np.where(contour[:, 1] == y_ext)[0]
+        idxs = np.where(contour[:, 1] == y_ext)[0]
     else:
         y_ext = contour[:, 1].min()
-        candidates = np.where(contour[:, 1] == y_ext)[0]
-    mid = len(candidates) // 2
-    return int(candidates[mid])
+        idxs = np.where(contour[:, 1] == y_ext)[0]
+    if len(idxs) == 1:
+        return int(idxs[0])
+    xs = contour[idxs, 0]
+    order = np.argsort(xs)
+    mid = len(order) // 2
+    return int(idxs[order[mid]])
 
 
 def compute_drop_metrics(
