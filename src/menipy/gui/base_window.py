@@ -69,9 +69,9 @@ from ..analysis import (
 )
 from ..pipelines import (
     analyze_pendant,
-    analyze_sessile,
+    analyze_sessile_alt,
     draw_pendant_overlays,
-    draw_sessile_overlays,
+    draw_sessile_overlays_alt,
 )
 from ..pipelines.pendant import HelperBundle as PendantHelpers
 from ..pipelines.sessile import HelperBundle as SessileHelpers

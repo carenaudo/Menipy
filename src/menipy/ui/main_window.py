@@ -18,10 +18,8 @@ from ..gui.base_window import BaseMainWindow
 from ..gui.items import SubstrateLineItem
 from ..pipelines import (
     analyze_pendant,
-    analyze_sessile,
     analyze_sessile_alt,
     draw_pendant_overlays,
-    draw_sessile_overlays,
     draw_sessile_overlays_alt,
 )
 from ..pipelines.pendant import HelperBundle as PendantHelpers
