@@ -17,6 +17,21 @@ This guide explains how to set up the environment and launch the application.
    menipy
    ```
 
+## Quick start
+
+If you just want to run Menipy quickly, use one of these options depending on whether
+you installed the package or are running from the source tree.
+
+- Installed (recommended after `pip install -e .` or a normal install):
+   ```bash
+   menipy
+   ```
+
+- From source without installing:
+   ```bash
+   python -m src
+   ```
+
 ## Using a Virtual Environment
 
 Alternatively, you can create an isolated environment manually.
@@ -26,8 +41,10 @@ Alternatively, you can create an isolated environment manually.
    python -m venv .venv
    # On Linux/macOS
    source .venv/bin/activate
-   # On Windows
-   # .venv\Scripts\activate
+   # On Windows (cmd.exe)
+   .venv\Scripts\activate.bat
+   # On Windows (PowerShell)
+   # Run this in PowerShell:  . .venv\Scripts\Activate.ps1
    ```
 2. Install dependencies:
    ```bash
@@ -35,7 +52,8 @@ Alternatively, you can create an isolated environment manually.
    ```
 3. Launch the program directly:
    ```bash
-   python src/main.py
+   # If you have not installed the package, run the package entry module from source
+   python -m src
    ```
 
 Both approaches will start the Menipy GUI (once fully implemented) and allow you to analyze droplet images.
