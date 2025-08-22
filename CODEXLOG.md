@@ -821,3 +821,9 @@ initialization. All tests still pass (53 passed).
 **Task:** Select the central apex when multiple pendant candidates exist.
 
 **Summary:** Modified `_apex_point` to return the candidate whose projection on the substrate line lies in the middle of all extreme points. `find_apex_index` now mirrors this by choosing the median-x point when several share the extremal height.
+
+## Entry 138 - Python file overview
+
+**Task:** Create a repository-wide reference describing each Python file.
+
+**Summary:** Added `PYTHONFILES.md` listing the purpose of every Python source and test file, helping contributors locate functions quickly.
