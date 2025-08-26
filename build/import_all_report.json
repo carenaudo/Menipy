@@ -1,0 +1,470 @@
+[
+  {
+    "module": "menipy.analysis",
+    "path": "src\\menipy\\analysis\\__init__.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": [
+      "menipy",
+      "menipy.analysis",
+      "menipy.analysis.commons",
+      "menipy.analysis.pendant",
+      "menipy.analysis.plotting",
+      "menipy.analysis.sessile",
+      "menipy.analysis.sessile_alt",
+      "menipy.detection",
+      "menipy.detection.needle",
+      "menipy.detectors",
+      "menipy.detectors.geometry_alt",
+      "menipy.physics",
+      "menipy.physics.contact_geom"
+    ]
+  },
+  {
+    "module": "menipy.analysis.commons",
+    "path": "src\\menipy\\analysis\\commons.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.analysis.drop",
+    "path": "src\\menipy\\analysis\\drop.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": [
+      "menipy.analysis.drop",
+      "menipy.calibration",
+      "menipy.calibration.calibrator",
+      "menipy.models",
+      "menipy.models.drop_extras",
+      "menipy.models.geometry",
+      "menipy.models.physics",
+      "menipy.models.properties",
+      "menipy.models.surface_tension",
+      "menipy.processing",
+      "menipy.processing.classification",
+      "menipy.processing.detection",
+      "menipy.processing.geometry",
+      "menipy.processing.reader",
+      "menipy.processing.segmentation",
+      "menipy.processing.substrate"
+    ]
+  },
+  {
+    "module": "menipy.analysis.pendant",
+    "path": "src\\menipy\\analysis\\pendant.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.analysis.plotting",
+    "path": "src\\menipy\\analysis\\plotting.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.analysis.sessile",
+    "path": "src\\menipy\\analysis\\sessile.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.analysis.sessile_alt",
+    "path": "src\\menipy\\analysis\\sessile_alt.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.batch",
+    "path": "src\\menipy\\batch.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": [
+      "menipy.batch"
+    ]
+  },
+  {
+    "module": "menipy.calibration",
+    "path": "src\\menipy\\calibration\\__init__.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.calibration.calibrator",
+    "path": "src\\menipy\\calibration\\calibrator.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.cli",
+    "path": "src\\menipy\\cli.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": [
+      "menipy.cli"
+    ]
+  },
+  {
+    "module": "menipy.contact_angle",
+    "path": "src\\menipy\\contact_angle.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": [
+      "menipy.contact_angle"
+    ]
+  },
+  {
+    "module": "menipy.detection",
+    "path": "src\\menipy\\detection\\__init__.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.detection.droplet",
+    "path": "src\\menipy\\detection\\droplet.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": [
+      "menipy.detection.droplet"
+    ]
+  },
+  {
+    "module": "menipy.detection.needle",
+    "path": "src\\menipy\\detection\\needle.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.detection.substrate",
+    "path": "src\\menipy\\detection\\substrate.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": [
+      "menipy.detection.substrate"
+    ]
+  },
+  {
+    "module": "menipy.detectors",
+    "path": "src\\menipy\\detectors\\__init__.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.detectors.geometry_alt",
+    "path": "src\\menipy\\detectors\\geometry_alt.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.gui",
+    "path": "src\\menipy\\gui\\__init__.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": [
+      "menipy.gui",
+      "menipy.gui.base_window",
+      "menipy.gui.calibration_dialog",
+      "menipy.gui.controls",
+      "menipy.gui.image_view",
+      "menipy.gui.items",
+      "menipy.gui.overlay",
+      "menipy.pipelines",
+      "menipy.pipelines.pendant",
+      "menipy.pipelines.pendant.drawing",
+      "menipy.pipelines.pendant.geometry",
+      "menipy.pipelines.sessile",
+      "menipy.pipelines.sessile.drawing_alt",
+      "menipy.pipelines.sessile.geometry_alt",
+      "menipy.plugins",
+      "menipy.sharpen_plugin",
+      "menipy.ui",
+      "menipy.ui.main_window"
+    ]
+  },
+  {
+    "module": "menipy.gui.base_window",
+    "path": "src\\menipy\\gui\\base_window.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.gui.calibration_dialog",
+    "path": "src\\menipy\\gui\\calibration_dialog.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.gui.controls",
+    "path": "src\\menipy\\gui\\controls.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.gui.image_view",
+    "path": "src\\menipy\\gui\\image_view.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.gui.items",
+    "path": "src\\menipy\\gui\\items.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.gui.overlay",
+    "path": "src\\menipy\\gui\\overlay.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.gui",
+    "path": "src\\menipy\\gui.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.metrics",
+    "path": "src\\menipy\\metrics\\__init__.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": [
+      "menipy.metrics"
+    ]
+  },
+  {
+    "module": "menipy.metrics.metrics",
+    "path": "src\\menipy\\metrics\\metrics.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": [
+      "menipy.metrics.metrics"
+    ]
+  },
+  {
+    "module": "menipy.models",
+    "path": "src\\menipy\\models\\__init__.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.models.drop_extras",
+    "path": "src\\menipy\\models\\drop_extras.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.models.geometry",
+    "path": "src\\menipy\\models\\geometry.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.models.physics",
+    "path": "src\\menipy\\models\\physics.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.models.properties",
+    "path": "src\\menipy\\models\\properties.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.models.surface_tension",
+    "path": "src\\menipy\\models\\surface_tension.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.physics",
+    "path": "src\\menipy\\physics\\__init__.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.physics.contact_geom",
+    "path": "src\\menipy\\physics\\contact_geom.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.pipelines",
+    "path": "src\\menipy\\pipelines\\__init__.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.pipelines.pendant",
+    "path": "src\\menipy\\pipelines\\pendant\\__init__.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.pipelines.pendant.drawing",
+    "path": "src\\menipy\\pipelines\\pendant\\drawing.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.pipelines.pendant.geometry",
+    "path": "src\\menipy\\pipelines\\pendant\\geometry.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.pipelines.sessile",
+    "path": "src\\menipy\\pipelines\\sessile\\__init__.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.pipelines.sessile.drawing_alt",
+    "path": "src\\menipy\\pipelines\\sessile\\drawing_alt.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.pipelines.sessile.geometry_alt",
+    "path": "src\\menipy\\pipelines\\sessile\\geometry_alt.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.plugins",
+    "path": "src\\menipy\\plugins.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.processing",
+    "path": "src\\menipy\\processing\\__init__.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.processing.classification",
+    "path": "src\\menipy\\processing\\classification.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.processing.detection",
+    "path": "src\\menipy\\processing\\detection.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.processing.geometry",
+    "path": "src\\menipy\\processing\\geometry.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.processing.metrics",
+    "path": "src\\menipy\\processing\\metrics.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": [
+      "menipy.processing.metrics",
+      "menipy.processing.region"
+    ]
+  },
+  {
+    "module": "menipy.processing.reader",
+    "path": "src\\menipy\\processing\\reader.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.processing.region",
+    "path": "src\\menipy\\processing\\region.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.processing.segmentation",
+    "path": "src\\menipy\\processing\\segmentation.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.processing.substrate",
+    "path": "src\\menipy\\processing\\substrate.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.sharpen_plugin",
+    "path": "src\\menipy\\sharpen_plugin.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.ui",
+    "path": "src\\menipy\\ui\\__init__.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.ui.main_window",
+    "path": "src\\menipy\\ui\\main_window.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": []
+  },
+  {
+    "module": "menipy.utils",
+    "path": "src\\menipy\\utils.py",
+    "import_ok": true,
+    "error": null,
+    "new_loaded_modules": [
+      "menipy.utils"
+    ]
+  }
+]
