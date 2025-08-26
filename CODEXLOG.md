@@ -827,3 +827,14 @@ initialization. All tests still pass (53 passed).
 **Task:** Create a repository-wide reference describing each Python file.
 
 **Summary:** Added `PYTHONFILES.md` listing the purpose of every Python source and test file, helping contributors locate functions quickly.
+
+## Entry 139 - Import map
+
+**Task:** List imported modules for each Python file in src.
+
+**Summary:** Generated `IMPORTED.md` enumerating imports for all 59 Python files using AST parsing.
+## Entry 140 - Local import paths
+
+**Task:** Add file locations for internal imports in import map.
+
+**Summary:** Regenerated `IMPORTED.md` to append source file paths for modules within `src`, leaving third-party packages unchanged.
