@@ -76,7 +76,7 @@ from ..pipelines import (
 from ..pipelines.pendant import HelperBundle as PendantHelpers
 from ..pipelines.sessile import HelperBundle as SessileHelpers
 from .items import SubstrateLineItem
-from ..physics.contact_geom import geom_metrics
+#from ..physics.contact_geom import geom_metrics
 
 from ..detectors.geometry_alt import side_of_polyline
 

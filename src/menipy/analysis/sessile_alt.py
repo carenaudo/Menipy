@@ -6,57 +6,6 @@ import numpy as np
 
 from .commons import compute_drop_metrics, find_apex_index
 from ..pipelines.sessile.geometry_alt import line_params
-from ..detectors.geometry_alt import geom_metrics_alt
-
-
-def compute_metrics(
-    contour: np.ndarray,
-    px_per_mm: float,
-    substrate_line: tuple[tuple[float, float], tuple[float, float]] | None = None,
-    *,
-    keep_above: bool | None = None,
-) -> dict:
-    """Return sessile-drop metrics for ``contour``.
-
-    Parameters
-    ----------
-    contour:
-        Droplet contour points ``(x, y)``.
-    px_per_mm:
-        Calibration factor in pixels per millimetre.
-    substrate_line:
-        Two points defining the substrate line.
-    keep_above:
-        If ``True`` keep contour points above the line, if ``False`` keep the
-        points below it. ``None`` selects the side with the larger area.
-    """
-    if substrate_line is None:
-        return compute_drop_metrics(contour, px_per_mm, "contact-angle")
-
-    apex_idx = find_apex_index(contour, "contact-angle")
-    poly = np.array([substrate_line[0], substrate_line[1]], float)
-    geo = geom_metrics_alt(poly, contour, px_per_mm, keep_above=keep_above)
-    droplet_poly = geo.pop("droplet_poly")
-    metrics = compute_drop_metrics(
-        droplet_poly.astype(float),
-        px_per_mm,
-        "contact-angle",
-        substrate_line=substrate_line,
-    )
-    metrics.update(geo)
-
-    try:
-        cp1, cp2 = contact_points_from_spline(contour, substrate_line, delta=0.5)
-        metrics["contact_line"] = (
-            (int(round(cp1[0])), int(round(cp1[1]))),
-            (int(round(cp2[0])), int(round(cp2[1]))),
-        )
-    except Exception:
-        pass
-
-    return metrics
-
-__all__ = ["compute_metrics"]
 
 
 def contact_points_from_spline(

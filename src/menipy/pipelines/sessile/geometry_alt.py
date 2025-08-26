@@ -5,10 +5,75 @@ from typing import Literal
 import numpy as np
 import cv2
 
-from ...analysis import compute_sessile_metrics_alt
+# deferred import of compute_sessile_metrics_alt to avoid circular import
+# (it will be imported inside analyze() where it's actually used)
 #from ...physics.contact_geom import line_params
-from ...detectors.geometry_alt import split_contour_by_line
+#from ...detectors.geometry_alt import split_contour_by_line
 import math
+
+
+# detection functions
+def split_contour_by_line(
+    contour: np.ndarray,
+    line_pt: np.ndarray,
+    line_dir: np.ndarray,
+    *,
+    keep_above: bool = True,
+) -> np.ndarray:
+    """Return the contour segment on one side of the substrate line."""
+    return mirror_filter(contour, line_pt, line_dir, keep_above=keep_above)
+
+def mirror_filter(
+    contour: np.ndarray,
+    line_pt: np.ndarray,
+    line_dir: np.ndarray,
+    *,
+    keep_above: bool = True,
+) -> np.ndarray:
+    """Return contour points on one side of the substrate line.
+
+    Parameters
+    ----------
+    contour:
+        Polyline of shape ``(N, 2)``.
+    line_pt:
+        A point on the substrate line.
+    line_dir:
+        Direction vector of the substrate line.
+    keep_above:
+        If ``True`` keep points on the left side of ``line_dir``,
+        otherwise keep the right side.
+    """
+    if contour.ndim != 2 or contour.shape[1] != 2:
+        raise ValueError("contour must have shape (N,2)")
+    line_pt = np.asarray(line_pt, float)
+    line_dir = np.asarray(line_dir, float)
+    a = line_pt
+    b = line_pt + line_dir
+    poly = np.vstack([contour, contour[0]])
+    clipped = _clip_halfplane(poly, a, b, keep_left=keep_above)
+    if len(clipped) > 0 and np.allclose(clipped[0], clipped[-1]):
+        clipped = clipped[:-1]
+    return clipped
+
+def _clip_halfplane(poly: np.ndarray, a: np.ndarray, b: np.ndarray, keep_left: bool) -> np.ndarray:
+    """Clip ``poly`` with the half-plane defined by line ``a``-``b``."""
+    res: list[np.ndarray] = []
+    n = len(poly)
+    ab = b - a
+    for i in range(n):
+        p = poly[i]
+        q = poly[(i + 1) % n]
+        cp_p = np.cross(ab, p - a)
+        cp_q = np.cross(ab, q - a)
+        in_p = cp_p >= 0 if keep_left else cp_p <= 0
+        in_q = cp_q >= 0 if keep_left else cp_q <= 0
+        if in_p:
+            res.append(p)
+        if in_p ^ in_q:
+            t = cp_p / (cp_p - cp_q)
+            res.append(p + t * (q - p))
+    return np.array(res)
 
 def line_params(p1_px: tuple[float, float], p2_px: tuple[float, float]) -> tuple[float, float, float]:
     """Return (a, b, c) for line ax + by + c = 0 normalised."""
@@ -397,6 +462,8 @@ def analyze(
     cp1, cp2 = find_contact_points(clean_contour, substrate, p1_guess, p2_guess)
     apex_pt = compute_apex(clean_contour, substrate, cp1, cp2)
 
+    # import here to avoid circular import at module import time
+    from ...analysis import compute_sessile_metrics_alt
     metrics = compute_sessile_metrics_alt(
         clean_contour.astype(float),
         helpers.px_per_mm,

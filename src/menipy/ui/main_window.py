@@ -27,7 +27,7 @@ from ..pipelines.sessile import HelperBundle as SessileHelpers
 from ..detection.needle import detect_vertical_edges
 from ..detection.substrate import detect_substrate_line
 from ..analysis.commons import extract_external_contour
-from ..physics.contact_geom import geom_metrics
+#from ..physics.contact_geom import geom_metrics
 
 
 class PluginDialog(QDialog):
