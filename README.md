@@ -4,6 +4,8 @@ Menipy is a Python-based toolkit aimed at analyzing droplet shapes from images. 
 
 These sub-agents read the step-by-step instructions in `PLAN.md` and consult the reference material under `doc/` to automatically scaffold the project, implement processing and modeling algorithms, build the PySide6 GUI, and configure testing and packaging.
 
+<img width="1909" height="1028" alt="image" src="https://github.com/user-attachments/assets/45fd8f53-98cc-4c6d-bf59-0e0687c5c7fe" />
+
 ## Repository Overview
 
 - **AGENTS.md** – roles for Documentation, Scaffold, Environment, Processing, Modeling, GUI, Batch, and CI & Packaging agents.
