@@ -6,6 +6,12 @@ These sub-agents read the step-by-step instructions in `PLAN.md` and consult the
 
 <img width="1909" height="1028" alt="image" src="https://github.com/user-attachments/assets/45fd8f53-98cc-4c6d-bf59-0e0687c5c7fe" />
 
+# ​​ Disclaimer
+
+**This software is under development and is *not production-ready***. It is *not intended to replace any commercial or non-commercial tools or software*. The values reported by this software **may be incorrect or inaccurate**, and **the developers assume no responsibility** whatsoever for how the software is used or for any consequences arising from its use.
+
+Use at your own risk.
+
 ## Repository Overview
 
 - **AGENTS.md** – roles for Documentation, Scaffold, Environment, Processing, Modeling, GUI, Batch, and CI & Packaging agents.
