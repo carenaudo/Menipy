@@ -26,7 +26,7 @@ def test_contact_points_rotated():
     line = ((-40.0, 0.0), (40.0, 0.0))
     line_r = (tuple(rot @ np.array(line[0])), tuple(rot @ np.array(line[1])))
     p1, p2 = contact_points_from_spline(contour_r, line_r, delta=0.5)
-    from menipy.physics.contact_geom import line_params
+    from ..pipelines.sessile.geometry_alt import line_params
     a, b, c = line_params(line_r[0], line_r[1])
     assert abs(a * p1[0] + b * p1[1] + c) < 1e-2
     assert abs(a * p2[0] + b * p2[1] + c) < 1e-2

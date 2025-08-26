@@ -6,9 +6,20 @@ import numpy as np
 import cv2
 
 from ...analysis import compute_sessile_metrics_alt
-from ...physics.contact_geom import line_params
+#from ...physics.contact_geom import line_params
 from ...detectors.geometry_alt import split_contour_by_line
 import math
+
+def line_params(p1_px: tuple[float, float], p2_px: tuple[float, float]) -> tuple[float, float, float]:
+    """Return (a, b, c) for line ax + by + c = 0 normalised."""
+    x1, y1 = p1_px
+    x2, y2 = p2_px
+    a, b = y1 - y2, x2 - x1
+    c = x1 * y2 - x2 * y1
+    norm = math.hypot(a, b)
+    if norm == 0:
+        return 0.0, 0.0, 0.0
+    return a / norm, b / norm, c / norm
 
 
 def filter_contours_by_size(

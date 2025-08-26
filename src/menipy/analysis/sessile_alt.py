@@ -5,8 +5,8 @@ from __future__ import annotations
 import numpy as np
 
 from .commons import compute_drop_metrics, find_apex_index
+from ..pipelines.sessile.geometry_alt import line_params
 from ..detectors.geometry_alt import geom_metrics_alt
-from ..physics.contact_geom import line_params
 
 
 def compute_metrics(

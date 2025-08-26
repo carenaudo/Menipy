@@ -5,8 +5,8 @@ from __future__ import annotations
 import numpy as np
 
 from .commons import compute_drop_metrics, find_apex_index
-from ..physics.contact_geom import geom_metrics, line_params
-
+#from ..physics.contact_geom import geom_metrics
+from ..pipelines.sessile.geometry_alt import line_params
 
 def compute_metrics(
     contour: np.ndarray,
