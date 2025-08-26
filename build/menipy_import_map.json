@@ -1,0 +1,364 @@
+{
+  "imports": {
+    "src/menipy/analysis/__init__.py": [
+      "src/menipy/analysis/commons.py",
+      "src/menipy/analysis/pendant.py",
+      "src/menipy/analysis/plotting.py",
+      "src/menipy/analysis/sessile.py",
+      "src/menipy/analysis/sessile_alt.py",
+      "src/menipy/detection/needle.py"
+    ],
+    "src/menipy/analysis/commons.py": [
+      "src/menipy/models/__init__.py",
+      "src/menipy/models/geometry.py",
+      "src/menipy/physics/contact_geom.py"
+    ],
+    "src/menipy/analysis/drop.py": [
+      "src/menipy/models/__init__.py",
+      "src/menipy/models/geometry.py",
+      "src/menipy/physics/contact_geom.py"
+    ],
+    "src/menipy/analysis/pendant.py": [
+      "src/menipy/analysis/commons.py"
+    ],
+    "src/menipy/analysis/plotting.py": [],
+    "src/menipy/analysis/sessile.py": [
+      "src/menipy/analysis/commons.py",
+      "src/menipy/physics/contact_geom.py"
+    ],
+    "src/menipy/analysis/sessile_alt.py": [
+      "src/menipy/analysis/commons.py",
+      "src/menipy/detectors/geometry_alt.py",
+      "src/menipy/physics/contact_geom.py"
+    ],
+    "src/menipy/batch.py": [
+      "src/menipy/processing/reader.py",
+      "src/menipy/processing/segmentation.py"
+    ],
+    "src/menipy/calibration/__init__.py": [
+      "src/menipy/calibration/calibrator.py"
+    ],
+    "src/menipy/calibration/calibrator.py": [],
+    "src/menipy/cli.py": [],
+    "src/menipy/contact_angle.py": [],
+    "src/menipy/detection/__init__.py": [],
+    "src/menipy/detection/droplet.py": [
+      "src/menipy/physics/contact_geom.py"
+    ],
+    "src/menipy/detection/needle.py": [],
+    "src/menipy/detection/substrate.py": [],
+    "src/menipy/detectors/__init__.py": [
+      "src/menipy/detectors/geometry_alt.py"
+    ],
+    "src/menipy/detectors/geometry_alt.py": [
+      "src/menipy/physics/contact_geom.py"
+    ],
+    "src/menipy/gui/__init__.py": [
+      "src/menipy/gui/calibration_dialog.py",
+      "src/menipy/gui/controls.py",
+      "src/menipy/gui/image_view.py",
+      "src/menipy/gui/items.py",
+      "src/menipy/gui/overlay.py",
+      "src/menipy/ui/__init__.py"
+    ],
+    "src/menipy/gui/base_window.py": [
+      "src/menipy/analysis/__init__.py",
+      "src/menipy/calibration/__init__.py",
+      "src/menipy/detectors/geometry_alt.py",
+      "src/menipy/gui/controls.py",
+      "src/menipy/gui/image_view.py",
+      "src/menipy/gui/items.py",
+      "src/menipy/models/geometry.py",
+      "src/menipy/models/properties.py",
+      "src/menipy/physics/contact_geom.py",
+      "src/menipy/pipelines/__init__.py",
+      "src/menipy/pipelines/pendant/__init__.py",
+      "src/menipy/pipelines/sessile/__init__.py",
+      "src/menipy/processing/__init__.py",
+      "src/menipy/processing/reader.py",
+      "src/menipy/processing/segmentation.py"
+    ],
+    "src/menipy/gui/calibration_dialog.py": [
+      "src/menipy/calibration/__init__.py"
+    ],
+    "src/menipy/gui/controls.py": [],
+    "src/menipy/gui/image_view.py": [],
+    "src/menipy/gui/items.py": [],
+    "src/menipy/gui/overlay.py": [],
+    "src/menipy/gui.py": [
+      "src/menipy/ui/__init__.py"
+    ],
+    "src/menipy/metrics/__init__.py": [],
+    "src/menipy/metrics/metrics.py": [],
+    "src/menipy/models/__init__.py": [
+      "src/menipy/models/drop_extras.py",
+      "src/menipy/models/geometry.py",
+      "src/menipy/models/physics.py",
+      "src/menipy/models/properties.py",
+      "src/menipy/models/surface_tension.py"
+    ],
+    "src/menipy/models/drop_extras.py": [],
+    "src/menipy/models/geometry.py": [],
+    "src/menipy/models/physics.py": [],
+    "src/menipy/models/properties.py": [
+      "src/menipy/models/geometry.py",
+      "src/menipy/processing/segmentation.py"
+    ],
+    "src/menipy/models/surface_tension.py": [],
+    "src/menipy/physics/__init__.py": [],
+    "src/menipy/physics/contact_geom.py": [],
+    "src/menipy/pipelines/__init__.py": [
+      "src/menipy/pipelines/pendant/drawing.py",
+      "src/menipy/pipelines/pendant/geometry.py",
+      "src/menipy/pipelines/sessile/drawing_alt.py",
+      "src/menipy/pipelines/sessile/geometry_alt.py"
+    ],
+    "src/menipy/pipelines/pendant/__init__.py": [
+      "src/menipy/pipelines/pendant/drawing.py",
+      "src/menipy/pipelines/pendant/geometry.py"
+    ],
+    "src/menipy/pipelines/pendant/drawing.py": [
+      "src/menipy/gui/overlay.py",
+      "src/menipy/pipelines/pendant/geometry.py"
+    ],
+    "src/menipy/pipelines/pendant/geometry.py": [
+      "src/menipy/analysis/__init__.py"
+    ],
+    "src/menipy/pipelines/sessile/__init__.py": [
+      "src/menipy/pipelines/sessile/drawing_alt.py",
+      "src/menipy/pipelines/sessile/geometry_alt.py"
+    ],
+    "src/menipy/pipelines/sessile/drawing_alt.py": [
+      "src/menipy/gui/overlay.py",
+      "src/menipy/pipelines/sessile/geometry_alt.py"
+    ],
+    "src/menipy/pipelines/sessile/geometry_alt.py": [
+      "src/menipy/analysis/__init__.py",
+      "src/menipy/detectors/geometry_alt.py",
+      "src/menipy/gui/overlay.py",
+      "src/menipy/physics/contact_geom.py"
+    ],
+    "src/menipy/plugins.py": [
+      "src/menipy/sharpen_plugin.py"
+    ],
+    "src/menipy/processing/__init__.py": [
+      "src/menipy/processing/classification.py",
+      "src/menipy/processing/detection.py",
+      "src/menipy/processing/reader.py",
+      "src/menipy/processing/segmentation.py",
+      "src/menipy/processing/substrate.py"
+    ],
+    "src/menipy/processing/classification.py": [
+      "src/menipy/calibration/__init__.py",
+      "src/menipy/processing/detection.py"
+    ],
+    "src/menipy/processing/detection.py": [],
+    "src/menipy/processing/geometry.py": [],
+    "src/menipy/processing/metrics.py": [
+      "src/menipy/models/properties.py",
+      "src/menipy/processing/region.py"
+    ],
+    "src/menipy/processing/reader.py": [],
+    "src/menipy/processing/region.py": [],
+    "src/menipy/processing/segmentation.py": [],
+    "src/menipy/processing/substrate.py": [
+      "src/menipy/processing/geometry.py"
+    ],
+    "src/menipy/sharpen_plugin.py": [],
+    "src/menipy/ui/__init__.py": [
+      "src/menipy/ui/main_window.py"
+    ],
+    "src/menipy/ui/main_window.py": [
+      "src/menipy/analysis/__init__.py",
+      "src/menipy/analysis/commons.py",
+      "src/menipy/detection/needle.py",
+      "src/menipy/detection/substrate.py",
+      "src/menipy/gui/base_window.py",
+      "src/menipy/gui/items.py",
+      "src/menipy/physics/contact_geom.py",
+      "src/menipy/pipelines/__init__.py",
+      "src/menipy/pipelines/pendant/__init__.py",
+      "src/menipy/pipelines/sessile/__init__.py"
+    ],
+    "src/menipy/utils.py": []
+  },
+  "imported_by": {
+    "src/menipy/analysis/commons.py": [
+      "src/menipy/analysis/__init__.py",
+      "src/menipy/analysis/pendant.py",
+      "src/menipy/analysis/sessile.py",
+      "src/menipy/analysis/sessile_alt.py",
+      "src/menipy/ui/main_window.py"
+    ],
+    "src/menipy/analysis/pendant.py": [
+      "src/menipy/analysis/__init__.py"
+    ],
+    "src/menipy/analysis/plotting.py": [
+      "src/menipy/analysis/__init__.py"
+    ],
+    "src/menipy/analysis/sessile.py": [
+      "src/menipy/analysis/__init__.py"
+    ],
+    "src/menipy/analysis/sessile_alt.py": [
+      "src/menipy/analysis/__init__.py"
+    ],
+    "src/menipy/detection/needle.py": [
+      "src/menipy/analysis/__init__.py",
+      "src/menipy/ui/main_window.py"
+    ],
+    "src/menipy/models/__init__.py": [
+      "src/menipy/analysis/commons.py",
+      "src/menipy/analysis/drop.py"
+    ],
+    "src/menipy/models/geometry.py": [
+      "src/menipy/analysis/commons.py",
+      "src/menipy/analysis/drop.py",
+      "src/menipy/gui/base_window.py",
+      "src/menipy/models/__init__.py",
+      "src/menipy/models/properties.py"
+    ],
+    "src/menipy/physics/contact_geom.py": [
+      "src/menipy/analysis/commons.py",
+      "src/menipy/analysis/drop.py",
+      "src/menipy/analysis/sessile.py",
+      "src/menipy/analysis/sessile_alt.py",
+      "src/menipy/detection/droplet.py",
+      "src/menipy/detectors/geometry_alt.py",
+      "src/menipy/gui/base_window.py",
+      "src/menipy/pipelines/sessile/geometry_alt.py",
+      "src/menipy/ui/main_window.py"
+    ],
+    "src/menipy/detectors/geometry_alt.py": [
+      "src/menipy/analysis/sessile_alt.py",
+      "src/menipy/detectors/__init__.py",
+      "src/menipy/gui/base_window.py",
+      "src/menipy/pipelines/sessile/geometry_alt.py"
+    ],
+    "src/menipy/processing/reader.py": [
+      "src/menipy/batch.py",
+      "src/menipy/gui/base_window.py",
+      "src/menipy/processing/__init__.py"
+    ],
+    "src/menipy/processing/segmentation.py": [
+      "src/menipy/batch.py",
+      "src/menipy/gui/base_window.py",
+      "src/menipy/models/properties.py",
+      "src/menipy/processing/__init__.py"
+    ],
+    "src/menipy/calibration/calibrator.py": [
+      "src/menipy/calibration/__init__.py"
+    ],
+    "src/menipy/gui/calibration_dialog.py": [
+      "src/menipy/gui/__init__.py"
+    ],
+    "src/menipy/gui/controls.py": [
+      "src/menipy/gui/__init__.py",
+      "src/menipy/gui/base_window.py"
+    ],
+    "src/menipy/gui/image_view.py": [
+      "src/menipy/gui/__init__.py",
+      "src/menipy/gui/base_window.py"
+    ],
+    "src/menipy/gui/items.py": [
+      "src/menipy/gui/__init__.py",
+      "src/menipy/gui/base_window.py",
+      "src/menipy/ui/main_window.py"
+    ],
+    "src/menipy/gui/overlay.py": [
+      "src/menipy/gui/__init__.py",
+      "src/menipy/pipelines/pendant/drawing.py",
+      "src/menipy/pipelines/sessile/drawing_alt.py",
+      "src/menipy/pipelines/sessile/geometry_alt.py"
+    ],
+    "src/menipy/ui/__init__.py": [
+      "src/menipy/gui.py",
+      "src/menipy/gui/__init__.py"
+    ],
+    "src/menipy/analysis/__init__.py": [
+      "src/menipy/gui/base_window.py",
+      "src/menipy/pipelines/pendant/geometry.py",
+      "src/menipy/pipelines/sessile/geometry_alt.py",
+      "src/menipy/ui/main_window.py"
+    ],
+    "src/menipy/calibration/__init__.py": [
+      "src/menipy/gui/base_window.py",
+      "src/menipy/gui/calibration_dialog.py",
+      "src/menipy/processing/classification.py"
+    ],
+    "src/menipy/models/properties.py": [
+      "src/menipy/gui/base_window.py",
+      "src/menipy/models/__init__.py",
+      "src/menipy/processing/metrics.py"
+    ],
+    "src/menipy/pipelines/__init__.py": [
+      "src/menipy/gui/base_window.py",
+      "src/menipy/ui/main_window.py"
+    ],
+    "src/menipy/pipelines/pendant/__init__.py": [
+      "src/menipy/gui/base_window.py",
+      "src/menipy/ui/main_window.py"
+    ],
+    "src/menipy/pipelines/sessile/__init__.py": [
+      "src/menipy/gui/base_window.py",
+      "src/menipy/ui/main_window.py"
+    ],
+    "src/menipy/processing/__init__.py": [
+      "src/menipy/gui/base_window.py"
+    ],
+    "src/menipy/models/drop_extras.py": [
+      "src/menipy/models/__init__.py"
+    ],
+    "src/menipy/models/physics.py": [
+      "src/menipy/models/__init__.py"
+    ],
+    "src/menipy/models/surface_tension.py": [
+      "src/menipy/models/__init__.py"
+    ],
+    "src/menipy/pipelines/pendant/drawing.py": [
+      "src/menipy/pipelines/__init__.py",
+      "src/menipy/pipelines/pendant/__init__.py"
+    ],
+    "src/menipy/pipelines/pendant/geometry.py": [
+      "src/menipy/pipelines/__init__.py",
+      "src/menipy/pipelines/pendant/__init__.py",
+      "src/menipy/pipelines/pendant/drawing.py"
+    ],
+    "src/menipy/pipelines/sessile/drawing_alt.py": [
+      "src/menipy/pipelines/__init__.py",
+      "src/menipy/pipelines/sessile/__init__.py"
+    ],
+    "src/menipy/pipelines/sessile/geometry_alt.py": [
+      "src/menipy/pipelines/__init__.py",
+      "src/menipy/pipelines/sessile/__init__.py",
+      "src/menipy/pipelines/sessile/drawing_alt.py"
+    ],
+    "src/menipy/sharpen_plugin.py": [
+      "src/menipy/plugins.py"
+    ],
+    "src/menipy/processing/classification.py": [
+      "src/menipy/processing/__init__.py"
+    ],
+    "src/menipy/processing/detection.py": [
+      "src/menipy/processing/__init__.py",
+      "src/menipy/processing/classification.py"
+    ],
+    "src/menipy/processing/substrate.py": [
+      "src/menipy/processing/__init__.py"
+    ],
+    "src/menipy/processing/region.py": [
+      "src/menipy/processing/metrics.py"
+    ],
+    "src/menipy/processing/geometry.py": [
+      "src/menipy/processing/substrate.py"
+    ],
+    "src/menipy/ui/main_window.py": [
+      "src/menipy/ui/__init__.py"
+    ],
+    "src/menipy/detection/substrate.py": [
+      "src/menipy/ui/main_window.py"
+    ],
+    "src/menipy/gui/base_window.py": [
+      "src/menipy/ui/main_window.py"
+    ]
+  }
+}
