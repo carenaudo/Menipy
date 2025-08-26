@@ -5,7 +5,6 @@ from typing import Literal
 import numpy as np
 import cv2
 
-from ...analysis import compute_sessile_metrics_alt
 #from ...physics.contact_geom import line_params
 from ...detectors.geometry_alt import split_contour_by_line
 import math
@@ -396,6 +395,7 @@ def analyze(
 
     cp1, cp2 = find_contact_points(clean_contour, substrate, p1_guess, p2_guess)
     apex_pt = compute_apex(clean_contour, substrate, cp1, cp2)
+    from ...analysis import compute_sessile_metrics_alt
 
     metrics = compute_sessile_metrics_alt(
         clean_contour.astype(float),

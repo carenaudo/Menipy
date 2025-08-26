@@ -838,3 +838,8 @@ initialization. All tests still pass (53 passed).
 **Task:** Add file locations for internal imports in import map.
 
 **Summary:** Regenerated `IMPORTED.md` to append source file paths for modules within `src`, leaving third-party packages unchanged.
+## Entry 141 - Break circular import in alt sessile pipeline
+
+**Task:** Fix circular import between analysis and pipeline modules.
+
+**Summary:** Deferred the import of `compute_sessile_metrics_alt` inside `pipelines/sessile/geometry_alt.analyze` so `line_params` can be imported without triggering a loop. Tests fail to run due to missing OpenCV dependencies.
