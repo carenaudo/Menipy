@@ -1,5 +1,9 @@
 # Menipy
 
+The current main branch is under current refactorization of file structure. **The main branch is currently NOT WORKINg.**
+To test the original Menipy code made with minimal interaction use the branch: **https://github.com/carenaudo/Menipy/tree/Min-Human-Interaction**
+
+
 Menipy is a Python-based toolkit aimed at analyzing droplet shapes from images. The goal is to create the software with minimal human involvement in the coding phase. Development is driven by CODEX, an AI agent that orchestrates several specialized sub-agents defined in `AGENTS.md`.
 
 These sub-agents read the step-by-step instructions in `PLAN.md` and consult the reference material under `doc/` to automatically scaffold the project, implement processing and modeling algorithms, build the PySide6 GUI, and configure testing and packaging.
