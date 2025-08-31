@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .commons import compute_drop_metrics, find_apex_index
+from .commons import find_apex_index
 from ..pipelines.sessile.geometry_alt import line_params
 
 

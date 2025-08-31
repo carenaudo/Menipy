@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>PluginPanel</class>
+ <widget class="QWidget" name="PluginPanel">
+  <property name="windowTitle"><string>Plugins</string></property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <layout class="QHBoxLayout" name="dirsLayout">
+         <item>
+      <widget class="QLabel" name="dirsLabel">
+       <property name="text">
+        <string>Plugin directories (':' or ';' separated):</string>
+       </property>
+      </widget>
+     </item>
+     <item><widget class="QLineEdit" name="dirsEdit"><property name="placeholderText"><string>plugin dirs…</string></property></widget></item>
+     <item><widget class="QPushButton" name="rescanButton"><property name="text"><string>Rescan</string></property></widget></item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QTableWidget" name="pluginsTable"/>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="buttonsLayout">
+     <item><widget class="QPushButton" name="activateAllButton"><property name="text"><string>Activate all</string></property></widget></item>
+     <item><widget class="QPushButton" name="deactivateAllButton"><property name="text"><string>Deactivate all</string></property></widget></item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

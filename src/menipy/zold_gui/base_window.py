@@ -41,15 +41,15 @@ from .controls import (
 )
 from .image_view import ImageView
 
-from ..processing.reader import load_image
-from ..processing import (
+from ..zold_processing.reader import load_image
+from ..zold_processing import (
     detect_droplet,
     detect_sessile_droplet,
     detect_pendant_droplet,
     segmentation,
     detect_substrate_line,
 )
-from ..processing.segmentation import find_contours
+from ..zold_processing.segmentation import find_contours
 # Import calibration utilities from the dedicated package
 from ..calibration import (
     get_calibration,

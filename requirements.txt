@@ -7,6 +7,10 @@ numpy
 scipy
 pandas
 
+#datatypes
+pydantic
+pydantic_numpy
+
 # Plotting
 matplotlib
 

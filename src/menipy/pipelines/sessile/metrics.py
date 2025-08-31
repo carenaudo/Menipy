@@ -1,7 +1,7 @@
 import numpy as np
 
-from ..analysis.commons import compute_drop_metrics, find_apex_index
-from ..pipelines.sessile.geometry_alt import line_params
+from ...analysis.commons import compute_drop_metrics, find_apex_index
+from .geometry_alt import line_params
 
 
 def compute_metrics(

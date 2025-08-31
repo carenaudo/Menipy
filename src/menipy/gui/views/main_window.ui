@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>756</width>
+    <height>653</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Menipy GUI</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="centralLayout">
+    <item>
+     <layout class="QHBoxLayout" name="topBar">
+      <item>
+       <spacer name="spacer">
+        <property name="orientation">
+         <enum>Qt::Orientation::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="QSplitter" name="splitterH">
+      <property name="orientation">
+       <enum>Qt::Orientation::Horizontal</enum>
+      </property>
+      <property name="childrenCollapsible">
+       <bool>false</bool>
+      </property>
+      <widget class="QWidget" name="runHost">
+       <layout class="QVBoxLayout" name="runHostLayout"/>
+      </widget>
+      <widget class="QSplitter" name="splitterV">
+       <property name="orientation">
+        <enum>Qt::Orientation::Vertical</enum>
+       </property>
+       <property name="childrenCollapsible">
+        <bool>false</bool>
+       </property>
+       <widget class="QWidget" name="overlayHost">
+        <layout class="QVBoxLayout" name="overlayHostLayout"/>
+       </widget>
+       <widget class="QWidget" name="resultsHost">
+        <layout class="QVBoxLayout" name="resultsHostLayout"/>
+       </widget>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>756</width>
+     <height>33</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuArchivo">
+    <property name="title">
+     <string>Archivo</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menuEtapa">
+    <property name="title">
+     <string>Ensayo</string>
+    </property>
+    <addaction name="actionGota_pendiente"/>
+    <addaction name="actionGota_s_sil"/>
+    <addaction name="action_oscillatory"/>
+    <addaction name="action_captive_bubble"/>
+    <addaction name="action_capillary_rise"/>
+   </widget>
+   <widget class="QMenu" name="menuEtapa_2">
+    <property name="title">
+     <string>Etapa</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menuResultados">
+    <property name="title">
+     <string>Resultados</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menuPlugins">
+    <property name="title">
+     <string>Plugins</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menuAcerca_de">
+    <property name="title">
+     <string>Acerca de</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menuViews">
+    <property name="title">
+     <string>Vistas</string>
+    </property>
+    <addaction name="action_plugins"/>
+    <addaction name="action_preview"/>
+    <addaction name="action_case"/>
+    <addaction name="action_results"/>
+   </widget>
+   <addaction name="menuArchivo"/>
+   <addaction name="menuEtapa"/>
+   <addaction name="menuEtapa_2"/>
+   <addaction name="menuResultados"/>
+   <addaction name="menuPlugins"/>
+   <addaction name="menuViews"/>
+   <addaction name="menuAcerca_de"/>
+  </widget>
+  <action name="actionGota_pendiente">
+   <property name="text">
+    <string>Gota pendiente</string>
+   </property>
+  </action>
+  <action name="actionGota_s_sil">
+   <property name="text">
+    <string>Gota sésil</string>
+   </property>
+  </action>
+  <action name="action_oscillatory">
+   <property name="text">
+    <string>Gota oscilante</string>
+   </property>
+  </action>
+  <action name="action_captive_bubble">
+   <property name="text">
+    <string>Burbuja captiva</string>
+   </property>
+  </action>
+  <action name="action_capillary_rise">
+   <property name="text">
+    <string>Ascenso capilar</string>
+   </property>
+  </action>
+  <action name="action_plugins">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Plugins</string>
+   </property>
+  </action>
+  <action name="action_preview">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Imagen</string>
+   </property>
+   <property name="iconText">
+    <string>Preview</string>
+   </property>
+  </action>
+  <action name="action_case">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Configuración</string>
+   </property>
+  </action>
+  <action name="action_results">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Reporte</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

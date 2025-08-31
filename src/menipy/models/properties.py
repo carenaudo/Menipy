@@ -7,7 +7,7 @@ from typing import Optional
 import cv2
 import numpy as np
 
-from ..processing.segmentation import find_contours
+from ..zold_processing.segmentation import find_contours
 from .geometry import fit_circle
 
 GRAVITY = 9.81  # m s⁻²

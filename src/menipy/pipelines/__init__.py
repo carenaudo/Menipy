@@ -1,13 +1,13 @@
-"""Analysis pipelines providing high level geometry and drawing helpers."""
-
-from .pendant.geometry import analyze as analyze_pendant
-from .pendant.drawing import draw_overlays as draw_pendant_overlays
-from .sessile.geometry_alt import analyze as analyze_sessile_alt
-from .sessile.drawing_alt import draw_overlays as draw_sessile_overlays_alt
+from .sessile import SessilePipeline
+from .pendant import PendantPipeline
+from .oscillating import OscillatingPipeline
+from .capillary_rise import CapillaryRisePipeline
+from .captive_bubble import CaptiveBubblePipeline
 
 __all__ = [
-    "analyze_pendant",
-    "draw_pendant_overlays",
-    "analyze_sessile_alt",
-    "draw_sessile_overlays_alt",
+    "SessilePipeline",
+    "PendantPipeline",
+    "OscillatingPipeline",
+    "CapillaryRisePipeline",
+    "CaptiveBubblePipeline",
 ]

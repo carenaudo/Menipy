@@ -7,8 +7,8 @@ from typing import Iterable
 
 import pandas as pd
 
-from .processing.reader import load_image
-from .processing.segmentation import (
+from .zold_processing.reader import load_image
+from .zold_processing.segmentation import (
     otsu_threshold,
     morphological_cleanup,
     external_contour_mask,
