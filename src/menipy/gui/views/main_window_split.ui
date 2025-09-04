@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="windowTitle"><string>Menipy ADSA</string></property>
+
+  <!-- Menu bar -->
+  <widget class="QMenuBar" name="menubar">
+   <property name="nativeMenuBar"><bool>false</bool></property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title"><string>&amp;File</string></property>
+    <addaction name="actionOpenImage"/>
+    <addaction name="actionOpenCamera"/>
+    <addaction name="separator"/>
+    <addaction name="actionQuit"/>
+   </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title"><string>&amp;View</string></property>
+    <!-- You can add pane toggles or dock toggles here in code -->
+   </widget>
+   <widget class="QMenu" name="menuRun">
+    <property name="title"><string>&amp;Run</string></property>
+    <addaction name="actionRunFull"/>
+    <addaction name="actionRunSelected"/>
+    <addaction name="separator"/>
+    <addaction name="actionStop"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title"><string>&amp;Help</string></property>
+    <addaction name="actionAbout"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuView"/>
+   <addaction name="menuRun"/>
+   <addaction name="menuHelp"/>
+  </widget>
+
+  <!-- Central area: 3-way splitter -->
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="centralLayout">
+    <item>
+     <widget class="QSplitter" name="rootSplitter">
+      <property name="orientation"><enum>Qt::Horizontal</enum></property>
+
+      <!-- Left: Setup host -->
+      <widget class="QWidget" name="setupHost">
+       <layout class="QVBoxLayout" name="setupHostLayout"/>
+      </widget>
+
+      <!-- Center: Preview host -->
+      <widget class="QWidget" name="previewHost">
+       <layout class="QVBoxLayout" name="previewHostLayout"/>
+      </widget>
+
+      <!-- Right: Inspector tabs -->
+      <widget class="QTabWidget" name="inspectTabs">
+       <property name="tabPosition"><enum>QTabWidget::North</enum></property>
+       <widget class="QWidget" name="resultsTab">
+        <attribute name="title"><string>Results</string></attribute>
+        <layout class="QVBoxLayout" name="resultsHostLayout"/>
+       </widget>
+       <widget class="QWidget" name="residualsTab">
+        <attribute name="title"><string>Residuals</string></attribute>
+        <layout class="QVBoxLayout" name="residualsHostLayout"/>
+       </widget>
+       <widget class="QWidget" name="timingsTab">
+        <attribute name="title"><string>Timings</string></attribute>
+        <layout class="QVBoxLayout" name="timingsHostLayout"/>
+       </widget>
+       <widget class="QWidget" name="logTab">
+        <attribute name="title"><string>Log</string></attribute>
+        <layout class="QVBoxLayout" name="logHostLayout"/>
+       </widget>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+
+  <!-- Status bar -->
+  <widget class="QStatusBar" name="statusbar"/>
+
+  <!-- Actions -->
+  <action name="actionOpenImage">
+   <property name="text"><string>Open &amp;Image…</string></property>
+   <property name="shortcut"><string>Ctrl+O</string></property>
+  </action>
+  <action name="actionOpenCamera">
+   <property name="text"><string>Open &amp;Camera</string></property>
+  </action>
+  <action name="actionRunFull">
+   <property name="text"><string>Run &amp;Full</string></property>
+   <property name="shortcut"><string>Ctrl+R</string></property>
+  </action>
+  <action name="actionRunSelected">
+   <property name="text"><string>Run &amp;Selected</string></property>
+   <property name="shortcut"><string>Ctrl+Shift+R</string></property>
+  </action>
+  <action name="actionStop">
+   <property name="text"><string>&amp;Stop</string></property>
+  </action>
+  <action name="actionQuit">
+   <property name="text"><string>&amp;Quit</string></property>
+   <property name="shortcut"><string>Ctrl+Q</string></property>
+  </action>
+  <action name="actionAbout">
+   <property name="text"><string>&amp;About</string></property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

@@ -41,7 +41,7 @@
        <bool>false</bool>
       </property>
       <widget class="QWidget" name="runHost">
-       <layout class="QVBoxLayout" name="runHostLayout"/>
+       <layout class="QVBoxLayout" name="overlayHostLayout"/>
       </widget>
       <widget class="QSplitter" name="splitterV">
        <property name="orientation">
@@ -51,7 +51,7 @@
         <bool>false</bool>
        </property>
        <widget class="QWidget" name="overlayHost">
-        <layout class="QVBoxLayout" name="overlayHostLayout"/>
+        <layout class="QVBoxLayout" name="runHostLayout"/>
        </widget>
        <widget class="QWidget" name="resultsHost">
         <layout class="QVBoxLayout" name="resultsHostLayout"/>

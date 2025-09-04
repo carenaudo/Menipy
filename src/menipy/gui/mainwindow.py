@@ -8,8 +8,10 @@ from PySide6.QtCore import QFile, Qt
 from PySide6.QtGui import QCloseEvent, QAction
 from PySide6.QtWidgets import (
     QMainWindow, QVBoxLayout, QDockWidget, QWidget, QFileDialog,
-    QMessageBox, QTableWidgetItem, QLabel, QTableWidget,QMenuBar
+    QMessageBox, QTableWidgetItem, QLabel, QTableWidget, QMenuBar, QToolButton,
+    QPushButton, QLayout, QPlainTextEdit, QMenu
 )
+from .views.image_view import ImageView
 from PySide6.QtUiTools import QUiLoader
 
 # If you have compiled resources, import them before setupUi:
@@ -51,14 +53,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # -------- Build main window from Designer ----------
         self.setupUi(self)  # <-- everything from main_window.ui is now on self.*
 
-        # Ensure placeholders have layouts to receive child panels
-        self._ensure_placeholder_layout(self.runHost)
-        self._ensure_placeholder_layout(self.overlayHost)
-        self._ensure_placeholder_layout(self.resultsHost)
+        # Ensure split hosts have layouts
+        self._ensure_placeholder_layout(self.setupHost)   # left
+        self._ensure_placeholder_layout(self.previewHost) # cente
+        # right side uses explicit layouts on each tab (resultsHostLayout, etc.)
 
 
         # -------- Loader helpers for sub-panels ----------
         loader = QUiLoader()
+        loader.registerCustomWidget(ImageView)   # <-- critical
         views_dir = Path(__file__).resolve().parent / "views"
 
         def load_ui(res_path: str, fallback_filename: str) -> QWidget:
@@ -73,8 +76,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return w
 
 
-        def embed(child: QWidget, host: QWidget):
-            lay = host.layout() or QVBoxLayout(host)
+        def embed(child: QWidget, host_or_layout):
+            # Accept a QWidget (with/without layout) or a QLayout
+            if isinstance(host_or_layout, QLayout):
+                host_or_layout.addWidget(child)
+                return
+            lay = host_or_layout.layout() or QVBoxLayout(host_or_layout)
             lay.setContentsMargins(0, 0, 0, 0)
             lay.addWidget(child)
 
@@ -83,9 +90,34 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.overlay_panel = load_ui(":/views/overlay_panel.ui", "overlay_panel.ui")
         self.results_panel = load_ui(":/views/results_panel.ui", "results_panel.ui")
 
-        embed(self.run_panel, self.runHost)
-        embed(self.overlay_panel, self.overlayHost)
-        embed(self.results_panel, self.resultsHost)
+        # Left: setup / case panel (reuse your existing run_panel for now)
+        embed(self.run_panel, self.setupHost)
+
+        # Center: preview panel (reuse your existing overlay_panel for now)
+        embed(self.overlay_panel, self.previewHost)
+
+        # Right: results panel
+        # Right/Results tab: add panel into its dedicated layout
+        embed(self.results_panel, self.resultsHostLayout)
+
+        self.logView = QPlainTextEdit(self)
+        self.logView.setReadOnly(True)
+        embed(self.logView, self.logHostLayout)
+
+        # File
+        self.actionOpenImage.triggered.connect(self._browse_image)
+        self.actionOpenCamera.triggered.connect(lambda: self.cameraCheck.setChecked(True) if hasattr(self, "cameraCheck") else None)
+        self.actionQuit.triggered.connect(self.close)
+
+        # Run
+        self.actionRunFull.triggered.connect(self._on_run_clicked)
+        # For now, reuse full-run for "Run Selected" until you implement subset runs
+        self.actionRunSelected.triggered.connect(self._on_run_clicked)
+        self.actionStop.triggered.connect(lambda: self.statusBar().showMessage("Stop requested", 1500))
+
+        # Help
+        self.actionAbout.triggered.connect(lambda: QMessageBox.information(self, "About", "Menipy ADSA GUI"))
+
 
         # -------- Plugin dock ----------
         self.plugin_panel = load_ui(":/views/plugin_panel.ui", "plugin_panel.ui")
@@ -117,24 +149,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._wire_plugin_panel()
 
 
-        # Toggles for embedded panels (run/overlay/results)
-        # Initial states reflect current visibility
-        self.action_plugins.setChecked(self.plugin_dock.isVisible())
-        self.action_preview.setChecked(self.overlayHost.isVisible())
-        self.action_case.setChecked(self.runHost.isVisible())
-        self.action_results.setChecked(self.resultsHost.isVisible())
-
-        # Wire toggles -> show/hide the corresponding panels
-        self.action_plugins.toggled.connect(self.plugin_dock.setVisible)
-        self.action_preview.toggled.connect(self.overlayHost.setVisible)
-        self.action_case.toggled.connect(self.runHost.setVisible)
-        self.action_results.toggled.connect(self.resultsHost.setVisible)
-
-        # Keep Plugins action in sync if user closes the dock via the [x] on the dock
-        self.plugin_dock.visibilityChanged.connect(self.action_plugins.setChecked)
-
         # Initial refresh of plugin table
         self._refresh_plugin_table()
+        if isinstance(self.menuBar(), QMenuBar):
+            menu_view = self.findChild(QMenu, "menuView")
+            if menu_view:
+                self.actionPlugins = QAction("Plugins", self, checkable=True, checked=False)
+                menu_view.addAction(self.actionPlugins)
+                self.actionPlugins.toggled.connect(self.plugin_dock.setVisible)
+                self.plugin_dock.visibilityChanged.connect(self.actionPlugins.setChecked)
 
     # ---------------- Helpers ----------------
     def _ensure_placeholder_layout(self, host: QWidget) -> None:
@@ -200,11 +223,48 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     # Overlay panel
     # ======================================================================
     def _wire_overlay_panel(self):
-        self.previewLabel: QLabel = self.overlay_panel.findChild(QLabel, "previewLabel")  # type: ignorere
+        self.imageView: ImageView = self.overlay_panel.findChild(ImageView, "previewView")
+        if self.imageView:
+            # Recommended defaults
+            self.imageView.set_auto_policy("preserve")          # keep current zoom/pan on new frames of same size
+            self.imageView.set_wheel_zoom_requires_ctrl(False)  # wheel zoom without Ctrl (optional)
+        # helper to find either a QToolButton or a QPushButton
+        def _btn(name: str):
+            btn = self.overlay_panel.findChild(QToolButton, name)
+            if btn is None:
+                btn = self.overlay_panel.findChild(QPushButton, name)
+            return btn
 
-    def _on_preview_ready(self, pixmap):
-        if self.previewLabel:
-            self.previewLabel.setPixmap(pixmap)
+
+        self.zoomInBtn  = _btn("zoomInBtn")
+        self.zoomOutBtn = _btn("zoomOutBtn")
+        self.actualBtn  = _btn("actualBtn")
+        self.fitBtn     = _btn("fitBtn")
+
+        # connect if present; log if missing
+        pairs = [
+            (self.zoomInBtn,  getattr(self.imageView, "zoom_in",  None)),
+            (self.zoomOutBtn, getattr(self.imageView, "zoom_out", None)),
+            (self.actualBtn,  getattr(self.imageView, "actual_size", None)),
+            (self.fitBtn,     getattr(self.imageView, "fit_to_window", None)),
+        ]
+        for b, slot in pairs:
+            if b and slot:
+                b.clicked.connect(slot)
+            else:
+                # optional: print to console so you notice missing names
+                print(f"[overlay] missing: {b=}, {slot=}")
+        
+        # optional: shortcuts/tooltips
+        if self.zoomInBtn:  self.zoomInBtn.setToolTip("Zoom In (+)")
+        if self.zoomOutBtn: self.zoomOutBtn.setToolTip("Zoom Out (-)")
+        if self.actualBtn:  self.actualBtn.setToolTip("Actual Size (100%)")
+        if self.fitBtn:     self.fitBtn.setToolTip("Fit to Window")    
+
+
+    def _on_preview_ready(self, pix_or_img_or_np):
+        if self.imageView:
+            self.imageView.set_image(pix_or_img_or_np)
         self.statusBar().showMessage("Preview updated", 2000)
 
     # ======================================================================
