@@ -26,7 +26,19 @@ class PipelineBase:
     """
 
     name: str = "base"
-
+    DEFAULT_SEQ = [
+            ("acquisition",  None),
+            ("preprocessing", None),
+            ("edge_detection", None),
+            ("geometry", None),
+            ("scaling", None),
+            ("physics", None),
+            ("solver", None),
+            ("optimization", None),
+            ("outputs", None),
+            ("overlay", None),
+            ("validation", None),
+        ]
     # ---- Stage hooks (override in subclasses as needed) ----
     def do_acquisition(self, ctx: Context) -> Optional[Context]: return ctx
     def do_preprocessing(self, ctx: Context) -> Optional[Context]: return ctx
@@ -51,8 +63,66 @@ class PipelineBase:
             self.logger.setLevel(logging.INFO)
             self.logger.propagate = False
 
+    def _prime_ctx(self, ctx: Context, **kwargs: Any) -> Context:
+        """
+        Seed Context with common runtime parameters so 'acquisition' has
+        what it needs even for subset runs.
+        Accepted keys: image / image_path, camera / cam_id, frames, roi
+        """
+        # timings dict (used by _call_stage)
+        if not hasattr(ctx, "timings_ms"):
+            ctx.timings_ms = {}
+
+        image = kwargs.get("image") or kwargs.get("image_path")
+        if image is not None:
+            ctx.image_path = image
+
+        cam = kwargs.get("camera")
+        if cam is None:
+            cam = kwargs.get("cam_id")
+        if cam is not None:
+            ctx.camera_id = cam
+
+        if "frames" in kwargs and kwargs["frames"] is not None:
+            try:
+                ctx.frames_requested = int(kwargs["frames"])
+            except Exception:
+                ctx.frames_requested = kwargs["frames"]
+
+        if "roi" in kwargs and kwargs["roi"] is not None:
+            ctx.roi = kwargs["roi"]
+
+        return ctx
+
     def _call_stage(self, ctx: Context, stage_name: str, fn: Callable[[Context], Optional[Context]]) -> Context:
         start = time.perf_counter()
+
+        def _ctx_summary(c: Context) -> str:
+            try:
+                fr = getattr(c, "frames", None)
+                if fr is None:
+                    nfr = 0
+                elif isinstance(fr, (list, tuple)):
+                    nfr = len(fr)
+                else:
+                    try:
+                        nfr = int(getattr(fr, "shape", (None,))[0])
+                    except Exception:
+                        nfr = 1
+                preview = bool(getattr(c, "preview", None))
+                contour_obj = getattr(c, "contour", None)
+                contour = False
+                try:
+                    if contour_obj is not None:
+                        contour = getattr(contour_obj, "xy", None) is not None
+                except Exception:
+                    contour = True
+                results = getattr(c, "results", None)
+                results_k = len(results) if isinstance(results, dict) else (1 if results else 0)
+                return f"frames={nfr} preview={int(preview)} contour={int(bool(contour))} results_keys={results_k}"
+            except Exception:
+                return "summary_error"
+
         try:
             maybe_ctx = fn(ctx)
             if maybe_ctx is not None:
@@ -64,23 +134,91 @@ class PipelineBase:
                 ctx.timings_ms[stage_name] = elapsed_ms
             if hasattr(ctx, "error"):
                 ctx.error = f"{stage_name} failed: {exc!r}"
+            # log exception (pipeline logger)
             self.logger.exception("%s failed after %.2f ms", stage_name, elapsed_ms)
+
+            try:
+                ctx_id = hex(id(ctx))
+            except Exception:
+                ctx_id = str(id(ctx))
+            summary = _ctx_summary(ctx)
+            msg = f"[pipeline:{self.name} ctx={ctx_id}] {stage_name} failed after {elapsed_ms:.2f} ms: {exc!r} | {summary}"
+            try:
+                if hasattr(ctx, "note"):
+                    ctx.note(msg)
+                elif hasattr(ctx, "log") and isinstance(ctx.log, list):
+                    ctx.log.append(msg)
+            except Exception:
+                pass
+            try:
+                logging.getLogger().error(msg)
+            except Exception:
+                pass
             raise PipelineError(getattr(ctx, "error", str(exc))) from exc
         else:
             elapsed_ms = (time.perf_counter() - start) * 1000.0
             if hasattr(ctx, "timings_ms") and isinstance(ctx.timings_ms, dict):
                 ctx.timings_ms[stage_name] = elapsed_ms
             self.logger.debug("✓ %s (%.2f ms)", stage_name, elapsed_ms)
-        return ctx
 
+            try:
+                ctx_id = hex(id(ctx))
+            except Exception:
+                ctx_id = str(id(ctx))
+            summary = _ctx_summary(ctx)
+            msg = f"[pipeline:{self.name} ctx={ctx_id}] Completed stage: {stage_name} ({elapsed_ms:.2f} ms) | {summary}"
+            try:
+                if hasattr(ctx, "note"):
+                    ctx.note(msg)
+                elif hasattr(ctx, "log") and isinstance(ctx.log, list):
+                    ctx.log.append(msg)
+            except Exception:
+                pass
+
+            try:
+                self.logger.info(msg)
+            except Exception:
+                pass
+            try:
+                root = logging.getLogger()
+                if any(h.__class__.__name__ == 'QtLogHandler' for h in root.handlers):
+                    root.setLevel(logging.INFO)
+                    root.info(msg)
+            except Exception:
+                pass
+
+        return ctx
+    
+    def build_plan(self, only: list[str] | None = None, include_prereqs: bool = True):
+        seq = [(n, getattr(self, f"do_{n}", None)) for (n, _fn) in self.DEFAULT_SEQ]
+        seq = [(n, fn) for (n, fn) in seq if callable(fn)]
+        if not only:
+            return seq
+        names = [n for (n, _fn) in seq]
+        if include_prereqs:
+            # keep everything up to the furthest requested stage
+            idx = {n: i for i, n in enumerate(names)}
+            last = max(idx[n] for n in only if n in idx)
+            wanted = set(names[: last + 1])
+        else:
+            wanted = set(only)
+        return [(n, fn) for (n, fn) in seq if n in wanted]
+
+    def run_with_plan(self, *, only: list[str] | None = None, include_prereqs: bool = True, **kwargs: Any) -> Context:
+        ctx = Context()
+        ctx = self._prime_ctx(ctx, **kwargs)
+        for name, fn in self.build_plan(only=only, include_prereqs=include_prereqs):
+            ctx = self._call_stage(ctx, name, fn)
+        self._ctx = ctx
+        return ctx
+    
     def run(self, **kwargs: Any) -> Context:
         """
         Execute the full stage sequence and return the populated Context.
-        Parameters in **kwargs are ignored by the base class but allow subclasses
-        to accept runtime options in their overridden hooks if desired.
+        Any **kwargs are seeded into Context for 'acquisition' to use.
         """
-        # Context is created by caller or here? We create a fresh one here.
-        ctx = Context()  # comes from models.datatypes
+        ctx = Context()
+        ctx = self._prime_ctx(ctx, **kwargs)
 
         self.logger.info("Starting pipeline: %s", self.name)
 

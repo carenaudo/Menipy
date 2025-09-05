@@ -1,0 +1,10 @@
+<RCC>
+ <qresource prefix="/icons">
+  <file>icons/status_pending.svg</file>
+  <file>icons/status_running.svg</file>
+  <file>icons/status_done.svg</file>
+  <file>icons/status_error.svg</file>
+  <file>icons/play.svg</file>
+  <file>icons/settings.svg</file>
+ </qresource>
+</RCC>

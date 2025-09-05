@@ -52,10 +52,11 @@ class ImageView(QGraphicsView):
             self._pix_item = None
             self._last_pm_size = None
             return
-
         # Convert to QPixmap
         if isinstance(img, QPixmap):
             pm = img
+            if pm.isNull():
+                return
         elif isinstance(img, QImage):
             pm = QPixmap.fromImage(img)
         else:
