@@ -6,13 +6,15 @@ from typing import Sequence, List, Optional
 
 import logging
 from PySide6.QtCore import QFile, QByteArray, Qt, QObject, Signal
-from PySide6.QtGui import QAction, QCloseEvent
+from PySide6.QtGui import QAction, QCloseEvent, QImage
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QFileDialog, QMessageBox, QInputDialog,
     QMenuBar, QLayout, QPlainTextEdit, QMenu, QListWidget, QListWidgetItem,
     QComboBox, QToolButton, QLineEdit, QCheckBox, QSpinBox, QPushButton, QLabel, QTableWidget, QTableWidgetItem
 )
+
+from .views.image_view import DRAW_NONE, DRAW_POINT, DRAW_LINE, DRAW_RECT
 
 # --- compiled split main window UI ---
 from .views.ui_main_window import Ui_MainWindow
@@ -201,7 +203,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._wire_setup_panel()
         self._wire_overlay_panel()
         self._wire_results_panel()
-
+        # Start with no drawing on the preview view (if present)
+        if getattr(self, "imageView", None) and hasattr(self.imageView, "set_draw_mode"):
+            try:
+                self.imageView.set_draw_mode(DRAW_NONE)
+            except Exception:
+                pass
         # menubar actions from split UI
         self._wire_menu_actions()
 
@@ -287,6 +294,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.imagePathEdit: Optional[QLineEdit] = self.setup_panel.findChild(QLineEdit, "imagePathEdit")
         self.browseBtn: Optional[QToolButton] = self.setup_panel.findChild(QToolButton, "browseBtn")
 
+        # NEW: bind preview & calibration controls from the left panel
+        self.previewBtn: Optional[QToolButton] = self.setup_panel.findChild(QToolButton, "previewBtn")
+        from PySide6.QtWidgets import QPushButton  # local import to avoid top clutter
+        self.drawPointBtn: Optional[QPushButton] = self.setup_panel.findChild(QPushButton, "drawPointBtn")
+        self.drawLineBtn: Optional[QPushButton]  = self.setup_panel.findChild(QPushButton, "drawLineBtn")
+        self.drawRectBtn: Optional[QPushButton]  = self.setup_panel.findChild(QPushButton, "drawRectBtn")
+        self.clearOverlayBtn: Optional[QPushButton] = self.setup_panel.findChild(QPushButton, "clearOverlayBtn")
+
+
         self.cameraCheck: Optional[QCheckBox] = self.setup_panel.findChild(QCheckBox, "cameraCheck")
         self.cameraIdSpin: Optional[QSpinBox] = self.setup_panel.findChild(QSpinBox, "cameraIdSpin")
         self.framesSpin: Optional[QSpinBox] = self.setup_panel.findChild(QSpinBox, "framesSpin")
@@ -317,7 +333,22 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # Browse image
         if self.browseBtn:
             self.browseBtn.clicked.connect(self._browse_image)
+        
+        # Preview button: loads the image in the right preview area
+        if hasattr(self, "previewBtn") and hasattr(self, "imagePathEdit"):
+            self.previewBtn.clicked.connect(self._on_preview_image)
 
+        # Calibration buttons (left panel group)
+        # Expecting: drawPointBtn, drawLineBtn, drawRectBtn, clearOverlayBtn
+        if hasattr(self, "drawPointBtn"):
+            self.drawPointBtn.clicked.connect(lambda: self._set_draw_mode(DRAW_POINT))
+        if hasattr(self, "drawLineBtn"):
+            self.drawLineBtn.clicked.connect(lambda: self._set_draw_mode(DRAW_LINE))
+        if hasattr(self, "drawRectBtn"):
+            self.drawRectBtn.clicked.connect(lambda: self._set_draw_mode(DRAW_RECT))
+        if hasattr(self, "clearOverlayBtn"):
+            self.clearOverlayBtn.clicked.connect(self._clear_overlays)
+        
         # Run All
         if self.runAllBtn:
             self.runAllBtn.clicked.connect(self._on_run_all_sop)
@@ -347,6 +378,39 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             if z_out: z_out.clicked.connect(self.imageView.zoom_out)
             if z_100: z_100.clicked.connect(self.imageView.actual_size)
             if z_fit: z_fit.clicked.connect(self.imageView.fit_to_window)
+
+    def _on_browse_image(self):
+        path, _ = QFileDialog.getOpenFileName(self, "Choose image", "", "Images (*.png *.jpg *.jpeg *.bmp *.tif *.tiff)")
+        if path and hasattr(self, "imagePathEdit"):
+            self.imagePathEdit.setText(path)
+
+    def _on_preview_image(self):
+        if not hasattr(self, "imagePathEdit") or not hasattr(self, "previewImageView"):
+            return
+        path = self.imagePathEdit.text().strip()
+        if not path:
+            QMessageBox.information(self, "Preview", "Please select an image first.")
+            return
+        try:
+            # Assuming your ImageView exposes setImage(path) or similar.
+            # If not, replace with your existing method to load a pixmap.
+            if hasattr(self.previewImageView, "setImage"):
+                self.previewImageView.setImage(path)
+            elif hasattr(self.previewImageView, "load"):
+                self.previewImageView.load(path)
+            else:
+                # Fallback: you may have a controller method to push images into the view
+                raise RuntimeError("Preview ImageView has no loader method")
+        except Exception as e:
+            QMessageBox.warning(self, "Preview error", f"Could not load image:\n{e}")
+
+    def _set_draw_mode(self, mode):
+        if hasattr(self, "previewImageView") and hasattr(self.previewImageView, "set_draw_mode"):
+            self.previewImageView.set_draw_mode(mode)
+
+    def _clear_overlays(self):
+        if hasattr(self, "previewImageView") and hasattr(self.previewImageView, "clear_overlays"):
+            self.previewImageView.clear_overlays()
 
     def _wire_results_panel(self):
         # Set up simple placeholders; adjust to your UI

@@ -2,9 +2,15 @@ from __future__ import annotations
 from typing import Optional, Union
 import numpy as np
 
-from PySide6.QtCore import Qt, QRectF, QSizeF
-from PySide6.QtGui import QImage, QPixmap, QTransform, QPainter
-from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsPixmapItem
+from PySide6.QtCore import Qt, QRectF,  QPointF, QSizeF
+from PySide6.QtGui import QImage, QPixmap, QTransform, QPainter,QPen, QColor
+from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsPixmapItem,  QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsRectItem
+
+# Drawing modes for overlays
+DRAW_NONE = None
+DRAW_POINT = "point"
+DRAW_LINE  = "line"
+DRAW_RECT  = "rect"
 
 class ImageView(QGraphicsView):
     """
@@ -28,6 +34,15 @@ class ImageView(QGraphicsView):
         self._auto_policy: str = "auto"           # "auto" | "preserve"
         self._wheel_zoom_requires_ctrl: bool = False
 
+        self._draw_mode = DRAW_NONE
+        self._overlays = []      # list[QGraphicsItem]
+        self._tmp_item = None    # currently-being-drawn item
+        self._press_pos_scene: QPointF | None = None
+        self._overlay_pen = QPen(QColor(255, 0, 0))
+        self._overlay_pen.setWidth(2)
+        # Ensure mouse tracking so we get move events even without press
+        self.setMouseTracking(True)
+
         # ---- view config ----
         self.setScene(self._scene)
         self.setRenderHints(self.renderHints() | QPainter.SmoothPixmapTransform)
@@ -45,6 +60,19 @@ class ImageView(QGraphicsView):
 
     def set_wheel_zoom_requires_ctrl(self, required: bool) -> None:
         self._wheel_zoom_requires_ctrl = bool(required)
+
+    def set_draw_mode(self, mode: str | None):
+        """mode in {None, 'point', 'line', 'rect'}"""
+        self._draw_mode = mode
+        # When drawing, disable scroll-hand drag for comfort
+        self.setDragMode(QGraphicsView.NoDrag if mode else QGraphicsView.ScrollHandDrag)
+
+    def clear_overlays(self):
+        for it in self._overlays:
+            if it.scene():
+                it.scene().removeItem(it)
+        self._overlays.clear()
+        self._tmp_item = None
 
     def set_image(self, img: Union[QPixmap, QImage, np.ndarray, None]) -> None:
         if img is None:
@@ -142,3 +170,53 @@ class ImageView(QGraphicsView):
         vw = max(1, self.viewport().width())
         vh = max(1, self.viewport().height())
         return (w <= vw) and (h <= vh)
+    
+    # ---------------- Mouse handling for drawing ----------------
+    def mousePressEvent(self, event):
+        if self._draw_mode and event.button() == Qt.LeftButton and self.scene():
+            scene_pos = self.mapToScene(event.pos())
+            self._press_pos_scene = scene_pos
+            if self._draw_mode == DRAW_POINT:
+                r = 4.0
+                it = QGraphicsEllipseItem(QRectF(scene_pos.x()-r, scene_pos.y()-r, 2*r, 2*r))
+                it.setPen(self._overlay_pen)
+                it.setZValue(10_000)
+                self.scene().addItem(it)
+                self._overlays.append(it)
+                self._press_pos_scene = None
+            elif self._draw_mode == DRAW_LINE:
+                it = QGraphicsLineItem(scene_pos.x(), scene_pos.y(), scene_pos.x(), scene_pos.y())
+                it.setPen(self._overlay_pen)
+                it.setZValue(10_000)
+                self.scene().addItem(it)
+                self._tmp_item = it
+            elif self._draw_mode == DRAW_RECT:
+                it = QGraphicsRectItem(QRectF(scene_pos, scene_pos))
+                it.setPen(self._overlay_pen)
+                it.setZValue(10_000)
+                self.scene().addItem(it)
+                self._tmp_item = it
+            # Do not propagate to base if we're drawing
+            return
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        if self._draw_mode and self._tmp_item and self._press_pos_scene and self.scene():
+            cur = self.mapToScene(event.pos())
+            if isinstance(self._tmp_item, QGraphicsLineItem):
+                self._tmp_item.setLine(self._press_pos_scene.x(), self._press_pos_scene.y(), cur.x(), cur.y())
+            elif isinstance(self._tmp_item, QGraphicsRectItem):
+                rect = QRectF(self._press_pos_scene, cur).normalized()
+                self._tmp_item.setRect(rect)
+            return
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        if self._draw_mode and event.button() == Qt.LeftButton and self.scene():
+            if self._tmp_item:
+                # finalize
+                self._overlays.append(self._tmp_item)
+                self._tmp_item = None
+                self._press_pos_scene = None
+            return
+        super().mouseReleaseEvent(event)

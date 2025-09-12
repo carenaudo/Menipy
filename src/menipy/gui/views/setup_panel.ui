@@ -109,6 +109,60 @@
     </widget>
    </item>
    <item>
+    <widget class="QGroupBox" name="calibrationGroup">
+     <property name="title">
+      <string>Calibration</string>
+     </property>
+     <layout class="QGridLayout" name="calibrationLayout">
+      <item row="3" column="1">
+       <widget class="QPushButton" name="drawLineBtn">
+        <property name="text">
+         <string>Line</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QPushButton" name="clearOverlayBtn">
+        <property name="text">
+         <string>Clear</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Previsualizar</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QPushButton" name="drawPointBtn">
+        <property name="text">
+         <string>Point</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QPushButton" name="drawRectBtn">
+        <property name="text">
+         <string>Rect</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QToolButton" name="previewBtn">
+        <property name="toolTip">
+         <string>Preview selected image</string>
+        </property>
+        <property name="text">
+         <string>▶</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
     <widget class="QGroupBox" name="pipelineGroup">
      <property name="title">
       <string>Pipeline</string>
