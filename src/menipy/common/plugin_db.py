@@ -34,6 +34,17 @@ class PluginDB:
         with self.connect() as con:
             con.executescript(ddl)
 
+        # small settings table for storing plugin_dirs and other preferences
+        ddl2 = """
+        CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+        """
+        with self.connect() as con:
+            con.executescript(ddl2)
+
     def upsert_plugin(self, *, name: str, kind: str, file_path: Path,
                       entry: Optional[str] = None,
                       description: Optional[str] = None,
@@ -73,3 +84,16 @@ class PluginDB:
             return list(con.execute("""
             SELECT name, file_path, entry FROM plugins WHERE kind=? AND is_active=1
             """, (kind,)))
+
+    # ---- simple settings helpers ----
+    def set_setting(self, key: str, value: str) -> None:
+        with self.connect() as con:
+            con.execute("""
+            INSERT INTO settings(key, value) VALUES(?, ?)
+            ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=CURRENT_TIMESTAMP
+            """, (key, value))
+
+    def get_setting(self, key: str) -> str | None:
+        with self.connect() as con:
+            row = con.execute("SELECT value FROM settings WHERE key=?", (key,)).fetchone()
+            return row[0] if row else None

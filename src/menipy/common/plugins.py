@@ -91,6 +91,23 @@ def load_active_plugins(db: PluginDB) -> int:
     return count
 
 
+def discover_and_load_from_db(db: PluginDB, *, settings_key: str = "plugin_dirs") -> int:
+    """Read configured plugin directories from the DB settings and discover+load.
+
+    The settings value is expected to be a separator-separated list (':' or ';').
+    This helper will call discover_into_db followed by load_active_plugins.
+    Returns total loaded plugin count.
+    """
+    raw = db.get_setting(settings_key) or ""
+    if not raw:
+        return 0
+    # normalize separators
+    parts = [p for p in raw.replace(";", ":").split(":") if p]
+    dirs = [Path(p) for p in parts]
+    discover_into_db(db, dirs)
+    return load_active_plugins(db)
+
+
 def list_plugins_status(db: PluginDB) -> list[dict]:
     """Return a list of dicts describing plugins and whether they load successfully.
 

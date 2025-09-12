@@ -9,7 +9,7 @@ from .common import acquisition as acq
 # OPTIONAL: if you use the SQLite-backed plugin system
 try:
     from .common.plugin_db import PluginDB
-    from .common.plugins import discover_into_db, load_active_plugins
+    from .common.plugins import discover_into_db, load_active_plugins, discover_and_load_from_db
     _PLUGINS_OK = True
 except Exception:
     _PLUGINS_OK = False
@@ -104,15 +104,19 @@ def main(argv: Optional[list[str]] = None) -> int:
     if _PLUGINS_OK:
         db = PluginDB(Path(args.db))
         db.init_schema()
-        dirs = [Path(p) for p in str(args.plugins).replace(";", ":").split(":") if p]
-        discover_into_db(db, dirs)
-        for spec in args.activate:
-            name, kind = spec.split(":")
-            db.set_active(name, kind, True)
-        for spec in args.deactivate:
-            name, kind = spec.split(":")
-            db.set_active(name, kind, False)
-        load_active_plugins(db)
+        # prefer DB-driven discovery/load: read plugin_dirs from settings
+        loaded = discover_and_load_from_db(db)
+        if not loaded:
+            # fallback to explicit CLI plugin dirs
+            dirs = [Path(p) for p in str(args.plugins).replace(";", ":").split(":") if p]
+            discover_into_db(db, dirs)
+            for spec in args.activate:
+                name, kind = spec.split(":")
+                db.set_active(name, kind, True)
+            for spec in args.deactivate:
+                name, kind = spec.split(":")
+                db.set_active(name, kind, False)
+            load_active_plugins(db)
 
     pipeline = _pick_pipeline(args.pipeline)
 
