@@ -7,7 +7,7 @@ from PySide6.QtGui import QPixmap
 # initialization while this module is imported. Importing from ``...gui`` would
 # execute ``gui/__init__.py`` which pulls in the pipelines package again and
 # leads to a circular import when running ``python -m src``.
-from ...gui.overlay import draw_drop_overlay
+from menipy.gui.overlay import draw_drop_overlay
 from .geometry import PendantMetrics
 
 

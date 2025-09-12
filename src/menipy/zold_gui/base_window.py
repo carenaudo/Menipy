@@ -32,53 +32,53 @@ from PySide6.QtWidgets import (
 )
 import pandas as pd
 
-from .controls import (
+from menipy.zold_gui.controls import (
     ZoomControl,
     ParameterPanel,
     MetricsPanel,
     CalibrationTab,
     AnalysisTab,
 )
-from .image_view import ImageView
+from menipy.zold_gui.image_view import ImageView
 
-from ..zold_processing.reader import load_image
-from ..zold_processing import (
+from menipy.zold_processing.reader import load_image
+from menipy.zold_processing import (
     detect_droplet,
     detect_sessile_droplet,
     detect_pendant_droplet,
     segmentation,
     detect_substrate_line,
 )
-from ..zold_processing.segmentation import find_contours
+from menipy.zold_processing.segmentation import find_contours
 # Import calibration utilities from the dedicated package
-from ..calibration import (
+from menipy.calibration import (
     get_calibration,
     pixels_to_mm,
     auto_calibrate,
     calibrate_from_points,
 )
-from ..models.properties import (
+from menipy.models.properties import (
     droplet_volume,
     estimate_surface_tension,
     contact_angle_from_mask,
 )
-from ..models.geometry import fit_circle
-from ..analysis import (
+from menipy.models.geometry import fit_circle
+from menipy.analysis import (
     detect_vertical_edges,
     extract_external_contour,
 )
-from ..pipelines import (
+from menipy.pipelines import (
     analyze_pendant,
     analyze_sessile_alt,
     draw_pendant_overlays,
     draw_sessile_overlays_alt,
 )
-from ..pipelines.pendant import HelperBundle as PendantHelpers
-from ..pipelines.sessile import HelperBundle as SessileHelpers
-from .items import SubstrateLineItem
-#from ..physics.contact_geom import geom_metrics
+from menipy.pipelines.pendant import HelperBundle as PendantHelpers
+from menipy.pipelines.sessile import HelperBundle as SessileHelpers
+from menipy.zold_gui.items import SubstrateLineItem
+#from menipy.physics.contact_geom import geom_metrics
 
-from ..detectors.geometry_alt import side_of_polyline
+from menipy.detectors.geometry_alt import side_of_polyline
 
 
 

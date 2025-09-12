@@ -110,7 +110,7 @@ def compute_drop_metrics(
     shifted = np.round(contour - [xi, yi]).astype(np.int32)
     cv2.drawContours(mask, [shifted], -1, 255, -1)
 
-    from ..models import (
+    from menipy.models import (
         contact_angle_from_mask,
         estimate_surface_tension,
         jennings_pallas_beta,
@@ -189,7 +189,7 @@ def compute_drop_metrics(
     diameter_center = (int(round((x_left + x_right) / 2)), int(round(y_diam)))
     contact_line: tuple[tuple[int, int], tuple[int, int]] | None = None
     if substrate_line is not None:
-        from ..physics.contact_geom import line_params, contour_line_intersections
+    from menipy.physics.contact_geom import line_params, contour_line_intersections
 
         a, b, c = line_params(substrate_line[0], substrate_line[1])
         try:
@@ -201,7 +201,7 @@ def compute_drop_metrics(
         except ValueError:
             contact_line = None
     else:
-        from ..models.geometry import horizontal_intersections
+    from menipy.models.geometry import horizontal_intersections
 
         xs_contact = horizontal_intersections(contour, y_min)
         if xs_contact.size >= 2:

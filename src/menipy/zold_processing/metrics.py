@@ -6,7 +6,7 @@ from typing import Tuple
 
 import numpy as np
 
-from ..models.properties import droplet_volume
+from menipy.models.properties import droplet_volume
 from .region import close_droplet, _signed_distance
 
 

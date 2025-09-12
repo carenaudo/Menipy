@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 
 
-from ..pipelines.sessile.geometry_alt import (
+from menipy.pipelines.sessile.geometry_alt import (
     line_params,
     find_contact_points,
 )

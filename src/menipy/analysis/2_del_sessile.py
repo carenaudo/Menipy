@@ -5,8 +5,8 @@ from __future__ import annotations
 import numpy as np
 
 from .commons import compute_drop_metrics, find_apex_index
-#from ..physics.contact_geom import geom_metrics
-#from ..pipelines.sessile.geometry_alt import line_params, geom_metrics_alt
+#from menipy.physics.contact_geom import geom_metrics
+#from menipy.pipelines.sessile.geometry_alt import line_params, geom_metrics_alt
 
 def geom_metrics_alt(
     substrate_poly: np.ndarray,

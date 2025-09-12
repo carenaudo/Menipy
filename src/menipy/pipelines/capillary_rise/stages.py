@@ -3,12 +3,18 @@ from __future__ import annotations
 from typing import Optional
 import numpy as np
 
-from ..base import PipelineBase
-from ...models.datatypes import Context, FitConfig
-from ...common import edge_detection as edged
-from ...common import overlay as ovl
-from ...common import solver as common_solver
-from plugins.toy_young_laplace import toy_young_laplace as young_laplace_sphere
+from menipy.pipelines.base import PipelineBase
+from menipy.models.datatypes import Context, FitConfig
+from menipy.common import edge_detection as edged
+from menipy.common import overlay as ovl
+from menipy.common import solver as common_solver
+from pathlib import Path
+from menipy.common.plugins import _load_module_from_path
+
+_repo_root = Path(__file__).resolve().parents[4]
+_toy_path = _repo_root / "plugins" / "toy_young_laplace.py"
+_toy_mod = _load_module_from_path(_toy_path, "adsa_plugins.toy_young_laplace")
+young_laplace_sphere = getattr(_toy_mod, "toy_young_laplace")
 
 
 def _ensure_contour(ctx: Context) -> np.ndarray:

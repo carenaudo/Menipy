@@ -14,10 +14,10 @@ from PySide6.QtWidgets import (
     QComboBox, QToolButton, QLineEdit, QCheckBox, QSpinBox, QPushButton, QLabel, QTableWidget, QTableWidgetItem
 )
 
-from .views.image_view import DRAW_NONE, DRAW_POINT, DRAW_LINE, DRAW_RECT
+from menipy.gui.views.image_view import DRAW_NONE, DRAW_POINT, DRAW_LINE, DRAW_RECT
 
 # --- compiled split main window UI ---
-from .views.ui_main_window import Ui_MainWindow
+from menipy.gui.views.ui_main_window import Ui_MainWindow
 
 
 # Small Qt bridge and logging.Handler to stream Python logs into the Log tab.
@@ -80,7 +80,7 @@ except Exception:
 
 # --- plugins infra (guarded) ---
 try:
-    from ..common.plugins import PluginDB, discover_into_db, load_active_plugins
+    from menipy.common.plugins import PluginDB, discover_into_db, load_active_plugins
 except Exception:
     PluginDB = None  # type: ignore
     def discover_into_db(*a, **k): pass  # type: ignore
@@ -89,7 +89,7 @@ except Exception:
 # --- pipelines map (guarded) ---
 PIPELINE_MAP = {}
 try:
-    from ..pipelines import (
+    from menipy.pipelines import (
         SessilePipeline, PendantPipeline, OscillatingPipeline,
         CapillaryRisePipeline, CaptiveBubblePipeline,
     )
@@ -105,8 +105,8 @@ except Exception:
 
 # --- optional runner & viewmodel (guarded) ---
 try:
-    from .viewmodels.run_vm import RunViewModel
-    from ..services.pipeline_runner import PipelineRunner
+    from menipy.gui.viewmodels.run_vm import RunViewModel
+    from menipy.gui.services.pipeline_runner import PipelineRunner
 except Exception:
     RunViewModel = None  # type: ignore
     PipelineRunner = None  # type: ignore
@@ -296,7 +296,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # NEW: bind preview & calibration controls from the left panel
         self.previewBtn: Optional[QToolButton] = self.setup_panel.findChild(QToolButton, "previewBtn")
-        from PySide6.QtWidgets import QPushButton  # local import to avoid top clutter
+        #from PySide6.QtWidgets import QPushButton  # local import to avoid top clutter
         self.drawPointBtn: Optional[QPushButton] = self.setup_panel.findChild(QPushButton, "drawPointBtn")
         self.drawLineBtn: Optional[QPushButton]  = self.setup_panel.findChild(QPushButton, "drawLineBtn")
         self.drawRectBtn: Optional[QPushButton]  = self.setup_panel.findChild(QPushButton, "drawRectBtn")

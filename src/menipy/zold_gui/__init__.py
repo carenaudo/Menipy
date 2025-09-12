@@ -1,18 +1,18 @@
 """GUI package initialization."""
 
 # Export the refactored UI as the default MainWindow
-from ..ui import MainWindow
-from .image_view import ImageView
-from .calibration_dialog import CalibrationDialog
-from .controls import (
+from menipy.ui import MainWindow
+from menipy.zold_gui.image_view import ImageView
+from menipy.zold_gui.calibration_dialog import CalibrationDialog
+from menipy.zold_gui.controls import (
     ZoomControl,
     ParameterPanel,
     MetricsPanel,
     CalibrationTab,
     AnalysisTab,
 )
-from .overlay import draw_drop_overlay
-from .items import SubstrateLineItem
+from menipy.zold_gui.overlay import draw_drop_overlay
+from menipy.zold_gui.items import SubstrateLineItem
 
 
 def main() -> None:

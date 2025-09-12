@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from ..models import (
+from menipy.models import (
     contact_angle_from_mask,
     estimate_surface_tension,
     jennings_pallas_beta,
@@ -15,7 +15,7 @@ from ..models import (
     surface_area_mm2,
     apparent_weight_mN,
 )
-from ..models.geometry import horizontal_intersections
+from menipy.models.geometry import horizontal_intersections
 
 
 def extract_external_contour(img_roi: np.ndarray) -> np.ndarray:
@@ -222,7 +222,7 @@ def compute_drop_metrics(
 
     contact_line: tuple[tuple[int, int], tuple[int, int]] | None = None
     if substrate_line is not None:
-        from ..physics.contact_geom import line_params, contour_line_intersections
+        from menipy.physics.contact_geom import line_params, contour_line_intersections
 
         a, b, c = line_params(substrate_line[0], substrate_line[1])
         try:

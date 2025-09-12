@@ -13,21 +13,21 @@ from PySide6.QtWidgets import (
 )
 from pathlib import Path
 
-from .. import plugins
-from ..gui.base_window import BaseMainWindow
-from ..gui.items import SubstrateLineItem
-from ..pipelines import (
+from menipy import plugins
+from menipy.gui.base_window import BaseMainWindow
+from menipy.gui.items import SubstrateLineItem
+from menipy.pipelines import (
     analyze_pendant,
     analyze_sessile_alt,
     draw_pendant_overlays,
     draw_sessile_overlays_alt,
 )
-from ..pipelines.pendant import HelperBundle as PendantHelpers
-from ..pipelines.sessile import HelperBundle as SessileHelpers
-from ..detection.needle import detect_vertical_edges
-from ..detection.substrate import detect_substrate_line
-from ..analysis.commons import extract_external_contour
-#from ..physics.contact_geom import geom_metrics
+from menipy.pipelines.pendant import HelperBundle as PendantHelpers
+from menipy.pipelines.sessile import HelperBundle as SessileHelpers
+from menipy.detection.needle import detect_vertical_edges
+from menipy.detection.substrate import detect_substrate_line
+from menipy.analysis.commons import extract_external_contour
+#from menipy.physics.contact_geom import geom_metrics
 
 
 class PluginDialog(QDialog):
@@ -255,7 +255,7 @@ class MainWindow(BaseMainWindow):
             and self.pendant_tab.save_profiles_checkbox.isChecked()
         ):
             from pathlib import Path
-            from ..analysis import find_apex_index, save_contour_side_profiles
+            from menipy.analysis import find_apex_index, save_contour_side_profiles
 
             apex_idx = find_apex_index(pm.contour.astype(float), "pendant")
             save_contour_side_profiles(pm.contour.astype(float), apex_idx, str(Path("plot")))

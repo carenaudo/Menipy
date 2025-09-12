@@ -221,7 +221,7 @@ def detect_sessile_droplet(
     apex_idx = int(np.argmin(cnt[:, 1]))
     apex = tuple(int(round(v)) for v in cnt[apex_idx])
 
-    from ..physics.contact_geom import contour_line_intersections, geom_metrics, line_params
+    from menipy.physics.contact_geom import contour_line_intersections, geom_metrics, line_params
 
     try:
         left_pt, right_pt = contour_line_intersections(cnt, a, b, c)

@@ -6,7 +6,7 @@ from PySide6.QtGui import QPixmap
 # Import the overlay helper directly to avoid a circular import with the
 # ``gui`` package's ``__init__`` when this module is imported from within that
 # package.
-from ...gui.overlay import draw_drop_overlay
+from menipy.gui.overlay import draw_drop_overlay
 from .geometry_alt import SessileMetrics
 
 

@@ -2,7 +2,7 @@ import numpy as np
 from typing import Literal
 
 from .detection import Droplet
-from ..calibration import get_calibration
+from menipy.calibration import get_calibration
 
 
 def classify_drop_mode(droplet: Droplet) -> Literal["pendant", "sessile", "unknown"]:

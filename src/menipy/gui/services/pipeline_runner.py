@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import Optional
 from PySide6.QtCore import QObject, Signal, QRunnable, QThreadPool
 
-from ...pipelines.base import PipelineError
-from ...common import acquisition as acq
+from menipy.pipelines.base import PipelineError
+from menipy.common import acquisition as acq
 
 class _Job(QRunnable):
     def __init__(self, pipeline_name: str, image: Optional[str], camera: Optional[int], frames: int, callback):
@@ -31,19 +31,19 @@ class _Job(QRunnable):
 def _pick(name: str):
     name = name.lower()
     if name == "sessile":
-        from ...pipelines.sessile.stages import SessilePipeline
+        from menipy.pipelines.sessile.stages import SessilePipeline
         return SessilePipeline()
     if name == "oscillating":
-        from ...pipelines.oscillating.stages import OscillatingPipeline
+        from menipy.pipelines.oscillating.stages import OscillatingPipeline
         return OscillatingPipeline()
     if name == "capillary_rise":
-        from ...pipelines.capillary_rise.stages import CapillaryRisePipeline
+        from menipy.pipelines.capillary_rise.stages import CapillaryRisePipeline
         return CapillaryRisePipeline()
     if name == "pendant":
-        from ...pipelines.pendant.stages import PendantPipeline
+        from menipy.pipelines.pendant.stages import PendantPipeline
         return PendantPipeline()
     if name == "captive_bubble":
-        from ...pipelines.captive_bubble.stages import CaptiveBubblePipeline
+        from menipy.pipelines.captive_bubble.stages import CaptiveBubblePipeline
         return CaptiveBubblePipeline()
     raise PipelineError(f"Unknown pipeline '{name}'")
 

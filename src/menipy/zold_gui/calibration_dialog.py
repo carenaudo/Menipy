@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
 )
 
 # Calibration helpers were moved to the dedicated package
-from ..calibration import calibrate_from_points
+from menipy.calibration import calibrate_from_points
 
 
 @dataclass

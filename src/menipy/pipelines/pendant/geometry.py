@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import numpy as np
 
-from ...analysis import extract_external_contour, compute_pendant_metrics
+from menipy.analysis import extract_external_contour, compute_pendant_metrics
 
 
 @dataclass

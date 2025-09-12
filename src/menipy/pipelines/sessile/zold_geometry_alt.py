@@ -7,8 +7,8 @@ import cv2
 
 # deferred import of compute_sessile_metrics_alt to avoid circular import
 # (it will be imported inside analyze() where it's actually used)
-#from ...physics.contact_geom import line_params
-#from ...detectors.geometry_alt import split_contour_by_line
+#from menipy.physics.contact_geom import line_params
+#from menipy.detectors.geometry_alt import split_contour_by_line
 import math
 
 
@@ -341,7 +341,7 @@ def annotate_results(
     apex: tuple[int, int],
 ) -> np.ndarray:
     """Return image annotated with contour, contact line and apex."""
-    from ...gui.overlay import draw_drop_overlay
+    from menipy.gui.overlay import draw_drop_overlay
 
     center = ((p1[0] + p2[0]) // 2, (p1[1] + p2[1]) // 2)
     axis = (center, apex)
@@ -463,7 +463,7 @@ def analyze(
     apex_pt = compute_apex(clean_contour, substrate, cp1, cp2)
 
     # import here to avoid circular import at module import time
-    from ...analysis import compute_sessile_metrics_alt
+    from menipy.analysis import compute_sessile_metrics_alt
     metrics = compute_sessile_metrics_alt(
         clean_contour.astype(float),
         helpers.px_per_mm,

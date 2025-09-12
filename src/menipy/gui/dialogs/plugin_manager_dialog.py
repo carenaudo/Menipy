@@ -7,8 +7,8 @@ from PySide6.QtWidgets import QDialog, QTableWidgetItem, QMessageBox
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import QFile
 
-from ..viewmodels.plugins_vm import PluginsViewModel
-from ..services.settings_service import AppSettings
+from menipy.gui.viewmodels.plugins_vm import PluginsViewModel
+from menipy.gui.services.settings_service import AppSettings
 
 _COL_ACTIVE, _COL_NAME, _COL_KIND, _COL_PATH, _COL_DESC, _COL_VER = range(6)
 
