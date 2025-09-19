@@ -3,7 +3,7 @@ from typing import Sequence
 from pathlib import Path
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QDialog, QTableWidgetItem, QMessageBox
+from PySide6.QtWidgets import QDialog, QTableWidgetItem, QMessageBox, QAbstractItemView
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import QFile
 
@@ -29,7 +29,10 @@ class PluginManagerDialog(QDialog):
         self.setLayout(self.ui.layout())
 
         # Wire controls
-        self.ui.closeButton.clicked.connect(self.accept)
+        try:
+            self.ui.closeButton.clicked.connect(self.accept)  # optional if present in UI
+        except Exception:
+            pass
         self.ui.rescanButton.clicked.connect(self._on_rescan)
         self.ui.activateAllButton.clicked.connect(lambda: self._activate_all(True))
         self.ui.deactivateAllButton.clicked.connect(lambda: self._activate_all(False))
@@ -41,8 +44,14 @@ class PluginManagerDialog(QDialog):
         t = self.ui.pluginsTable
         t.setColumnCount(6)
         t.setHorizontalHeaderLabels(["Active", "Name", "Kind", "Path", "Description", "Version"])
-        t.setSelectionBehavior(t.SelectRows)
-        t.setEditTriggers(t.NoEditTriggers)
+        # Use enums from QAbstractItemView for selection/edit behavior
+        try:
+            t.setSelectionBehavior(QAbstractItemView.SelectRows)  # older-style enum
+            t.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        except Exception:
+            # Qt6 namespaced enums fallback
+            t.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+            t.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         t.setColumnWidth(_COL_ACTIVE, 70)
         t.setColumnWidth(_COL_NAME, 160)
         t.setColumnWidth(_COL_KIND, 90)
@@ -88,6 +97,42 @@ class PluginManagerDialog(QDialog):
             t.setItem(i, _COL_VER, QTableWidgetItem(str(ver or "")))
         t.blockSignals(False)
         self._updating = False
+
+    def _on_rescan(self):
+        # Parse dirs from edit, persist to settings and DB, rescan and reload
+        text = self.ui.dirsEdit.text().strip()
+        dirs = self._parse_dirs(text)
+        # persist to app settings
+        try:
+            self.settings.plugin_dirs = dirs
+            self.settings.save()
+        except Exception:
+            pass
+        # persist to DB settings for CLI/shared use
+        try:
+            if hasattr(self.vm, "svc") and hasattr(self.vm.svc, "db"):
+                self.vm.svc.db.set_setting("plugin_dirs", ":".join(dirs))  # type: ignore[attr-defined]
+        except Exception:
+            pass
+        # Discover plugins and reload active ones
+        try:
+            self.vm.discover(dirs)
+        except Exception as e:
+            QMessageBox.critical(self, "Rescan failed", str(e))
+            return
+        self.refresh()
+
+    def _activate_all(self, make_active: bool) -> None:
+        # Toggle all listed plugins to the desired state
+        try:
+            t = self.ui.pluginsTable
+            for row in range(t.rowCount()):
+                name = t.item(row, _COL_NAME).text()
+                kind = t.item(row, _COL_KIND).text()
+                self.vm.toggle(name, kind, make_active)
+        except Exception as e:
+            QMessageBox.critical(self, "Activate/Deactivate failed", str(e))
+        self.refresh()
 
     def _on_cell_changed(self, row: int, col: int):
         if self._updating or col != _COL_ACTIVE:

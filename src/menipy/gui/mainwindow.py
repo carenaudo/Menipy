@@ -2,16 +2,15 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Sequence, List, Optional
+from typing import List, Optional
 
-import logging
-from PySide6.QtCore import QFile, QByteArray, Qt, QObject, Signal
+from PySide6.QtCore import QFile, QByteArray, Qt
 from PySide6.QtGui import QAction, QCloseEvent, QImage
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QFileDialog, QMessageBox, QInputDialog,
-    QMenuBar, QLayout, QPlainTextEdit, QMenu, QListWidget, QListWidgetItem,
-    QComboBox, QToolButton, QLineEdit, QCheckBox, QSpinBox, QPushButton, QLabel, QTableWidget, QTableWidgetItem
+    QLayout, QPlainTextEdit, QListWidget, QListWidgetItem,
+    QComboBox, QToolButton, QLineEdit, QCheckBox, QSpinBox, QPushButton, QTableWidget, QTableWidgetItem
 )
 
 from menipy.gui.views.image_view import DRAW_NONE, DRAW_POINT, DRAW_LINE, DRAW_RECT
@@ -19,29 +18,8 @@ from menipy.gui.views.image_view import DRAW_NONE, DRAW_POINT, DRAW_LINE, DRAW_R
 # --- compiled split main window UI ---
 from menipy.gui.views.ui_main_window import Ui_MainWindow
 
-
-# Small Qt bridge and logging.Handler to stream Python logs into the Log tab.
-class QtLogBridge(QObject):
-    log = Signal(str)
-
-
-class QtLogHandler(logging.Handler):
-    """Logging handler that emits records via a Qt signal (thread-safe queued emits)."""
-    def __init__(self, bridge: QtLogBridge):
-        super().__init__()
-        self.bridge = bridge
-
-    def emit(self, record: logging.LogRecord) -> None:  # type: ignore[override]
-        try:
-            msg = self.format(record)
-            # Emit via Qt signal; if called from a non-GUI thread this becomes a queued signal
-            self.bridge.log.emit(msg)
-        except Exception:
-            try:
-                # fallback to console if signal fails
-                print(self.format(record))
-            except Exception:
-                pass
+from menipy.gui.logging_bridge import install_qt_logging
+from menipy.gui.plugins_panel import PluginsController
 
 # --- promoted preview widget (registered into QUiLoader) ---
 try:
@@ -77,14 +55,6 @@ except Exception:
         @classmethod
         def load(cls): return cls()
         def save(self): pass
-
-# --- plugins infra (guarded) ---
-try:
-    from menipy.common.plugins import PluginDB, discover_into_db, load_active_plugins
-except Exception:
-    PluginDB = None  # type: ignore
-    def discover_into_db(*a, **k): pass  # type: ignore
-    def load_active_plugins(*a, **k): pass  # type: ignore
 
 # --- pipelines map (guarded) ---
 PIPELINE_MAP = {}
@@ -161,22 +131,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # Install Qt logging bridge (only one handler) and connect to logView
         try:
-            self._qt_log_bridge = QtLogBridge()
-            self._qt_log_bridge.log.connect(lambda m: self.logView.appendPlainText(str(m)))
-            root_logger = logging.getLogger()
-            # avoid adding multiple handlers in repeated constructions
-            if not any(isinstance(h, QtLogHandler) for h in root_logger.handlers):
-                h = QtLogHandler(self._qt_log_bridge)
-                h.setFormatter(logging.Formatter("%(asctime)s | %(levelname)s | %(name)s | %(message)s"))
-                root_logger.addHandler(h)
+            self._qt_log_bridge, self._qt_log_handler = install_qt_logging(self.logView)
         except Exception:
             pass
 
         # ---------- plugin dock (optional) ----------
-        self._build_plugin_dock()
-
-        # View ▸ Plugins toggle (after dock exists)
-        self._add_plugins_toggle_to_view_menu()
+        self.plugins_controller = PluginsController(self, self.settings)
 
         # ---------- services / VMs ----------
         if PipelineRunner and RunViewModel:
@@ -232,44 +192,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         lay = host_or_layout.layout() or QVBoxLayout(host_or_layout)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.addWidget(child)
-
-    def _build_plugin_dock(self):
-        # Optional plugin system (graceful no-op if not available)
-        self.plugin_dock = None
-        if PluginDB:
-            try:
-                from PySide6.QtWidgets import QDockWidget
-                self.db = PluginDB()
-                self.db.init_schema()
-                # discover configured dirs (settings.plugin_dirs is a list[str])
-                self._plugins_discover(self.settings.plugin_dirs or [])
-                load_active_plugins(self.db)
-
-                self.plugin_dock = QDockWidget("Plugins", self)
-                self.plugin_dock.setObjectName("pluginDock")
-                self.plugin_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
-                self.plugin_dock.setFeatures(
-                    QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetClosable
-                )
-                # lightweight placeholder; you probably already have a plugin panel
-                info = QLabel("Plugins loaded.", self.plugin_dock)
-                info.setMargin(8)
-                self.plugin_dock.setWidget(info)
-                self.addDockWidget(Qt.RightDockWidgetArea, self.plugin_dock)
-                self.plugin_dock.hide()  # hidden by default (toggle via View menu)
-            except Exception as e:
-                print("[plugins] disabled:", e)
-
-    def _add_plugins_toggle_to_view_menu(self):
-        menu_view: Optional[QMenu] = self.findChild(QMenu, "menuView")
-        if not menu_view or not self.plugin_dock:
-            return
-        self.actionPlugins = QAction("Plugins", self)
-        self.actionPlugins.setCheckable(True)
-        self.actionPlugins.setChecked(self.plugin_dock.isVisible())
-        menu_view.addAction(self.actionPlugins)
-        self.actionPlugins.toggled.connect(self.plugin_dock.setVisible)
-        self.plugin_dock.visibilityChanged.connect(self.actionPlugins.setChecked)
 
     def _wire_menu_actions(self):
         # Actions declared in main_window_split.ui
@@ -715,15 +637,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         QMessageBox.critical(self, "Pipeline Error", msg)
         self.statusBar().showMessage("Error", 1500)
 
-    # -------------------------- plugins discovery --------------------------
-
-    def _plugins_discover(self, dirs: Sequence[str | Path]) -> None:
-        try:
-            if PluginDB:
-                discover_into_db(self.db, [Path(d) for d in dirs])  # type: ignore[attr-defined]
-        except Exception as e:
-            print("[plugins] discover error:", e)
-
     # -------------------------- window state --------------------------
 
     def _restore_window_layout(self):
@@ -757,3 +670,4 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         except Exception:
             pass
         super().closeEvent(event)
+

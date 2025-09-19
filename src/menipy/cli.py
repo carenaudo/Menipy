@@ -82,7 +82,17 @@ def _patch_acquisition(p: PipelineBase, *, image: Optional[Path], camera: Option
 
 
 def main(argv: Optional[list[str]] = None) -> int:
-    ap = argparse.ArgumentParser(prog="adsa", description="Run ADSA pipelines (CLI)")
+    ap = argparse.ArgumentParser(
+        prog="adsa",
+        description=(
+            "Run ADSA pipelines (CLI).\n\n"
+            "Plugins: when available, plugins can be managed via a SQLite DB.\n"
+            "If the DB has a settings key 'plugin_dirs', discovery will use it\n"
+            "(separator-separated list using ':' or ';'). You can set it via\n"
+            "the subcommand: adsa plugins set-dirs \"./plugins1;./plugins2\"."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     ap.add_argument("--pipeline", default="sessile",
                     choices=["sessile","oscillating","capillary_rise","pendant","captive_bubble"])
     src = ap.add_mutually_exclusive_group()
@@ -92,13 +102,64 @@ def main(argv: Optional[list[str]] = None) -> int:
     ap.add_argument("--out", type=str, default="./out", help="Output folder (preview/results)")
 
     # Optional plugin controls (no-ops if plugin system not present)
-    ap.add_argument("--plugins", type=str, default="./plugins", help="Plugin directories (colon/semicolon-separated)")
+    ap.add_argument(
+        "--plugins",
+        type=str,
+        default="./plugins",
+        help=(
+            "Plugin directories (':'/';' separated). Note: If the DB setting "
+            "'plugin_dirs' is set, it takes precedence. Use 'adsa plugins "
+            "set-dirs' to store it in the DB."
+        ),
+    )
     ap.add_argument("--db", type=str, default="adsa_plugins.sqlite", help="Plugin SQLite path")
     ap.add_argument("--activate", action="append", default=[], help="Activate plugin name:kind (e.g., bezier:edge)")
     ap.add_argument("--deactivate", action="append", default=[], help="Deactivate plugin name:kind")
     ap.add_argument("--no-overlay", action="store_true", help="Skip overlay drawing stage")
 
+    # Subcommands for convenience utilities (plugins, etc.)
+    sub = ap.add_subparsers(dest="command")
+
+    # adsa plugins set-dirs "dir1;dir2"
+    sp_plugins = sub.add_parser("plugins", help="Plugin DB utilities")
+    sp_plugins_sub = sp_plugins.add_subparsers(dest="plugins_cmd")
+    sp_set_dirs = sp_plugins_sub.add_parser(
+        "set-dirs",
+        help=(
+            "Set the DB setting 'plugin_dirs' to a separator-separated list "
+            "of directories (use ':' or ';')."
+        ),
+    )
+    sp_set_dirs.add_argument(
+        "dirs",
+        type=str,
+        help="Plugin directories string (e.g., ./p1;./p2 or ./p1:./p2)",
+    )
+    sp_set_dirs.add_argument(
+        "--db",
+        type=str,
+        default="adsa_plugins.sqlite",
+        help="Plugin SQLite path (defaults to ./adsa_plugins.sqlite)",
+    )
+
     args = ap.parse_args(argv)
+
+    # Handle subcommands early and exit.
+    if args.command == "plugins" and args.plugins_cmd == "set-dirs":
+        if not _PLUGINS_OK:
+            print("[adsa] plugin DB features are not available in this build.")
+            return 1
+        db = PluginDB(Path(getattr(args, "db", "adsa_plugins.sqlite")))
+        db.init_schema()
+        db.set_setting("plugin_dirs", args.dirs)
+        print(
+            "[adsa] set DB setting 'plugin_dirs' to:",
+            args.dirs,
+        )
+        print(
+            "[adsa] Tip: run without --plugins to use DB-configured directories."
+        )
+        return 0
 
     # Optional: SQLite plugin discovery + activation
     if _PLUGINS_OK:

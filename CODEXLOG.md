@@ -838,3 +838,12 @@ initialization. All tests still pass (53 passed).
 **Task:** Add file locations for internal imports in import map.
 
 **Summary:** Regenerated `IMPORTED.md` to append source file paths for modules within `src`, leaving third-party packages unchanged.
+## Entry 141 - Plugins menu and CLI DB setting
+
+**Task:** Add a GUI Plugins menu with a Plugin Manager dialog and a quick Add Plugin Folder action. Also expose a CLI subcommand to set DB-based plugin_dirs and update help text.
+
+**Summary:**
+- Added Plugins menu with "Plugin Manager…" and "Add Plugin Folder…" actions in gui/mainwindow.py.
+- Implemented _open_plugin_manager and _add_plugin_folder to persist directories to app settings and SQLite (plugin_dirs), rescan, and load active plugins.
+- Completed PluginManagerDialog with Rescan and Activate/Deactivate All logic; guarded missing Close button.
+- Enhanced cli.py help and added dsa plugins set-dirs to call db.set_setting("plugin_dirs", ...).
