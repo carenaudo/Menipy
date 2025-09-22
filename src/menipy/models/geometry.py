@@ -1,9 +1,41 @@
 """Geometric fitting utilities."""
 
 from typing import Tuple
+from dataclasses import dataclass
 
 import numpy as np
 from numpy.linalg import lstsq
+
+
+@dataclass
+class Point:
+    """Represents a 2D point."""
+    x: float
+    y: float
+
+@dataclass
+class ROI:
+    """Represents a rectangular region of interest."""
+    x: int
+    y: int
+    width: int
+    height: int
+
+@dataclass
+class Needle:
+    """Represents the needle."""
+    x: int
+    y: int
+    width: int
+    height: int
+
+@dataclass
+class ContactLine:
+    """Represents the contact line."""
+    x1: float
+    y1: float
+    x2: float
+    y2: float
 
 
 def fit_circle(points: np.ndarray) -> Tuple[np.ndarray, float]:
@@ -44,4 +76,3 @@ def horizontal_intersections(contour: np.ndarray, y: float) -> np.ndarray:
             t = (y - y1) / (y2 - y1)
             xs.append(float(x1 + t * (x2 - x1)))
     return np.array(xs, dtype=float)
-

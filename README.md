@@ -48,6 +48,7 @@ Use at your own risk.
 - **AGENTS.md** – roles for Documentation, Scaffold, Environment, Processing, Modeling, GUI, Batch, and CI & Packaging agents.
 - **PLAN.md** – a high-level plan detailing the desired directory layout, technology stack, and feature set.
 - **doc/** – supporting Markdown files (`physics_models.md`, `numerical_methods.md`, `image_processing.md`, `gui_design.md`, `drop_analysis.md`) that supply equations and workflow descriptions for CODEX.
+- **CHANGELOG.md** – A log of notable changes for each version.
 
 By combining these materials with CODEX automation, Menipy aims to become a fully functional droplet shape analysis tool with a PySide6 interface and automated tests, all generated with minimal human interaction.
 
@@ -82,16 +83,26 @@ the panel. Detailed instructions are available in `doc/drop_analysis.md`.
 
 ## Developer note: runtime resources and GUI logging
 
-During recent refactor work the application now emits clear per-stage pipeline logs and a status message that is shown in the GUI status bar. If you run the GUI and see missing icon warnings for paths like `:/icons/...`, run the resource build helper:
+During recent refactor work, the application now emits clear per-stage pipeline logs and a status message that is shown in the GUI status bar. If you run the GUI and see missing icon warnings for paths like `:/icons/...`, run the resource build helper:
 
 - In the project root, run the build script to produce `icons.rcc` (requires PySide6 tools):
-  - Windows PowerShell: D:/programacion/Menipy/.venv/Scripts/python.exe tools/build_resources.py
+  - Windows PowerShell:
+    ```powershell
+    D:/programacion/Menipy/.venv/Scripts/python.exe tools/build_resources.py
+    ```
 
 After producing `icons.rcc`, the application will register it automatically at startup and QIcon lookups for `:/icons/...` should resolve. If you prefer a quick workaround, the GUI will fall back to the on-disk SVG files under `src/menipy/gui/resources/icons/` when the compiled resource is not available.
 
 Logs: the application forwards Python logging to the in-app Log tab. Look there for per-stage messages like:
-`[pipeline:<name> ctx=0x... ] Completed stage: <stage> (<ms> ms) | frames=N preview=M contour=K results_keys=L`
+```
+[pipeline:<name> ctx=0x...] Completed stage: <stage> (<ms> ms) | frames=N preview=M contour=K results_keys=L
+```
 
-This note was appended by an automated assistant during development tasks to make the runtime behavior easier to discover.
+## Developer Documentation
+
+For developers looking to extend Menipy's functionality, we provide guides on common tasks.
+
+- [**Adding a New Analysis Pipeline**](doc/developer_guide_pipelines.md): A step-by-step guide on how to create and integrate a new analysis workflow into the application.
+- [**Adding a New Image Filter Plugin**](doc/developer_guide_plugins.md): A guide on creating and integrating custom image filters using the plugin system.
 
 ```

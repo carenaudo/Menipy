@@ -3,13 +3,20 @@ from __future__ import annotations
 from typing import Optional
 from PySide6.QtCore import QObject, Signal, QRunnable, QThreadPool
 
-from menipy.pipelines.base import PipelineError
+from menipy.pipelines.base import PipelineBase, PipelineError
 from menipy.common import acquisition as acq
 
+# Import the same map the GUI uses to ensure consistency
+try:
+    from menipy.pipelines.discover import PIPELINE_MAP
+except ImportError:
+    PIPELINE_MAP = {}
+
+
 class _Job(QRunnable):
-    def __init__(self, pipeline_name: str, image: Optional[str], camera: Optional[int], frames: int, callback):
+    def __init__(self, pipeline_cls: type[PipelineBase], image: Optional[str], camera: Optional[int], frames: int, callback):
         super().__init__()
-        self.pipeline_name = pipeline_name
+        self.pipeline_cls = pipeline_cls
         self.image = image
         self.camera = camera
         self.frames = frames
@@ -17,7 +24,7 @@ class _Job(QRunnable):
 
     def run(self):
         try:
-            p = _pick(self.pipeline_name)
+            p = self.pipeline_cls()
             # patch acquisition
             if self.image:
                 p.do_acquisition = (lambda ctx: setattr(ctx, "frames", acq.from_file([self.image])) or ctx)  # type: ignore
@@ -28,24 +35,13 @@ class _Job(QRunnable):
         except Exception as e:
             self.callback(success=False, ctx=None, err=str(e))
 
+
 def _pick(name: str):
-    name = name.lower()
-    if name == "sessile":
-        from menipy.pipelines.sessile.stages import SessilePipeline
-        return SessilePipeline()
-    if name == "oscillating":
-        from menipy.pipelines.oscillating.stages import OscillatingPipeline
-        return OscillatingPipeline()
-    if name == "capillary_rise":
-        from menipy.pipelines.capillary_rise.stages import CapillaryRisePipeline
-        return CapillaryRisePipeline()
-    if name == "pendant":
-        from menipy.pipelines.pendant.stages import PendantPipeline
-        return PendantPipeline()
-    if name == "captive_bubble":
-        from menipy.pipelines.captive_bubble.stages import CaptiveBubblePipeline
-        return CaptiveBubblePipeline()
-    raise PipelineError(f"Unknown pipeline '{name}'")
+    """Look up the pipeline class from the central map."""
+    p_cls = PIPELINE_MAP.get(name.lower())
+    if p_cls is None:
+        raise PipelineError(f"Unknown pipeline '{name}'")
+    return p_cls
 
 class PipelineRunner(QObject):
     finished = Signal(object)  # ctx or error dict
@@ -55,7 +51,8 @@ class PipelineRunner(QObject):
         self.pool = QThreadPool.globalInstance()
 
     def run(self, pipeline: str, image: Optional[str], camera: Optional[int], frames: int = 1):
-        job = _Job(pipeline, image, camera, frames, callback=self._emit)
+        pipeline_cls = _pick(pipeline)
+        job = _Job(pipeline_cls, image, camera, frames, callback=self._emit)
         self.pool.start(job)
 
     def _emit(self, success: bool, ctx, err: Optional[str]):

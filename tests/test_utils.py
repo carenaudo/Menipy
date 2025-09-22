@@ -1,6 +1,6 @@
 import pytest
 
-from menipy.calibration import (
+from menipy.zoldcalibration import (
     set_calibration,
     get_calibration,
     calibrate_from_points,

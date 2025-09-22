@@ -7,7 +7,7 @@ from typing import Optional
 import cv2
 import numpy as np
 
-from menipy.zold_processing.segmentation import find_contours
+
 from .geometry import fit_circle
 
 GRAVITY = 9.81  # m s⁻²
@@ -77,7 +77,7 @@ def estimate_surface_tension(
     if delta_rho <= 0:
         raise ValueError("liquid density must exceed air density")
 
-    contours = find_contours(mask)
+    contours, _ = cv2.findContours(mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if not contours:
         return None
     contour = max(contours, key=cv2.contourArea).astype(float)

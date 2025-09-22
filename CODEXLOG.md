@@ -847,3 +847,71 @@ initialization. All tests still pass (53 passed).
 - Implemented _open_plugin_manager and _add_plugin_folder to persist directories to app settings and SQLite (plugin_dirs), rescan, and load active plugins.
 - Completed PluginManagerDialog with Rescan and Activate/Deactivate All logic; guarded missing Close button.
 - Enhanced cli.py help and added dsa plugins set-dirs to call db.set_setting("plugin_dirs", ...).
+
+## Entry 142 - Create Developer Guides
+
+**Task:** Create developer guides for adding new analysis pipelines and image filter plugins.
+
+**Summary:** Added two new developer guides to assist with extending the application and updated the main `README.md` to link to them.
+1.  `doc/developer_guide_pipelines.md`: A step-by-step guide on how to create and integrate a new analysis workflow into the application.
+2.  `doc/developer_guide_plugins.md`: A guide on creating and integrating custom image filters using the plugin system.
+
+## Entry 143 - Consolidate Developer Documentation
+
+**Task:** Consolidate all developer documentation into the `doc/` directory for better organization.
+
+**Summary:** Moved `developer_guide_pipelines.md` and `developer_guide_plugins.md` into the `doc/` directory. Updated `README.md` to include direct markdown links to the new file locations.
+
+## Entry 144 - Fix Markdown Formatting
+
+**Task:** Review all markdown files for formatting consistency and fix any issues.
+
+**Summary:** Standardized formatting across several markdown files. In `README.md`, improved code block formatting for commands and log examples. In `REFACTOR_PLAN.md`, corrected heading levels for a consistent document structure. In `CODEXLOG.md`, removed extraneous newlines that were breaking the rendering of some entries.
+
+## Entry 145 - Create CHANGELOG.md
+
+**Task:** Create a `CHANGELOG.md` file based on the project's git repository history.
+
+**Summary:** Created a new `CHANGELOG.md` file by parsing the development history from `CODEXLOG.md`. The changelog is structured according to the "Keep a Changelog" format, summarizing added features, changes, fixes, and removed components in a user-friendly way.
+
+## Entry 146 - Link CHANGELOG in README
+
+**Task:** Update the README.md to include a link to the new CHANGELOG.md file.
+
+**Summary:** Added a link to `CHANGELOG.md` in the "Repository Overview" section of the main `README.md` file to make it more discoverable.
+
+## Entry 147 - Fix Pipeline Discovery
+
+**Task:** Resolve an issue where the pipeline selection dropdown remains empty.
+
+**Summary:** The `discover.py` file, which contains the central `PIPELINE_MAP`, was incorrectly located in `src/menipy/gui/panels/` and had incorrect relative imports. This caused import errors that prevented the GUI from populating the pipeline list. I have moved the file to its correct location at `src/menipy/pipelines/discover.py` and corrected its internal imports. This resolves the import cycle and allows the `SetupPanelController` to correctly find and display the available pipelines.
+
+## Entry 148 - Add Pipeline Debugging Prints
+
+**Task:** Add print statements to the console to debug why the pipeline selection dropdown is still empty.
+
+**Summary:** To diagnose the issue with the empty pipeline combo box, I've added `print()` statements in `SetupPanelController` to show which pipeline keys it receives upon initialization. I also removed a redundant, local `PIPELINE_MAP` definition from `mainwindow.py` to ensure all components use the central map from `menipy.pipelines.discover`.
+
+## Entry 149 - Fix Pipeline Discovery Imports
+
+**Task:** Resolve the root cause of the empty pipeline dropdown, which is an import-time failure.
+
+**Summary:** The console output confirmed that the `PIPELINE_MAP` was empty. This was caused by fragile relative imports within the `pipelines` package. I have fixed this by simplifying `src/menipy/pipelines/__init__.py` and making the imports in `src/menipy/pipelines/discover.py` more direct and robust. This resolves the import-time error, allowing the `PIPELINE_MAP` to be populated correctly and displayed in the GUI.
+
+## Entry 150 - Correct Pipeline Discovery Paths and Add Test
+
+**Task:** Fix the still-empty pipeline dropdown and add a test for the `PipelineRunner`.
+
+**Summary:** The root cause of the empty `PIPELINE_MAP` was that `discover.py` was importing pipeline classes from incorrect module paths (e.g., `stages.py` instead of `geometry.py`). I have corrected these import paths to match the actual file structure. Additionally, I created `tests/test_pipeline_runner.py` to verify that all pipelines in `PIPELINE_MAP` can be correctly loaded by the `PipelineRunner`, which will help prevent future regressions.
+
+## Entry 151 - Implement Dynamic Pipeline Discovery
+
+**Task:** The pipeline discovery logic is wrong and should check the `__init__.py` files in the pipeline subfolders.
+
+**Summary:** Replaced the hardcoded pipeline imports in `src/menipy/pipelines/discover.py` with a dynamic discovery mechanism. The new implementation now scans the subdirectories of the `pipelines` package, imports each one, and looks for a class that inherits from `PipelineBase`. This makes the system more robust and automatically discovers new pipelines when they are added, resolving the issue of the empty pipeline selection dropdown.
+
+## Entry 152 - Print Discovered Pipelines
+
+**Task:** Print the `PIPELINE_MAP` variable to the console for debugging.
+
+**Summary:** Added a `print()` statement to `src/menipy/pipelines/discover.py` to output the contents of the `PIPELINE_MAP` immediately after it is populated. This will help diagnose why the pipeline list is appearing empty in the GUI.

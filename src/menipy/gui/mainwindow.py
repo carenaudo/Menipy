@@ -5,21 +5,24 @@ from pathlib import Path
 from typing import List, Optional
 
 from PySide6.QtCore import QFile, QByteArray, Qt
-from PySide6.QtGui import QAction, QCloseEvent, QImage
+from PySide6.QtGui import QAction, QCloseEvent
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QFileDialog, QMessageBox, QInputDialog,
-    QLayout, QPlainTextEdit, QListWidget, QListWidgetItem,
-    QComboBox, QToolButton, QLineEdit, QCheckBox, QSpinBox, QPushButton, QTableWidget, QTableWidgetItem
+    QMainWindow, QWidget, QVBoxLayout, QFileDialog, QMessageBox,
+    QLayout, QPlainTextEdit
 )
 
-from menipy.gui.views.image_view import DRAW_NONE, DRAW_POINT, DRAW_LINE, DRAW_RECT
+from menipy.gui.views.image_view import DRAW_NONE
 
 # --- compiled split main window UI ---
 from menipy.gui.views.ui_main_window import Ui_MainWindow
 
 from menipy.gui.logging_bridge import install_qt_logging
 from menipy.gui.plugins_panel import PluginsController
+from menipy.gui.panels.setup_panel import SetupPanelController
+from menipy.gui.panels.preview_panel import PreviewPanel
+from menipy.gui.panels.results_panel import ResultsPanel
+from menipy.gui.pipeline_controller import PipelineController
 
 # --- promoted preview widget (registered into QUiLoader) ---
 try:
@@ -57,21 +60,10 @@ except Exception:
         def save(self): pass
 
 # --- pipelines map (guarded) ---
-PIPELINE_MAP = {}
 try:
-    from menipy.pipelines import (
-        SessilePipeline, PendantPipeline, OscillatingPipeline,
-        CapillaryRisePipeline, CaptiveBubblePipeline,
-    )
-    PIPELINE_MAP = {
-        "sessile": SessilePipeline,
-        "pendant": PendantPipeline,
-        "oscillating": OscillatingPipeline,
-        "capillary_rise": CapillaryRisePipeline,
-        "captive_bubble": CaptiveBubblePipeline,
-    }
+    from menipy.pipelines.discover import PIPELINE_MAP
 except Exception:
-    pass
+    PIPELINE_MAP = {}
 
 # --- optional runner & viewmodel (guarded) ---
 try:
@@ -124,6 +116,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._embed(self.overlay_panel, self.previewHostLayout)
         self._embed(self.results_panel, self.resultsHostLayout)
 
+        self.preview_panel = PreviewPanel(self, self.overlay_panel, ImageView)
+        self.results_panel_ctrl = ResultsPanel(self.results_panel)
+
         # add simple log view into the Log tab
         self.logView = QPlainTextEdit(self)
         self.logView.setReadOnly(True)
@@ -142,14 +137,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if PipelineRunner and RunViewModel:
             self.runner = PipelineRunner()
             self.run_vm = RunViewModel(self.runner)
-            # signals
-            self.run_vm.preview_ready.connect(self._on_preview_ready)
-            self.run_vm.results_ready.connect(self._on_results_ready)
-            self.run_vm.error_occurred.connect(self._on_pipeline_error)
-            # new: status and logs from pipeline Context
+            # signals            # new: status and logs from pipeline Context
             try:
                 self.run_vm.status_ready.connect(lambda msg: self.statusBar().showMessage(msg, 5000))
-                self.run_vm.logs_ready.connect(self._append_logs)
             except Exception:
                 pass
         else:
@@ -159,14 +149,48 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # SOP service
         self.sops = SopService() if SopService else None
 
-        # ---------- wire panels ----------
-        self._wire_setup_panel()
-        self._wire_overlay_panel()
-        self._wire_results_panel()
-        # Start with no drawing on the preview view (if present)
-        if getattr(self, "imageView", None) and hasattr(self.imageView, "set_draw_mode"):
+        self.setup_panel_ctrl = SetupPanelController(
+            self,
+            self.setup_panel,
+            self.settings,
+            self.sops,
+            STAGE_ORDER,
+            StepItemWidget,
+            list(PIPELINE_MAP.keys()) if PIPELINE_MAP else [],
+        )
+
+        self.pipeline_ctrl = PipelineController(
+            window=self,
+            setup_ctrl=self.setup_panel_ctrl,
+            preview_panel=self.preview_panel,
+            results_panel=self.results_panel_ctrl,
+            pipeline_map=PIPELINE_MAP,
+            sops=self.sops,
+            run_vm=self.run_vm,
+            log_view=self.logView,
+        )
+
+        self.setup_panel_ctrl.browse_requested.connect(self._browse_image)
+        self.setup_panel_ctrl.preview_requested.connect(self._on_preview_image)
+        self.setup_panel_ctrl.draw_mode_requested.connect(self.preview_panel.set_draw_mode)
+        self.setup_panel_ctrl.clear_overlays_requested.connect(self.preview_panel.clear_overlays)
+        self.setup_panel_ctrl.run_all_requested.connect(self.pipeline_ctrl.run_all)
+        self.setup_panel_ctrl.play_stage_requested.connect(self.pipeline_ctrl.run_stage)
+        self.setup_panel_ctrl.config_stage_requested.connect(self._on_config_step)
+
+        if self.run_vm:
+            self.run_vm.preview_ready.connect(self.pipeline_ctrl.on_preview_ready)
+            self.run_vm.results_ready.connect(self.pipeline_ctrl.on_results_ready)
+            self.run_vm.error_occurred.connect(self.pipeline_ctrl.on_pipeline_error)
             try:
-                self.imageView.set_draw_mode(DRAW_NONE)
+                self.run_vm.logs_ready.connect(self.pipeline_ctrl.append_logs)
+            except Exception:
+                pass
+
+        # ---------- wire panels ----------
+        if self.preview_panel.has_view():
+            try:
+                self.preview_panel.set_draw_mode(DRAW_NONE)
             except Exception:
                 pass
         # menubar actions from split UI
@@ -199,445 +223,52 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.actionOpenImage.triggered.connect(self._browse_image)       # type: ignore[attr-defined]
             self.actionOpenCamera.triggered.connect(lambda: self._select_camera(True))  # type: ignore[attr-defined]
             self.actionQuit.triggered.connect(self.close)                    # type: ignore[attr-defined]
-            self.actionRunFull.triggered.connect(self._on_run_clicked)       # type: ignore[attr-defined]
+            self.actionRunFull.triggered.connect(self.pipeline_ctrl.run_full)       # type: ignore[attr-defined]
             # Reuse Run Full for now; swap to subset if you add it
-            self.actionRunSelected.triggered.connect(self._on_run_clicked)   # type: ignore[attr-defined]
+            self.actionRunSelected.triggered.connect(self.pipeline_ctrl.run_full)   # type: ignore[attr-defined]
             self.actionStop.triggered.connect(lambda: self.statusBar().showMessage("Stop requested", 1000))  # type: ignore[attr-defined]
             self.actionAbout.triggered.connect(lambda: QMessageBox.information(self, "About", "Menipy ADSA GUI"))  # type: ignore[attr-defined]
         except Exception:
             pass
 
-    def _wire_setup_panel(self):
-        # Grab widgets from setup_panel
-        self.testCombo: Optional[QComboBox] = self.setup_panel.findChild(QComboBox, "testCombo")
-        self.sopCombo: Optional[QComboBox] = self.setup_panel.findChild(QComboBox, "sopCombo")
-        self.addSopBtn: Optional[QToolButton] = self.setup_panel.findChild(QToolButton, "addSopBtn")
-
-        self.imagePathEdit: Optional[QLineEdit] = self.setup_panel.findChild(QLineEdit, "imagePathEdit")
-        self.browseBtn: Optional[QToolButton] = self.setup_panel.findChild(QToolButton, "browseBtn")
-
-        # NEW: bind preview & calibration controls from the left panel
-        self.previewBtn: Optional[QToolButton] = self.setup_panel.findChild(QToolButton, "previewBtn")
-        #from PySide6.QtWidgets import QPushButton  # local import to avoid top clutter
-        self.drawPointBtn: Optional[QPushButton] = self.setup_panel.findChild(QPushButton, "drawPointBtn")
-        self.drawLineBtn: Optional[QPushButton]  = self.setup_panel.findChild(QPushButton, "drawLineBtn")
-        self.drawRectBtn: Optional[QPushButton]  = self.setup_panel.findChild(QPushButton, "drawRectBtn")
-        self.clearOverlayBtn: Optional[QPushButton] = self.setup_panel.findChild(QPushButton, "clearOverlayBtn")
-
-
-        self.cameraCheck: Optional[QCheckBox] = self.setup_panel.findChild(QCheckBox, "cameraCheck")
-        self.cameraIdSpin: Optional[QSpinBox] = self.setup_panel.findChild(QSpinBox, "cameraIdSpin")
-        self.framesSpin: Optional[QSpinBox] = self.setup_panel.findChild(QSpinBox, "framesSpin")
-
-        self.stepsList: Optional[QListWidget] = self.setup_panel.findChild(QListWidget, "stepsList")
-        self.runAllBtn: Optional[QPushButton] = self.setup_panel.findChild(QPushButton, "runAllBtn")
-
-        # Restore saved selections
-        if self.imagePathEdit and self.settings.last_image_path:
-            self.imagePathEdit.setText(self.settings.last_image_path)
-        if self.testCombo and self.settings.selected_pipeline:
-            i = self.testCombo.findText(self.settings.selected_pipeline)
-            if i != -1:
-                self.testCombo.setCurrentIndex(i)
-
-        # Populate steps UI rows (if widget class available)
-        self._populate_steps_list()
-
-        # Pipeline change -> rebuild SOP combo and apply default
-        if self.testCombo:
-            self.testCombo.currentTextChanged.connect(self._on_pipeline_changed)
-            self._on_pipeline_changed(self.testCombo.currentText())
-
-        # SOP add (simple “clone current UI selection”)
-        if self.addSopBtn and self.sops:
-            self.addSopBtn.clicked.connect(self._on_add_sop)
-
-        # Browse image
-        if self.browseBtn:
-            self.browseBtn.clicked.connect(self._browse_image)
-        
-        # Preview button: loads the image in the right preview area
-        if hasattr(self, "previewBtn") and hasattr(self, "imagePathEdit"):
-            self.previewBtn.clicked.connect(self._on_preview_image)
-
-        # Calibration buttons (left panel group)
-        # Expecting: drawPointBtn, drawLineBtn, drawRectBtn, clearOverlayBtn
-        if hasattr(self, "drawPointBtn"):
-            self.drawPointBtn.clicked.connect(lambda: self._set_draw_mode(DRAW_POINT))
-        if hasattr(self, "drawLineBtn"):
-            self.drawLineBtn.clicked.connect(lambda: self._set_draw_mode(DRAW_LINE))
-        if hasattr(self, "drawRectBtn"):
-            self.drawRectBtn.clicked.connect(lambda: self._set_draw_mode(DRAW_RECT))
-        if hasattr(self, "clearOverlayBtn"):
-            self.clearOverlayBtn.clicked.connect(self._clear_overlays)
-        
-        # Run All
-        if self.runAllBtn:
-            self.runAllBtn.clicked.connect(self._on_run_all_sop)
-
-    def _wire_overlay_panel(self):
-        # promoted ImageView and zoom buttons
-        view = self.overlay_panel.findChild(ImageView, "previewView") if ImageView else None
-        self.imageView = view
-        if self.imageView:
-            try:
-                self.imageView.set_auto_policy("preserve")
-                self.imageView.set_wheel_zoom_requires_ctrl(False)
-            except Exception:
-                pass
-
-        # Try both toolbutton/pushbutton
-        def _btn(name: str):
-            b = self.overlay_panel.findChild(QToolButton, name)
-            return b or self.overlay_panel.findChild(QPushButton, name)
-
-        z_in = _btn("zoomInBtn")
-        z_out = _btn("zoomOutBtn")
-        z_100 = _btn("actualBtn")
-        z_fit = _btn("fitBtn")
-        if self.imageView:
-            if z_in:  z_in.clicked.connect(self.imageView.zoom_in)
-            if z_out: z_out.clicked.connect(self.imageView.zoom_out)
-            if z_100: z_100.clicked.connect(self.imageView.actual_size)
-            if z_fit: z_fit.clicked.connect(self.imageView.fit_to_window)
-
     def _on_browse_image(self):
         path, _ = QFileDialog.getOpenFileName(self, "Choose image", "", "Images (*.png *.jpg *.jpeg *.bmp *.tif *.tiff)")
-        if path and hasattr(self, "imagePathEdit"):
-            self.imagePathEdit.setText(path)
+
 
     def _on_preview_image(self):
-        if not hasattr(self, "imagePathEdit") or not hasattr(self, "previewImageView"):
-            return
-        path = self.imagePathEdit.text().strip()
+        path = self.setup_panel_ctrl.image_path()
         if not path:
             QMessageBox.information(self, "Preview", "Please select an image first.")
             return
         try:
-            # Assuming your ImageView exposes setImage(path) or similar.
-            # If not, replace with your existing method to load a pixmap.
-            if hasattr(self.previewImageView, "setImage"):
-                self.previewImageView.setImage(path)
-            elif hasattr(self.previewImageView, "load"):
-                self.previewImageView.load(path)
-            else:
-                # Fallback: you may have a controller method to push images into the view
-                raise RuntimeError("Preview ImageView has no loader method")
+            self.preview_panel.load_path(path)
         except Exception as e:
             QMessageBox.warning(self, "Preview error", f"Could not load image:\n{e}")
-
-    def _set_draw_mode(self, mode):
-        if hasattr(self, "previewImageView") and hasattr(self.previewImageView, "set_draw_mode"):
-            self.previewImageView.set_draw_mode(mode)
-
-    def _clear_overlays(self):
-        if hasattr(self, "previewImageView") and hasattr(self.previewImageView, "clear_overlays"):
-            self.previewImageView.clear_overlays()
-
-    def _wire_results_panel(self):
-        # Set up simple placeholders; adjust to your UI
-        self.resultsTable: Optional[QTableWidget] = self.results_panel.findChild(QTableWidget, "resultsTable")
-        if self.resultsTable:
-            self.resultsTable.setColumnCount(2)
-            self.resultsTable.setHorizontalHeaderLabels(["Parameter", "Value"])
 
     # -------------------------- menu actions --------------------------
 
     def _browse_image(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Open Image", self.settings.last_image_path or "", "Images (*.png *.jpg *.jpeg *.bmp *.tif *.tiff)")
-        if path and self.imagePathEdit:
-            self.imagePathEdit.setText(path)
+        initial = self.setup_panel_ctrl.image_path() or self.settings.last_image_path or ""
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Open Image",
+            initial,
+            "Images (*.png *.jpg *.jpeg *.bmp *.tif *.tiff)",
+        )
+        if path:
+            self.setup_panel_ctrl.set_image_path(path)
             self.settings.last_image_path = path
             self.settings.save()
 
     def _select_camera(self, on: bool):
-        if self.cameraCheck:
-            self.cameraCheck.setChecked(bool(on))
+        self.setup_panel_ctrl.set_camera_enabled(on)
 
     # -------------------------- pipeline ops --------------------------
-
-    def _current_pipeline_name(self) -> Optional[str]:
-        cb = getattr(self, "testCombo", None)
-        if cb and hasattr(cb, "currentText"):
-            txt = cb.currentText().strip()
-            return txt or None
-        # legacy fallback
-        cb2 = getattr(self, "pipelineCombo", None)
-        if cb2 and hasattr(cb2, "currentText"):
-            txt = cb2.currentText().strip()
-            return txt or None
-        return None
-
-    def _gather_run_params(self):
-        name = self._current_pipeline_name() or "sessile"
-        use_camera = bool(self.cameraCheck.isChecked()) if self.cameraCheck else False
-        frames = int(self.framesSpin.value()) if self.framesSpin else 1
-        image = None if use_camera else (self.imagePathEdit.text().strip() if self.imagePathEdit else None)
-        cam_id = int(self.cameraIdSpin.value()) if (self.cameraIdSpin and use_camera) else None
-        return {"name": name, "use_camera": use_camera, "frames": frames, "image": image, "cam_id": cam_id}
-
-
-    def _on_run_clicked(self):
-        p = self._gather_run_params()
-        name, image, cam_id, frames = p["name"], p["image"], p["cam_id"], p["frames"]
-
-        pcls = PIPELINE_MAP.get(name)
-        if not pcls:
-            QMessageBox.warning(self, "Run", f"Unknown pipeline: {name}")
-            return
-
-        self.statusBar().showMessage(f"Running {name}…")
-
-        if self.run_vm:
-            try:
-                # call with keyword 'pipeline' matching RunViewModel signature
-                self.run_vm.run(pipeline=name, image=image, camera=cam_id, frames=frames)
-                return
-            except Exception as e:
-                print("[run_vm] fallback to direct run:", e)
-
-        # pass params to the pipeline
-        try:
-            pipe = pcls()
-            ctx = pipe.run(image=image, camera=cam_id, frames=frames)
-            if self.imageView and getattr(ctx, "preview", None) is not None:
-                self.imageView.set_image(ctx.preview)
-            if self.resultsTable and getattr(ctx, "results", None):
-                self._fill_results_table(ctx.results)
-            self.statusBar().showMessage("Done", 1500)
-        except Exception as e:
-            self._on_pipeline_error(str(e))
-
-    # “Run All” honoring SOP subset (if SOP service available; else same as Run Full)
-    def _on_run_all_sop(self):
-        # If no SOP service, just run full
-        if not self.sops:
-            return self._on_run_clicked()
-
-        # Gather run parameters once
-        p = self._gather_run_params()
-        name, image, cam_id, frames = p["name"], p["image"], p["cam_id"], p["frames"]
-
-        # Figure out which stages are enabled by the current SOP UI
-        stages = self._collect_included_stages_from_ui()
-        if not stages:
-            QMessageBox.warning(self, "Run All", "No stages enabled in the current SOP.")
-            return
-
-        # Prefer ViewModel subset run (it knows how to set up acquisition/context)
-        if self.run_vm and hasattr(self.run_vm, "run_subset"):
-            try:
-                self.statusBar().showMessage(f"Running {name} (SOP) …")
-                self.run_vm.run_subset(name, only=stages, image=image, camera=cam_id, frames=frames)
-                return
-            except Exception as e:
-                print("[run_vm subset] falling back to full run:", e)
-
-        # Fallback: use the existing full-run path (ensures source is set properly)
-        # This means no per-stage subset when VM subset isn't available, but it won't crash.
-        self._on_run_clicked()
-
-
-    # -------------------------- steps / SOP UI --------------------------
-
-    def _populate_steps_list(self):
-        self._step_widgets: List[StepItemWidget] = []
-        if not self.stepsList:
-            return
-        self.stepsList.clear()
-        if not StepItemWidget:
-            # plain text fallback
-            for s in STAGE_ORDER:
-                self.stepsList.addItem(s)
-            return
-
-        for stage in STAGE_ORDER:
-            w = StepItemWidget(stage, self.stepsList)
-            it = QListWidgetItem(self.stepsList)
-            it.setSizeHint(w.sizeHint())
-            self.stepsList.addItem(it)
-            self.stepsList.setItemWidget(it, w)
-            try:
-                w.set_status("pending")
-                w.playClicked.connect(self._on_play_step)
-                w.configClicked.connect(self._on_config_step)
-            except Exception:
-                pass
-            self._step_widgets.append(w)
-
-    def _on_pipeline_changed(self, _name: str):
-        # Ensure default SOP exists and refresh SOP list
-        if not self.sops:
-            return
-        pname = self._current_pipeline_name() or "sessile"
-        try:
-            self.sops.ensure_default(pname, STAGE_ORDER)
-            self._refresh_sop_combo()
-            self._apply_selected_sop()
-        except Exception as e:
-            print("[SOP] pipeline change:", e)
-
-
-
-    def _refresh_sop_combo(self, select: Optional[str] = None):
-        if not (self.sops and self.sopCombo):
-            return
-        self.sopCombo.blockSignals(True)
-        self.sopCombo.clear()
-        DEFAULT_KEY = self.sops.default_name()
-        self.sopCombo.addItem("Default (pipeline)", userData=DEFAULT_KEY)
-        try:
-            pname = self._current_pipeline_name() or "sessile"
-            customs = [n for n in self.sops.list(pname) if n != DEFAULT_KEY]
-            for name in customs:
-                self.sopCombo.addItem(name, userData=name)
-        except Exception:
-            pass
-        # select specific or default
-        idx = 0
-        if select:
-            for i in range(self.sopCombo.count()):
-                if self.sopCombo.itemData(i) == select:
-                    idx = i; break
-        self.sopCombo.setCurrentIndex(idx)
-        self.sopCombo.blockSignals(False)
-        # apply on change
-        self.sopCombo.currentTextChanged.connect(lambda _t: self._apply_selected_sop())
-
-    def _on_add_sop(self):
-        """Create a new SOP from the currently enabled steps."""
-        # Make sure SOP service exists
-        if not getattr(self, "sops", None):
-            QMessageBox.warning(self, "SOP", "SOP service is not available.")
-            return
-
-        # Ask for a name
-        name, ok = QInputDialog.getText(self, "Add SOP", "SOP name:")
-        if not ok or not name.strip():
-            return
-        name = name.strip()
-
-        # Collect included stages from UI
-        include = self._collect_included_stages_from_ui()
-
-        # Build and save SOP
-        try:
-            # If Sop dataclass is available, use it; otherwise store plain dict
-            if "Sop" in globals() and Sop is not None:
-                sop_obj = Sop(name=name, include_stages=include, params={})
-                self.sops.upsert(self._current_pipeline_name() or "sessile", sop_obj)
-            else:
-                # Fallback: emulate Sop object shape
-                self.sops.upsert(self._current_pipeline_name() or "sessile",  # type: ignore[attr-defined]
-                                type("SopLike", (), {"name": name, "include_stages": include, "params": {}}))
-        except Exception as e:
-            QMessageBox.critical(self, "SOP", f"Could not save SOP:\n{e}")
-            return
-
-        # Refresh combo and apply it
-        self._refresh_sop_combo(select=name)
-        self._apply_selected_sop()
-        self.statusBar().showMessage(f"SOP '{name}' added", 1500)
-
-
-    def _selected_sop_key(self) -> str:
-        if not self.sops or not self.sopCombo:
-            return "__default__"
-        return self.sopCombo.currentData() or self.sops.default_name()
-
-    def _apply_selected_sop(self):
-        if not (self.sops and self._step_widgets):
-            return
-        key = self._selected_sop_key()
-        pname = self._current_pipeline_name() or "sessile"
-        try:
-            sop = self.sops.get(pname, key)
-            include = set(sop.include_stages if sop else STAGE_ORDER)
-        except Exception:
-            include = set(STAGE_ORDER)
-        for w in self._step_widgets:
-            enabled = getattr(w, "step_name", None) in include
-            try:
-                w.setEnabled(enabled)
-                if not enabled:
-                    w.set_status("pending")
-            except Exception:
-                pass
-
-    def _collect_included_stages_from_ui(self) -> List[str]:
-        if not self._step_widgets:
-            return STAGE_ORDER[:]
-        return [w.step_name for w in self._step_widgets if w.isEnabled()]
-
-    def _on_play_step(self, stage_name: str):
-        # Prefer VM subset
-        if self.run_vm and hasattr(self.run_vm, "run_subset"):
-            p = self._gather_run_params()
-            try:
-                self.run_vm.run_subset(p["name"], only=[stage_name],
-                                    image=p["image"], camera=p["cam_id"], frames=p["frames"])
-                return
-            except Exception as e:
-                print("[run_vm single step] falling back to pipeline:", e)
-
-        # direct pipeline with prereqs AND params
-        params = self._gather_run_params()
-        name = params["name"]
-        pcls = PIPELINE_MAP.get(name)
-        if not pcls:
-            return
-        pipe = pcls()
-        pipe.run_with_plan(only=[stage_name], include_prereqs=True,
-                        image=params["image"], camera=params["cam_id"], frames=params["frames"])
-
-
 
     def _on_config_step(self, stage_name: str):
         QMessageBox.information(self, "Configure Step", f"Open configuration for: {stage_name}")
 
     # -------------------------- VM callbacks / preview & results --------------------------
-
-    def _on_preview_ready(self, pix_or_img_or_np):
-        if getattr(self, "imageView", None):
-            try:
-                self.imageView.set_image(pix_or_img_or_np)
-            except Exception:
-                pass
-        self.statusBar().showMessage("Preview updated", 1000)
-
-    def _on_results_ready(self, results: dict):
-        if self.resultsTable and results:
-            self._fill_results_table(results)
-        self.statusBar().showMessage("Results ready", 1000)
-
-    def _append_logs(self, lines):
-        try:
-            if not lines:
-                return
-            if isinstance(lines, (list, tuple)):
-                for ln in lines:
-                    self.logView.appendPlainText(str(ln))
-            else:
-                # single string
-                self.logView.appendPlainText(str(lines))
-        except Exception:
-            pass
-
-    def _fill_results_table(self, results: dict):
-        if not self.resultsTable:
-            return
-        rows = list(results.items())
-        self.resultsTable.setRowCount(len(rows))
-        for i, (k, v) in enumerate(rows):
-            self.resultsTable.setItem(i, 0, QTableWidgetItem(str(k)))
-            self.resultsTable.setItem(i, 1, QTableWidgetItem(str(v)))
-        self.resultsTable.resizeColumnsToContents()
-
-    def _on_pipeline_error(self, msg: str):
-        QMessageBox.critical(self, "Pipeline Error", msg)
-        self.statusBar().showMessage("Error", 1500)
-
-    # -------------------------- window state --------------------------
 
     def _restore_window_layout(self):
         s = self.settings
@@ -661,13 +292,29 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         except Exception:
             pass
         # persist selections
-        self.settings.selected_pipeline = self._current_pipeline_name() or self.settings.selected_pipeline
-        if getattr(self, "imagePathEdit", None) and hasattr(self.imagePathEdit, "text"):
-            txt = self.imagePathEdit.text().strip()
-            self.settings.last_image_path = txt or None
+        pipeline = self.setup_panel_ctrl.current_pipeline_name()
+        if pipeline:
+            self.settings.selected_pipeline = pipeline
+        image_path = self.setup_panel_ctrl.image_path()
+        if image_path is not None:
+            self.settings.last_image_path = image_path or None
         try:
             self.settings.save()
         except Exception:
             pass
         super().closeEvent(event)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

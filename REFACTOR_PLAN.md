@@ -1,31 +1,31 @@
 
 **Refactoring Plan (Step-by-Step)**
 
-**1\. Clarify Goals & Scope**
+**1. Clarify Goals & Scope**
 
 Define **what** the new modular structure should achieve: maintainability, extensibility, testability, and clear separation of shared versus test-specific logic. Establish success criteria early (e.g., all current features still work, pipelines run end-to-end).
 
-**2\. Assess & Document the Legacy Code**
+**2. Assess & Document the Legacy Code**
 
 Analyze current code—identify overlapping logic, tangled dependencies, and reusable components (e.g., image processing, fitting, physics). Document data flows and functionality seams for reference during refactor.
 
-**3\. Establish Testing Baseline**
+**3. Establish Testing Baseline**
 
 Before touching existing code, add unit tests or simple end-to-end tests covering critical functionality. This safety net ensures behavior remains unchanged after refactoring.
 
-**4\. Extract Shared “common/” Modules**
+**4. Extract Shared “common/” Modules**
 
 Gradually pull out generic functionality—like image preprocessing, edge detection, optimization—into common/ modules. Keep one-liners in the legacy pipeline to forward calls back to common stages.
 
-**5\. Introduce New pipeline/&lt;test_type&gt;/ Structure**
+**5. Introduce New pipeline/&lt;test_type&gt;/ Structure**
 
 Create the directory layout and stub files (acquisition.py, solver.py, etc.) under pipeline/pendant, .../sessile, etc., each forwarding to common/ or overriding as needed.
 
-**6\. Implement the Base Pipeline Class**
+**6. Implement the Base Pipeline Class**
 
 Add PipelineBase orchestrating the sequence of stages (acquisition → preprocessing → … → validation). Replace monolithic main routines with new_pipeline.run() for each test type.
 
-**7\. Incremental Replacements**
+**7. Incremental Replacements**
 
 For each test type:
 
@@ -33,26 +33,26 @@ For each test type:
 - Run existing tests frequently to catch regressions early.
 - Ensure feature parity at each step.
 
-**8\. Refine Stage Names & Boundaries**
+**8. Refine Stage Names & Boundaries**
 
 As you modularize, clean up stage responsibilities. Collapse or split stages if needed, aiming for clear single‑responsibility modules.
 
-**9\. Clean Up Legacy Code**
+**9. Clean Up Legacy Code**
 
 Once equivalent functionality exists in the new structure and tests pass, safely delete old files, redirecting imports or entrypoints to the new pipeline system.
 
-**10\. Documentation & CI Integration**
+**10. Documentation & CI Integration**
 
 Update README and usage docs to reflect the new layout. Integrate CI to run pipelines and tests automatically. Consider linting/static‑analysis to enforce structure moving forward.
 
-**Why This Works**
+### Why This Works
 
 - **Safe & incremental**: You preserve existing functionality while improving maintainability and modularity.  
     _Refactor in small, test-backed steps rather than a big rewrite._
 - **Reduced risk**: Shared logic lives in common/, so changes in one pipeline benefit all.
 - **Future-ready**: New test types can be added cleanly by implementing only the differing stages and wiring them via the base pipeline.
 
-### Adding Custom Detection Plugins to Menipy
+## Adding Custom Detection Plugins to Menipy
 
 1. **Core code** defines a plugin group (`menipy.edge_detection`) and a default implementation.
 2. **Plugin package** (like `bezier_detector`) registers a function via entry points under that group.
