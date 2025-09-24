@@ -117,6 +117,7 @@ class PipelineController:
         if not ready:
             return
 
+        # Collect settings from dedicated controllers
         overlays.update(self._preprocessing_payload())
         overlays.update(self._edge_detection_payload())
 
@@ -223,6 +224,7 @@ class PipelineController:
                 if self.preprocessing_ctrl:
                     run_kwargs_vm["preprocessing_settings"] = self.preprocessing_ctrl.settings.model_copy(deep=True)
                 if self.edge_detection_ctrl:
+                    # This was missing the call to the payload helper
                     run_kwargs_vm["edge_detection_settings"] = self.edge_detection_ctrl.settings.model_copy(deep=True)
 
                 self.run_vm.run_subset(**run_kwargs_vm)

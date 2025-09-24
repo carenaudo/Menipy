@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from PySide6.QtGui import QImage, QPixmap
 
 from menipy.models.datatypes import EdgeDetectionSettings
 

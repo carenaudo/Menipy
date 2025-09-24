@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import logging
 from typing import Optional
 import numpy as np
+import cv2
 
 from menipy.pipelines.base import PipelineBase
-from menipy.models.datatypes import Context
+from menipy.models.datatypes import Context, EdgeDetectionSettings
 from menipy.common import edge_detection as edged
 from menipy.common import overlay as ovl
 from menipy.common import solver as common_solver
@@ -26,7 +28,7 @@ from menipy.models.datatypes import FitConfig
 def _ensure_contour(ctx: Context) -> np.ndarray:
     if getattr(ctx, "contour", None) is not None and hasattr(ctx.contour, "xy"):
         return np.asarray(ctx.contour.xy, dtype=float)
-    edged.run(ctx, method="canny")
+    edged.run(ctx, settings=ctx.edge_detection_settings or EdgeDetectionSettings(method="canny"))
     return np.asarray(ctx.contour.xy, dtype=float)
 
 
@@ -35,12 +37,22 @@ class SessilePipeline(PipelineBase):
 
     name = "sessile"
 
-    def do_acquisition(self, ctx: Context) -> Optional[Context]: return ctx
-    def do_preprocessing(self, ctx: Context) -> Optional[Context]: return ctx
-
-    def do_edge_detection(self, ctx: Context) -> Optional[Context]:
-        edged.run(ctx, method="canny")
+    def do_acquisition(self, ctx: Context) -> Optional[Context]:
+        if ctx.image is not None:
+            return ctx
+        if ctx.image_path:
+            try:
+                img = cv2.imread(ctx.image_path, cv2.IMREAD_COLOR)
+                if img is None:
+                    logger.warning("Could not load image from path: %s", ctx.image_path)
+                    return ctx
+                ctx.image = img
+            except Exception as exc:
+                logger.error("Error loading image %s: %s", ctx.image_path, exc)
+        else:
+            logger.warning("No image or image path provided in context for acquisition stage.")
         return ctx
+    def do_preprocessing(self, ctx: Context) -> Optional[Context]: return ctx
 
     def do_geometry(self, ctx: Context) -> Optional[Context]:
         xy = _ensure_contour(ctx)

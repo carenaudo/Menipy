@@ -27,6 +27,7 @@ class _Job(QRunnable):
         contact_line=None,
         preprocessing_settings=None,
         preprocessing_markers=None,
+        edge_detection_settings=None,
         stages: Optional[list[str]] = None,
     ) -> None:
         super().__init__()
@@ -40,11 +41,17 @@ class _Job(QRunnable):
         self.contact_line = contact_line
         self.preprocessing_settings = preprocessing_settings
         self.preprocessing_markers = preprocessing_markers
+        self.edge_detection_settings = edge_detection_settings
         self.stages = stages
 
     def run(self):
         try:
-            p = self.pipeline_cls()
+            # Instantiate the pipeline with the provided settings.
+            p = self.pipeline_cls(
+                preprocessing_settings=self.preprocessing_settings,
+                edge_detection_settings=self.edge_detection_settings,
+            )
+
             # patch acquisition
             if self.image:
                 p.do_acquisition = (lambda ctx: setattr(ctx, "frames", acq.from_file([self.image])) or ctx)  # type: ignore
@@ -54,7 +61,6 @@ class _Job(QRunnable):
                 'roi': self.roi,
                 'needle_rect': self.needle_rect,
                 'contact_line': self.contact_line,
-                'preprocessing_settings': self.preprocessing_settings,
                 'preprocessing_markers': self.preprocessing_markers,
                 'image': self.image,
                 'camera': self.camera,

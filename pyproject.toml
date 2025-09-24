@@ -30,3 +30,5 @@ menipy-plugins = "menipy.common.plugins:cli_list_plugins"
 
 [project.urls]
 "Homepage" = "https://github.com/carenaudo/Menipy"
+
+

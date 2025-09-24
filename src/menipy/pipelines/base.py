@@ -109,10 +109,13 @@ class PipelineBase:
         if "contact_line" in kwargs and kwargs["contact_line"] is not None:
             ctx.contact_line = kwargs["contact_line"]
 
-        if "preprocessing_settings" in kwargs and kwargs["preprocessing_settings"] is not None:
-            ctx.preprocessing_settings = kwargs["preprocessing_settings"]
-        if "edge_detection_settings" in kwargs and kwargs["edge_detection_settings"] is not None:
-            ctx.edge_detection_settings = kwargs["edge_detection_settings"]
+        # Prioritize kwargs over instance settings to avoid multiple value errors.
+        if "preprocessing_settings" not in kwargs:
+            kwargs["preprocessing_settings"] = self.preprocessing_settings
+        ctx.preprocessing_settings = kwargs["preprocessing_settings"]
+        if "edge_detection_settings" not in kwargs:
+            kwargs["edge_detection_settings"] = self.edge_detection_settings
+        ctx.edge_detection_settings = kwargs["edge_detection_settings"]
 
         return ctx
 
@@ -228,7 +231,7 @@ class PipelineBase:
 
     def run_with_plan(self, *, only: list[str] | None = None, include_prereqs: bool = True, **kwargs: Any) -> Context:
         ctx = Context()
-        ctx = self._prime_ctx(ctx, preprocessing_settings=self.preprocessing_settings, edge_detection_settings=self.edge_detection_settings, **kwargs)
+        ctx = self._prime_ctx(ctx, **kwargs)
         for name, fn in self.build_plan(only=only, include_prereqs=include_prereqs):
             ctx = self._call_stage(ctx, name, fn)
         self._ctx = ctx
@@ -240,7 +243,7 @@ class PipelineBase:
         Any **kwargs are seeded into Context for 'acquisition' to use.
         """
         ctx = Context()
-        ctx = self._prime_ctx(ctx, preprocessing_settings=self.preprocessing_settings, edge_detection_settings=self.edge_detection_settings, **kwargs)
+        ctx = self._prime_ctx(ctx, **kwargs)
 
         self.logger.info("Starting pipeline: %s", self.name)
 

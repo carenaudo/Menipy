@@ -3,9 +3,10 @@ import argparse, json
 from pathlib import Path
 from typing import Optional, Tuple
 
-from .pipelines.base import PipelineBase, Context, PipelineError
+from .pipelines.base import Context, PipelineError
 from .common import acquisition as acq
-
+from .pipelines.runner import PipelineRunner
+from .models.datatypes import PreprocessingSettings, EdgeDetectionSettings
 
 def _parse_numbers(value: str, name: str, expected: int) -> Tuple[float, ...]:
     cleaned = value
@@ -71,28 +72,7 @@ def _save_image_bgr(path: Path, img):
         return
     raise RuntimeError("Install opencv-python or Pillow to save images.")
 
-
-def _pick_pipeline(name: str) -> PipelineBase:
-    name = name.lower()
-    if name == "sessile":
-        from .pipelines.sessile.stages import SessilePipeline
-        return SessilePipeline()
-    if name == "oscillating":
-        from .pipelines.oscillating.stages import OscillatingPipeline
-        return OscillatingPipeline()
-    if name == "capillary_rise":
-        from .pipelines.capillary_rise.stages import CapillaryRisePipeline
-        return CapillaryRisePipeline()
-    if name == "pendant":
-        from .pipelines.pendant.stages import PendantPipeline
-        return PendantPipeline()
-    if name == "captive_bubble":
-        from .pipelines.captive_bubble.stages import CaptiveBubblePipeline
-        return CaptiveBubblePipeline()
-    raise SystemExit(f"Unknown pipeline '{name}'")
-
-
-def _patch_acquisition(p: PipelineBase, *, image: Optional[Path], camera: Optional[int], frames: int):
+def _patch_acquisition(p, *, image: Optional[Path], camera: Optional[int], frames: int):
     # Replace the pipeline's acquisition hook so we can choose source via CLI.
     if image:
         img_path = str(image)
@@ -130,6 +110,8 @@ def main(argv: Optional[list[str]] = None) -> int:
     ap.add_argument("--needle", type=str, required=True, help="Needle rectangle as x,y,w,h")
     ap.add_argument("--contact-line", type=str, dest="contact_line", help="Optional contact line as x1,y1,x2,y2")
     ap.add_argument("--out", type=str, default="./out", help="Output folder (preview/results)")
+    ap.add_argument("--edge-detection-method", type=str, default="canny", help="Edge detection method (e.g., canny, sobel)")
+    ap.add_argument("--preprocessing-method", type=str, help="Preprocessing method (e.g., blur)")
 
     # Optional plugin controls (no-ops if plugin system not present)
     ap.add_argument(
@@ -216,16 +198,24 @@ def main(argv: Optional[list[str]] = None) -> int:
                 db.set_active(name, kind, False)
             load_active_plugins(db)
 
-    pipeline = _pick_pipeline(args.pipeline)
+    # Prepare settings from CLI arguments
+    edge_settings = EdgeDetectionSettings(method=args.edge_detection_method)
+    prep_settings = PreprocessingSettings(method=args.preprocessing_method) if args.preprocessing_method else None
+
+    # Use the new PipelineRunner
+    runner = PipelineRunner(
+        pipeline_name=args.pipeline,
+        edge_detection_settings=edge_settings,
+        preprocessing_settings=prep_settings
+    )
 
     if args.no_overlay:
-        pipeline.do_overlay = (lambda ctx: ctx)  # type: ignore[attr-defined]
+        runner.pipeline.do_overlay = (lambda ctx: ctx)  # type: ignore[attr-defined]
 
     image_path = Path(args.image).expanduser().resolve() if args.image else None
-    _patch_acquisition(pipeline, image=image_path, camera=args.camera, frames=args.frames)
-
+    _patch_acquisition(runner.pipeline, image=image_path, camera=args.camera, frames=args.frames)
     try:
-        ctx = pipeline.run(roi=roi_rect, needle_rect=needle_rect, contact_line=contact_line, image=str(image_path) if image_path else None, camera=args.camera, frames=args.frames)
+        ctx = runner.run(roi=roi_rect, needle_rect=needle_rect, contact_line=contact_line, image=str(image_path) if image_path else None, camera=args.camera, frames=args.frames)
     except PipelineError as e:
         print(f"[adsa] error: {e}")
         return 2
@@ -242,7 +232,7 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     with open(out_dir / "results.json", "w", encoding="utf-8") as f:
         json.dump({
-            "pipeline": pipeline.name,
+            "pipeline": runner.pipeline.name,
             "results": ctx.results,
             "qa": ctx.qa,
             "timings_ms": ctx.timings_ms,

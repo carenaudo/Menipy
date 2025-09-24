@@ -339,7 +339,7 @@ def _apply_mask(original: np.ndarray, candidate: np.ndarray, mask: Optional[np.n
     mask_bool = mask.astype(bool)
     out = original.copy()
     if candidate.ndim == 3 and mask_bool.ndim == 2:
-        mask_bool = mask_bool[..., None]
+        mask_bool = np.stack([mask_bool] * candidate.shape[2], axis=-1)
     out[mask_bool] = candidate[mask_bool]
     return out
 
@@ -363,7 +363,11 @@ def _median_blur(array: np.ndarray, kernel: int) -> Optional[np.ndarray]:
     if kernel % 2 == 0:
         kernel += 1
     if cv2 is not None:
-        return cv2.medianBlur(array, kernel)
+        if array.ndim == 3:
+            channels = [cv2.medianBlur(array[..., i], kernel) for i in range(array.shape[2])]
+            return np.stack(channels, axis=2)
+        else:
+            return cv2.medianBlur(array, kernel)
     try:
         from scipy.ndimage import median_filter
 
@@ -441,4 +445,3 @@ def _histogram_stretch(array: np.ndarray) -> Optional[np.ndarray]:
         return array.copy()
     scaled = (arr - min_val) / (max_val - min_val) * 255.0
     return scaled.astype(np.uint8)
-

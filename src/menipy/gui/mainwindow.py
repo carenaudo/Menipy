@@ -67,10 +67,7 @@ except Exception:
     RunViewModel = None  # type: ignore
     PipelineRunner = None  # type: ignore
 
-try:
-    from menipy.gui.main_controller import MainController
-except Exception:
-    MainController = None # type: ignore
+from menipy.gui.main_controller import MainController
 
 # default stage order for SOPs / step list
 STAGE_ORDER: List[str] = [

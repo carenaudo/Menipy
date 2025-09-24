@@ -4,7 +4,7 @@ from typing import Optional
 import numpy as np
 
 from menipy.pipelines.base import PipelineBase
-from menipy.models.datatypes import Context, FitConfig
+from menipy.models.datatypes import Context, FitConfig, EdgeDetectionSettings
 from menipy.common import edge_detection as edged
 from menipy.common import overlay as ovl
 from menipy.common import solver as common_solver
@@ -20,7 +20,7 @@ young_laplace_sphere = getattr(_toy_mod, "toy_young_laplace")
 def _ensure_contour(ctx: Context) -> np.ndarray:
     if getattr(ctx, "contour", None) is not None and hasattr(ctx.contour, "xy"):
         return np.asarray(ctx.contour.xy, dtype=float)
-    edged.run(ctx, method="canny")
+    edged.run(ctx, settings=ctx.edge_detection_settings or EdgeDetectionSettings(method="canny"))
     return np.asarray(ctx.contour.xy, dtype=float)
 
 
@@ -39,10 +39,6 @@ class CaptiveBubblePipeline(PipelineBase):
 
     def do_acquisition(self, ctx: Context) -> Optional[Context]: return ctx
     def do_preprocessing(self, ctx: Context) -> Optional[Context]: return ctx
-
-    def do_edge_detection(self, ctx: Context) -> Optional[Context]:
-        edged.run(ctx, method="canny")
-        return ctx
 
     def do_geometry(self, ctx: Context) -> Optional[Context]:
         xy = _ensure_contour(ctx)
