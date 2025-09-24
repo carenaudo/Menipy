@@ -22,20 +22,50 @@ This document specifies the preprocessing and segmentation steps to extract drop
 - **Opening** to remove small noise blobs.  
 - **Contour Extraction**: Use `cv2.findContours`, then select the largest contour not touching image borders. :contentReference[oaicite:13]{index=13}
 
-## 5. Edge Detection (Alternative)
+## 5. Edge Detection
 
-- **Canny** (`cv2.Canny`) for gradient-based edge maps, followed by contour tracing if thresholding fails. :contentReference[oaicite:14]{index=14}
+Menipy offers a configurable edge detection stage to accurately identify droplet boundaries. This stage can be configured via the Edge Detection Configuration Dialog, providing control over various algorithms and parameters.
 
-## 6. Active Contours (Snakes)
+### Available Methods:
+
+-   **Canny**: A multi-stage algorithm to detect a wide range of edges. Configurable parameters include:
+    *   `Threshold 1` and `Threshold 2`: Hysteresis thresholds for edge linking.
+    *   `Aperture Size`: Size of the Sobel kernel used for gradient calculation.
+    *   `L2 Gradient`: Flag to use a more accurate L2 norm for gradient magnitude.
+-   **Thresholding**: Simple intensity-based edge detection. Configurable parameters include:
+    *   `Threshold Value`: The value used to classify pixels.
+    *   `Max Value`: The value assigned to pixels exceeding the threshold.
+    *   `Type`: The type of thresholding (e.g., Binary, Binary Inverse, Truncate, To Zero, To Zero Inverse).
+-   **Sobel/Scharr**: Gradient-based methods for detecting edges. Configurable `Kernel Size` for the Sobel operator.
+-   **Laplacian**: A second-order derivative operator for edge detection. Configurable `Kernel Size`.
+-   **Active Contour (Snakes)**: (Planned/Under Development) An iterative method to refine contours to sub-pixel accuracy, often requiring an initial contour.
+
+### Common Preprocessing:
+
+-   **Gaussian Blur**: An optional step to apply Gaussian smoothing before edge detection to reduce noise. Configurable `Kernel Size` and `Sigma X`.
+
+### Contour Refinement:
+
+-   **Minimum Contour Length**: Filters out small, spurious contours.
+-   **Maximum Contour Length**: Filters out excessively large contours that might not represent the droplet.
+
+## 6. Interface Detection
+
+Beyond general edge detection, Menipy can specifically identify different interfaces of the droplet:
+
+-   **Fluid-Droplet Interface**: This typically corresponds to the primary contour detected by the chosen edge detection method, representing the boundary between the droplet and the surrounding fluid (e.g., air).
+-   **Solid-Droplet Interface**: This interface is detected in proximity to the user-defined or automatically determined contact line. The `Solid Interface Proximity` parameter defines the search region (in pixels) around the contact line where the solid-droplet interface is expected to be found.
+
+## 7. Active Contours (Snakes)
 
 - Apply `skimage.segmentation.active_contour` to refine contour to sub-pixel accuracy. :contentReference[oaicite:15]{index=15}
 
-## 7. Reflection Handling (Sessile Drops)
+## 8. Reflection Handling (Sessile Drops)
 
 - Detect baseline (horizontal line at droplet bottom) and exclude contours below it to remove reflections. :contentReference[oaicite:16]{index=16}
 
 
-## 8. Export Contour for Physics Model
+## 9. Export Contour for Physics Model
 
 - After extracting and optionally smoothing the final contour, serialize the (x,y) list (or r,z) into JSON or CSV.  
 - This exported file feeds directly into the Y–L fitting routine, closing the loop between image processing and physics modelling.

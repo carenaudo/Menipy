@@ -20,6 +20,13 @@ This document outlines the user interface architecture and components using PySi
   - Model selection (checkboxes for Young–Laplace, Circle, Ellipse, Polynomial using `QCheckBox`)  
   - “Process” button (`QPushButton`)
 
+### Configuration Dialogs
+
+Menipy utilizes dedicated dialogs for configuring various pipeline stages, accessible via the setup panel. These dialogs provide granular control over the parameters of each stage.
+
+-   **Preprocessing Configuration Dialog**: Allows users to adjust settings for image cropping, resizing, filtering, background subtraction, and normalization. It features a stacked widget interface with a navigation list for different categories of settings.
+-   **Edge Detection Configuration Dialog**: Provides extensive controls for the edge detection stage. Users can select from various algorithms (Canny, Threshold, Sobel, Scharr, Laplacian) and fine-tune their parameters. It also includes options for Gaussian blur preprocessing, contour refinement (minimum/maximum length), and specific controls for detecting fluid-droplet and solid-droplet interfaces. The dialog is structured with a stacked widget for easy navigation between general settings, algorithm-specific parameters, and interface detection options.
+
 ## 3. Image Display & Overlays
 
 - Use `QGraphicsScene` with `QGraphicsPixmapItem` for the image and `QGraphicsPathItem` for contours.  
@@ -57,4 +64,3 @@ This document outlines the user interface architecture and components using PySi
 ---
 
 *Note: All Qt object names should follow a consistent naming convention (e.g., `mainWindow`, `graphicsView`, `processButton`).*
-
