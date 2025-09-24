@@ -91,6 +91,10 @@ class PipelineBase:
 
         if "roi" in kwargs and kwargs["roi"] is not None:
             ctx.roi = kwargs["roi"]
+        if "needle_rect" in kwargs and kwargs["needle_rect"] is not None:
+            ctx.needle_rect = kwargs["needle_rect"]
+        if "contact_line" in kwargs and kwargs["contact_line"] is not None:
+            ctx.contact_line = kwargs["contact_line"]
 
         return ctx
 

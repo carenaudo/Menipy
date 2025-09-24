@@ -16,9 +16,28 @@ class RunViewModel(QObject):
         self.runner = runner
         self.runner.finished.connect(self._done)
 
-    def run(self, pipeline: str | None = None, image: str | None = None, camera: int | None = None, frames: int = 1):
+    def run(
+        self,
+        pipeline: str | None = None,
+        image: str | None = None,
+        camera: int | None = None,
+        frames: int = 1,
+        **overlays,
+    ) -> None:
         """Run the pipeline. Accept positional or keyword *pipeline* for compatibility with MainWindow callers."""
-        self.runner.run(pipeline, image, camera, frames)
+        self.runner.run(pipeline, image, camera, frames, **overlays)
+
+    def run_subset(
+        self,
+        pipeline: str | None,
+        *,
+        only: list[str],
+        image: str | None = None,
+        camera: int | None = None,
+        frames: int = 1,
+        **overlays,
+    ) -> None:
+        self.runner.run_subset(pipeline, only=only, image=image, camera=camera, frames=frames, **overlays)
 
     def _done(self, payload):
         if not payload["ok"]:

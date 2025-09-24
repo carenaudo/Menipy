@@ -1,0 +1,444 @@
+from __future__ import annotations
+
+"""Helper utilities for Menipy preprocessing pipeline."""
+
+from dataclasses import dataclass, field
+from typing import Any, Dict, Optional, Tuple
+import logging
+
+import numpy as np
+
+from menipy.models.datatypes import (
+    PreprocessingSettings,
+    PreprocessingState,
+    PreprocessingStageRecord,
+    MarkerSet,
+)
+
+logger = logging.getLogger(__name__)
+
+try:  # pragma: no cover - optional dependency
+    import cv2  # type: ignore
+except Exception:  # pragma: no cover - test environments may lack OpenCV
+    cv2 = None  # type: ignore
+
+try:  # pragma: no cover - optional dependency
+    from skimage import exposure, morphology
+except Exception:  # pragma: no cover - avoid hard dependency
+    exposure = None
+    morphology = None
+
+
+class PreprocessingError(RuntimeError):
+    """Raised when the preprocessing pipeline cannot proceed."""
+
+
+@dataclass
+class PreprocessingContext:
+    """Holds immutable inputs and mutable state for preprocessing helpers."""
+
+    source_image: np.ndarray
+    settings: PreprocessingSettings = field(default_factory=PreprocessingSettings)
+    roi_bounds: Optional[Tuple[int, int, int, int]] = None
+    roi_mask_full: Optional[np.ndarray] = None
+    contact_line_segment: Optional[Tuple[Tuple[int, int], Tuple[int, int]]] = None
+    markers: Optional[MarkerSet] = None
+
+    state: PreprocessingState = field(default_factory=PreprocessingState)
+
+    def __post_init__(self) -> None:
+        height, width = self.source_image.shape[:2]
+        if self.roi_bounds is None:
+            self.roi_bounds = (0, 0, width, height)
+        else:
+            self.roi_bounds = _clamp_roi(self.roi_bounds, width, height)
+        self.state.roi_bounds = self.roi_bounds
+        if self.markers is not None:
+            self.state.markers = self.markers
+        if self.contact_line_segment is not None:
+            self.state.contact_line_presence = True
+            self.state.metadata["contact_line_segment"] = self.contact_line_segment
+
+    @property
+    def mask(self) -> Optional[np.ndarray]:
+        return self.state.roi_mask
+
+    @property
+    def active_mask(self) -> Optional[np.ndarray]:
+        return self.state.roi_mask if self.settings.work_on_roi_mask else None
+
+    @property
+    def current_image(self) -> np.ndarray:
+        for name in ("normalized_roi", "filtered_roi", "working_roi", "raw_roi"):
+            img = getattr(self.state, name)
+            if img is not None:
+                return img
+        raise PreprocessingError("PreprocessingContext has no image buffers populated")
+
+    def push_history(self, stage: str, params: Dict[str, Any] | None = None) -> None:
+        record = PreprocessingStageRecord(name=stage, params=params or {})
+        self.state.history.append(record)
+
+    def update_working(self, array: np.ndarray) -> None:
+        self.state.working_roi = array
+
+    def set_filtered(self, array: np.ndarray) -> None:
+        self.state.filtered_roi = array
+
+    def set_normalized(self, array: np.ndarray) -> None:
+        self.state.normalized_roi = array
+
+
+# ---------------------------------------------------------------------------
+# Stage helpers
+# ---------------------------------------------------------------------------
+
+def crop_to_roi(context: PreprocessingContext) -> None:
+    """Extract ROI from the source image and derive a binary mask."""
+
+    x, y, w, h = context.roi_bounds  # type: ignore[misc]
+    x, y, w, h = int(x), int(y), int(w), int(h)
+    roi = context.source_image[y : y + h, x : x + w]
+    if roi.size == 0:
+        raise PreprocessingError("ROI crop produced an empty array")
+    context.state.raw_roi = roi.copy()
+    context.update_working(roi.copy())
+
+    if context.roi_mask_full is not None:
+        mask = context.roi_mask_full[y : y + h, x : x + w]
+        if mask.ndim == 3:
+            mask = mask[..., 0]
+        mask = (mask > 0).astype(np.uint8) * 255
+    else:
+        mask = np.ones(roi.shape[:2], dtype=np.uint8) * 255
+    context.state.roi_mask = mask
+
+    if context.contact_line_segment is not None:
+        _embed_contact_line_mask(context, mask)
+    context.push_history("crop", {"roi": (x, y, w, h)})
+
+
+def rescale_roi(context: PreprocessingContext) -> None:
+    """Resize ROI according to settings, preserving mask and scale factor."""
+
+    settings = context.settings.resize
+    if not settings.enabled or not settings.has_target:
+        return
+
+    current = context.state.working_roi
+    if current is None:
+        return
+    target_w, target_h = settings.target_width, settings.target_height
+    src_h, src_w = current.shape[:2]
+
+    if settings.preserve_aspect:
+        scale_w = target_w / src_w if target_w else None
+        scale_h = target_h / src_h if target_h else None
+        scale = scale_w if scale_w is not None else scale_h
+        if scale is None:
+            return
+        new_w = max(1, int(round(src_w * scale)))
+        new_h = max(1, int(round(src_h * scale)))
+    else:
+        new_w = target_w or src_w
+        new_h = target_h or src_h
+
+    interpolation = _cv2_interpolation(settings.interpolation)
+    resized = _resize_array(current, (new_w, new_h), interpolation)
+    if resized is None:
+        logger.warning("Preprocessing: resize skipped due to missing backend")
+        return
+
+    context.update_working(resized)
+    mask = context.state.roi_mask
+    if mask is not None:
+        resized_mask = _resize_mask(mask, (new_w, new_h))
+        context.state.roi_mask = resized_mask
+    sx = new_w / src_w
+    sy = new_h / src_h
+    context.state.scale = (sx, sy)
+    context.push_history("resize", {"width": new_w, "height": new_h, "interpolation": settings.interpolation})
+
+
+def apply_filter(context: PreprocessingContext) -> None:
+    """Apply smoothing filters within the ROI mask."""
+
+    settings = context.settings.filtering
+    if not settings.enabled or settings.method == "none":
+        return
+
+    current = context.state.working_roi
+    if current is None:
+        return
+
+    method = settings.method
+    if method == "gaussian":
+        filtered = _gaussian_blur(current, settings.kernel_size, settings.sigma)
+    elif method == "median":
+        filtered = _median_blur(current, settings.kernel_size)
+    elif method == "bilateral":
+        filtered = _bilateral_filter(current, settings.kernel_size, settings.sigma_color, settings.sigma_space)
+    else:
+        filtered = None
+
+    if filtered is None:
+        logger.warning("Preprocessing: filter '%s' unavailable; skipping", method)
+        return
+
+    filtered = _apply_mask(current, filtered, context.active_mask)
+    context.update_working(filtered)
+    context.set_filtered(filtered.copy())
+    context.push_history("filter", {"method": method, "kernel": settings.kernel_size})
+
+
+def subtract_background(context: PreprocessingContext) -> None:
+    """Perform background subtraction limited to the ROI mask."""
+
+    settings = context.settings.background
+    if not settings.enabled:
+        return
+
+    current = context.state.working_roi
+    if current is None:
+        return
+
+    if settings.mode == "flat":
+        background = _estimate_flat_background(current, context.active_mask, settings.strength)
+    else:
+        background = _rolling_background(current, context.active_mask, settings.rolling_radius)
+
+    if background is None:
+        logger.warning("Preprocessing: background mode '%s' unavailable; skipping", settings.mode)
+        return
+
+    adjusted = current.astype(np.float32) - background.astype(np.float32)
+    adjusted = np.clip(adjusted + 128.0, 0, 255).astype(np.uint8)
+    adjusted = _apply_mask(current, adjusted, context.active_mask)
+    context.update_working(adjusted)
+    context.push_history("background", {"mode": settings.mode})
+
+
+def normalize_intensity(context: PreprocessingContext) -> None:
+    """Normalize intensities (contrast stretch / CLAHE)."""
+
+    settings = context.settings.normalization
+    if not settings.enabled:
+        return
+
+    current = context.state.working_roi
+    if current is None:
+        return
+
+    if settings.method == "clahe":
+        normalized = _apply_clahe(current, settings.clip_limit, settings.grid_size)
+    else:
+        normalized = _histogram_stretch(current)
+
+    if normalized is None:
+        logger.warning("Preprocessing: normalization '%s' unavailable; skipping", settings.method)
+        return
+
+    normalized = _apply_mask(current, normalized, context.active_mask)
+    context.update_working(normalized)
+    context.set_normalized(normalized.copy())
+    context.push_history("normalize", {"method": settings.method})
+
+
+def detect_contact_line(context: PreprocessingContext) -> None:
+    """Update contact line presence flag based on context markers."""
+
+    if context.state.contact_line_presence:
+        return
+    markers = context.state.markers
+    if markers and markers.contact_line_anchors:
+        context.state.contact_line_presence = True
+        context.state.metadata["contact_line_anchors"] = markers.contact_line_anchors
+    else:
+        context.state.contact_line_presence = False
+
+
+# ---------------------------------------------------------------------------
+# Low-level utilities (mostly pure functions)
+# ---------------------------------------------------------------------------
+
+def _clamp_roi(roi: Tuple[int, int, int, int], width: int, height: int) -> Tuple[int, int, int, int]:
+    x, y, w, h = roi
+    x = max(0, min(x, width - 1))
+    y = max(0, min(y, height - 1))
+    w = max(1, min(w, width - x))
+    h = max(1, min(h, height - y))
+    return int(x), int(y), int(w), int(h)
+
+
+def _embed_contact_line_mask(context: PreprocessingContext, mask: np.ndarray) -> None:
+    segment = context.contact_line_segment
+    if segment is None or mask is None:
+        return
+    (x1, y1), (x2, y2) = segment
+    x0, y0, _, _ = context.roi_bounds or (0, 0, mask.shape[1], mask.shape[0])
+    padding = max(1, context.settings.contact_line.dilation)
+    xs = sorted(((x1 - x0), (x2 - x0)))
+    ys = sorted(((y1 - y0), (y2 - y0)))
+    x_start = max(0, min(mask.shape[1], xs[0] - padding))
+    x_end = max(0, min(mask.shape[1], xs[1] + padding))
+    y_start = max(0, min(mask.shape[0], ys[0] - padding))
+    y_end = max(0, min(mask.shape[0], ys[1] + padding))
+    if x_start >= x_end or y_start >= y_end:
+        return
+    contact_mask = np.zeros_like(mask)
+    contact_mask[y_start:y_end, x_start:x_end] = 255
+    context.state.contact_line_mask = contact_mask
+
+
+def _cv2_interpolation(name: str) -> int:
+    mapping = {
+        "nearest": 0,
+        "linear": 1,
+        "cubic": 2,
+        "area": 3,
+        "lanczos": 4,
+    }
+    return mapping.get(name, 1)
+
+
+def _resize_array(array: np.ndarray, shape: Tuple[int, int], interpolation: int) -> Optional[np.ndarray]:
+    new_w, new_h = shape
+    if array.shape[1] == new_w and array.shape[0] == new_h:
+        return array.copy()
+    if cv2 is not None:
+        return cv2.resize(array, (new_w, new_h), interpolation=interpolation)
+    try:
+        from skimage.transform import resize
+
+        result = resize(array, (new_h, new_w, *array.shape[2:]), order=1 if interpolation != 0 else 0, preserve_range=True, anti_aliasing=False)
+        return result.astype(array.dtype)
+    except Exception:
+        if new_w < array.shape[1] or new_h < array.shape[0]:
+            return None
+        if new_w <= 0 or new_h <= 0:
+            return None
+        sy = max(1, int(round(new_h / array.shape[0])))
+        sx = max(1, int(round(new_w / array.shape[1])))
+        resized = np.repeat(np.repeat(array, sy, axis=0), sx, axis=1)
+        return resized[:new_h, :new_w]
+
+
+def _resize_mask(mask: np.ndarray, shape: Tuple[int, int]) -> np.ndarray:
+    new_w, new_h = shape
+    if mask.shape[1] == new_w and mask.shape[0] == new_h:
+        return mask.copy()
+    if cv2 is not None:
+        return cv2.resize(mask, (new_w, new_h), interpolation=cv2.INTER_NEAREST)
+    resized = _resize_array(mask, shape, interpolation=0)
+    return resized if resized is not None else mask.copy()
+
+
+def _apply_mask(original: np.ndarray, candidate: np.ndarray, mask: Optional[np.ndarray]) -> np.ndarray:
+    if mask is None:
+        return candidate
+    mask_bool = mask.astype(bool)
+    out = original.copy()
+    if candidate.ndim == 3 and mask_bool.ndim == 2:
+        mask_bool = mask_bool[..., None]
+    out[mask_bool] = candidate[mask_bool]
+    return out
+
+
+def _gaussian_blur(array: np.ndarray, kernel: int, sigma: float) -> Optional[np.ndarray]:
+    if kernel % 2 == 0:
+        kernel += 1
+    if cv2 is not None:
+        sigma = max(float(sigma), 0.0)
+        return cv2.GaussianBlur(array, (kernel, kernel), sigma)
+    try:
+        from scipy.ndimage import gaussian_filter
+
+        sigma_tuple = (sigma, sigma, 0) if array.ndim == 3 else sigma
+        return gaussian_filter(array, sigma=sigma_tuple).astype(array.dtype)
+    except Exception:
+        return None
+
+
+def _median_blur(array: np.ndarray, kernel: int) -> Optional[np.ndarray]:
+    if kernel % 2 == 0:
+        kernel += 1
+    if cv2 is not None:
+        return cv2.medianBlur(array, kernel)
+    try:
+        from scipy.ndimage import median_filter
+
+        size = (kernel, kernel, 1) if array.ndim == 3 else (kernel, kernel)
+        return median_filter(array, size=size).astype(array.dtype)
+    except Exception:
+        return None
+
+
+def _bilateral_filter(array: np.ndarray, kernel: int, sigma_color: float, sigma_space: float) -> Optional[np.ndarray]:
+    if cv2 is not None:
+        return cv2.bilateralFilter(array, kernel, sigma_color, sigma_space)
+    return None
+
+
+def _estimate_flat_background(array: np.ndarray, mask: Optional[np.ndarray], strength: float) -> np.ndarray:
+    if mask is not None and mask.any():
+        mask_bool = mask.astype(bool)
+        if array.ndim == 3:
+            values = array[mask_bool[..., None]].reshape(-1, array.shape[2])
+            mean = values.mean(axis=0)
+        else:
+            mean = array[mask_bool].mean()
+    else:
+        mean = array.mean(axis=(0, 1)) if array.ndim == 3 else array.mean()
+    return np.full_like(array, mean * float(strength))
+
+
+def _rolling_background(array: np.ndarray, mask: Optional[np.ndarray], radius: int) -> Optional[np.ndarray]:
+    if cv2 is not None:
+        k = max(1, radius)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * k + 1, 2 * k + 1))
+        return cv2.morphologyEx(array, cv2.MORPH_OPEN, kernel)
+    if morphology is not None:
+        try:
+            if array.ndim == 3:
+                result = np.stack([
+                    morphology.opening(array[..., c], morphology.disk(radius)) for c in range(array.shape[2])
+                ], axis=2)
+            else:
+                result = morphology.opening(array, morphology.disk(radius))
+            return result.astype(array.dtype)
+        except Exception:
+            return None
+    return None
+
+
+def _apply_clahe(array: np.ndarray, clip_limit: float, grid_size: int) -> Optional[np.ndarray]:
+    if array.ndim == 2:
+        return _clahe_single(array, clip_limit, grid_size)
+    channels = []
+    for idx in range(array.shape[2]):
+        channel = _clahe_single(array[..., idx], clip_limit, grid_size)
+        if channel is None:
+            return None
+        channels.append(channel)
+    return np.stack(channels, axis=2)
+
+
+def _clahe_single(channel: np.ndarray, clip_limit: float, grid_size: int) -> Optional[np.ndarray]:
+    if cv2 is not None:
+        clahe = cv2.createCLAHE(clipLimit=float(max(clip_limit, 0.0)), tileGridSize=(grid_size, grid_size))
+        return clahe.apply(channel)
+    if exposure is not None:
+        result = exposure.equalize_adapthist(channel, clip_limit=max(clip_limit, 0.001), kernel_size=grid_size)
+        return np.clip(result * 255, 0, 255).astype(np.uint8)
+    return None
+
+
+def _histogram_stretch(array: np.ndarray) -> Optional[np.ndarray]:
+    arr = array.astype(np.float32)
+    max_val = float(arr.max())
+    min_val = float(arr.min())
+    if max_val - min_val < 1e-5:
+        return array.copy()
+    scaled = (arr - min_val) / (max_val - min_val) * 255.0
+    return scaled.astype(np.uint8)
+

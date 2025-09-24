@@ -6,6 +6,9 @@
 ## src/__main__.py
 - menipy.gui.main, src/menipy/gui/__init__.py
 
+## src/menipy/__init__.py
+- (no imports)
+
 ## src/menipy/analysis/__init__.py
 - commons.compute_drop_metrics, src/menipy/analysis/commons.py
 - commons.find_apex_index, src/menipy/analysis/commons.py
@@ -14,7 +17,6 @@
 - plotting.save_contour_side_profiles, src/menipy/analysis/plotting.py
 - pendant.compute_metrics, src/menipy/analysis/pendant.py
 - sessile.compute_metrics, src/menipy/analysis/sessile.py
-- sessile.smooth_contour_segment, src/menipy/analysis/sessile.py
 - sessile_alt.compute_metrics, src/menipy/analysis/sessile_alt.py
 - detection.needle.detect_vertical_edges, src/menipy/detection/needle.py
 
@@ -22,17 +24,6 @@
 - __future__.annotations
 - cv2
 - numpy
-- models.contact_angle_from_mask, src/menipy/models/__init__.py
-- models.estimate_surface_tension, src/menipy/models/__init__.py
-- models.jennings_pallas_beta, src/menipy/models/__init__.py
-- models.surface_tension, src/menipy/models/surface_tension.py
-- models.bond_number, src/menipy/models/__init__.py
-- models.volume_from_contour, src/menipy/models/__init__.py
-- models.vmax_uL, src/menipy/models/__init__.py
-- models.worthington_number, src/menipy/models/__init__.py
-- models.apex_curvature_m_inv, src/menipy/models/__init__.py
-- models.surface_area_mm2, src/menipy/models/__init__.py
-- models.apparent_weight_mN, src/menipy/models/__init__.py
 - physics.contact_geom.line_params, src/menipy/physics/contact_geom.py
 - physics.contact_geom.contour_line_intersections, src/menipy/physics/contact_geom.py
 - models.geometry.horizontal_intersections, src/menipy/models/geometry.py
@@ -40,18 +31,6 @@
 ## src/menipy/analysis/drop.py
 - cv2
 - numpy
-- models.contact_angle_from_mask, src/menipy/models/__init__.py
-- models.estimate_surface_tension, src/menipy/models/__init__.py
-- models.jennings_pallas_beta, src/menipy/models/__init__.py
-- models.surface_tension, src/menipy/models/surface_tension.py
-- models.bond_number, src/menipy/models/__init__.py
-- models.volume_from_contour, src/menipy/models/__init__.py
-- models.vmax_uL, src/menipy/models/__init__.py
-- models.worthington_number, src/menipy/models/__init__.py
-- models.apex_curvature_m_inv, src/menipy/models/__init__.py
-- models.projected_area_mm2, src/menipy/models/__init__.py
-- models.surface_area_mm2, src/menipy/models/__init__.py
-- models.apparent_weight_mN, src/menipy/models/__init__.py
 - models.geometry.horizontal_intersections, src/menipy/models/geometry.py
 - physics.contact_geom.line_params, src/menipy/physics/contact_geom.py
 - physics.contact_geom.contour_line_intersections, src/menipy/physics/contact_geom.py
@@ -120,6 +99,9 @@
 
 ## src/menipy/cli.py
 - __future__.annotations
+
+## src/menipy/common/plugins.py
+- (no imports)
 
 ## src/menipy/contact_angle.py
 - math
@@ -316,6 +298,9 @@
 - drop_extras.apparent_weight_mN, src/menipy/models/drop_extras.py
 
 ## src/menipy/models/drop_extras.py
+- (no imports)
+
+## src/menipy/models/datatypes.py
 - numpy
 - math
 
@@ -351,11 +336,23 @@
 - typing.Any
 - numpy
 
+## src/menipy/pipelines/base.py
+- __future__.annotations
+- logging
+- time
+- typing.Any
+- typing.Callable
+- typing.Optional
+- typing.Dict
+- menipy.models.datatypes.Context, src/menipy/models/datatypes.py
+
 ## src/menipy/pipelines/__init__.py
-- pendant.geometry.analyze, src/menipy/pipelines/pendant/geometry.py
-- pendant.drawing.draw_overlays, src/menipy/pipelines/pendant/drawing.py
-- sessile.geometry_alt.analyze, src/menipy/pipelines/sessile/geometry_alt.py
-- sessile.drawing_alt.draw_overlays, src/menipy/pipelines/sessile/drawing_alt.py
+- (no imports)
+
+## src/menipy/pipelines/discover.py
+- importlib
+- pathlib.Path
+- menipy.pipelines.base.PipelineBase, src/menipy/pipelines/base.py
 
 ## src/menipy/pipelines/pendant/__init__.py
 - geometry.analyze, src/menipy/pipelines/pendant/geometry.py
@@ -383,13 +380,6 @@
 - geometry_alt.HelperBundle, src/menipy/pipelines/sessile/geometry_alt.py
 - drawing_alt.draw_overlays, src/menipy/pipelines/sessile/drawing_alt.py
 
-## src/menipy/pipelines/sessile/drawing_alt.py
-- __future__.annotations
-- numpy
-- PySide6.QtGui.QPixmap
-- gui.overlay.draw_drop_overlay, src/menipy/gui/overlay.py
-- geometry_alt.SessileMetrics, src/menipy/pipelines/sessile/geometry_alt.py
-
 ## src/menipy/pipelines/sessile/geometry_alt.py
 - __future__.annotations
 - dataclasses.dataclass
@@ -399,7 +389,6 @@
 - analysis.compute_sessile_metrics_alt, src/menipy/analysis/__init__.py
 - physics.contact_geom.line_params, src/menipy/physics/contact_geom.py
 - detectors.geometry_alt.split_contour_by_line, src/menipy/detectors/geometry_alt.py
-- math
 - gui.overlay.draw_drop_overlay, src/menipy/gui/overlay.py
 
 ## src/menipy/plugins.py
@@ -409,20 +398,6 @@
 - sharpen_plugin.sharpen_filter, src/menipy/sharpen_plugin.py
 
 ## src/menipy/processing/__init__.py
-- reader.load_image, src/menipy/processing/reader.py
-- segmentation.otsu_threshold, src/menipy/processing/segmentation.py
-- segmentation.adaptive_threshold, src/menipy/processing/segmentation.py
-- segmentation.morphological_cleanup, src/menipy/processing/segmentation.py
-- segmentation.external_contour_mask, src/menipy/processing/segmentation.py
-- segmentation.find_contours, src/menipy/processing/segmentation.py
-- segmentation.largest_contour, src/menipy/processing/segmentation.py
-- segmentation.ml_segment, src/menipy/processing/segmentation.py
-- detection.Droplet, src/menipy/processing/detection.py
-- detection.SessileDroplet, src/menipy/processing/detection.py
-- detection.PendantDroplet, src/menipy/processing/detection.py
-- detection.detect_droplet, src/menipy/processing/detection.py
-- detection.detect_sessile_droplet, src/menipy/processing/detection.py
-- detection.detect_pendant_droplet, src/menipy/processing/detection.py
 - substrate.detect_substrate_line, src/menipy/processing/substrate.py
 - substrate.SubstrateNotFoundError, src/menipy/processing/substrate.py
 - classification.classify_drop_mode, src/menipy/processing/classification.py
@@ -439,12 +414,6 @@
 - typing.Tuple
 - cv2
 - numpy
-
-## src/menipy/processing/geometry.py
-- __future__.annotations
-- numpy
-
-## src/menipy/processing/metrics.py
 - __future__.annotations
 - typing.Tuple
 - numpy
@@ -488,37 +457,8 @@
 ## src/menipy/ui/__init__.py
 - main_window.MainWindow, src/menipy/ui/main_window.py
 
-## src/menipy/ui/main_window.py
-- __future__.annotations
-- numpy
-- cv2
-- PySide6.QtCore.QLineF
-- PySide6.QtCore.Qt
-- PySide6.QtGui.QColor
-- PySide6.QtGui.QPen
-- PySide6.QtGui.QAction
-- PySide6.QtWidgets.QMessageBox
-- PySide6.QtWidgets.QDialog
-- PySide6.QtWidgets.QVBoxLayout
-- PySide6.QtWidgets.QCheckBox
-- PySide6.QtWidgets.QPushButton
-- pathlib.Path
-- plugins, src/menipy/plugins.py
-- gui.base_window.BaseMainWindow, src/menipy/gui/base_window.py
-- gui.items.SubstrateLineItem, src/menipy/gui/items.py
-- pipelines.analyze_pendant, src/menipy/pipelines/__init__.py
-- pipelines.analyze_sessile_alt, src/menipy/pipelines/__init__.py
-- pipelines.draw_pendant_overlays, src/menipy/pipelines/__init__.py
-- pipelines.draw_sessile_overlays_alt, src/menipy/pipelines/__init__.py
-- pipelines.pendant.HelperBundle, src/menipy/pipelines/pendant/__init__.py
-- pipelines.sessile.HelperBundle, src/menipy/pipelines/sessile/__init__.py
-- detection.needle.detect_vertical_edges, src/menipy/detection/needle.py
-- detection.substrate.detect_substrate_line, src/menipy/detection/substrate.py
-- analysis.commons.extract_external_contour, src/menipy/analysis/commons.py
-- physics.contact_geom.geom_metrics, src/menipy/physics/contact_geom.py
-- analysis.find_apex_index, src/menipy/analysis/__init__.py
-- analysis.save_contour_side_profiles, src/menipy/analysis/__init__.py
-
 ## src/menipy/utils.py
 - __future__.annotations
 
+## src/menipy/viewmodels/run_vm.py
+- (no imports)

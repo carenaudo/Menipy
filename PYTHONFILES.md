@@ -85,17 +85,31 @@ This document summarizes each Python file in the repository so contributors can 
 - `src/menipy/processing/substrate.py`: Substrate detection with `detect_substrate_line`.
 
 ### GUI
-- `src/menipy/gui/__init__.py`: GUI initialization exposing `main`.
-- `src/menipy/gui/base_window.py`: Base GUI window (`BaseMainWindow` and `main`).
+- `src/menipy/gui/__init__.py`: Makes the `gui` package runnable, launching the application via `app.main`.
+- `src/menipy/gui/app.py`: Contains the `main` function that bootstraps the `QApplication` and `MainWindow`.
+- `src/menipy/gui/mainwindow.py`: The main window shell, responsible for UI setup and delegating all logic to controllers.
 - `src/menipy/gui/calibration_dialog.py`: Interactive `CalibrationDialog` for scale selection.
-- `src/menipy/gui/controls.py`: Widgets (`ZoomControl`, `ParameterPanel`, `MetricsPanel`, `DropAnalysisPanel`, `CalibrationTab`, `AnalysisTab`).
-- `src/menipy/gui/image_view.py`: `ImageView` widget wrapping `QGraphicsView`.
+- `src/menipy/gui/logging_bridge.py`: Utilities to stream Python's `logging` messages into a Qt widget.
+- `src/menipy/gui/plugins_panel.py`: Controller for the plugins dock and menu actions.
+- `src/menipy/gui/sop_controller.py`: Helper class for managing Standard Operating Procedure (SOP) steps and UI.
 - `src/menipy/gui/items.py`: Graphics items such as `SubstrateLineItem`.
 - `src/menipy/gui/overlay.py`: Rendering helpers like `draw_drop_overlay`.
+- `src/menipy/gui/controllers/main_controller.py`: The central controller that orchestrates all services, view models, and other controllers.
+- `src/menipy/gui/controllers/pipeline_controller.py`: Manages the execution of analysis pipelines and updates the GUI with results.
+- `src/menipy/gui/controllers/setup_panel_controller.py`: Controller for the "Setup" panel, managing user inputs for pipeline selection, source, and SOPs.
+- `src/menipy/gui/panels/preview_panel.py`: A helper class that encapsulates interactions with the image preview area.
+- `src/menipy/gui/panels/results_panel.py`: A helper class for displaying analysis results in a table.
+- `src/menipy/gui/services/camera_service.py`: A Qt-friendly service for capturing live video from a camera in a non-blocking background thread.
+- `src/menipy/gui/services/pipeline_runner.py`: A background service for running analysis pipelines in a separate thread.
+- `src/menipy/gui/services/settings_service.py`: Manages loading and saving of application settings.
+- `src/menipy/gui/services/sop_service.py`: Manages loading and saving of Standard Operating Procedures (SOPs).
+- `src/menipy/gui/views/image_view.py`: `ImageView` widget wrapping `QGraphicsView` for displaying images and overlays.
 
 ### UI
 - `src/menipy/ui/__init__.py`: UI components package.
-- `src/menipy/ui/main_window.py`: GUI startup classes `PluginDialog` and `MainWindow`.
+- `src/menipy/ui/main_window.py`: Contains the `MainWindow` class that was previously used, now kept for reference or potential reuse. The primary `MainWindow` is in `gui/mainwindow.py`.
+- `src/menipy/ui/views/step_item_widget.py`: A custom widget for displaying a single step in the SOP list.
+- `src/menipy/ui/views/ui_main_window.py`: The compiled Python UI class generated from `main_window_split.ui`.
 
 ## tests
 - `tests/__init__.py`: Test package marker.
@@ -124,4 +138,3 @@ This document summarizes each Python file in the repository so contributors can 
 
 ## Other
 - `tests/test_drop_metrics.py`, etc.: Additional targeted tests listed above ensure correct functionality across modules.
-

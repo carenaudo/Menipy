@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
 )
 
 from menipy.gui.views.image_view import DRAW_POINT, DRAW_LINE, DRAW_RECT
-from menipy.gui.sop_controller import SopController
+from menipy.gui.controllers.sop_controller import SopController
 
 try:
     from menipy.pipelines.discover import PIPELINE_MAP
@@ -90,7 +90,8 @@ class SetupPanelController(QObject):
 
         self.framesSpin: Optional[QSpinBox] = panel.findChild(QSpinBox, "framesSpin")
 
-        self.stepsList: Optional[QListWidget] = panel.findChild(QListWidget, "stepsList")
+        steps_list_widget: Optional[QListWidget] = panel.findChild(QListWidget, "stepsList")
+        self.stepsList = steps_list_widget
         self.runAllBtn: Optional[QPushButton] = panel.findChild(QPushButton, "runAllBtn")
 
         self.sop_ctrl = SopController(
@@ -98,7 +99,7 @@ class SetupPanelController(QObject):
             sops=self.sops,
             stage_order=self.stage_order,
             step_item_cls=self.step_item_cls,
-            steps_list=self.stepsList,
+            steps_list=steps_list_widget,
             sop_combo=self.sopCombo,
             pipeline_getter=self.current_pipeline_name,
             pipeline_changed_callback=lambda pipeline: self.pipeline_changed.emit(pipeline),
@@ -387,4 +388,3 @@ class SetupPanelController(QObject):
     def _on_combo_text_changed(self, text: str) -> None:
         if self._mode == self.MODE_CAMERA:
             self._last_camera_id = text.strip() or "0"
-

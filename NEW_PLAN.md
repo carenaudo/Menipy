@@ -1,127 +1,151 @@
-# CODEX PLAN TASK — **Add Drop Analysis Functionality to PySide6 Image App**
+# Menipy Development Plan
 
-Extend an **existing** Python 3.x **PySide6** application that already lets the user load an image and define a Region of Interest (ROI).  
-The codebase relies only on → **PySide6, OpenCV, NumPy, SciPy** (plus the Python std‑lib).  
-_Do **not** break or refactor the current workflows._
+This document outlines the development plan for Menipy, a Python-based toolkit for droplet shape analysis. It is intended to be used by the AI agent to guide the implementation of new features and the maintenance of the existing codebase.
 
----
+## 1. Tech Stack
 
-## ✨ Objective
-Implement a **Drop Analysis** module (pendant– & contact‑angle modes) with automated needle detection, drop contour extraction, and metric calculation, exposed in a new GUI tab.
+-   **Language**: Python 3.9+
+-   **GUI**: PySide6
+-   **Image I/O & Processing**: OpenCV (cv2), scikit-image
+-   **Numerical Computing**: NumPy, SciPy
+-   **Data Handling**: pandas, pydantic
+-   **Plotting**: Matplotlib
+-   **Packaging & Testing**: setuptools, pytest, pytest-qt, flake8
+-   **Documentation**: Sphinx
 
----
+## 2. Architecture Overview
 
-## 🖼️ User Workflow (“Drop Analysis” tab)
-INCOMPLETE
+The Menipy application is built on a modular architecture based on **pipelines** and **plugins**.
 
-1. **Upload image** (reuse existing action).
-2. Select **Method**: `pendant` | `contact‑angle`.
-3. Click **Needle Region** → user draws blue rectangle (QRubberBand).  
-4. Click **Detect Needle** → app:
-   * Optionally pre‑filters ROI (Gaussian/Bilateral) if histogram variance < 15 px².  
-   * Detects vertical contours, fits left & right needle edges, draws **yellow** needle axis/length and stores `needle_px_len`.
-5. **Needle length [mm]** input (`QDoubleSpinBox`, default = 1 mm) → computes `px_per_mm`.
-6. Click **Drop Region** → user draws green rectangle enclosing the drop.
-7. Click **Analyze Image**:
-   * Thresholds ROI, finds **external** drop contour (red), ignores internal holes.
-   * Calculates & overlays:
-     - **Blue** max‑diameter line,
-     - **Red** symmetry/height axis (apex to contact line),
-     - **Cyan** apex point.
-   * Computes metrics (scale, height, diameter, volume, contact angle, IFT, Wo‑number) & displays them.
+-   **Pipelines:** A pipeline is a sequence of stages that process an image to extract droplet properties. Each stage is a Python function that takes a `Context` object as input and modifies it. The `Context` object carries data through the pipeline. Pipelines are discovered automatically from the `src/menipy/pipelines/` directory.
+-   **Plugins:** Plugins provide a way to extend the functionality of Menipy with new algorithms for any pipeline stage. Plugins are discovered and registered by the `PluginDB` and `registry` modules.
 
----
-
-## 📐 Algorithms & Modules
-INCOMPLETE
-* **analysis/needle.py**
-  ```python
-  def detect_vertical_edges(img_roi: np.ndarray) -> tuple[tuple[int,int], tuple[int,int], float]:
-      '''
-      Returns (top_pt, bottom_pt, length_px) of the needle axis.
-      '''
-  ```
-  - Pipeline: `cv2.cvtColor → cv2.GaussianBlur → cv2.Canny → cv2.morphologyEx(close) → cv2.findContours`.
-  - Fit vertical line via least‑squares or `cv2.HoughLinesP`.
-
-* **analysis/drop.py**
-  ```python
-  def extract_external_contour(img_roi) -> np.ndarray: ...
-  def compute_drop_metrics(contour: np.ndarray, px_per_mm: float, mode: str) -> dict:
-      '''
-      Returns {"height_mm":…, "diameter_mm":…, "apex": (x,y), "volume_uL":…, "contact_angle_deg":…, "ift_mN_m":…, "wo":…}
-      '''
-  ```
-  - Use inertia tensor or `cv2.fitEllipse` to find symmetry axis.
-  - Volume: axisymmetric revolution assumption.
-
-* **ui/overlay.py** — utilities that draw overlays on a copy of the current image and convert to `QPixmap` for display.
-
----
-
-## 🖥️ GUI Refactor
-INCOMPLETE
-* Wrap existing layout inside a `QTabWidget`.
-  * **Tab 0** — **“Classic”**: _all current controls unchanged_.
-  * **Tab 1** — **“Drop Analysis”**: new `QFormLayout` containing workflow buttons, method selector, number inputs, and read‑only result fields.
-* All drawing occurs on the central image canvas widget (already present).
-
----
-
-## ✅ Acceptance Criteria
-
-| ID | Requirement | Success Metric |
-|----|-------------|----------------|
-| AC1 | App still compiles & runs on Windows & Linux (PySide6 ≥ 6.7) | No runtime errors |
-| AC2 | Switching between tabs does not alter legacy behaviour | Manual test |
-| AC3 | Needle detection robust on calibration images with blur σ ≤ 2 px and SNR ≥ 10 dB | ±2 % length error |
-| AC4 | Drop metrics deviate ≤ 2 % from ground‑truth values on provided benchmark set | Unit tests |
-| AC5 | Code quality | `flake8` clean; `pytest` passes |
-
----
-
-## 📂 Deliverables
+## 3. Directory Structure
 
 ```
-project/
-├── analysis/
+.
+├── doc/                    # Reference documentation for the AI agent
+│   ├── droplet_description.md
+│   ├── physics_models.md
+│   ├── numerical_methods.md
+│   ├── image_processing.md
+│   └── gui_design.md
+├── src/
+│   └── menipy/             # Main application package
+│       ├── __main__.py     # Main entry point
+│       ├── cli.py          # Command-line interface
+│       ├── common/         # Common components for pipeline stages
+│       │   ├── __init__.py
+│       │   ├── acquisition.py
+│       │   ├── edge_detection.py
+│       │   ├── geometry.py
+│       │   ├── optimization.py
+│       │   ├── outputs.py
+│       │   ├── overlay.py
+│       │   ├── physics.py
+│       │   ├── plugin_db.py
+│       │   ├── plugin_loader.py
+│       │   ├── plugins.py
+│       │   ├── preprocessing.py
+│       │   ├── registry.py
+│       │   ├── scaling.py
+│       │   ├── solver.py
+│       │   └── validation.py
+│       ├── gui/            # PySide6 GUI components
+│       │   ├── __init__.py
+│       │   ├── app.py
+│       │   ├── main_controller.py
+│       │   ├── mainwindow.py
+│       │   ├── panels/
+│       │   │   ├── __init__.py
+│       │   │   ├── plugin_manager_panel.py  # Proposed
+│       │   │   └── results_panel.py         # Proposed
+│       │   └── widgets/
+│       │       └── ...
+│       ├── math/           # Mathematical models
+│       │   ├── __init__.py
+│       │   ├── young_laplace.py
+│       │   └── ...
+│       ├── models/         # Data models (pydantic)
+│       │   ├── __init__.py
+│       │   ├── datatypes.py
+│       │   └── ...
+│       ├── pipelines/      # Analysis pipelines
+│       │   ├── __init__.py
+│       │   ├── base.py
+│       │   ├── discover.py
+│       │   ├── pendant/
+│       │   │   └── __init__.py
+│       │   ├── sessile/
+│       │   │   └── __init__.py
+│       │   ├── captive_bubble/   # Proposed
+│       │   │   └── __init__.py
+│       │   └── oscillating/      # Proposed
+│       │       └── __init__.py
+│       └── viz/            # Visualization and plotting
+│           ├── __init__.py
+│           └── plots.py
+├── plugins/                # Custom plugins
 │   ├── __init__.py
-│   ├── needle.py
-│   └── drop.py
-├── ui/
-│   ├── overlay.py
-│   └── resources.qrc
-├── tests/
-│   └── test_analysis.py
-├── examples/
-│   └── pendant_demo.png
-└── doc/
-    └── drop_analysis.md
+│   ├── preproc_blur.py
+│   └── edge_canny.py       # Proposed
+├── data/
+│   └── samples/            # Sample images for tests
+│       ├── pendant_drop.png
+│       └── sessile_drop.png
+├── tests/                  # Pytest suites
+│   ├── __init__.py
+│   ├── test_pipelines.py
+│   ├── test_plugins.py
+│   └── ...
+├── requirements.txt        # Project dependencies
+├── setup.py                # Package metadata
+├── AGENTS.md               # AI agent descriptions
+└── PLAN.md                 # This development plan
 ```
 
----
+## 4. Development Roadmap
 
-## 🛠️ Tasks
+The development of Menipy will proceed in the following phases.
 
-[] 1. **Create `src/analysis/` folder.**
-[] 2. Implement UI refactor (QTabWidget).
-[] 3. Develop `src/analysis/needle.py` (+ unit tests).
-[] 4. Develop `src/analysis/drop.py` (+ unit tests).
-[] 5. Integrate overlays into GUI controller.
-[] 6. Update README & docs.
-[] 7. Verify acceptance criteria, open PR, request review.
+### Phase 1: Core Infrastructure (Completed)
 
----
+-   [x] **Project Scaffolding:** Set up the directory structure, `setup.py`, and `requirements.txt`.
+-   [x] **Pipeline Architecture:** Implement the base pipeline (`PipelineBase`) and the `Context` object.
+-   [x] **Plugin System:** Implement the plugin discovery and registration mechanism.
+-   [x] **GUI Skeleton:** Create the main window with a basic layout for image display and controls.
+-   [x] **Basic Pipelines:** Implement initial pipelines for pendant and sessile drops.
 
-## 🚦 Constraints
+### Phase 2: Feature Implementation
 
-* Python 3.9+, **no new heavy dependencies**.
-* Follow PEP‑8; docstrings in NumPy style.
-* Maintain public API & CLI behaviour.
-* Keep commits atomic, with meaningful messages.
-* Update CODEXLOG.md file with the changes made on the task
+-   [ ] **Implement All Pipeline Stages:** Ensure that there are plugin implementations for all pipeline stages defined in `PipelineBase`.
+    -   [ ] **Acquisition:** Load an image from a file or camera.
+    -   [ ] **Preprocessing:** Prepare the image for analysis (e.g., cropping, resizing, filtering).
+    -   [ ] **Edge Detection:** Detect the outline of the droplet in the image.
+    -   [ ] **Geometry:** Analyze the geometric properties of the droplet's shape.
+    -   [ ] **Scaling:** Calibrate the image from pixels to physical units (e.g., mm).
+    -   [ ] **Physics:** Apply physical models to the droplet's shape (e.g., Young-Laplace equation).
+    -   [ ] **Solver:** Solve the physical equations to determine properties like surface tension.
+    -   [ ] **Optimization:** Optimize the parameters of the physical model to best fit the observed shape.
+    -   [ ] **Outputs:** Generate and save the results of the analysis (e.g., as a CSV file).
+    -   [ ] **Overlay:** Draw the results of the analysis on top of the original image.
+    -   [ ] **Validation:** Perform checks to ensure the quality and correctness of the results.
+-   [ ] **GUI Enhancements:**
+    -   [ ] **Plugin Manager:** Create a GUI panel to view, activate, and deactivate plugins.
+    -   [ ] **Pipeline Controls:** Allow the user to select and configure pipelines from the GUI.
+    -   [ ] **Interactive Plotting:** Improve the interactivity of plots (zoom, pan, etc.).
+    -   [ ] **Results Display:** Create a dedicated panel to display the results of the analysis in a structured format.
+-   [ ] **New Pipelines:**
+    -   [ ] **Captive Bubble:** Create a new pipeline for captive bubble experiments.
+    -   [ ] **Oscillating Drop:** Implement a pipeline for analyzing oscillating drops.
+-   [ ] **Command-Line Interface (CLI):**
+    -   [ ] Enhance the CLI to allow running pipelines and generating reports from the command line.
+-   [ ] **Testing and CI:**
+    -   [ ] Increase test coverage for all components.
+    -   [ ] Set up a CI/CD pipeline using GitHub Actions to run tests automatically.
 
----
+### Phase 3: Documentation and Polishing
 
-> **Go build it, CODEX!**  
-> Output the finished branch ready for merge including all tests, docs, and example images.
+-   [ ] **User Documentation:** Write comprehensive user documentation explaining how to use the Menipy application.
+-   [ ] **Developer Documentation:** Improve the developer documentation, especially for creating new pipelines and plugins.
+-   [ ] **Packaging and Distribution:** Create binary packages for Windows, macOS, and Linux.

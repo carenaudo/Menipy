@@ -22,6 +22,7 @@ setuptools
 wheel
 pytest
 pytest-cov
+pytest-qt
 flake8
 
 # Documentation

@@ -1,4 +1,8 @@
 from __future__ import annotations
+
+import logging
+
+logger = logging.getLogger(__name__)
 from typing import Optional, Union
 import numpy as np
 
@@ -20,11 +24,26 @@ DRAW_LINE = "line"
 DRAW_RECT = "rect"
 
 
+
+def _enum_to_int(value: object) -> int:
+    """Convert Qt enum/flag objects to plain ints for signal payloads."""
+    if hasattr(value, 'value'):
+        try:
+            return int(value.value)
+        except (TypeError, ValueError):
+            pass
+    try:
+        return int(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return 0
+
 class ImageView(QGraphicsView):
     """QGraphicsView helper with pan/zoom and interactive overlays."""
 
     roi_selected = Signal(QRectF)
     line_drawn = Signal(QLineF)
+    point_clicked = Signal(QPointF, int, int)
+    double_clicked = Signal(QPointF, int, int)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -41,6 +60,8 @@ class ImageView(QGraphicsView):
 
         self._draw_mode = DRAW_NONE
         self._overlays = []  # list[QGraphicsItem]
+        self._overlay_items_by_tag: dict[str, object] = {}
+        self._draw_tag: str | None = None
         self._tmp_item = None
         self._press_pos_scene: QPointF | None = None
         self._overlay_pen = QPen(QColor(255, 0, 0))
@@ -67,10 +88,11 @@ class ImageView(QGraphicsView):
     def set_wheel_zoom_requires_ctrl(self, required: bool) -> None:
         self._wheel_zoom_requires_ctrl = bool(required)
 
-    def set_draw_mode(self, mode: str | None, color: QColor = QColor(255, 0, 0)) -> None:
+    def set_draw_mode(self, mode: str | None, color: QColor = QColor(255, 0, 0), tag: str | None = None) -> None:
         """Update active drawing mode and overlay color."""
 
         self._draw_mode = mode
+        self._draw_tag = tag if mode else None
         self._overlay_pen.setColor(color)
         # When drawing, disable scroll-hand drag for comfort
         self.setDragMode(QGraphicsView.NoDrag if mode else QGraphicsView.ScrollHandDrag)
@@ -86,13 +108,60 @@ class ImageView(QGraphicsView):
             if scene:
                 scene.removeItem(item)
         self._overlays.clear()
+        self._overlay_items_by_tag.clear()
         self._tmp_item = None
 
-    def set_image(self, img: Union[QPixmap, QImage, np.ndarray, None]) -> None:
+    def remove_overlay(self, tag: str) -> None:
+        item = self._overlay_items_by_tag.get(tag)
+        if not item:
+            return
+        self._remove_overlay_item(item)
+
+    def add_marker_point(
+        self,
+        point: QPointF,
+        *,
+        color: QColor = QColor(0, 255, 0),
+        radius: float = 4.0,
+        tag: str | None = None,
+    ) -> None:
+        item = QGraphicsEllipseItem(
+            QRectF(point.x() - radius, point.y() - radius, 2 * radius, 2 * radius)
+        )
+        pen = QPen(color)
+        pen.setWidth(2)
+        item.setPen(pen)
+        item.setBrush(color)
+        item.setZValue(12_000)
+        self.scene().addItem(item)
+        self._overlays.append(item)
+        self._register_overlay_item(item, tag)
+
+    def add_marker_line(
+        self,
+        p1: QPointF,
+        p2: QPointF,
+        *,
+        color: QColor = QColor(255, 140, 0),
+        tag: str | None = None,
+    ) -> None:
+        item = QGraphicsLineItem(p1.x(), p1.y(), p2.x(), p2.y())
+        pen = QPen(color)
+        pen.setWidth(2)
+        item.setPen(pen)
+        item.setZValue(11_000)
+        self.scene().addItem(item)
+        self._overlays.append(item)
+        self._register_overlay_item(item, tag)
+
+    def set_image(self, img: Union[QPixmap, QImage, np.ndarray, None], preserve_overlays: bool = False) -> None:
         if img is None:
             self._scene.clear()
             self._pix_item = None
             self._last_pm_size = None
+            self._overlays.clear()
+            self._overlay_items_by_tag.clear()
+            self._tmp_item = None
             return
 
         # Convert to QPixmap
@@ -109,13 +178,22 @@ class ImageView(QGraphicsView):
             qimg = QImage(rgb.data, w, h, 3 * w, QImage.Format.Format_RGB888)
             pm = QPixmap.fromImage(qimg)
 
+        had_item = self._pix_item is not None
+        same_size = had_item and (self._last_pm_size == QSizeF(pm.size()))
+        if preserve_overlays and had_item and same_size:
+            self._pix_item.setPixmap(pm)
+            self._scene.setSceneRect(QRectF(pm.rect()))
+            self._last_pm_size = QSizeF(pm.size())
+            return
+
         # Preserve current transform/center if policy asks and size unchanged
         old_transform = QTransform(self.transform())
         old_center = self.mapToScene(self.viewport().rect().center())
-        had_item = self._pix_item is not None
-        same_size = had_item and (self._last_pm_size == QSizeF(pm.size()))
 
         self._scene.clear()
+        self._overlays.clear()
+        self._overlay_items_by_tag.clear()
+        self._tmp_item = None
         self._pix_item = self._scene.addPixmap(pm)
         self._scene.setSceneRect(QRectF(pm.rect()))
         self._last_pm_size = QSizeF(pm.size())
@@ -186,10 +264,88 @@ class ImageView(QGraphicsView):
         viewport_height = max(1, self.viewport().height())
         return (width <= viewport_width) and (height <= viewport_height)
 
+    def _remove_overlay_item(self, item) -> None:
+        try:
+            scene = item.scene()
+        except RuntimeError:
+            scene = None
+        if scene:
+            try:
+                scene.removeItem(item)
+            except Exception:
+                pass
+        if item in self._overlays:
+            self._overlays.remove(item)
+        for key, value in list(self._overlay_items_by_tag.items()):
+            if value is item:
+                del self._overlay_items_by_tag[key]
+
+    def _register_overlay_item(self, item, tag: str | None = None) -> None:
+        tag = tag or self._draw_tag
+        if not tag:
+            return
+        existing = self._overlay_items_by_tag.get(tag)
+        if existing and existing is not item:
+            self._remove_overlay_item(existing)
+        self._overlay_items_by_tag[tag] = item
+
+    def overlay_rect_scene(self, tag: str) -> QRectF | None:
+        item = self._overlay_items_by_tag.get(tag)
+        if isinstance(item, QGraphicsRectItem):
+            rect = item.rect().normalized()
+            top_left = item.mapToScene(rect.topLeft())
+            bottom_right = item.mapToScene(rect.bottomRight())
+            return QRectF(top_left, bottom_right)
+        return None
+
+    def overlay_line_scene(self, tag: str) -> QLineF | None:
+        item = self._overlay_items_by_tag.get(tag)
+        if isinstance(item, QGraphicsLineItem):
+            line = item.line()
+            p1 = item.mapToScene(line.p1())
+            p2 = item.mapToScene(line.p2())
+            return QLineF(p1, p2)
+        return None
+
+    def has_overlay(self, tag: str) -> bool:
+        return tag in self._overlay_items_by_tag
+
+    def _clamp_to_scene(self, point: QPointF) -> QPointF:
+        if not self._scene:
+            return point
+        rect = self._scene.sceneRect()
+        if rect.isNull():
+            return point
+        x = min(max(point.x(), rect.left()), rect.right())
+        y = min(max(point.y(), rect.top()), rect.bottom())
+        return QPointF(x, y)
+
     # ---------------- Mouse handling for drawing ----------------
     def mousePressEvent(self, event):
+        scene_pos = None
+        if event.button() == Qt.LeftButton and self.scene():
+            candidate = self.mapToScene(event.pos())
+            rect = self._scene.sceneRect() if self._scene else None
+            if rect and rect.isValid():
+                padded = rect.adjusted(-1e-6, -1e-6, 1e-6, 1e-6)
+                if padded.contains(candidate):
+                    scene_pos = self._clamp_to_scene(candidate)
+                    self.point_clicked.emit(scene_pos, _enum_to_int(event.button()), _enum_to_int(event.modifiers()))
+                else:
+                    scene_pos = None
+            else:
+                scene_pos = self._clamp_to_scene(candidate)
+                self.point_clicked.emit(scene_pos, _enum_to_int(event.button()), _enum_to_int(event.modifiers()))
+
         if self._draw_mode and event.button() == Qt.LeftButton and self.scene():
-            scene_pos = self.mapToScene(event.pos())
+            if scene_pos is None:
+                scene_pos = self.mapToScene(event.pos())
+                rect = self._scene.sceneRect() if self._scene else None
+                if rect and rect.isValid():
+                    padded = rect.adjusted(-1e-6, -1e-6, 1e-6, 1e-6)
+                    if not padded.contains(scene_pos):
+                        return super().mousePressEvent(event)
+                scene_pos = self._clamp_to_scene(scene_pos)
             self._press_pos_scene = scene_pos
             if self._draw_mode == DRAW_POINT:
                 radius = 4.0
@@ -217,9 +373,21 @@ class ImageView(QGraphicsView):
             return
         super().mousePressEvent(event)
 
+    def mouseDoubleClickEvent(self, event):
+        if event.button() == Qt.LeftButton and self.scene():
+            candidate = self.mapToScene(event.pos())
+            rect = self._scene.sceneRect() if self._scene else None
+            if rect and rect.isValid():
+                padded = rect.adjusted(-1e-6, -1e-6, 1e-6, 1e-6)
+                if not padded.contains(candidate):
+                    return super().mouseDoubleClickEvent(event)
+            scene_pos = self._clamp_to_scene(candidate)
+            self.double_clicked.emit(scene_pos, _enum_to_int(event.button()), _enum_to_int(event.modifiers()))
+        super().mouseDoubleClickEvent(event)
+
     def mouseMoveEvent(self, event):
         if self._draw_mode and self._tmp_item and self._press_pos_scene and self.scene():
-            current_pos = self.mapToScene(event.pos())
+            current_pos = self._clamp_to_scene(self.mapToScene(event.pos()))
             if isinstance(self._tmp_item, QGraphicsLineItem):
                 self._tmp_item.setLine(
                     self._press_pos_scene.x(),
@@ -237,13 +405,35 @@ class ImageView(QGraphicsView):
         if self._draw_mode and event.button() == Qt.LeftButton and self.scene():
             if self._tmp_item:
                 if self._draw_mode == DRAW_RECT and isinstance(self._tmp_item, QGraphicsRectItem):
+                    rect = self._tmp_item.rect().normalized()
+                    top_left = self._tmp_item.mapToScene(rect.topLeft())
+                    bottom_right = self._tmp_item.mapToScene(rect.bottomRight())
+                    tag = (self._draw_tag or 'region').lower()
+                    label = 'ROI region' if tag == 'roi' else ('needle region' if tag == 'needle' else 'region')
+                    logger.info("Preview %s drawn: top_left=(%.2f, %.2f), bottom_right=(%.2f, %.2f)", label, top_left.x(), top_left.y(), bottom_right.x(), bottom_right.y())
                     self.roi_selected.emit(self._tmp_item.rect())
                 elif self._draw_mode == DRAW_LINE and isinstance(self._tmp_item, QGraphicsLineItem):
+                    line = self._tmp_item.line()
+                    p1 = self._tmp_item.mapToScene(line.p1())
+                    p2 = self._tmp_item.mapToScene(line.p2())
+                    tag = (self._draw_tag or 'contact_line').lower()
+                    label = 'needle line' if tag == 'needle' else 'contact line'
+                    logger.info("Preview %s drawn: p1=(%.2f, %.2f), p2=(%.2f, %.2f)", label, p1.x(), p1.y(), p2.x(), p2.y())
                     self.line_drawn.emit(self._tmp_item.line())
 
                 # finalize
-                self._overlays.append(self._tmp_item)
+                item = self._tmp_item
+                self._overlays.append(item)
+                self._register_overlay_item(item)
                 self._tmp_item = None
                 self._press_pos_scene = None
             return
         super().mouseReleaseEvent(event)
+
+
+
+
+
+
+
+

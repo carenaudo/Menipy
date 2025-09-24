@@ -107,11 +107,28 @@ def run(ctx, method: str = "canny"):
             img = frames
     if img is None: img = getattr(ctx, "image", None)
     if img is None: img = getattr(ctx, "preview", None)
+    state = getattr(ctx, "preprocessed_state", None)
+    roi_bounds = getattr(ctx, "roi", None)
+    roi_image_override = None
+    if state is not None:
+        try:
+            state_roi = getattr(state, "roi_bounds", None)
+            if state_roi:
+                roi_bounds = state_roi
+            for key in ("normalized_roi", "filtered_roi", "working_roi", "raw_roi"):
+                candidate = getattr(state, key, None)
+                if candidate is not None:
+                    roi_image_override = candidate
+                    break
+        except Exception:
+            roi_image_override = None
+
+
 
     # prepare a logger for visible runtime info
     logger = logging.getLogger(__name__)
 
-    if img is None:
+    if img is None and roi_image_override is None:
         # Try a safe acquisition fallback if the pipeline forgot to populate frames.
         # Use any hints available on ctx (image_path, camera_id, frames_requested).
         try:
@@ -160,16 +177,20 @@ def run(ctx, method: str = "canny"):
             logger.debug("EdgeDetection fallback: acquisition helper not available")
             img = None
 
-    if img is None:
+    if img is None and roi_image_override is None:
         raise RuntimeError(
             "EdgeDetection: no image in Context. "
             "Ensure 'acquisition' (and usually 'preprocessing') ran and set ctx.frame/frames."
         )
 
     # 2) crop ROI if present
-    roi = getattr(ctx, "roi", None)
+    roi = roi_bounds
     x0 = y0 = 0
-    if roi:
+    if roi_image_override is not None:
+        img_roi = roi_image_override
+        if roi:
+            x0, y0 = int(roi[0]), int(roi[1])
+    elif roi:
         x0, y0, w, h = [int(v) for v in roi]
         img_roi = img[y0:y0 + h, x0:x0 + w]
     else:
@@ -212,3 +233,5 @@ def run(ctx, method: str = "canny"):
         ctx.contour = SimpleNamespace()
     ctx.contour.xy = xy
     return ctx
+
+

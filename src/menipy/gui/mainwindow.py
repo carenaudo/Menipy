@@ -1,28 +1,32 @@
 # src/menipy/gui/mainwindow.py
 from __future__ import annotations
-
+ 
 from pathlib import Path
+import logging
 from typing import List, Optional
 
 from PySide6.QtCore import QFile, QByteArray, Qt
-from PySide6.QtGui import QAction, QCloseEvent
+from PySide6.QtGui import QCloseEvent
 from PySide6.QtUiTools import QUiLoader
-from PySide6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QFileDialog, QMessageBox,
-    QLayout, QPlainTextEdit
-)
+from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLayout, QPlainTextEdit
 
 from menipy.gui.views.image_view import DRAW_NONE
 
-# --- compiled split main window UI ---
 from menipy.gui.views.ui_main_window import Ui_MainWindow
 
 from menipy.gui.logging_bridge import install_qt_logging
 from menipy.gui.plugins_panel import PluginsController
-from menipy.gui.panels.setup_panel import SetupPanelController
+from menipy.gui.controllers.setup_panel_controller import SetupPanelController
 from menipy.gui.panels.preview_panel import PreviewPanel
 from menipy.gui.panels.results_panel import ResultsPanel
-from menipy.gui.pipeline_controller import PipelineController
+from menipy.gui.services.camera_service import CameraController, CameraConfig
+from menipy.gui.controllers.pipeline_controller import PipelineController
+from menipy.gui.controllers.preprocessing_controller import PreprocessingPipelineController
+from menipy.gui.helpers.image_marking import ImageMarkerHelper
+
+from menipy.pipelines.discover import PIPELINE_MAP
+
+logger = logging.getLogger(__name__)
 
 # --- promoted preview widget (registered into QUiLoader) ---
 try:
@@ -37,15 +41,12 @@ except Exception:
     StepItemWidget = None  # type: ignore
 
 try:
-    from .services.sop_service import SopService, Sop
+    from .services.sop_service import SopService
+    from .services.settings_service import AppSettings
+    from menipy.gui.viewmodels.run_vm import RunViewModel
+    from menipy.gui.services.pipeline_runner import PipelineRunner
 except Exception:
     SopService = None  # type: ignore
-    Sop = None  # type: ignore
-
-# --- app settings (you already have this in your project) ---
-try:
-    from .services.settings_service import AppSettings
-except Exception:
     # tiny fallback so file still runs
     class AppSettings:  # type: ignore
         selected_pipeline: Optional[str] = None
@@ -56,22 +57,19 @@ except Exception:
         splitter_sizes: Optional[list[int]] = None
 
         @classmethod
-        def load(cls): return cls()
-        def save(self): pass
+        def load(cls):
+            return cls()
 
-# --- pipelines map (guarded) ---
-try:
-    from menipy.pipelines.discover import PIPELINE_MAP
-except Exception:
-    PIPELINE_MAP = {}
+        def save(self):
+            pass
 
-# --- optional runner & viewmodel (guarded) ---
-try:
-    from menipy.gui.viewmodels.run_vm import RunViewModel
-    from menipy.gui.services.pipeline_runner import PipelineRunner
-except Exception:
     RunViewModel = None  # type: ignore
     PipelineRunner = None  # type: ignore
+
+try:
+    from menipy.gui.main_controller import MainController
+except Exception:
+    MainController = None # type: ignore
 
 # default stage order for SOPs / step list
 STAGE_ORDER: List[str] = [
@@ -116,8 +114,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._embed(self.overlay_panel, self.previewHostLayout)
         self._embed(self.results_panel, self.resultsHostLayout)
 
-        self.preview_panel = PreviewPanel(self, self.overlay_panel, ImageView)
+        self.preview_panel = PreviewPanel(self.overlay_panel, ImageView)
         self.results_panel_ctrl = ResultsPanel(self.results_panel)
+
+        self.preprocessing_ctrl = PreprocessingPipelineController(self)
+        self.marker_helper = ImageMarkerHelper(self.preview_panel, self.preprocessing_ctrl, parent=self) if self.preview_panel.has_view() else None
+
+        self.camera_ctrl = CameraController(self)
 
         # add simple log view into the Log tab
         self.logView = QPlainTextEdit(self)
@@ -126,7 +129,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # Install Qt logging bridge (only one handler) and connect to logView
         try:
-            self._qt_log_bridge, self._qt_log_handler = install_qt_logging(self.logView)
+            gui_logger = logging.getLogger("menipy")
+            gui_logger.setLevel(logging.INFO)
+            self._qt_log_bridge, self._qt_log_handler = install_qt_logging(self.logView, logger=gui_logger)
         except Exception:
             pass
 
@@ -137,11 +142,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if PipelineRunner and RunViewModel:
             self.runner = PipelineRunner()
             self.run_vm = RunViewModel(self.runner)
-            # signals            # new: status and logs from pipeline Context
-            try:
-                self.run_vm.status_ready.connect(lambda msg: self.statusBar().showMessage(msg, 5000))
-            except Exception:
-                pass
         else:
             self.runner = None
             self.run_vm = None
@@ -164,38 +164,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             setup_ctrl=self.setup_panel_ctrl,
             preview_panel=self.preview_panel,
             results_panel=self.results_panel_ctrl,
+            preprocessing_ctrl=self.preprocessing_ctrl,
             pipeline_map=PIPELINE_MAP,
             sops=self.sops,
             run_vm=self.run_vm,
             log_view=self.logView,
         )
 
-        self.setup_panel_ctrl.browse_requested.connect(self._browse_image)
-        self.setup_panel_ctrl.preview_requested.connect(self._on_preview_image)
-        self.setup_panel_ctrl.draw_mode_requested.connect(self.preview_panel.set_draw_mode)
-        self.setup_panel_ctrl.clear_overlays_requested.connect(self.preview_panel.clear_overlays)
-        self.setup_panel_ctrl.run_all_requested.connect(self.pipeline_ctrl.run_all)
-        self.setup_panel_ctrl.play_stage_requested.connect(self.pipeline_ctrl.run_stage)
-        self.setup_panel_ctrl.config_stage_requested.connect(self._on_config_step)
-
-        if self.run_vm:
-            self.run_vm.preview_ready.connect(self.pipeline_ctrl.on_preview_ready)
-            self.run_vm.results_ready.connect(self.pipeline_ctrl.on_results_ready)
-            self.run_vm.error_occurred.connect(self.pipeline_ctrl.on_pipeline_error)
-            try:
-                self.run_vm.logs_ready.connect(self.pipeline_ctrl.append_logs)
-            except Exception:
-                pass
-
-        # ---------- wire panels ----------
         if self.preview_panel.has_view():
             try:
                 self.preview_panel.set_draw_mode(DRAW_NONE)
             except Exception:
                 pass
-        # menubar actions from split UI
-        self._wire_menu_actions()
-
         # restore saved splitter sizes (optional)
         if getattr(self.settings, "splitter_sizes", None):
             try:
@@ -206,7 +186,51 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # focus
         self.statusBar().showMessage("Ready", 1500)
 
+        # The MainController now orchestrates everything.
+        if MainController:
+            self.main_controller = MainController(self)
+        else:
+            self.main_controller = None # type: ignore
+
+        # menubar actions from split UI
+        self._wire_menu_actions()
+
     # -------------------------- helpers & wiring --------------------------
+
+    def _wire_menu_actions(self):
+        # Actions declared in main_window_split.ui
+        logger.info("Wiring main window menu actions...")
+        if not hasattr(self, "main_controller") or not self.main_controller:
+            logger.error("MainController not available. Cannot wire menu actions.")
+            return
+
+        actions = {
+            "actionOpenImage": "browse_image",
+            "actionOpenCamera": "select_camera",
+            "actionQuit": "close",
+            "actionRunFull": "run_full_pipeline",
+            "actionRunSelected": "run_full_pipeline",
+            "actionStop": "stop_pipeline",
+            "actionAbout": "show_about_dialog",
+        }
+
+        for action_name, method_name in actions.items():
+            try:
+                action = getattr(self, action_name)
+                if method_name == "close":
+                    handler = self.close
+                elif method_name == "select_camera":
+                    # Use a lambda for methods requiring arguments
+                    handler = lambda: self.main_controller.select_camera(True) # type: ignore
+                else:
+                    handler = getattr(self.main_controller, method_name)
+
+                action.triggered.connect(handler)
+                logger.debug(f"Connected {action_name} to {method_name}")
+            except AttributeError as e:
+                logger.warning(f"Failed to wire action '{action_name}': {e}")
+            except Exception as e:
+                logger.error(f"Unexpected error wiring action '{action_name}': {e}")
 
     def _embed(self, child: QWidget, host_or_layout):
         """Add child into a QWidget host or directly into a QLayout."""
@@ -216,59 +240,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         lay = host_or_layout.layout() or QVBoxLayout(host_or_layout)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.addWidget(child)
-
-    def _wire_menu_actions(self):
-        # Actions declared in main_window_split.ui
-        try:
-            self.actionOpenImage.triggered.connect(self._browse_image)       # type: ignore[attr-defined]
-            self.actionOpenCamera.triggered.connect(lambda: self._select_camera(True))  # type: ignore[attr-defined]
-            self.actionQuit.triggered.connect(self.close)                    # type: ignore[attr-defined]
-            self.actionRunFull.triggered.connect(self.pipeline_ctrl.run_full)       # type: ignore[attr-defined]
-            # Reuse Run Full for now; swap to subset if you add it
-            self.actionRunSelected.triggered.connect(self.pipeline_ctrl.run_full)   # type: ignore[attr-defined]
-            self.actionStop.triggered.connect(lambda: self.statusBar().showMessage("Stop requested", 1000))  # type: ignore[attr-defined]
-            self.actionAbout.triggered.connect(lambda: QMessageBox.information(self, "About", "Menipy ADSA GUI"))  # type: ignore[attr-defined]
-        except Exception:
-            pass
-
-    def _on_browse_image(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Choose image", "", "Images (*.png *.jpg *.jpeg *.bmp *.tif *.tiff)")
-
-
-    def _on_preview_image(self):
-        path = self.setup_panel_ctrl.image_path()
-        if not path:
-            QMessageBox.information(self, "Preview", "Please select an image first.")
-            return
-        try:
-            self.preview_panel.load_path(path)
-        except Exception as e:
-            QMessageBox.warning(self, "Preview error", f"Could not load image:\n{e}")
-
-    # -------------------------- menu actions --------------------------
-
-    def _browse_image(self):
-        initial = self.setup_panel_ctrl.image_path() or self.settings.last_image_path or ""
-        path, _ = QFileDialog.getOpenFileName(
-            self,
-            "Open Image",
-            initial,
-            "Images (*.png *.jpg *.jpeg *.bmp *.tif *.tiff)",
-        )
-        if path:
-            self.setup_panel_ctrl.set_image_path(path)
-            self.settings.last_image_path = path
-            self.settings.save()
-
-    def _select_camera(self, on: bool):
-        self.setup_panel_ctrl.set_camera_enabled(on)
-
-    # -------------------------- pipeline ops --------------------------
-
-    def _on_config_step(self, stage_name: str):
-        QMessageBox.information(self, "Configure Step", f"Open configuration for: {stage_name}")
-
-    # -------------------------- VM callbacks / preview & results --------------------------
 
     def _restore_window_layout(self):
         s = self.settings
@@ -281,40 +252,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             pass
 
     def closeEvent(self, event: QCloseEvent) -> None:
-        # save dock/splitter/geom + last selections
-        try:
-            self.settings.main_window_state_b64 = bytes(self.saveState().toBase64()).decode("ascii")
-            self.settings.main_window_geom_b64 = bytes(self.saveGeometry().toBase64()).decode("ascii")
-        except Exception:
-            pass
-        try:
-            self.settings.splitter_sizes = getattr(self.rootSplitter, "sizes", lambda: None)()  # type: ignore[attr-defined]
-        except Exception:
-            pass
-        # persist selections
-        pipeline = self.setup_panel_ctrl.current_pipeline_name()
-        if pipeline:
-            self.settings.selected_pipeline = pipeline
-        image_path = self.setup_panel_ctrl.image_path()
-        if image_path is not None:
-            self.settings.last_image_path = image_path or None
-        try:
-            self.settings.save()
-        except Exception:
-            pass
+        """Delegate shutdown logic to the controller."""
+        if hasattr(self, "main_controller") and self.main_controller:
+            self.main_controller.shutdown()
         super().closeEvent(event)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

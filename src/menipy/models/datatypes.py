@@ -134,6 +134,9 @@ class Context:
     Pipelines freely attach fields here. Commonly used keys are predeclared.
     """
     # Acquisition / images
+    roi: Optional[Tuple[int, int, int, int]] = None
+    needle_rect: Optional[Tuple[int, int, int, int]] = None
+    contact_line: Optional[Tuple[Tuple[int, int], Tuple[int, int]]] = None
     frames: Any | None = None                 # np.ndarray or list[np.ndarray]
     # Edge detection
     contour: Any | None = None                # object with .xy (Nx2) or similar
@@ -273,6 +276,124 @@ class CapillaryRiseFit(BaseModel):
     solver: SolverInfo
     confidence: Optional[Confidence] = None
 
+
+# ---- Preprocessing configuration -----------------------------------------
+
+class ResizeSettings(BaseModel):
+    """Parameters controlling optional ROI resizing."""
+
+    enabled: bool = Field(default=False)
+    target_width: Optional[int] = Field(default=None, ge=1)
+    target_height: Optional[int] = Field(default=None, ge=1)
+    preserve_aspect: bool = Field(default=True)
+    interpolation: Literal["nearest", "linear", "cubic", "area", "lanczos"] = Field(
+        default="linear", description="OpenCV interpolation mode"
+    )
+
+    @property
+    def has_target(self) -> bool:
+        return (self.target_width or self.target_height) is not None
+
+
+class FilterSettings(BaseModel):
+    """Denoising / smoothing options applied within the ROI."""
+
+    enabled: bool = Field(default=False)
+    method: Literal["none", "gaussian", "median", "bilateral"] = Field(
+        default="none"
+    )
+    kernel_size: int = Field(default=3, ge=1, description="Odd window size")
+    sigma: float = Field(default=1.0, ge=0.0, description="Gaussian sigma")
+    sigma_color: float = Field(default=75.0, ge=0.0, description="Bilateral color sigma")
+    sigma_space: float = Field(default=75.0, ge=0.0, description="Bilateral spatial sigma")
+
+
+class BackgroundSettings(BaseModel):
+    """Background subtraction configuration confined to ROI mask."""
+
+    enabled: bool = Field(default=False)
+    mode: Literal["flat", "rolling_ball"] = Field(default="flat")
+    strength: float = Field(default=0.8, ge=0.0, le=1.0)
+    rolling_radius: int = Field(default=15, ge=1)
+
+
+class NormalizationSettings(BaseModel):
+    """Local contrast normalization configuration."""
+
+    enabled: bool = Field(default=False)
+    method: Literal["clahe", "histogram"] = Field(default="clahe")
+    clip_limit: float = Field(default=2.0, ge=0.0)
+    grid_size: int = Field(default=8, ge=1)
+
+
+class ContactLineSettings(BaseModel):
+    """Defines how the pipeline treats contact line pixels."""
+
+    strategy: Literal["preserve", "attenuate", "mask"] = Field(default="preserve")
+    threshold: float = Field(default=0.15, ge=0.0, le=1.0)
+    dilation: int = Field(default=3, ge=1)
+
+
+class PreprocessingSettings(BaseModel):
+    """Aggregated user-configurable preprocessing settings."""
+
+    crop_to_roi: bool = Field(default=True)
+    work_on_roi_mask: bool = Field(
+        default=True, description="Operate strictly inside ROI mask clone"
+    )
+    resize: ResizeSettings = Field(default_factory=ResizeSettings)
+    filtering: FilterSettings = Field(default_factory=FilterSettings)
+    background: BackgroundSettings = Field(default_factory=BackgroundSettings)
+    normalization: NormalizationSettings = Field(default_factory=NormalizationSettings)
+    contact_line: ContactLineSettings = Field(default_factory=ContactLineSettings)
+    preset_id: Optional[str] = Field(default=None)
+
+
+class MarkerSet(BaseModel):
+    """Interactive markers collected from preview interactions."""
+
+    drop_center: Optional[Tuple[float, float]] = None
+    contact_line_anchors: List[Tuple[float, float]] = Field(default_factory=list)
+    background_samples: List[Tuple[float, float]] = Field(default_factory=list)
+
+    def add_anchor(self, point: Tuple[float, float]) -> None:
+        self.contact_line_anchors.append(point)
+
+    def clear(self) -> None:
+        self.drop_center = None
+        self.contact_line_anchors.clear()
+        self.background_samples.clear()
+
+
+class PreprocessingStageRecord(BaseModel):
+    """Audit record describing a single stage execution."""
+
+    name: str
+    params: Dict[str, Any] = Field(default_factory=dict)
+
+
+class PreprocessingState(BaseModel):
+    """Mutable buffers shared across preprocessing helpers."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    roi_bounds: Optional[Tuple[int, int, int, int]] = None
+    roi_mask: Optional[np.ndarray] = None
+    raw_roi: Optional[np.ndarray] = None
+    working_roi: Optional[np.ndarray] = None
+    filtered_roi: Optional[np.ndarray] = None
+    normalized_roi: Optional[np.ndarray] = None
+    scale: Tuple[float, float] = Field(default=(1.0, 1.0))
+    contact_line_mask: Optional[np.ndarray] = None
+    contact_line_presence: bool = False
+    markers: MarkerSet = Field(default_factory=MarkerSet)
+    history: List[PreprocessingStageRecord] = Field(default_factory=list)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+    def clone(self) -> "PreprocessingState":
+        return self.model_copy(deep=True)
+
+
 # ---- Aggregated analysis record --------------------------------------------
 
 class AnalysisRecord(BaseModel):
@@ -322,3 +443,5 @@ def make_contour(xy: np.ndarray,
     """Helper to create a validated Contour."""
     return Contour(xy=xy, closed=closed, units=units,
                    smoothing=smoothing, origin_hint=origin_hint)
+
+

@@ -13,6 +13,7 @@ class AppSettings:
     selected_pipeline: str = "sessile"
     last_image_path: Optional[str] = None
     plugin_dirs: List[str] = field(default_factory=lambda: ["./plugins"])
+    acquisition_requires_contact_line: bool = False
     path: Path = field(default_factory=_default_path, repr=False)
 
     @classmethod
@@ -29,6 +30,7 @@ class AppSettings:
                 selected_pipeline=data.get("selected_pipeline", "sessile"),
                 last_image_path=data.get("last_image_path"),
                 plugin_dirs=list(data.get("plugin_dirs", ["./plugins"])),
+                acquisition_requires_contact_line=data.get("acquisition_requires_contact_line", False),
                 path=p
             )
         except Exception:

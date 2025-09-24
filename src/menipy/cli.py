@@ -1,10 +1,37 @@
 from __future__ import annotations
 import argparse, json
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 from .pipelines.base import PipelineBase, Context, PipelineError
 from .common import acquisition as acq
+
+
+def _parse_numbers(value: str, name: str, expected: int) -> Tuple[float, ...]:
+    cleaned = value
+    for sep in (',', ';'):
+        cleaned = cleaned.replace(sep, ' ')
+    parts = [p for p in cleaned.strip().split() if p]
+    if len(parts) != expected:
+        raise ValueError(f"{name} requires {expected} values")
+    try:
+        return tuple(float(p) for p in parts)
+    except ValueError as exc:
+        raise ValueError(f"{name} must contain numeric values") from exc
+
+
+def _parse_rect(value: str, name: str) -> Tuple[int, int, int, int]:
+    x, y, w, h = _parse_numbers(value, name, expected=4)
+    if w <= 0 or h <= 0:
+        raise ValueError(f"{name} width and height must be positive")
+    return int(round(x)), int(round(y)), int(round(w)), int(round(h))
+
+
+def _parse_line(value: str, name: str) -> Tuple[Tuple[int, int], Tuple[int, int]]:
+    x1, y1, x2, y2 = _parse_numbers(value, name, expected=4)
+    if x1 == x2 and y1 == y2:
+        raise ValueError(f"{name} endpoints must not coincide")
+    return (int(round(x1)), int(round(y1))), (int(round(x2)), int(round(y2)))
 
 # OPTIONAL: if you use the SQLite-backed plugin system
 try:
@@ -99,6 +126,9 @@ def main(argv: Optional[list[str]] = None) -> int:
     src.add_argument("--image", type=str, help="Path to input image")
     src.add_argument("--camera", type=int, help="Camera index (e.g., 0)")
     ap.add_argument("--frames", type=int, default=1, help="Number of frames when using --camera")
+    ap.add_argument("--roi", type=str, required=True, help="ROI rectangle as x,y,w,h")
+    ap.add_argument("--needle", type=str, required=True, help="Needle rectangle as x,y,w,h")
+    ap.add_argument("--contact-line", type=str, dest="contact_line", help="Optional contact line as x1,y1,x2,y2")
     ap.add_argument("--out", type=str, default="./out", help="Output folder (preview/results)")
 
     # Optional plugin controls (no-ops if plugin system not present)
@@ -144,6 +174,13 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     args = ap.parse_args(argv)
 
+    try:
+        roi_rect = _parse_rect(args.roi, "ROI")
+        needle_rect = _parse_rect(args.needle, "needle")
+        contact_line = _parse_line(args.contact_line, "contact line") if args.contact_line else None
+    except ValueError as exc:
+        ap.error(str(exc))
+
     # Handle subcommands early and exit.
     if args.command == "plugins" and args.plugins_cmd == "set-dirs":
         if not _PLUGINS_OK:
@@ -188,7 +225,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     _patch_acquisition(pipeline, image=image_path, camera=args.camera, frames=args.frames)
 
     try:
-        ctx = pipeline.run()
+        ctx = pipeline.run(roi=roi_rect, needle_rect=needle_rect, contact_line=contact_line, image=str(image_path) if image_path else None, camera=args.camera, frames=args.frames)
     except PipelineError as e:
         print(f"[adsa] error: {e}")
         return 2
