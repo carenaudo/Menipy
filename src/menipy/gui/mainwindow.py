@@ -22,6 +22,7 @@ from menipy.gui.panels.results_panel import ResultsPanel
 from menipy.gui.services.camera_service import CameraController, CameraConfig
 from menipy.gui.controllers.pipeline_controller import PipelineController
 from menipy.gui.controllers.preprocessing_controller import PreprocessingPipelineController
+from menipy.gui.controllers.edge_detection_controller import EdgeDetectionPipelineController
 from menipy.gui.helpers.image_marking import ImageMarkerHelper
 
 from menipy.pipelines.discover import PIPELINE_MAP
@@ -118,6 +119,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.results_panel_ctrl = ResultsPanel(self.results_panel)
 
         self.preprocessing_ctrl = PreprocessingPipelineController(self)
+        self.edge_detection_ctrl = EdgeDetectionPipelineController(self)
         self.marker_helper = ImageMarkerHelper(self.preview_panel, self.preprocessing_ctrl, parent=self) if self.preview_panel.has_view() else None
 
         self.camera_ctrl = CameraController(self)
@@ -165,6 +167,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             preview_panel=self.preview_panel,
             results_panel=self.results_panel_ctrl,
             preprocessing_ctrl=self.preprocessing_ctrl,
+            edge_detection_ctrl=self.edge_detection_ctrl,
             pipeline_map=PIPELINE_MAP,
             sops=self.sops,
             run_vm=self.run_vm,

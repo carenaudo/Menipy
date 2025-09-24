@@ -19,6 +19,7 @@ from PySide6.QtGui import QImage
 from menipy.gui.services.camera_service import CameraConfig
 from menipy.gui.dialogs.acquisition_config_dialog import AcquisitionConfigDialog
 from menipy.gui.dialogs.preprocessing_config_dialog import PreprocessingConfigDialog
+from menipy.gui.dialogs.edge_detection_config_dialog import EdgeDetectionConfigDialog
 if TYPE_CHECKING:
     from menipy.gui.mainwindow import MainWindow
     from menipy.gui.controllers.pipeline_controller import PipelineController
@@ -39,6 +40,7 @@ class MainController(QObject):
         self.preview_panel: PreviewPanel = window.preview_panel
         self.pipeline_ctrl: PipelineController = window.pipeline_ctrl
         self.preprocessing_ctrl = getattr(window, "preprocessing_ctrl", None)
+        self.edge_detection_ctrl = getattr(window, "edge_detection_ctrl", None)
         self.camera_ctrl: CameraController | None = getattr(window, 'camera_ctrl', None)
         self.results_panel: ResultsPanel | None = getattr(window, 'results_panel_ctrl', None)
         self._camera_preview_logged = False
@@ -148,6 +150,22 @@ class MainController(QObject):
                     logger.warning("Preprocessing preview failed: %s", exc)
             else:
                 logger.info("Preprocessing configuration cancelled")
+            return
+
+        if stage == "edge_detection":
+            if not self.edge_detection_ctrl:
+                QMessageBox.information(self.window, "Edge Detection", "Edge Detection controller is not available.")
+                return
+            dialog = EdgeDetectionConfigDialog(self.edge_detection_ctrl.settings(), parent=self.window)
+            dialog.previewRequested.connect(self._on_edge_detection_preview)
+            if dialog.exec() == QDialog.Accepted:
+                self.edge_detection_ctrl.set_settings(dialog.settings())
+                try:
+                    self.edge_detection_ctrl.run()
+                except Exception as exc:  # pragma: no cover - runtime guard
+                    logger.warning("Edge Detection preview failed: %s", exc)
+            else:
+                logger.info("Edge Detection configuration cancelled")
             return
 
         if stage != "acquisition":
@@ -343,6 +361,19 @@ class MainController(QObject):
             self.preprocessing_ctrl.run()
         except Exception as exc:  # pragma: no cover - runtime guard
             logger.warning("Preprocessing preview failed: %s", exc)
+
+    @Slot(object)
+    def _on_edge_detection_preview(self, settings) -> None:
+        if not self.edge_detection_ctrl:
+            return
+        self.edge_detection_ctrl.set_settings(settings)
+        # For edge detection, we might need the preprocessed image as source
+        # For now, we'll assume the source image is already set in the controller
+        # or that the edge detection stage will fetch it from the pipeline context.
+        try:
+            self.edge_detection_ctrl.run()
+        except Exception as exc:  # pragma: no cover - runtime guard
+            logger.warning("Edge Detection preview failed: %s", exc)
 
     def _load_preprocessing_image(self, path_override: Optional[str] = None) -> Optional[np.ndarray]:
         if self.preprocessing_ctrl is None:

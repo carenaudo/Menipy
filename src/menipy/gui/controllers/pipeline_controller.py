@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any, Mapping, Optional, Dict
 
 from menipy.gui.controllers.preprocessing_controller import PreprocessingPipelineController
+from menipy.gui.controllers.edge_detection_controller import EdgeDetectionPipelineController
 from PySide6.QtWidgets import QMessageBox, QPlainTextEdit, QMainWindow
 
 
@@ -17,6 +18,7 @@ class PipelineController:
         preview_panel,
         results_panel,
         preprocessing_ctrl: Optional[PreprocessingPipelineController],
+        edge_detection_ctrl: Optional[EdgeDetectionPipelineController],
         pipeline_map: Mapping[str, type],
         sops: Optional[Any],
         run_vm: Optional[Any],
@@ -27,6 +29,7 @@ class PipelineController:
         self.preview_panel = preview_panel
         self.results_panel = results_panel
         self.preprocessing_ctrl = preprocessing_ctrl
+        self.edge_detection_ctrl = edge_detection_ctrl
         self.sops = sops
         self.run_vm = run_vm
         self.log_view = log_view
@@ -84,6 +87,15 @@ class PipelineController:
             payload['preprocessing_markers'] = ctrl.markers
         return payload
 
+    def _edge_detection_payload(self) -> Dict[str, Any]:
+        ctrl = self.edge_detection_ctrl
+        if not ctrl:
+            return {}
+        payload: Dict[str, Any] = {
+            'edge_detection_settings': ctrl.settings.model_copy(deep=True),
+        }
+        return payload
+
     def _should_check_acquisition(self, stages: Optional[list[str]]) -> bool:
         if not stages:
             return True
@@ -106,6 +118,7 @@ class PipelineController:
             return
 
         overlays.update(self._preprocessing_payload())
+        overlays.update(self._edge_detection_payload())
 
         image = params.get("image")
         cam_id = params.get("cam_id")
@@ -156,6 +169,7 @@ class PipelineController:
             overlays = {}
 
         overlays.update(self._preprocessing_payload())
+        overlays.update(self._edge_detection_payload())
 
         run_kwargs = dict(overlays)
         if image is not None:
@@ -196,16 +210,22 @@ class PipelineController:
 
         if self.run_vm and hasattr(self.run_vm, "run_subset"):
             try:
-                self.run_vm.run_subset(
-                    params.get("name"),
-                    only=[stage_name],
-                    image=params.get("image"),
-                    camera=params.get("cam_id"),
-                    frames=params.get("frames"),
-                    roi=overlays.get('roi'),
-                    needle_rect=overlays.get('needle_rect'),
-                    contact_line=overlays.get('contact_line'),
-                )
+                run_kwargs_vm = {
+                    "pipeline": params.get("name"),
+                    "only": [stage_name],
+                    "image": params.get("image"),
+                    "camera": params.get("cam_id"),
+                    "frames": params.get("frames"),
+                    "roi": overlays.get('roi'),
+                    "needle_rect": overlays.get('needle_rect'),
+                    "contact_line": overlays.get('contact_line'),
+                }
+                if self.preprocessing_ctrl:
+                    run_kwargs_vm["preprocessing_settings"] = self.preprocessing_ctrl.settings.model_copy(deep=True)
+                if self.edge_detection_ctrl:
+                    run_kwargs_vm["edge_detection_settings"] = self.edge_detection_ctrl.settings.model_copy(deep=True)
+
+                self.run_vm.run_subset(**run_kwargs_vm)
                 return
             except Exception as exc:
                 print("[run_vm single step] falling back to pipeline:", exc)
@@ -224,16 +244,22 @@ class PipelineController:
                 return
 
         try:
-            pipe.run_with_plan(
-                only=[stage_name],
-                include_prereqs=True,
-                image=params.get("image"),
-                camera=params.get("cam_id"),
-                frames=params.get("frames"),
-                roi=overlays.get('roi'),
-                needle_rect=overlays.get('needle_rect'),
-                contact_line=overlays.get('contact_line'),
-            )
+            run_kwargs_pipe = {
+                "only": [stage_name],
+                "include_prereqs": True,
+                "image": params.get("image"),
+                "camera": params.get("cam_id"),
+                "frames": params.get("frames"),
+                "roi": overlays.get('roi'),
+                "needle_rect": overlays.get('needle_rect'),
+                "contact_line": overlays.get('contact_line'),
+            }
+            if self.preprocessing_ctrl:
+                run_kwargs_pipe["preprocessing_settings"] = self.preprocessing_ctrl.settings
+            if self.edge_detection_ctrl:
+                run_kwargs_pipe["edge_detection_settings"] = self.edge_detection_ctrl.settings
+
+            pipe.run_with_plan(**run_kwargs_pipe)
         except Exception as exc:
             self.on_pipeline_error(str(exc))
 
@@ -281,4 +307,3 @@ class PipelineController:
             self.window.statusBar().showMessage("Done", 1500)
         except Exception as exc:
             self.on_pipeline_error(str(exc))
-
