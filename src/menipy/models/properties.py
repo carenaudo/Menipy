@@ -8,7 +8,7 @@ import cv2
 import numpy as np
 
 
-from .geometry import fit_circle
+from menipy.common.geometry import fit_circle
 
 GRAVITY = 9.81  # m s⁻²
 
@@ -81,6 +81,9 @@ def estimate_surface_tension(
     if not contours:
         return None
     contour = max(contours, key=cv2.contourArea).astype(float)
+    # OpenCV contours are often shaped (N, 1, 2). Normalize to (N, 2).
+    if contour.ndim == 3 and contour.shape[1] == 1:
+        contour = contour.reshape(contour.shape[0], 2)
 
     y_apex = contour[:, 1].min()
     apex_pts = contour[(contour[:, 1] - y_apex) < apex_window_px]

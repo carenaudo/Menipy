@@ -51,11 +51,29 @@ def install_qt_logging(
     for handler in target_logger.handlers:
         if isinstance(handler, QtLogHandler):
             bridge = handler.bridge
-            bridge.log.connect(lambda message: log_view.appendPlainText(str(message)))
+            # Guard the callback so we don't call methods on deleted C++ objects.
+            def _safe_append(message, view=log_view):
+                try:
+                    if view is not None and hasattr(view, 'appendPlainText'):
+                        view.appendPlainText(str(message))
+                except RuntimeError:
+                    # Widget has been deleted on the C++ side; ignore.
+                    pass
+
+            bridge.log.connect(_safe_append)
             return bridge, handler
 
     bridge = QtLogBridge()
-    bridge.log.connect(lambda message: log_view.appendPlainText(str(message)))
+
+    def _safe_append(message, view=log_view):
+        try:
+            if view is not None and hasattr(view, 'appendPlainText'):
+                view.appendPlainText(str(message))
+        except RuntimeError:
+            # Widget has been deleted on the C++ side; ignore.
+            pass
+
+    bridge.log.connect(_safe_append)
 
     handler = QtLogHandler(bridge)
     handler.setFormatter(formatter)

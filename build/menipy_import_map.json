@@ -1,309 +1,613 @@
 {
   "imports": {
-    "src/menipy/analysis/__init__.py": [
-      "src/menipy/analysis/commons.py",
-      "src/menipy/analysis/pendant.py",
-      "src/menipy/analysis/plotting.py",
-      "src/menipy/analysis/sessile.py",
-      "src/menipy/analysis/sessile_alt.py",
-      "src/menipy/detection/needle.py"
+    "src/menipy/__init__.py": [
+      "src/menipy/__init__.py"
     ],
-    "src/menipy/analysis/commons.py": [
-      "src/menipy/models/__init__.py",
-      "src/menipy/models/geometry.py",
-      "src/menipy/physics/contact_geom.py"
+    "src/menipy/__main__.py": [
+      "src/menipy/gui/app.py"
     ],
-    "src/menipy/analysis/drop.py": [
-      "src/menipy/models/__init__.py",
-      "src/menipy/models/geometry.py",
-      "src/menipy/physics/contact_geom.py"
+    "src/menipy/cli/__init__.py": [
+      "src/menipy/common/__init__.py",
+      "src/menipy/common/plugin_db.py",
+      "src/menipy/common/plugins.py",
+      "src/menipy/pipelines/base.py",
+      "src/menipy/pipelines/capillary_rise/stages.py",
+      "src/menipy/pipelines/captive_bubble/stages.py",
+      "src/menipy/pipelines/oscillating/stages.py",
+      "src/menipy/pipelines/pendant/stages.py",
+      "src/menipy/pipelines/sessile/stages.py"
     ],
-    "src/menipy/analysis/pendant.py": [
-      "src/menipy/analysis/commons.py"
+    "src/menipy/cli.py": [
+      "src/menipy/common/__init__.py",
+      "src/menipy/common/plugin_db.py",
+      "src/menipy/common/plugins.py",
+      "src/menipy/models/datatypes.py",
+      "src/menipy/pipelines/base.py",
+      "src/menipy/pipelines/runner.py"
     ],
-    "src/menipy/analysis/plotting.py": [],
-    "src/menipy/analysis/sessile.py": [
-      "src/menipy/analysis/commons.py",
-      "src/menipy/physics/contact_geom.py"
+    "src/menipy/common/__init__.py": [],
+    "src/menipy/common/acquisition.py": [],
+    "src/menipy/common/edge_detection.py": [
+      "src/menipy/common/__init__.py",
+      "src/menipy/common/registry.py",
+      "src/menipy/models/config.py",
+      "src/menipy/models/geometry.py"
     ],
-    "src/menipy/analysis/sessile_alt.py": [
-      "src/menipy/analysis/commons.py",
-      "src/menipy/detectors/geometry_alt.py",
-      "src/menipy/physics/contact_geom.py"
+    "src/menipy/common/geometry.py": [],
+    "src/menipy/common/metrics.py": [],
+    "src/menipy/common/optimization.py": [],
+    "src/menipy/common/outputs.py": [],
+    "src/menipy/common/overlay.py": [],
+    "src/menipy/common/physics.py": [],
+    "src/menipy/common/plugin_db.py": [],
+    "src/menipy/common/plugin_loader.py": [
+      "src/menipy/common/__init__.py"
     ],
-    "src/menipy/batch.py": [
-      "src/menipy/processing/reader.py",
-      "src/menipy/processing/segmentation.py"
+    "src/menipy/common/plugins.py": [
+      "src/menipy/common/plugin_db.py",
+      "src/menipy/common/registry.py"
     ],
-    "src/menipy/calibration/__init__.py": [
-      "src/menipy/calibration/calibrator.py"
+    "src/menipy/common/preprocessing.py": [
+      "src/menipy/common/preprocessing_helpers.py",
+      "src/menipy/models/config.py",
+      "src/menipy/models/context.py",
+      "src/menipy/models/state.py"
     ],
-    "src/menipy/calibration/calibrator.py": [],
-    "src/menipy/cli.py": [],
-    "src/menipy/contact_angle.py": [],
-    "src/menipy/detection/__init__.py": [],
-    "src/menipy/detection/droplet.py": [
-      "src/menipy/physics/contact_geom.py"
+    "src/menipy/common/preprocessing_helpers.py": [
+      "src/menipy/models/config.py",
+      "src/menipy/models/state.py"
     ],
-    "src/menipy/detection/needle.py": [],
-    "src/menipy/detection/substrate.py": [],
-    "src/menipy/detectors/__init__.py": [
-      "src/menipy/detectors/geometry_alt.py"
+    "src/menipy/common/registry.py": [],
+    "src/menipy/common/scaling.py": [],
+    "src/menipy/common/solver.py": [
+      "src/menipy/models/fit.py"
     ],
-    "src/menipy/detectors/geometry_alt.py": [
-      "src/menipy/physics/contact_geom.py"
-    ],
+    "src/menipy/common/validation.py": [],
+    "src/menipy/common/zold_detection.py": [],
     "src/menipy/gui/__init__.py": [
-      "src/menipy/gui/calibration_dialog.py",
-      "src/menipy/gui/controls.py",
-      "src/menipy/gui/image_view.py",
-      "src/menipy/gui/items.py",
-      "src/menipy/gui/overlay.py",
-      "src/menipy/ui/__init__.py"
+      "src/menipy/gui/app.py"
     ],
-    "src/menipy/gui/base_window.py": [
-      "src/menipy/analysis/__init__.py",
-      "src/menipy/calibration/__init__.py",
-      "src/menipy/detectors/geometry_alt.py",
-      "src/menipy/gui/controls.py",
-      "src/menipy/gui/image_view.py",
-      "src/menipy/gui/items.py",
-      "src/menipy/models/geometry.py",
-      "src/menipy/models/properties.py",
-      "src/menipy/physics/contact_geom.py",
-      "src/menipy/pipelines/__init__.py",
-      "src/menipy/pipelines/pendant/__init__.py",
-      "src/menipy/pipelines/sessile/__init__.py",
-      "src/menipy/processing/__init__.py",
-      "src/menipy/processing/reader.py",
-      "src/menipy/processing/segmentation.py"
+    "src/menipy/gui/__main__.py": [
+      "src/menipy/gui/app.py"
     ],
-    "src/menipy/gui/calibration_dialog.py": [
-      "src/menipy/calibration/__init__.py"
+    "src/menipy/gui/app.py": [
+      "src/menipy/gui/mainwindow.py"
     ],
-    "src/menipy/gui/controls.py": [],
-    "src/menipy/gui/image_view.py": [],
-    "src/menipy/gui/items.py": [],
-    "src/menipy/gui/overlay.py": [],
-    "src/menipy/gui.py": [
-      "src/menipy/ui/__init__.py"
+    "src/menipy/gui/controllers/edge_detection_controller.py": [
+      "src/menipy/common/__init__.py",
+      "src/menipy/models/config.py",
+      "src/menipy/models/context.py"
     ],
-    "src/menipy/metrics/__init__.py": [],
-    "src/menipy/metrics/metrics.py": [],
+    "src/menipy/gui/controllers/pipeline_controller.py": [
+      "src/menipy/gui/controllers/edge_detection_controller.py",
+      "src/menipy/gui/controllers/preprocessing_controller.py"
+    ],
+    "src/menipy/gui/controllers/preprocessing_controller.py": [
+      "src/menipy/common/__init__.py",
+      "src/menipy/models/config.py",
+      "src/menipy/models/context.py",
+      "src/menipy/models/state.py"
+    ],
+    "src/menipy/gui/controllers/setup_panel_controller.py": [
+      "src/menipy/gui/controllers/sop_controller.py",
+      "src/menipy/gui/views/image_view.py",
+      "src/menipy/pipelines/discover.py"
+    ],
+    "src/menipy/gui/controllers/sop_controller.py": [
+      "src/menipy/gui/services/sop_service.py"
+    ],
+    "src/menipy/gui/dialogs/acquisition_config_dialog.py": [],
+    "src/menipy/gui/dialogs/edge_detection_config_dialog.py": [
+      "src/menipy/models/config.py"
+    ],
+    "src/menipy/gui/dialogs/plugin_manager_dialog.py": [
+      "src/menipy/gui/services/settings_service.py",
+      "src/menipy/gui/viewmodels/plugins_vm.py"
+    ],
+    "src/menipy/gui/dialogs/preprocessing_config_dialog.py": [
+      "src/menipy/models/config.py"
+    ],
+    "src/menipy/gui/helpers/image_marking.py": [
+      "src/menipy/gui/controllers/preprocessing_controller.py",
+      "src/menipy/gui/panels/preview_panel.py"
+    ],
+    "src/menipy/gui/logging_bridge.py": [],
+    "src/menipy/gui/main_controller.py": [
+      "src/menipy/gui/controllers/pipeline_controller.py",
+      "src/menipy/gui/controllers/setup_panel_controller.py",
+      "src/menipy/gui/dialogs/acquisition_config_dialog.py",
+      "src/menipy/gui/dialogs/edge_detection_config_dialog.py",
+      "src/menipy/gui/dialogs/preprocessing_config_dialog.py",
+      "src/menipy/gui/mainwindow.py",
+      "src/menipy/gui/panels/preview_panel.py",
+      "src/menipy/gui/panels/results_panel.py",
+      "src/menipy/gui/services/camera_service.py"
+    ],
+    "src/menipy/gui/mainwindow.py": [
+      "src/menipy/gui/controllers/edge_detection_controller.py",
+      "src/menipy/gui/controllers/pipeline_controller.py",
+      "src/menipy/gui/controllers/preprocessing_controller.py",
+      "src/menipy/gui/controllers/setup_panel_controller.py",
+      "src/menipy/gui/helpers/image_marking.py",
+      "src/menipy/gui/logging_bridge.py",
+      "src/menipy/gui/main_controller.py",
+      "src/menipy/gui/panels/preview_panel.py",
+      "src/menipy/gui/panels/results_panel.py",
+      "src/menipy/gui/plugins_panel.py",
+      "src/menipy/gui/services/camera_service.py",
+      "src/menipy/gui/services/pipeline_runner.py",
+      "src/menipy/gui/services/settings_service.py",
+      "src/menipy/gui/services/sop_service.py",
+      "src/menipy/gui/viewmodels/run_vm.py",
+      "src/menipy/gui/views/image_view.py",
+      "src/menipy/gui/views/step_item_widget.py",
+      "src/menipy/gui/views/ui_main_window.py",
+      "src/menipy/pipelines/discover.py"
+    ],
+    "src/menipy/gui/panels/__init__.py": [],
+    "src/menipy/gui/panels/discover.py": [],
+    "src/menipy/gui/panels/preview_panel.py": [
+      "src/menipy/gui/views/image_view.py"
+    ],
+    "src/menipy/gui/panels/results_panel.py": [],
+    "src/menipy/gui/panels/setup_panel.py": [
+      "src/menipy/gui/views/image_view.py",
+      "src/menipy/pipelines/discover.py"
+    ],
+    "src/menipy/gui/plugins_panel.py": [
+      "src/menipy/common/plugins.py",
+      "src/menipy/gui/dialogs/plugin_manager_dialog.py",
+      "src/menipy/gui/viewmodels/plugins_vm.py"
+    ],
+    "src/menipy/gui/resources/menipy_icons_rc.py": [],
+    "src/menipy/gui/services/camera_service.py": [],
+    "src/menipy/gui/services/image_convert.py": [],
+    "src/menipy/gui/services/pipeline_runner.py": [
+      "src/menipy/common/__init__.py",
+      "src/menipy/pipelines/base.py",
+      "src/menipy/pipelines/discover.py"
+    ],
+    "src/menipy/gui/services/plugin_service.py": [
+      "src/menipy/common/plugin_db.py",
+      "src/menipy/common/plugins.py"
+    ],
+    "src/menipy/gui/services/settings_service.py": [],
+    "src/menipy/gui/services/sop_service.py": [],
+    "src/menipy/gui/viewmodels/plugins_vm.py": [
+      "src/menipy/gui/services/plugin_service.py"
+    ],
+    "src/menipy/gui/viewmodels/results_vm.py": [],
+    "src/menipy/gui/viewmodels/run_vm.py": [
+      "src/menipy/gui/services/image_convert.py",
+      "src/menipy/gui/services/pipeline_runner.py"
+    ],
+    "src/menipy/gui/views/__init__.py": [],
+    "src/menipy/gui/views/image_view.py": [],
+    "src/menipy/gui/views/step_item_widget.py": [],
+    "src/menipy/gui/views/ui_main_window.py": [],
+    "src/menipy/gui/zold_drawing_alt.py": [],
+    "src/menipy/math/jurin.py": [],
+    "src/menipy/math/rayleigh_lamb.py": [],
+    "src/menipy/math/young_laplace.py": [],
     "src/menipy/models/__init__.py": [
+      "src/menipy/common/geometry.py",
       "src/menipy/models/drop_extras.py",
-      "src/menipy/models/geometry.py",
       "src/menipy/models/physics.py",
       "src/menipy/models/properties.py",
       "src/menipy/models/surface_tension.py"
     ],
+    "src/menipy/models/config.py": [],
+    "src/menipy/models/context.py": [
+      "src/menipy/models/config.py",
+      "src/menipy/models/fit.py",
+      "src/menipy/models/frame.py",
+      "src/menipy/models/geometry.py",
+      "src/menipy/models/result.py"
+    ],
+    "src/menipy/models/datatypes.py": [
+      "src/menipy/models/result.py",
+      "src/menipy/models/typing.py"
+    ],
     "src/menipy/models/drop_extras.py": [],
-    "src/menipy/models/geometry.py": [],
+    "src/menipy/models/fit.py": [
+      "src/menipy/models/typing.py"
+    ],
+    "src/menipy/models/frame.py": [],
+    "src/menipy/models/geometry.py": [
+      "src/menipy/models/typing.py"
+    ],
     "src/menipy/models/physics.py": [],
     "src/menipy/models/properties.py": [
+      "src/menipy/common/geometry.py"
+    ],
+    "src/menipy/models/result.py": [
+      "src/menipy/models/config.py",
+      "src/menipy/models/fit.py",
+      "src/menipy/models/frame.py",
+      "src/menipy/models/geometry.py"
+    ],
+    "src/menipy/models/state.py": [
+      "src/menipy/models/frame.py",
       "src/menipy/models/geometry.py",
-      "src/menipy/processing/segmentation.py"
+      "src/menipy/models/result.py",
+      "src/menipy/models/typing.py"
     ],
     "src/menipy/models/surface_tension.py": [],
-    "src/menipy/physics/__init__.py": [],
-    "src/menipy/physics/contact_geom.py": [],
-    "src/menipy/pipelines/__init__.py": [
-      "src/menipy/pipelines/pendant/drawing.py",
-      "src/menipy/pipelines/pendant/geometry.py",
-      "src/menipy/pipelines/sessile/drawing_alt.py",
-      "src/menipy/pipelines/sessile/geometry_alt.py"
+    "src/menipy/models/typing.py": [],
+    "src/menipy/pipelines/__init__.py": [],
+    "src/menipy/pipelines/base.py": [
+      "src/menipy/common/__init__.py",
+      "src/menipy/models/config.py",
+      "src/menipy/models/context.py"
     ],
+    "src/menipy/pipelines/capillary_rise/__init__.py": [
+      "src/menipy/pipelines/capillary_rise/stages.py"
+    ],
+    "src/menipy/pipelines/capillary_rise/acquisition.py": [],
+    "src/menipy/pipelines/capillary_rise/edge_detection.py": [],
+    "src/menipy/pipelines/capillary_rise/geometry.py": [],
+    "src/menipy/pipelines/capillary_rise/optimization.py": [],
+    "src/menipy/pipelines/capillary_rise/outputs.py": [],
+    "src/menipy/pipelines/capillary_rise/overlay.py": [],
+    "src/menipy/pipelines/capillary_rise/physics.py": [],
+    "src/menipy/pipelines/capillary_rise/preprocessing.py": [],
+    "src/menipy/pipelines/capillary_rise/scaling.py": [],
+    "src/menipy/pipelines/capillary_rise/solver.py": [],
+    "src/menipy/pipelines/capillary_rise/stages.py": [
+      "src/menipy/common/__init__.py",
+      "src/menipy/common/plugins.py",
+      "src/menipy/models/config.py",
+      "src/menipy/models/context.py",
+      "src/menipy/models/fit.py",
+      "src/menipy/pipelines/base.py"
+    ],
+    "src/menipy/pipelines/capillary_rise/validation.py": [],
+    "src/menipy/pipelines/captive_bubble/__init__.py": [
+      "src/menipy/pipelines/captive_bubble/stages.py"
+    ],
+    "src/menipy/pipelines/captive_bubble/acquisition.py": [],
+    "src/menipy/pipelines/captive_bubble/edge_detection.py": [],
+    "src/menipy/pipelines/captive_bubble/geometry.py": [],
+    "src/menipy/pipelines/captive_bubble/optimization.py": [],
+    "src/menipy/pipelines/captive_bubble/outputs.py": [],
+    "src/menipy/pipelines/captive_bubble/overlay.py": [],
+    "src/menipy/pipelines/captive_bubble/physics.py": [],
+    "src/menipy/pipelines/captive_bubble/preprocessing.py": [],
+    "src/menipy/pipelines/captive_bubble/scaling.py": [],
+    "src/menipy/pipelines/captive_bubble/solver.py": [],
+    "src/menipy/pipelines/captive_bubble/stages.py": [
+      "src/menipy/common/__init__.py",
+      "src/menipy/common/plugins.py",
+      "src/menipy/models/config.py",
+      "src/menipy/models/context.py",
+      "src/menipy/models/fit.py",
+      "src/menipy/pipelines/base.py"
+    ],
+    "src/menipy/pipelines/captive_bubble/validation.py": [],
+    "src/menipy/pipelines/discover.py": [
+      "src/menipy/pipelines/base.py"
+    ],
+    "src/menipy/pipelines/oscillating/__init__.py": [
+      "src/menipy/pipelines/oscillating/stages.py"
+    ],
+    "src/menipy/pipelines/oscillating/acquisition.py": [],
+    "src/menipy/pipelines/oscillating/edge_detection.py": [],
+    "src/menipy/pipelines/oscillating/geometry.py": [],
+    "src/menipy/pipelines/oscillating/optimization.py": [],
+    "src/menipy/pipelines/oscillating/outputs.py": [],
+    "src/menipy/pipelines/oscillating/overlay.py": [],
+    "src/menipy/pipelines/oscillating/physics.py": [],
+    "src/menipy/pipelines/oscillating/preprocessing.py": [],
+    "src/menipy/pipelines/oscillating/scaling.py": [],
+    "src/menipy/pipelines/oscillating/solver.py": [],
+    "src/menipy/pipelines/oscillating/stages.py": [
+      "src/menipy/common/__init__.py",
+      "src/menipy/common/plugins.py",
+      "src/menipy/models/context.py",
+      "src/menipy/models/fit.py",
+      "src/menipy/pipelines/base.py"
+    ],
+    "src/menipy/pipelines/oscillating/validation.py": [],
     "src/menipy/pipelines/pendant/__init__.py": [
-      "src/menipy/pipelines/pendant/drawing.py",
-      "src/menipy/pipelines/pendant/geometry.py"
+      "src/menipy/pipelines/pendant/stages.py"
     ],
+    "src/menipy/pipelines/pendant/acquisition.py": [],
     "src/menipy/pipelines/pendant/drawing.py": [
-      "src/menipy/gui/overlay.py",
       "src/menipy/pipelines/pendant/geometry.py"
     ],
+    "src/menipy/pipelines/pendant/edge_detection.py": [],
     "src/menipy/pipelines/pendant/geometry.py": [
-      "src/menipy/analysis/__init__.py"
+      "src/menipy/common/edge_detection.py",
+      "src/menipy/pipelines/pendant/metrics.py"
+    ],
+    "src/menipy/pipelines/pendant/metrics.py": [],
+    "src/menipy/pipelines/pendant/optimization.py": [],
+    "src/menipy/pipelines/pendant/outputs.py": [],
+    "src/menipy/pipelines/pendant/overlay.py": [],
+    "src/menipy/pipelines/pendant/physics.py": [],
+    "src/menipy/pipelines/pendant/preprocessing.py": [],
+    "src/menipy/pipelines/pendant/scaling.py": [],
+    "src/menipy/pipelines/pendant/solver.py": [],
+    "src/menipy/pipelines/pendant/stages.py": [
+      "src/menipy/models/config.py",
+      "src/menipy/models/context.py",
+      "src/menipy/models/fit.py",
+      "src/menipy/pipelines/base.py"
+    ],
+    "src/menipy/pipelines/pendant/validation.py": [],
+    "src/menipy/pipelines/runner.py": [
+      "src/menipy/models/config.py",
+      "src/menipy/models/context.py",
+      "src/menipy/pipelines/base.py",
+      "src/menipy/pipelines/discover.py"
     ],
     "src/menipy/pipelines/sessile/__init__.py": [
-      "src/menipy/pipelines/sessile/drawing_alt.py",
-      "src/menipy/pipelines/sessile/geometry_alt.py"
+      "src/menipy/pipelines/sessile/stages.py"
     ],
-    "src/menipy/pipelines/sessile/drawing_alt.py": [
-      "src/menipy/gui/overlay.py",
-      "src/menipy/pipelines/sessile/geometry_alt.py"
+    "src/menipy/pipelines/sessile/acquisition.py": [],
+    "src/menipy/pipelines/sessile/edge_detection.py": [],
+    "src/menipy/pipelines/sessile/geometry.py": [],
+    "src/menipy/pipelines/sessile/metrics.py": [
+      "src/menipy/common/metrics.py"
     ],
-    "src/menipy/pipelines/sessile/geometry_alt.py": [
-      "src/menipy/analysis/__init__.py",
-      "src/menipy/detectors/geometry_alt.py",
-      "src/menipy/gui/overlay.py",
-      "src/menipy/physics/contact_geom.py"
+    "src/menipy/pipelines/sessile/optimization.py": [],
+    "src/menipy/pipelines/sessile/outputs.py": [],
+    "src/menipy/pipelines/sessile/overlay.py": [],
+    "src/menipy/pipelines/sessile/physics.py": [],
+    "src/menipy/pipelines/sessile/preprocessing.py": [],
+    "src/menipy/pipelines/sessile/scaling.py": [],
+    "src/menipy/pipelines/sessile/solver.py": [],
+    "src/menipy/pipelines/sessile/stages.py": [
+      "src/menipy/models/config.py",
+      "src/menipy/models/context.py",
+      "src/menipy/models/fit.py",
+      "src/menipy/pipelines/base.py"
     ],
-    "src/menipy/plugins.py": [
-      "src/menipy/sharpen_plugin.py"
-    ],
-    "src/menipy/processing/__init__.py": [
-      "src/menipy/processing/classification.py",
-      "src/menipy/processing/detection.py",
-      "src/menipy/processing/reader.py",
-      "src/menipy/processing/segmentation.py",
-      "src/menipy/processing/substrate.py"
-    ],
-    "src/menipy/processing/classification.py": [
-      "src/menipy/calibration/__init__.py",
-      "src/menipy/processing/detection.py"
-    ],
-    "src/menipy/processing/detection.py": [],
-    "src/menipy/processing/geometry.py": [],
-    "src/menipy/processing/metrics.py": [
-      "src/menipy/models/properties.py",
-      "src/menipy/processing/region.py"
-    ],
-    "src/menipy/processing/reader.py": [],
-    "src/menipy/processing/region.py": [],
-    "src/menipy/processing/segmentation.py": [],
-    "src/menipy/processing/substrate.py": [
-      "src/menipy/processing/geometry.py"
-    ],
-    "src/menipy/sharpen_plugin.py": [],
-    "src/menipy/ui/__init__.py": [
-      "src/menipy/ui/main_window.py"
-    ],
-    "src/menipy/ui/main_window.py": [
-      "src/menipy/analysis/__init__.py",
-      "src/menipy/analysis/commons.py",
-      "src/menipy/detection/needle.py",
-      "src/menipy/detection/substrate.py",
-      "src/menipy/gui/base_window.py",
-      "src/menipy/gui/items.py",
-      "src/menipy/physics/contact_geom.py",
-      "src/menipy/pipelines/__init__.py",
-      "src/menipy/pipelines/pendant/__init__.py",
-      "src/menipy/pipelines/sessile/__init__.py"
-    ],
-    "src/menipy/utils.py": []
+    "src/menipy/pipelines/sessile/validation.py": [],
+    "src/menipy/pipelines/sessile/zold_drawing_alt.py": [],
+    "src/menipy/pipelines/sessile/zold_geometry_alt.py": [],
+    "src/menipy/viz/plots.py": []
   },
   "imported_by": {
-    "src/menipy/analysis/commons.py": [
-      "src/menipy/analysis/__init__.py",
-      "src/menipy/analysis/pendant.py",
-      "src/menipy/analysis/sessile.py",
-      "src/menipy/analysis/sessile_alt.py",
-      "src/menipy/ui/main_window.py"
+    "src/menipy/__init__.py": [
+      "src/menipy/__init__.py"
     ],
-    "src/menipy/analysis/pendant.py": [
-      "src/menipy/analysis/__init__.py"
+    "src/menipy/gui/app.py": [
+      "src/menipy/__main__.py",
+      "src/menipy/gui/__init__.py",
+      "src/menipy/gui/__main__.py"
     ],
-    "src/menipy/analysis/plotting.py": [
-      "src/menipy/analysis/__init__.py"
+    "src/menipy/common/__init__.py": [
+      "src/menipy/cli.py",
+      "src/menipy/cli/__init__.py",
+      "src/menipy/common/edge_detection.py",
+      "src/menipy/common/plugin_loader.py",
+      "src/menipy/gui/controllers/edge_detection_controller.py",
+      "src/menipy/gui/controllers/preprocessing_controller.py",
+      "src/menipy/gui/services/pipeline_runner.py",
+      "src/menipy/pipelines/base.py",
+      "src/menipy/pipelines/capillary_rise/stages.py",
+      "src/menipy/pipelines/captive_bubble/stages.py",
+      "src/menipy/pipelines/oscillating/stages.py"
     ],
-    "src/menipy/analysis/sessile.py": [
-      "src/menipy/analysis/__init__.py"
+    "src/menipy/common/plugin_db.py": [
+      "src/menipy/cli.py",
+      "src/menipy/cli/__init__.py",
+      "src/menipy/common/plugins.py",
+      "src/menipy/gui/services/plugin_service.py"
     ],
-    "src/menipy/analysis/sessile_alt.py": [
-      "src/menipy/analysis/__init__.py"
+    "src/menipy/common/plugins.py": [
+      "src/menipy/cli.py",
+      "src/menipy/cli/__init__.py",
+      "src/menipy/gui/plugins_panel.py",
+      "src/menipy/gui/services/plugin_service.py",
+      "src/menipy/pipelines/capillary_rise/stages.py",
+      "src/menipy/pipelines/captive_bubble/stages.py",
+      "src/menipy/pipelines/oscillating/stages.py"
     ],
-    "src/menipy/detection/needle.py": [
-      "src/menipy/analysis/__init__.py",
-      "src/menipy/ui/main_window.py"
+    "src/menipy/pipelines/base.py": [
+      "src/menipy/cli.py",
+      "src/menipy/cli/__init__.py",
+      "src/menipy/gui/services/pipeline_runner.py",
+      "src/menipy/pipelines/capillary_rise/stages.py",
+      "src/menipy/pipelines/captive_bubble/stages.py",
+      "src/menipy/pipelines/discover.py",
+      "src/menipy/pipelines/oscillating/stages.py",
+      "src/menipy/pipelines/pendant/stages.py",
+      "src/menipy/pipelines/runner.py",
+      "src/menipy/pipelines/sessile/stages.py"
     ],
-    "src/menipy/models/__init__.py": [
-      "src/menipy/analysis/commons.py",
-      "src/menipy/analysis/drop.py"
+    "src/menipy/pipelines/capillary_rise/stages.py": [
+      "src/menipy/cli/__init__.py",
+      "src/menipy/pipelines/capillary_rise/__init__.py"
+    ],
+    "src/menipy/pipelines/captive_bubble/stages.py": [
+      "src/menipy/cli/__init__.py",
+      "src/menipy/pipelines/captive_bubble/__init__.py"
+    ],
+    "src/menipy/pipelines/oscillating/stages.py": [
+      "src/menipy/cli/__init__.py",
+      "src/menipy/pipelines/oscillating/__init__.py"
+    ],
+    "src/menipy/pipelines/pendant/stages.py": [
+      "src/menipy/cli/__init__.py",
+      "src/menipy/pipelines/pendant/__init__.py"
+    ],
+    "src/menipy/pipelines/sessile/stages.py": [
+      "src/menipy/cli/__init__.py",
+      "src/menipy/pipelines/sessile/__init__.py"
+    ],
+    "src/menipy/models/datatypes.py": [
+      "src/menipy/cli.py"
+    ],
+    "src/menipy/pipelines/runner.py": [
+      "src/menipy/cli.py"
+    ],
+    "src/menipy/common/registry.py": [
+      "src/menipy/common/edge_detection.py",
+      "src/menipy/common/plugins.py"
+    ],
+    "src/menipy/models/config.py": [
+      "src/menipy/common/edge_detection.py",
+      "src/menipy/common/preprocessing.py",
+      "src/menipy/common/preprocessing_helpers.py",
+      "src/menipy/gui/controllers/edge_detection_controller.py",
+      "src/menipy/gui/controllers/preprocessing_controller.py",
+      "src/menipy/gui/dialogs/edge_detection_config_dialog.py",
+      "src/menipy/gui/dialogs/preprocessing_config_dialog.py",
+      "src/menipy/models/context.py",
+      "src/menipy/models/result.py",
+      "src/menipy/pipelines/base.py",
+      "src/menipy/pipelines/capillary_rise/stages.py",
+      "src/menipy/pipelines/captive_bubble/stages.py",
+      "src/menipy/pipelines/pendant/stages.py",
+      "src/menipy/pipelines/runner.py",
+      "src/menipy/pipelines/sessile/stages.py"
     ],
     "src/menipy/models/geometry.py": [
-      "src/menipy/analysis/commons.py",
-      "src/menipy/analysis/drop.py",
-      "src/menipy/gui/base_window.py",
+      "src/menipy/common/edge_detection.py",
+      "src/menipy/models/context.py",
+      "src/menipy/models/result.py",
+      "src/menipy/models/state.py"
+    ],
+    "src/menipy/common/preprocessing_helpers.py": [
+      "src/menipy/common/preprocessing.py"
+    ],
+    "src/menipy/models/context.py": [
+      "src/menipy/common/preprocessing.py",
+      "src/menipy/gui/controllers/edge_detection_controller.py",
+      "src/menipy/gui/controllers/preprocessing_controller.py",
+      "src/menipy/pipelines/base.py",
+      "src/menipy/pipelines/capillary_rise/stages.py",
+      "src/menipy/pipelines/captive_bubble/stages.py",
+      "src/menipy/pipelines/oscillating/stages.py",
+      "src/menipy/pipelines/pendant/stages.py",
+      "src/menipy/pipelines/runner.py",
+      "src/menipy/pipelines/sessile/stages.py"
+    ],
+    "src/menipy/models/state.py": [
+      "src/menipy/common/preprocessing.py",
+      "src/menipy/common/preprocessing_helpers.py",
+      "src/menipy/gui/controllers/preprocessing_controller.py"
+    ],
+    "src/menipy/models/fit.py": [
+      "src/menipy/common/solver.py",
+      "src/menipy/models/context.py",
+      "src/menipy/models/result.py",
+      "src/menipy/pipelines/capillary_rise/stages.py",
+      "src/menipy/pipelines/captive_bubble/stages.py",
+      "src/menipy/pipelines/oscillating/stages.py",
+      "src/menipy/pipelines/pendant/stages.py",
+      "src/menipy/pipelines/sessile/stages.py"
+    ],
+    "src/menipy/gui/mainwindow.py": [
+      "src/menipy/gui/app.py",
+      "src/menipy/gui/main_controller.py"
+    ],
+    "src/menipy/gui/controllers/edge_detection_controller.py": [
+      "src/menipy/gui/controllers/pipeline_controller.py",
+      "src/menipy/gui/mainwindow.py"
+    ],
+    "src/menipy/gui/controllers/preprocessing_controller.py": [
+      "src/menipy/gui/controllers/pipeline_controller.py",
+      "src/menipy/gui/helpers/image_marking.py",
+      "src/menipy/gui/mainwindow.py"
+    ],
+    "src/menipy/gui/controllers/sop_controller.py": [
+      "src/menipy/gui/controllers/setup_panel_controller.py"
+    ],
+    "src/menipy/gui/views/image_view.py": [
+      "src/menipy/gui/controllers/setup_panel_controller.py",
+      "src/menipy/gui/mainwindow.py",
+      "src/menipy/gui/panels/preview_panel.py",
+      "src/menipy/gui/panels/setup_panel.py"
+    ],
+    "src/menipy/pipelines/discover.py": [
+      "src/menipy/gui/controllers/setup_panel_controller.py",
+      "src/menipy/gui/mainwindow.py",
+      "src/menipy/gui/panels/setup_panel.py",
+      "src/menipy/gui/services/pipeline_runner.py",
+      "src/menipy/pipelines/runner.py"
+    ],
+    "src/menipy/gui/services/sop_service.py": [
+      "src/menipy/gui/controllers/sop_controller.py",
+      "src/menipy/gui/mainwindow.py"
+    ],
+    "src/menipy/gui/services/settings_service.py": [
+      "src/menipy/gui/dialogs/plugin_manager_dialog.py",
+      "src/menipy/gui/mainwindow.py"
+    ],
+    "src/menipy/gui/viewmodels/plugins_vm.py": [
+      "src/menipy/gui/dialogs/plugin_manager_dialog.py",
+      "src/menipy/gui/plugins_panel.py"
+    ],
+    "src/menipy/gui/panels/preview_panel.py": [
+      "src/menipy/gui/helpers/image_marking.py",
+      "src/menipy/gui/main_controller.py",
+      "src/menipy/gui/mainwindow.py"
+    ],
+    "src/menipy/gui/controllers/pipeline_controller.py": [
+      "src/menipy/gui/main_controller.py",
+      "src/menipy/gui/mainwindow.py"
+    ],
+    "src/menipy/gui/controllers/setup_panel_controller.py": [
+      "src/menipy/gui/main_controller.py",
+      "src/menipy/gui/mainwindow.py"
+    ],
+    "src/menipy/gui/dialogs/acquisition_config_dialog.py": [
+      "src/menipy/gui/main_controller.py"
+    ],
+    "src/menipy/gui/dialogs/edge_detection_config_dialog.py": [
+      "src/menipy/gui/main_controller.py"
+    ],
+    "src/menipy/gui/dialogs/preprocessing_config_dialog.py": [
+      "src/menipy/gui/main_controller.py"
+    ],
+    "src/menipy/gui/panels/results_panel.py": [
+      "src/menipy/gui/main_controller.py",
+      "src/menipy/gui/mainwindow.py"
+    ],
+    "src/menipy/gui/services/camera_service.py": [
+      "src/menipy/gui/main_controller.py",
+      "src/menipy/gui/mainwindow.py"
+    ],
+    "src/menipy/gui/helpers/image_marking.py": [
+      "src/menipy/gui/mainwindow.py"
+    ],
+    "src/menipy/gui/logging_bridge.py": [
+      "src/menipy/gui/mainwindow.py"
+    ],
+    "src/menipy/gui/main_controller.py": [
+      "src/menipy/gui/mainwindow.py"
+    ],
+    "src/menipy/gui/plugins_panel.py": [
+      "src/menipy/gui/mainwindow.py"
+    ],
+    "src/menipy/gui/services/pipeline_runner.py": [
+      "src/menipy/gui/mainwindow.py",
+      "src/menipy/gui/viewmodels/run_vm.py"
+    ],
+    "src/menipy/gui/viewmodels/run_vm.py": [
+      "src/menipy/gui/mainwindow.py"
+    ],
+    "src/menipy/gui/views/step_item_widget.py": [
+      "src/menipy/gui/mainwindow.py"
+    ],
+    "src/menipy/gui/views/ui_main_window.py": [
+      "src/menipy/gui/mainwindow.py"
+    ],
+    "src/menipy/gui/dialogs/plugin_manager_dialog.py": [
+      "src/menipy/gui/plugins_panel.py"
+    ],
+    "src/menipy/gui/services/plugin_service.py": [
+      "src/menipy/gui/viewmodels/plugins_vm.py"
+    ],
+    "src/menipy/gui/services/image_convert.py": [
+      "src/menipy/gui/viewmodels/run_vm.py"
+    ],
+    "src/menipy/common/geometry.py": [
       "src/menipy/models/__init__.py",
       "src/menipy/models/properties.py"
-    ],
-    "src/menipy/physics/contact_geom.py": [
-      "src/menipy/analysis/commons.py",
-      "src/menipy/analysis/drop.py",
-      "src/menipy/analysis/sessile.py",
-      "src/menipy/analysis/sessile_alt.py",
-      "src/menipy/detection/droplet.py",
-      "src/menipy/detectors/geometry_alt.py",
-      "src/menipy/gui/base_window.py",
-      "src/menipy/pipelines/sessile/geometry_alt.py",
-      "src/menipy/ui/main_window.py"
-    ],
-    "src/menipy/detectors/geometry_alt.py": [
-      "src/menipy/analysis/sessile_alt.py",
-      "src/menipy/detectors/__init__.py",
-      "src/menipy/gui/base_window.py",
-      "src/menipy/pipelines/sessile/geometry_alt.py"
-    ],
-    "src/menipy/processing/reader.py": [
-      "src/menipy/batch.py",
-      "src/menipy/gui/base_window.py",
-      "src/menipy/processing/__init__.py"
-    ],
-    "src/menipy/processing/segmentation.py": [
-      "src/menipy/batch.py",
-      "src/menipy/gui/base_window.py",
-      "src/menipy/models/properties.py",
-      "src/menipy/processing/__init__.py"
-    ],
-    "src/menipy/calibration/calibrator.py": [
-      "src/menipy/calibration/__init__.py"
-    ],
-    "src/menipy/gui/calibration_dialog.py": [
-      "src/menipy/gui/__init__.py"
-    ],
-    "src/menipy/gui/controls.py": [
-      "src/menipy/gui/__init__.py",
-      "src/menipy/gui/base_window.py"
-    ],
-    "src/menipy/gui/image_view.py": [
-      "src/menipy/gui/__init__.py",
-      "src/menipy/gui/base_window.py"
-    ],
-    "src/menipy/gui/items.py": [
-      "src/menipy/gui/__init__.py",
-      "src/menipy/gui/base_window.py",
-      "src/menipy/ui/main_window.py"
-    ],
-    "src/menipy/gui/overlay.py": [
-      "src/menipy/gui/__init__.py",
-      "src/menipy/pipelines/pendant/drawing.py",
-      "src/menipy/pipelines/sessile/drawing_alt.py",
-      "src/menipy/pipelines/sessile/geometry_alt.py"
-    ],
-    "src/menipy/ui/__init__.py": [
-      "src/menipy/gui.py",
-      "src/menipy/gui/__init__.py"
-    ],
-    "src/menipy/analysis/__init__.py": [
-      "src/menipy/gui/base_window.py",
-      "src/menipy/pipelines/pendant/geometry.py",
-      "src/menipy/pipelines/sessile/geometry_alt.py",
-      "src/menipy/ui/main_window.py"
-    ],
-    "src/menipy/calibration/__init__.py": [
-      "src/menipy/gui/base_window.py",
-      "src/menipy/gui/calibration_dialog.py",
-      "src/menipy/processing/classification.py"
-    ],
-    "src/menipy/models/properties.py": [
-      "src/menipy/gui/base_window.py",
-      "src/menipy/models/__init__.py",
-      "src/menipy/processing/metrics.py"
-    ],
-    "src/menipy/pipelines/__init__.py": [
-      "src/menipy/gui/base_window.py",
-      "src/menipy/ui/main_window.py"
-    ],
-    "src/menipy/pipelines/pendant/__init__.py": [
-      "src/menipy/gui/base_window.py",
-      "src/menipy/ui/main_window.py"
-    ],
-    "src/menipy/pipelines/sessile/__init__.py": [
-      "src/menipy/gui/base_window.py",
-      "src/menipy/ui/main_window.py"
-    ],
-    "src/menipy/processing/__init__.py": [
-      "src/menipy/gui/base_window.py"
     ],
     "src/menipy/models/drop_extras.py": [
       "src/menipy/models/__init__.py"
@@ -311,54 +615,39 @@
     "src/menipy/models/physics.py": [
       "src/menipy/models/__init__.py"
     ],
+    "src/menipy/models/properties.py": [
+      "src/menipy/models/__init__.py"
+    ],
     "src/menipy/models/surface_tension.py": [
       "src/menipy/models/__init__.py"
     ],
-    "src/menipy/pipelines/pendant/drawing.py": [
-      "src/menipy/pipelines/__init__.py",
-      "src/menipy/pipelines/pendant/__init__.py"
+    "src/menipy/models/frame.py": [
+      "src/menipy/models/context.py",
+      "src/menipy/models/result.py",
+      "src/menipy/models/state.py"
+    ],
+    "src/menipy/models/result.py": [
+      "src/menipy/models/context.py",
+      "src/menipy/models/datatypes.py",
+      "src/menipy/models/state.py"
+    ],
+    "src/menipy/models/typing.py": [
+      "src/menipy/models/datatypes.py",
+      "src/menipy/models/fit.py",
+      "src/menipy/models/geometry.py",
+      "src/menipy/models/state.py"
     ],
     "src/menipy/pipelines/pendant/geometry.py": [
-      "src/menipy/pipelines/__init__.py",
-      "src/menipy/pipelines/pendant/__init__.py",
       "src/menipy/pipelines/pendant/drawing.py"
     ],
-    "src/menipy/pipelines/sessile/drawing_alt.py": [
-      "src/menipy/pipelines/__init__.py",
-      "src/menipy/pipelines/sessile/__init__.py"
+    "src/menipy/common/edge_detection.py": [
+      "src/menipy/pipelines/pendant/geometry.py"
     ],
-    "src/menipy/pipelines/sessile/geometry_alt.py": [
-      "src/menipy/pipelines/__init__.py",
-      "src/menipy/pipelines/sessile/__init__.py",
-      "src/menipy/pipelines/sessile/drawing_alt.py"
+    "src/menipy/pipelines/pendant/metrics.py": [
+      "src/menipy/pipelines/pendant/geometry.py"
     ],
-    "src/menipy/sharpen_plugin.py": [
-      "src/menipy/plugins.py"
-    ],
-    "src/menipy/processing/classification.py": [
-      "src/menipy/processing/__init__.py"
-    ],
-    "src/menipy/processing/detection.py": [
-      "src/menipy/processing/__init__.py",
-      "src/menipy/processing/classification.py"
-    ],
-    "src/menipy/processing/substrate.py": [
-      "src/menipy/processing/__init__.py"
-    ],
-    "src/menipy/processing/region.py": [
-      "src/menipy/processing/metrics.py"
-    ],
-    "src/menipy/processing/geometry.py": [
-      "src/menipy/processing/substrate.py"
-    ],
-    "src/menipy/ui/main_window.py": [
-      "src/menipy/ui/__init__.py"
-    ],
-    "src/menipy/detection/substrate.py": [
-      "src/menipy/ui/main_window.py"
-    ],
-    "src/menipy/gui/base_window.py": [
-      "src/menipy/ui/main_window.py"
+    "src/menipy/common/metrics.py": [
+      "src/menipy/pipelines/sessile/metrics.py"
     ]
   }
 }

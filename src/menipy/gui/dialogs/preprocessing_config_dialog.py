@@ -27,7 +27,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QImage, QPixmap
 
-from menipy.models.datatypes import PreprocessingSettings
+from menipy.models.config import PreprocessingSettings
 
 
 class PreprocessingConfigDialog(QDialog):
@@ -67,7 +67,7 @@ class PreprocessingConfigDialog(QDialog):
         nav_layout.setSpacing(4)
 
         self.stage_list = QListWidget(nav_frame)
-        for label in ("Crop", "Resize", "Filter", "Background", "Normalize", "Contact Line"):
+        for label in ("Crop", "Resize", "Filter", "Background", "Normalize", "Contact Line", "Fill Holes"):
             QListWidgetItem(label, self.stage_list)
         self.stage_list.setCurrentRow(0)
         self.stage_list.setFixedWidth(180)
@@ -130,6 +130,7 @@ class PreprocessingConfigDialog(QDialog):
         self._build_background_page()
         self._build_normalize_page()
         self._build_contact_page()
+        self._build_fill_holes_page()
 
         button_bar = QHBoxLayout()
         button_bar.setContentsMargins(0, 0, 0, 0)
@@ -155,8 +156,10 @@ class PreprocessingConfigDialog(QDialog):
         widget = QWidget(self)
         layout = QVBoxLayout(widget)
         self.crop_checkbox = QCheckBox("Crop to ROI", widget)
+        self.grayscale_checkbox = QCheckBox("Convert to Grayscale", widget)
         self.mask_checkbox = QCheckBox("Process only inside ROI mask", widget)
         layout.addWidget(self.crop_checkbox)
+        layout.addWidget(self.grayscale_checkbox)
         layout.addWidget(self.mask_checkbox)
         layout.addStretch(1)
         self.pages.addWidget(widget)
@@ -265,7 +268,7 @@ class PreprocessingConfigDialog(QDialog):
         form.addRow(self.norm_enable)
 
         self.norm_method = QComboBox(widget)
-        for label in ("clahe", "histogram"):
+        for label in ("clahe", "histogram", "otsu"):
             self.norm_method.addItem(label)
         form.addRow("Method", self.norm_method)
 
@@ -308,6 +311,32 @@ class PreprocessingConfigDialog(QDialog):
 
         self.pages.addWidget(widget)
 
+    def _build_fill_holes_page(self) -> None:
+        widget = QWidget(self)
+        form = QFormLayout(widget)
+
+        self.fill_enable = QCheckBox("Enable fill holes / remove spurious", widget)
+        form.addRow(self.fill_enable)
+
+        self.fill_max_area = QSpinBox(widget)
+        self.fill_max_area.setRange(0, 10000000)
+        self.fill_max_area.setValue(500)
+        form.addRow("Max hole area (px)", self.fill_max_area)
+
+        self.fill_remove_spurious = QCheckBox("Remove small objects near contact line", widget)
+        form.addRow(self.fill_remove_spurious)
+
+        self.fill_proximity = QSpinBox(widget)
+        self.fill_proximity.setRange(0, 200)
+        self.fill_proximity.setValue(5)
+        form.addRow("Proximity to contact (px)", self.fill_proximity)
+
+        info = QLabel("Fills small interior holes and optionally removes small spurious objects near the contact line.")
+        info.setWordWrap(True)
+        form.addRow(info)
+
+        self.pages.addWidget(widget)
+
     # ------------------------------------------------------------------
     # Data binding
     # ------------------------------------------------------------------
@@ -324,10 +353,14 @@ class PreprocessingConfigDialog(QDialog):
         self.filter_enable.toggled.connect(self._update_filter_controls)
         self.bg_enable.toggled.connect(self._update_background_controls)
         self.norm_enable.toggled.connect(self._update_norm_controls)
+        # Fill holes controls (widget may not exist in older settings)
+        if hasattr(self, "fill_enable"):
+            self.fill_enable.toggled.connect(self._update_fill_controls)
 
     def _load_settings(self) -> None:
         s = self._settings
         self.crop_checkbox.setChecked(s.crop_to_roi)
+        self.grayscale_checkbox.setChecked(s.convert_to_grayscale)
         self.mask_checkbox.setChecked(s.work_on_roi_mask)
 
         resize = s.resize
@@ -362,6 +395,21 @@ class PreprocessingConfigDialog(QDialog):
         self.contact_threshold.setValue(contact.threshold)
         self.contact_dilation.setValue(contact.dilation)
 
+        # Load fill_holes settings if available
+        if hasattr(s, "fill_holes"):
+            fill = s.fill_holes
+            try:
+                self.fill_enable.setChecked(getattr(fill, "enabled", False))
+                self.fill_max_area.setValue(getattr(fill, "max_hole_area", 500) or 0)
+                self.fill_remove_spurious.setChecked(getattr(fill, "remove_spurious_near_contact", True))
+                self.fill_proximity.setValue(getattr(fill, "proximity_px", 5) or 0)
+            except Exception:
+                # defensively restore defaults
+                self.fill_enable.setChecked(False)
+                self.fill_max_area.setValue(500)
+                self.fill_remove_spurious.setChecked(True)
+                self.fill_proximity.setValue(5)
+
         self._update_resize_controls()
         self._update_filter_controls()
         self._update_background_controls()
@@ -370,12 +418,13 @@ class PreprocessingConfigDialog(QDialog):
     def _collect_settings(self) -> PreprocessingSettings:
         s = self._settings.model_copy(deep=True)
         s.crop_to_roi = self.crop_checkbox.isChecked()
+        s.convert_to_grayscale = self.grayscale_checkbox.isChecked()
         s.work_on_roi_mask = self.mask_checkbox.isChecked()
 
         resize = s.resize
         resize.enabled = self.resize_enable.isChecked()
-        resize.target_width = self.resize_width.value() or None
-        resize.target_height = self.resize_height.value() or None
+        resize.target_width = self.resize_width.value() if self.resize_width.value() > 0 else None
+        resize.target_height = self.resize_height.value() if self.resize_height.value() > 0 else None
         resize.preserve_aspect = self.resize_preserve.isChecked()
         resize.interpolation = self.resize_mode.currentText()
 
@@ -403,6 +452,14 @@ class PreprocessingConfigDialog(QDialog):
         contact.strategy = self.contact_strategy.currentText()
         contact.threshold = self.contact_threshold.value()
         contact.dilation = self.contact_dilation.value()
+
+        # Collect fill_holes settings
+        if hasattr(s, "fill_holes"):
+            fill = s.fill_holes
+            fill.enabled = self.fill_enable.isChecked()
+            fill.max_hole_area = self.fill_max_area.value()
+            fill.remove_spurious_near_contact = self.fill_remove_spurious.isChecked()
+            fill.proximity_px = self.fill_proximity.value()
 
         self._settings = s
         return s
@@ -454,6 +511,11 @@ class PreprocessingConfigDialog(QDialog):
         self.norm_clip.setEnabled(clahe)
         self.norm_grid.setEnabled(enabled)
 
+    def _update_fill_controls(self) -> None:
+        enabled = getattr(self, "fill_enable", None) and self.fill_enable.isChecked()
+        for widget in (self.fill_max_area, self.fill_remove_spurious, self.fill_proximity):
+            widget.setEnabled(enabled)
+
     # ------------------------------------------------------------------
     # Public accessors
     # ------------------------------------------------------------------
@@ -484,9 +546,3 @@ class PreprocessingConfigDialog(QDialog):
 
         pixmap = QPixmap.fromImage(q_image)
         self.preview_label.setPixmap(pixmap.scaled(self.preview_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
-
-
-
-
-
-

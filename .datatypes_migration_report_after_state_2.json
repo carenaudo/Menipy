@@ -1,0 +1,62 @@
+{
+  "planned": {
+    "D:\\programacion\\Menipy\\tests\\test_preprocessing_helpers.py": [
+      [
+        "from menipy.models.datatypes import PreprocessingState",
+        "from menipy.models.datatypes import PreprocessingState",
+        "from menipy.models.state import PreprocessingState"
+      ]
+    ],
+    "D:\\programacion\\Menipy\\src\\menipy\\common\\preprocessing.py": [
+      [
+        "from menipy.models.datatypes import PreprocessingState, MarkerSet, PreprocessingStageRecord",
+        "from menipy.models.datatypes import PreprocessingState, MarkerSet, PreprocessingStageRecord",
+        "from menipy.models.state import PreprocessingState, MarkerSet, PreprocessingStageRecord"
+      ]
+    ],
+    "D:\\programacion\\Menipy\\src\\menipy\\common\\preprocessing_helpers.py": [
+      [
+        "from menipy.models.datatypes import (\n    PreprocessingState,\n    PreprocessingStageRecord,\n    MarkerSet,\n)",
+        "from menipy.models.datatypes import (\n    PreprocessingState,\n    PreprocessingStageRecord,\n    MarkerSet,\n)",
+        "from menipy.models.state import PreprocessingState, PreprocessingStageRecord, MarkerSet"
+      ]
+    ],
+    "D:\\programacion\\Menipy\\src\\menipy\\gui\\controllers\\preprocessing_controller.py": [
+      [
+        "from menipy.models.datatypes import (\n    PreprocessingState,\n    MarkerSet,\n)",
+        "from menipy.models.datatypes import (\n    PreprocessingState,\n    MarkerSet,\n)",
+        "from menipy.models.state import PreprocessingState, MarkerSet"
+      ]
+    ]
+  },
+  "unknowns": [
+    [
+      "D:\\programacion\\Menipy\\tools\\migrate_datatypes_imports.py",
+      "("
+    ],
+    [
+      "D:\\programacion\\Menipy\\tools\\migrate_datatypes_imports.py",
+      "(\"):"
+    ],
+    [
+      "D:\\programacion\\Menipy\\tools\\migrate_datatypes_imports.py",
+      "(\\n  A"
+    ],
+    [
+      "D:\\programacion\\Menipy\\tools\\migrate_datatypes_imports.py",
+      "\\n  B"
+    ],
+    [
+      "D:\\programacion\\Menipy\\tools\\migrate_datatypes_imports.py",
+      "\\n)\""
+    ],
+    [
+      "D:\\programacion\\Menipy\\src\\menipy\\common\\preprocessing_helpers.py",
+      "("
+    ],
+    [
+      "D:\\programacion\\Menipy\\src\\menipy\\gui\\controllers\\preprocessing_controller.py",
+      "("
+    ]
+  ]
+}

@@ -14,6 +14,8 @@ class AppSettings:
     last_image_path: Optional[str] = None
     plugin_dirs: List[str] = field(default_factory=lambda: ["./plugins"])
     acquisition_requires_contact_line: bool = False
+    # Overlay appearance configuration (serialized as a simple dict)
+    overlay_config: Optional[dict] = None
     path: Path = field(default_factory=_default_path, repr=False)
 
     @classmethod
@@ -31,6 +33,7 @@ class AppSettings:
                 last_image_path=data.get("last_image_path"),
                 plugin_dirs=list(data.get("plugin_dirs", ["./plugins"])),
                 acquisition_requires_contact_line=data.get("acquisition_requires_contact_line", False),
+                overlay_config=data.get("overlay_config"),
                 path=p
             )
         except Exception:

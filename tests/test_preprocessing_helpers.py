@@ -1,7 +1,9 @@
 import numpy as np
 import pytest
 
-from menipy.models.datatypes import Context, PreprocessingSettings, PreprocessingState
+from menipy.models.context import Context
+from menipy.models.config import PreprocessingSettings
+from menipy.models.state import PreprocessingState
 from menipy.common import preprocessing
 from menipy.common.preprocessing_helpers import (
     PreprocessingContext,

@@ -123,17 +123,75 @@ class ImageView(QGraphicsView):
         *,
         color: QColor = QColor(0, 255, 0),
         radius: float = 4.0,
+        alpha: float | None = None,
+        stroke_width: float = 2.0,
+        shape: str = "circle",  # circle | square | cross
+        dash_pattern: tuple[float, float] | None = None,
+        drop_shadow: bool = False,
         tag: str | None = None,
     ) -> None:
-        item = QGraphicsEllipseItem(
-            QRectF(point.x() - radius, point.y() - radius, 2 * radius, 2 * radius)
-        )
+        # Create shape-specific QGraphicsItem
+        if shape == "square":
+            item = QGraphicsRectItem(QRectF(point.x() - radius, point.y() - radius, 2 * radius, 2 * radius))
+        elif shape == "cross":
+            # use a small group: two lines
+            l1 = QGraphicsLineItem(point.x() - radius, point.y() - radius, point.x() + radius, point.y() + radius)
+            l2 = QGraphicsLineItem(point.x() - radius, point.y() + radius, point.x() + radius, point.y() - radius)
+            pen = QPen(color)
+            pen.setWidthF(float(stroke_width))
+            if dash_pattern is not None:
+                try:
+                    pen.setDashPattern([float(dash_pattern[0]), float(dash_pattern[1])])
+                except Exception:
+                    pass
+            if alpha is not None:
+                try:
+                    c = QColor(color)
+                    c.setAlphaF(max(0.0, min(1.0, float(alpha))))
+                    pen.setColor(c)
+                except Exception:
+                    pass
+            l1.setPen(pen)
+            l2.setPen(pen)
+            l1.setZValue(12_000)
+            l2.setZValue(12_000)
+            self.scene().addItem(l1)
+            self.scene().addItem(l2)
+            self._overlays.extend([l1, l2])
+            self._register_overlay_item(l1, tag)
+            return
+        else:
+            item = QGraphicsEllipseItem(
+                QRectF(point.x() - radius, point.y() - radius, 2 * radius, 2 * radius)
+            )
+
         pen = QPen(color)
-        pen.setWidth(2)
+        pen.setWidthF(float(stroke_width))
+        if alpha is not None:
+            try:
+                c = QColor(color)
+                c.setAlphaF(max(0.0, min(1.0, float(alpha))))
+                pen.setColor(c)
+                item.setBrush(c)
+            except Exception:
+                item.setBrush(color)
+        else:
+            item.setBrush(color)
         item.setPen(pen)
-        item.setBrush(color)
         item.setZValue(12_000)
         self.scene().addItem(item)
+        if drop_shadow:
+            try:
+                from PySide6.QtWidgets import QGraphicsDropShadowEffect
+                eff = QGraphicsDropShadowEffect()
+                eff.setBlurRadius(8)
+                eff.setOffset(2, 2)
+                # attach effect to the underlying widget where appropriate
+                # QGraphicsItems don't directly accept QGraphicsEffects, so this is best-effort
+                # If framework doesn't accept it, we ignore silently.
+                item.setGraphicsEffect(eff)
+            except Exception:
+                pass
         self._overlays.append(item)
         self._register_overlay_item(item, tag)
 
@@ -153,6 +211,60 @@ class ImageView(QGraphicsView):
         self.scene().addItem(item)
         self._overlays.append(item)
         self._register_overlay_item(item, tag)
+
+    def add_marker_contour(
+        self,
+        pts: np.ndarray,
+        *,
+        color: QColor = QColor(255, 0, 0),
+        width: float = 2.0,
+        dash_pattern: tuple[float, float] | None = None,
+        alpha: float | None = None,
+        tag: str | None = None,
+    ) -> None:
+        """Add a contour path overlay from an Nx2 array of (x,y) points.
+
+        The contour is added as a single QGraphicsPathItem and registered under `tag`.
+        """
+        try:
+            if pts is None:
+                return
+            pts = np.asarray(pts, dtype=float)
+            if pts.ndim != 2 or pts.shape[1] < 2:
+                return
+            from PySide6.QtGui import QPainterPath
+            path = QPainterPath()
+            path.moveTo(QPointF(float(pts[0, 0]), float(pts[0, 1])))
+            for p in pts[1:]:
+                path.lineTo(QPointF(float(p[0]), float(p[1])))
+            # close path
+            path.lineTo(QPointF(float(pts[0, 0]), float(pts[0, 1])))
+
+            item = QGraphicsPathItem(path)
+            pen = QPen(color)
+            pen.setWidthF(float(width))
+            # apply alpha if provided
+            if alpha is not None:
+                try:
+                    col = QColor(color)
+                    col.setAlphaF(max(0.0, min(1.0, float(alpha))))
+                    pen.setColor(col)
+                except Exception:
+                    pass
+            # set dash pattern if requested (dash_len, dash_space)
+            if dash_pattern is not None:
+                try:
+                    dash_len, dash_space = dash_pattern
+                    pen.setDashPattern([float(dash_len), float(dash_space)])
+                except Exception:
+                    pass
+            item.setPen(pen)
+            item.setZValue(11_000)
+            self.scene().addItem(item)
+            self._overlays.append(item)
+            self._register_overlay_item(item, tag)
+        except Exception:
+            logger.debug('Failed to add contour overlay', exc_info=True)
 
     def set_image(self, img: Union[QPixmap, QImage, np.ndarray, None], preserve_overlays: bool = False) -> None:
         if img is None:

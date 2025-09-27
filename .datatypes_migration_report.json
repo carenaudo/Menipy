@@ -1,0 +1,29 @@
+{
+  "planned": {},
+  "unknowns": [
+    [
+      "D:\\programacion\\Menipy\\tests\\test_preprocessing_helpers.py",
+      "PreprocessingState"
+    ],
+    [
+      "D:\\programacion\\Menipy\\src\\menipy\\common\\preprocessing.py",
+      "PreprocessingState"
+    ],
+    [
+      "D:\\programacion\\Menipy\\src\\menipy\\common\\preprocessing.py",
+      "MarkerSet"
+    ],
+    [
+      "D:\\programacion\\Menipy\\src\\menipy\\common\\preprocessing.py",
+      "PreprocessingStageRecord"
+    ],
+    [
+      "D:\\programacion\\Menipy\\src\\menipy\\common\\preprocessing_helpers.py",
+      "("
+    ],
+    [
+      "D:\\programacion\\Menipy\\src\\menipy\\gui\\controllers\\preprocessing_controller.py",
+      "("
+    ]
+  ]
+}

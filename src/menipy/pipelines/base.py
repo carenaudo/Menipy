@@ -3,12 +3,28 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any, Callable, Optional, Dict
+from pathlib import Path
+from typing import Any, Callable, Optional, Dict, ClassVar, Union
 
-# Context lives in models.datatypes (per your requirement)
-from menipy.models.datatypes import Context, PreprocessingSettings, EdgeDetectionSettings
+import numpy as np
 
+# Core models
+from menipy.models.context import Context
+from menipy.models.config import PreprocessingSettings, EdgeDetectionSettings
+from menipy.models.fit import FitConfig
+from menipy.models.geometry import Contour, Geometry
 
+# Common utilities
+from menipy.common import edge_detection as edged
+from menipy.common import overlay as ovl
+from menipy.common import solver as common_solver
+from menipy.common.plugins import _load_module_from_path
+
+# Make common utilities available to subclasses
+__all__ = [
+    'Context', 'PreprocessingSettings', 'EdgeDetectionSettings', 'FitConfig',
+    'Contour', 'Geometry', 'edged', 'ovl', 'common_solver'
+]
 
 # ------------------------------- Base Class ----------------------------------
 
@@ -26,6 +42,12 @@ class PipelineBase:
     """
 
     name: str = "base"
+    
+    # Common plugin setup
+    _repo_root: ClassVar[Path] = Path(__file__).resolve().parents[3]
+    _toy_path: ClassVar[Path] = _repo_root / "plugins" / "toy_young_laplace.py"
+    _toy_mod = _load_module_from_path(_toy_path, "adsa_plugins.toy_young_laplace")
+    young_laplace_sphere = getattr(_toy_mod, "toy_young_laplace")
     DEFAULT_SEQ = [
             ("acquisition",  None),
             ("preprocessing", None),
@@ -90,6 +112,10 @@ class PipelineBase:
         if image is not None:
             ctx.image_path = image
 
+        # For single-image processing, also populate current_frame
+        if image and not kwargs.get("camera"):
+            from menipy.common import acquisition
+            ctx.current_frame = acquisition.from_file([image])[0]
         cam = kwargs.get("camera")
         if cam is None:
             cam = kwargs.get("cam_id")

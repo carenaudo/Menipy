@@ -5,24 +5,23 @@ from typing import Optional
 import numpy as np
 import cv2
 
+logger = logging.getLogger(__name__)
+
 from menipy.pipelines.base import PipelineBase
-from menipy.models.datatypes import Context, EdgeDetectionSettings
+from menipy.models.context import Context
+from menipy.models.config import EdgeDetectionSettings
+from menipy.models.fit import FitConfig
+from menipy.models.geometry import Contour
 from menipy.common import edge_detection as edged
 from menipy.common import overlay as ovl
 from menipy.common import solver as common_solver
-# Load the optional plugin implementation dynamically via the project's
-# plugin utilities. This avoids hard import-time dependence on a top-level
-# `plugins` package being on sys.path.
-from pathlib import Path
 from menipy.common.plugins import _load_module_from_path
+from pathlib import Path
 
-# plugins/ is at the repository root relative to this file. parents[4] resolves
-# to the project root (D:/programacion/Menipy) for the typical layout.
 _repo_root = Path(__file__).resolve().parents[4]
 _toy_path = _repo_root / "plugins" / "toy_young_laplace.py"
 _toy_mod = _load_module_from_path(_toy_path, "adsa_plugins.toy_young_laplace")
 young_laplace_sphere = getattr(_toy_mod, "toy_young_laplace")
-from menipy.models.datatypes import FitConfig
 
 
 def _ensure_contour(ctx: Context) -> np.ndarray:
@@ -75,13 +74,20 @@ class SessilePipeline(PipelineBase):
         thetaL = float(np.degrees(np.arctan2(-mL, 1.0)))
         thetaR = float(np.degrees(np.arctan2(mR, 1.0)))
 
-        ctx.geometry = {
-            "axis_x": axis_x,
-            "baseline_y": baseline_y,
-            "apex_xy": apex_xy,
-            "theta_left_deg": thetaL,
-            "theta_right_deg": thetaR,
-        }
+        from menipy.models.geometry import Geometry
+        ctx.geometry = Geometry(
+            axis_x=axis_x,
+            baseline_y=baseline_y,
+            apex_xy=apex_xy,
+            tilt_deg=0.0  # these angles are in the results, not geometry
+        )
+        # Store contact angles in results
+        if not hasattr(ctx, 'results'):
+            ctx.results = {}
+        ctx.results.update({
+            'theta_left_deg': thetaL,
+            'theta_right_deg': thetaR
+        })
         return ctx
 
     def do_scaling(self, ctx: Context) -> Optional[Context]:
@@ -111,8 +117,8 @@ class SessilePipeline(PipelineBase):
         params = fit.get("params", [])
         res = {n: p for n, p in zip(names, params)}
         res.update({
-            "theta_left_deg": ctx.geometry.get("theta_left_deg"),
-            "theta_right_deg": ctx.geometry.get("theta_right_deg"),
+            "theta_left_deg": getattr(ctx.geometry, "theta_left_deg", None),
+            "theta_right_deg": getattr(ctx.geometry, "theta_right_deg", None),
             "residuals": fit.get("residuals", {}),
         })
         ctx.results = res
@@ -120,13 +126,17 @@ class SessilePipeline(PipelineBase):
 
     def do_overlay(self, ctx: Context) -> Optional[Context]:
         xy = _ensure_contour(ctx)
-        axis_x = int(round(ctx.geometry["axis_x"]))
-        baseline_y = int(round(ctx.geometry["baseline_y"]))
-        apex_x, apex_y = ctx.geometry["apex_xy"]
+        if not ctx.geometry:
+            return ctx
+        axis_x = int(round(ctx.geometry.axis_x)) if ctx.geometry.axis_x is not None else 0
+        baseline_y = int(round(ctx.geometry.baseline_y)) if ctx.geometry.baseline_y is not None else 0
+        apex_x, apex_y = ctx.geometry.apex_xy if ctx.geometry.apex_xy is not None else (0, 0)
+        theta_l = ctx.results.get('theta_left_deg') 
+        theta_r = ctx.results.get('theta_right_deg')
         text = (
             f"R0≈{ctx.results.get('R0_mm','?')} mm | "
-            f"θL≈{ctx.results.get('theta_left_deg','?'):.0f}° "
-            f"θR≈{ctx.results.get('theta_right_deg','?'):.0f}°"
+            f"θL≈{theta_l if theta_l is not None else '?'}° "
+            f"θR≈{theta_r if theta_r is not None else '?'}°"
         )
         cmds = [
             {"type": "polyline", "points": xy.tolist(), "closed": True, "color": "yellow", "thickness": 2},

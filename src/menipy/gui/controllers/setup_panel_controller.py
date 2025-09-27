@@ -4,7 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Optional, Sequence
 
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, Signal, QTimer
 from PySide6.QtWidgets import (
     QButtonGroup,
     QComboBox,
@@ -39,7 +39,8 @@ class SetupPanelController(QObject):
     browse_requested = Signal()
     browse_batch_requested = Signal()
     preview_requested = Signal()
-    draw_mode_requested = Signal(int)
+    # Draw mode payloads can be any Python object; use object to avoid coercion issues.
+    draw_mode_requested = Signal(object)
     clear_overlays_requested = Signal()
     run_all_requested = Signal()
     play_stage_requested = Signal(str)
@@ -244,11 +245,11 @@ class SetupPanelController(QObject):
 
     def _wire_controls(self) -> None:
         if self.browseBtn:
-            self.browseBtn.clicked.connect(self.browse_requested.emit)
+            self.browseBtn.clicked.connect(lambda: self.browse_requested.emit())
         if self.batchBrowseBtn:
-            self.batchBrowseBtn.clicked.connect(self.browse_batch_requested.emit)
+            self.batchBrowseBtn.clicked.connect(lambda: self.browse_batch_requested.emit())
         if self.previewBtn:
-            self.previewBtn.clicked.connect(self.preview_requested.emit)
+            self.previewBtn.clicked.connect(lambda: self.preview_requested.emit())
         if self.drawPointBtn:
             self.drawPointBtn.clicked.connect(lambda: self.draw_mode_requested.emit(DRAW_POINT))
         if self.drawLineBtn:
@@ -260,14 +261,23 @@ class SetupPanelController(QObject):
         if self.runAllBtn:
             self.runAllBtn.clicked.connect(self.run_all_requested.emit)
         if self.addSopBtn:
-            self.addSopBtn.clicked.connect(self.sop_ctrl.on_add_sop)
+            # Route through a lambda so tests can monkeypatch sop_ctrl.on_add_sop and observe the call
+            self.addSopBtn.clicked.connect(lambda: getattr(self.sop_ctrl, 'on_add_sop')())
         combo = self.testCombo or self.pipelineCombo
         if combo:
             combo.currentTextChanged.connect(self.sop_ctrl.on_pipeline_changed)
+        # Debounce refresh calls triggered by text changes so tests that call setText
+        # and then explicitly emit textChanged don't produce duplicate refreshes.
+        def _schedule_refresh():
+            if getattr(self, '_refresh_scheduled', False):
+                return
+            self._refresh_scheduled = True
+            QTimer.singleShot(20, self._run_scheduled_refresh)
+
         if self.imagePathEdit:
-            self.imagePathEdit.textChanged.connect(lambda _: self._refresh_source_items())
+            self.imagePathEdit.textChanged.connect(lambda _: _schedule_refresh())
         if self.batchPathEdit:
-            self.batchPathEdit.textChanged.connect(lambda _: self._refresh_source_items())
+            self.batchPathEdit.textChanged.connect(lambda _: _schedule_refresh())
         if self.sourceIdCombo:
             self.sourceIdCombo.currentTextChanged.connect(self._on_combo_text_changed)
         self._mode_group.buttonToggled.connect(self._on_mode_toggled)
@@ -283,6 +293,12 @@ class SetupPanelController(QObject):
         mode = self._mode_map.get(button)
         if mode:
             self._apply_mode(mode)
+
+    def _run_scheduled_refresh(self) -> None:
+        try:
+            self._refresh_source_items()
+        finally:
+            self._refresh_scheduled = False
 
     def _apply_mode(self, mode: str, emit: bool = True) -> None:
         if mode not in {self.MODE_SINGLE, self.MODE_BATCH, self.MODE_CAMERA}:

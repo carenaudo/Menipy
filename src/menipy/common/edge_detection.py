@@ -3,8 +3,8 @@ from typing import Callable, Optional
 import numpy as np
 import logging
 
-from menipy.models.datatypes import EdgeDetectionSettings
-from menipy.models.datatypes import Contour
+from menipy.models.config import EdgeDetectionSettings
+from menipy.models.geometry import Contour
 
 # Keep your registry import
 from .registry import EDGE_DETECTORS
@@ -94,6 +94,24 @@ def get_contour_detector(name: str = "canny") -> Callable[[np.ndarray, EdgeDetec
     # Note: Plugins and registry detectors will need to be adapted to accept settings
     # For now, we'll just return the fallback Canny if no specific detector is found.
     return lambda img, settings: _fallback_canny(img, settings)
+
+
+def extract_external_contour(image: np.ndarray) -> np.ndarray:
+    """Extracts the largest external contour from a binary image."""
+    if cv2 is None:
+        raise RuntimeError("OpenCV is required for contour extraction.")
+    
+    # Ensure image is binary
+    if image.ndim > 2:
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    _, binary = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    
+    contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    if not contours:
+        return np.empty((0, 2), dtype=float)
+    
+    largest_contour = max(contours, key=cv2.contourArea)
+    return largest_contour.squeeze(1).astype(float)
 
 
 # -------- public API --------
@@ -228,7 +246,7 @@ def run(ctx, settings: EdgeDetectionSettings):
         logger.warning("OpenCV not available. Falling back to basic edge detection.")
         # Fallback for no OpenCV (crude thresholding)
         v = float(np.median(img_roi_gray))
-        edges = (img_roi_gray > v).astype(np.uint8) * 255
+        edges = (g > v).astype(np.uint8) * 255
         xy = _edges_to_xy(edges, settings.min_contour_length, settings.max_contour_length)
     else:
         if settings.method == "canny":

@@ -8,12 +8,8 @@ import logging
 
 import numpy as np
 
-from menipy.models.datatypes import (
-    PreprocessingSettings,
-    PreprocessingState,
-    PreprocessingStageRecord,
-    MarkerSet,
-)
+from menipy.models.config import PreprocessingSettings
+from menipy.models.state import PreprocessingState, PreprocessingStageRecord, MarkerSet
 
 logger = logging.getLogger(__name__)
 
@@ -93,6 +89,24 @@ class PreprocessingContext:
 # Stage helpers
 # ---------------------------------------------------------------------------
 
+def convert_to_grayscale(context: PreprocessingContext) -> None:
+    """Convert the source image to grayscale if configured."""
+    if not context.settings.convert_to_grayscale:
+        return
+
+    current = context.current_image
+    if current is None:
+        return
+
+    if current.ndim == 3:
+        if cv2 is None:
+            logger.warning("OpenCV not found, cannot convert to grayscale.")
+            return
+        logger.debug("Converting image to grayscale.")
+        grayscaled = cv2.cvtColor(current, cv2.COLOR_BGR2GRAY)
+        context.update_working(grayscaled)
+        context.push_history("grayscale")
+
 def crop_to_roi(context: PreprocessingContext) -> None:
     """Extract ROI from the source image and derive a binary mask."""
 
@@ -132,11 +146,16 @@ def rescale_roi(context: PreprocessingContext) -> None:
     src_h, src_w = current.shape[:2]
 
     if settings.preserve_aspect:
-        scale_w = target_w / src_w if target_w else None
-        scale_h = target_h / src_h if target_h else None
-        scale = scale_w if scale_w is not None else scale_h
+        scale_w = target_w / src_w if target_w else float('inf')
+        scale_h = target_h / src_h if target_h else float('inf')
+        
+        # Use the more constraining scale factor if both are provided
+        scale = min(scale_w, scale_h)
+        
+        # If neither was provided, scale is inf, so we do nothing.
         if scale is None:
             return
+
         new_w = max(1, int(round(src_w * scale)))
         new_h = max(1, int(round(src_h * scale)))
     else:
@@ -188,7 +207,7 @@ def apply_filter(context: PreprocessingContext) -> None:
     filtered = _apply_mask(current, filtered, context.active_mask)
     context.update_working(filtered)
     context.set_filtered(filtered.copy())
-    context.push_history("filter", {"method": method, "kernel": settings.kernel_size})
+    context.push_history("filter", settings.model_dump())
 
 
 def subtract_background(context: PreprocessingContext) -> None:
@@ -211,11 +230,16 @@ def subtract_background(context: PreprocessingContext) -> None:
         logger.warning("Preprocessing: background mode '%s' unavailable; skipping", settings.mode)
         return
 
-    adjusted = current.astype(np.float32) - background.astype(np.float32)
-    adjusted = np.clip(adjusted + 128.0, 0, 255).astype(np.uint8)
+    if cv2:
+        # Use OpenCV's subtraction which handles underflow by clipping to 0
+        adjusted = cv2.subtract(current, background)
+    else:
+        # Fallback to numpy if OpenCV is not available
+        adjusted = np.clip(current.astype(np.int16) - background.astype(np.int16), 0, 255).astype(np.uint8)
+
     adjusted = _apply_mask(current, adjusted, context.active_mask)
     context.update_working(adjusted)
-    context.push_history("background", {"mode": settings.mode})
+    context.push_history("background", settings.model_dump())
 
 
 def normalize_intensity(context: PreprocessingContext) -> None:
@@ -231,6 +255,8 @@ def normalize_intensity(context: PreprocessingContext) -> None:
 
     if settings.method == "clahe":
         normalized = _apply_clahe(current, settings.clip_limit, settings.grid_size)
+    elif settings.method == "otsu":
+        normalized = _apply_otsu_threshold(current)
     else:
         normalized = _histogram_stretch(current)
 
@@ -255,6 +281,100 @@ def detect_contact_line(context: PreprocessingContext) -> None:
         context.state.metadata["contact_line_anchors"] = markers.contact_line_anchors
     else:
         context.state.contact_line_presence = False
+
+
+def fill_holes(context: PreprocessingContext) -> None:
+    """Fill small interior holes in the ROI mask and remove small spurious objects.
+
+    Uses skimage.morphology.remove_small_holes/remove_small_objects when available; falls
+    back to OpenCV-based contour filling and connected-component filtering if needed.
+    Updates `context.state.roi_mask` and appends a history record.
+    """
+    settings = getattr(context.settings, "fill_holes", None)
+    if settings is None or not getattr(settings, "enabled", False):
+        return
+
+    mask = context.state.roi_mask
+    if mask is None:
+        logger.debug("fill_holes: no ROI mask available; skipping")
+        return
+
+    bin_mask = (mask > 0)
+    max_area = int(getattr(settings, "max_hole_area", 500) or 0)
+
+    out_mask = None
+    # Prefer skimage morphology utilities
+    if morphology is not None:
+        try:
+            logger.debug("fill_holes: running skimage morphology-based cleanup")
+            # remove_small_holes expects boolean array
+            if max_area > 0:
+                filled = morphology.remove_small_holes(bin_mask, area_threshold=max_area)
+            else:
+                filled = bin_mask
+
+            # Optionally remove small objects (spurious) near contact line
+            if getattr(settings, "remove_spurious_near_contact", False) and context.state.contact_line_mask is not None:
+                contact = (context.state.contact_line_mask > 0)
+                if contact.any():
+                    # create a proximity mask around contact line
+                    try:
+                        from scipy import ndimage as _nd
+
+                        dist = _nd.distance_transform_edt(~contact)
+                        proximity = dist <= int(getattr(settings, "proximity_px", 5) or 0)
+                        # remove small objects that lie within proximity
+                        cleaned = morphology.remove_small_objects(filled & ~proximity, min_size=1)
+                        # Keep objects inside proximity as-is; merge
+                        final = cleaned | (filled & proximity)
+                    except Exception:
+                        final = filled
+                else:
+                    final = filled
+            else:
+                # remove very small objects globally (no size threshold besides default)
+                final = morphology.remove_small_objects(filled, min_size=1)
+
+            out_mask = (final.astype(np.uint8) * 255)
+        except Exception:
+            logger.debug("fill_holes: skimage path failed, falling back to OpenCV", exc_info=True)
+
+    # Fallback to OpenCV based processing
+    if out_mask is None:
+        out_mask = mask.copy()
+        if cv2 is not None:
+            logger.debug("fill_holes: using OpenCV fallback for filling/removal")
+            inv = (~bin_mask).astype('uint8') * 255
+            contours, _ = cv2.findContours(inv, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            for cnt in contours:
+                area = cv2.contourArea(cnt)
+                if 0 < max_area and area <= max_area:
+                    cv2.drawContours(out_mask, [cnt], -1, color=255, thickness=-1)
+
+            if getattr(settings, "remove_spurious_near_contact", False) and context.state.contact_line_mask is not None:
+                contact = (context.state.contact_line_mask > 0).astype('uint8')
+                if contact.any():
+                    k = max(1, int(getattr(settings, "proximity_px", 5) or 0))
+                    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * k + 1, 2 * k + 1))
+                    prox = cv2.dilate(contact, kernel, iterations=1).astype(bool)
+                    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats((out_mask > 0).astype('uint8'), connectivity=8)
+                    for lab in range(1, num_labels):
+                        area = int(stats[lab, cv2.CC_STAT_AREA])
+                        if 0 < max_area and area <= max_area:
+                            comp = (labels == lab)
+                            overlap = np.logical_and(comp, prox).sum()
+                            if overlap > 0:
+                                out_mask[comp] = 0
+        else:
+            logger.debug("fill_holes: OpenCV not available; cannot run fallback operations")
+
+    # Persist mask and history
+    context.state.roi_mask = (out_mask > 0).astype(np.uint8) * 255
+    try:
+        params = settings.model_dump() if hasattr(settings, "model_dump") else {"max_hole_area": max_area}
+    except Exception:
+        params = {"max_hole_area": max_area}
+    context.push_history("fill_holes", params)
 
 
 # ---------------------------------------------------------------------------
@@ -387,26 +507,40 @@ def _estimate_flat_background(array: np.ndarray, mask: Optional[np.ndarray], str
     if mask is not None and mask.any():
         mask_bool = mask.astype(bool)
         if array.ndim == 3:
-            values = array[mask_bool[..., None]].reshape(-1, array.shape[2])
-            mean = values.mean(axis=0)
+            # mask_bool indexes the first two axes; use it to select pixels and keep channels
+            # resulting shape will be (N, channels)
+            values = array[mask_bool]
+            if values.size == 0:
+                mean = np.zeros((array.shape[2],), dtype=float)
+            else:
+                # values.reshape(-1, array.shape[2]) is equivalent if numpy returns flattened channel-last
+                mean = values.reshape(-1, array.shape[2]).mean(axis=0)
         else:
             mean = array[mask_bool].mean()
     else:
         mean = array.mean(axis=(0, 1)) if array.ndim == 3 else array.mean()
-    return np.full_like(array, mean * float(strength))
+    return np.full_like(array, (mean * float(strength)).astype(array.dtype))
 
 
 def _rolling_background(array: np.ndarray, mask: Optional[np.ndarray], radius: int) -> Optional[np.ndarray]:
     if cv2 is not None:
-        k = max(1, radius)
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * k + 1, 2 * k + 1))
-        return cv2.morphologyEx(array, cv2.MORPH_OPEN, kernel)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * radius + 1, 2 * radius + 1))
+        if array.ndim == 3:
+            # For color images, apply to the L channel in LAB space to preserve color
+            lab = cv2.cvtColor(array, cv2.COLOR_BGR2LAB)
+            l_channel = lab[:, :, 0]
+            l_channel_opened = cv2.morphologyEx(l_channel, cv2.MORPH_OPEN, kernel)
+            lab[:, :, 0] = l_channel_opened
+            background_bgr = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
+            return background_bgr
+        else:
+            return cv2.morphologyEx(array, cv2.MORPH_OPEN, kernel)
+
     if morphology is not None:
         try:
             if array.ndim == 3:
-                result = np.stack([
-                    morphology.opening(array[..., c], morphology.disk(radius)) for c in range(array.shape[2])
-                ], axis=2)
+                # skimage handles color images with the `channel_axis` argument
+                result = morphology.opening(array, morphology.disk(radius), channel_axis=-1)
             else:
                 result = morphology.opening(array, morphology.disk(radius))
             return result.astype(array.dtype)
@@ -436,6 +570,18 @@ def _clahe_single(channel: np.ndarray, clip_limit: float, grid_size: int) -> Opt
         return np.clip(result * 255, 0, 255).astype(np.uint8)
     return None
 
+
+def _apply_otsu_threshold(array: np.ndarray) -> Optional[np.ndarray]:
+    """Apply Otsu's binarization."""
+    if cv2 is None:
+        return None
+
+    if array.ndim == 3:
+        logger.warning("Otsu thresholding requires a grayscale image. Converting.")
+        array = cv2.cvtColor(array, cv2.COLOR_BGR2GRAY)
+
+    _, thresholded = cv2.threshold(array, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    return thresholded
 
 def _histogram_stretch(array: np.ndarray) -> Optional[np.ndarray]:
     arr = array.astype(np.float32)

@@ -1,0 +1,528 @@
+{
+  "tests\\test_alt_workflow.py": {
+    "returncode": 0,
+    "stdout": [
+      "ssssssss                                                                 [100%]",
+      "8 skipped in 1.33s"
+    ],
+    "stderr": [],
+    "kept": true
+  },
+  "tests\\test_analysis.py": {
+    "returncode": 2,
+    "stdout": [
+      "",
+      "=================================== ERRORS ====================================",
+      "___________________ ERROR collecting tests/test_analysis.py ___________________",
+      "ImportError while importing test module 'D:\\programacion\\Menipy\\tests\\test_analysis.py'.",
+      "Hint: make sure your test modules/packages have valid Python names.",
+      "Traceback:",
+      "C:\\Users\\charl\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\importlib\\__init__.py:88: in import_module",
+      "    return _bootstrap._gcd_import(name[level:], package, level)",
+      "           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "tests\\test_analysis.py:5: in <module>",
+      "    from menipy.pipelines.sessile.metrics import compute_drop_metrics",
+      "src\\menipy\\pipelines\\sessile\\metrics.py:4: in <module>",
+      "    from .geometry_alt import line_params",
+      "E   ModuleNotFoundError: No module named 'menipy.pipelines.sessile.geometry_alt'",
+      "=========================== short test summary info ===========================",
+      "ERROR tests/test_analysis.py",
+      "!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!",
+      "1 error in 1.34s"
+    ],
+    "stderr": [],
+    "kept": false
+  },
+  "tests\\test_batch.py": {
+    "returncode": 2,
+    "stdout": [
+      "",
+      "=================================== ERRORS ====================================",
+      "____________________ ERROR collecting tests/test_batch.py _____________________",
+      "ImportError while importing test module 'D:\\programacion\\Menipy\\tests\\test_batch.py'.",
+      "Hint: make sure your test modules/packages have valid Python names.",
+      "Traceback:",
+      "C:\\Users\\charl\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\importlib\\__init__.py:88: in import_module",
+      "    return _bootstrap._gcd_import(name[level:], package, level)",
+      "           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "tests\\test_batch.py:4: in <module>",
+      "    from menipy.batch import run_batch",
+      "E   ModuleNotFoundError: No module named 'menipy.batch'",
+      "=========================== short test summary info ===========================",
+      "ERROR tests/test_batch.py",
+      "!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!",
+      "1 error in 0.86s"
+    ],
+    "stderr": [],
+    "kept": false
+  },
+  "tests\\test_classification.py": {
+    "returncode": 2,
+    "stdout": [
+      "",
+      "=================================== ERRORS ====================================",
+      "________________ ERROR collecting tests/test_classification.py ________________",
+      "ImportError while importing test module 'D:\\programacion\\Menipy\\tests\\test_classification.py'.",
+      "Hint: make sure your test modules/packages have valid Python names.",
+      "Traceback:",
+      "C:\\Users\\charl\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\importlib\\__init__.py:88: in import_module",
+      "    return _bootstrap._gcd_import(name[level:], package, level)",
+      "           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "tests\\test_classification.py:4: in <module>",
+      "    from menipy.processing import classify_drop_mode",
+      "E   ModuleNotFoundError: No module named 'menipy.processing'",
+      "=========================== short test summary info ===========================",
+      "ERROR tests/test_classification.py",
+      "!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!",
+      "1 error in 0.35s"
+    ],
+    "stderr": [],
+    "kept": false
+  },
+  "tests\\test_contact_angle.py": {
+    "returncode": 2,
+    "stdout": [
+      "",
+      "=================================== ERRORS ====================================",
+      "________________ ERROR collecting tests/test_contact_angle.py _________________",
+      "ImportError while importing test module 'D:\\programacion\\Menipy\\tests\\test_contact_angle.py'.",
+      "Hint: make sure your test modules/packages have valid Python names.",
+      "Traceback:",
+      "C:\\Users\\charl\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\importlib\\__init__.py:88: in import_module",
+      "    return _bootstrap._gcd_import(name[level:], package, level)",
+      "           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "tests\\test_contact_angle.py:4: in <module>",
+      "    from menipy import contact_angle as ca",
+      "E   ImportError: cannot import name 'contact_angle' from 'menipy' (D:\\programacion\\Menipy\\src\\menipy\\__init__.py)",
+      "=========================== short test summary info ===========================",
+      "ERROR tests/test_contact_angle.py",
+      "!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!",
+      "1 error in 0.33s"
+    ],
+    "stderr": [],
+    "kept": false
+  },
+  "tests\\test_contact_angle_alt.py": {
+    "returncode": 2,
+    "stdout": [
+      "",
+      "=================================== ERRORS ====================================",
+      "______________ ERROR collecting tests/test_contact_angle_alt.py _______________",
+      "ImportError while importing test module 'D:\\programacion\\Menipy\\tests\\test_contact_angle_alt.py'.",
+      "Hint: make sure your test modules/packages have valid Python names.",
+      "Traceback:",
+      "C:\\Users\\charl\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\importlib\\__init__.py:88: in import_module",
+      "    return _bootstrap._gcd_import(name[level:], package, level)",
+      "           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "tests\\test_contact_angle_alt.py:5: in <module>",
+      "    from menipy.detectors.geometry_alt import (",
+      "E   ModuleNotFoundError: No module named 'menipy.detectors'",
+      "=========================== short test summary info ===========================",
+      "ERROR tests/test_contact_angle_alt.py",
+      "!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!",
+      "1 error in 0.35s"
+    ],
+    "stderr": [],
+    "kept": false
+  },
+  "tests\\test_contact_geom.py": {
+    "returncode": 2,
+    "stdout": [
+      "",
+      "=================================== ERRORS ====================================",
+      "_________________ ERROR collecting tests/test_contact_geom.py _________________",
+      "ImportError while importing test module 'D:\\programacion\\Menipy\\tests\\test_contact_geom.py'.",
+      "Hint: make sure your test modules/packages have valid Python names.",
+      "Traceback:",
+      "C:\\Users\\charl\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\importlib\\__init__.py:88: in import_module",
+      "    return _bootstrap._gcd_import(name[level:], package, level)",
+      "           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "tests\\test_contact_geom.py:4: in <module>",
+      "    from menipy.physics.contact_geom import (",
+      "E   ModuleNotFoundError: No module named 'menipy.physics'",
+      "=========================== short test summary info ===========================",
+      "ERROR tests/test_contact_geom.py",
+      "!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!",
+      "1 error in 0.33s"
+    ],
+    "stderr": [],
+    "kept": false
+  },
+  "tests\\test_contact_region.py": {
+    "returncode": 2,
+    "stdout": [
+      "",
+      "=================================== ERRORS ====================================",
+      "________________ ERROR collecting tests/test_contact_region.py ________________",
+      "ImportError while importing test module 'D:\\programacion\\Menipy\\tests\\test_contact_region.py'.",
+      "Hint: make sure your test modules/packages have valid Python names.",
+      "Traceback:",
+      "C:\\Users\\charl\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\importlib\\__init__.py:88: in import_module",
+      "    return _bootstrap._gcd_import(name[level:], package, level)",
+      "           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "tests\\test_contact_region.py:4: in <module>",
+      "    from menipy.processing.region import close_droplet",
+      "E   ModuleNotFoundError: No module named 'menipy.processing'",
+      "=========================== short test summary info ===========================",
+      "ERROR tests/test_contact_region.py",
+      "!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!",
+      "1 error in 0.36s"
+    ],
+    "stderr": [],
+    "kept": false
+  },
+  "tests\\test_drop_extras.py": {
+    "returncode": 0,
+    "stdout": [
+      "...                                                                      [100%]",
+      "============================== warnings summary ===============================",
+      "tests/test_drop_extras.py::test_surface_area_sphere",
+      "  D:\\programacion\\Menipy\\src\\menipy\\models\\drop_extras.py:38: DeprecationWarning: `trapz` is deprecated. Use `trapezoid` instead, or one of the numerical integration functions in `scipy.integrate`.",
+      "    A_mm2 = 2.0 * math.pi * np.trapz(integrand, z_mm)",
+      "",
+      "-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html",
+      "3 passed, 1 warning in 0.86s"
+    ],
+    "stderr": [],
+    "kept": true
+  },
+  "tests\\test_drop_metrics.py": {
+    "returncode": 2,
+    "stdout": [
+      "",
+      "=================================== ERRORS ====================================",
+      "_________________ ERROR collecting tests/test_drop_metrics.py _________________",
+      "ImportError while importing test module 'D:\\programacion\\Menipy\\tests\\test_drop_metrics.py'.",
+      "Hint: make sure your test modules/packages have valid Python names.",
+      "Traceback:",
+      "C:\\Users\\charl\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\importlib\\__init__.py:88: in import_module",
+      "    return _bootstrap._gcd_import(name[level:], package, level)",
+      "           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "tests\\test_drop_metrics.py:5: in <module>",
+      "    from menipy.analysis import compute_drop_metrics, find_apex_index",
+      "E   ModuleNotFoundError: No module named 'menipy.analysis'",
+      "=========================== short test summary info ===========================",
+      "ERROR tests/test_drop_metrics.py",
+      "!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!",
+      "1 error in 0.31s"
+    ],
+    "stderr": [],
+    "kept": false
+  },
+  "tests\\test_geometry.py": {
+    "returncode": 2,
+    "stdout": [
+      "",
+      "=================================== ERRORS ====================================",
+      "___________________ ERROR collecting tests/test_geometry.py ___________________",
+      "ImportError while importing test module 'D:\\programacion\\Menipy\\tests\\test_geometry.py'.",
+      "Hint: make sure your test modules/packages have valid Python names.",
+      "Traceback:",
+      "C:\\Users\\charl\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\importlib\\__init__.py:88: in import_module",
+      "    return _bootstrap._gcd_import(name[level:], package, level)",
+      "           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "tests\\test_geometry.py:4: in <module>",
+      "    from menipy.detectors.geometry_alt import (",
+      "E   ModuleNotFoundError: No module named 'menipy.detectors'",
+      "=========================== short test summary info ===========================",
+      "ERROR tests/test_geometry.py",
+      "!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!",
+      "1 error in 0.33s"
+    ],
+    "stderr": [],
+    "kept": false
+  },
+  "tests\\test_gui.py": {
+    "returncode": 0,
+    "stdout": [
+      "ssssssssssssssssssssssssssssss                                           [100%]",
+      "30 skipped in 0.14s"
+    ],
+    "stderr": [],
+    "kept": true
+  },
+  "tests\\test_import_map.py": {
+    "returncode": 0,
+    "stdout": [
+      ".                                                                        [100%]",
+      "1 passed in 0.27s"
+    ],
+    "stderr": [],
+    "kept": true
+  },
+  "tests\\test_models.py": {
+    "returncode": 0,
+    "stdout": [
+      "....                                                                     [100%]",
+      "4 passed in 0.78s"
+    ],
+    "stderr": [],
+    "kept": true
+  },
+  "tests\\test_pipeline_runner.py": {
+    "returncode": 0,
+    "stdout": [
+      "......                                                                   [100%]",
+      "6 passed in 1.10s"
+    ],
+    "stderr": [],
+    "kept": true
+  },
+  "tests\\test_plotting.py": {
+    "returncode": 2,
+    "stdout": [
+      "",
+      "=================================== ERRORS ====================================",
+      "___________________ ERROR collecting tests/test_plotting.py ___________________",
+      "ImportError while importing test module 'D:\\programacion\\Menipy\\tests\\test_plotting.py'.",
+      "Hint: make sure your test modules/packages have valid Python names.",
+      "Traceback:",
+      "C:\\Users\\charl\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\importlib\\__init__.py:88: in import_module",
+      "    return _bootstrap._gcd_import(name[level:], package, level)",
+      "           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "tests\\test_plotting.py:7: in <module>",
+      "    from menipy.analysis import (",
+      "E   ModuleNotFoundError: No module named 'menipy.analysis'",
+      "=========================== short test summary info ===========================",
+      "ERROR tests/test_plotting.py",
+      "!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!",
+      "1 error in 0.35s"
+    ],
+    "stderr": [],
+    "kept": false
+  },
+  "tests\\test_preprocessing_helpers.py": {
+    "returncode": 1,
+    "stdout": [
+      "...F.F                                                                   [100%]",
+      "================================== FAILURES ===================================",
+      "__________________ test_background_subtraction_uses_strength __________________",
+      "",
+      "monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000021D98353E30>",
+      "",
+      "    def test_background_subtraction_uses_strength(monkeypatch):",
+      "        image = make_image(4, 4)",
+      "        settings = PreprocessingSettings()",
+      "        settings.background.enabled = True",
+      "        settings.background.mode = \"flat\"",
+      "        settings.background.strength = 0.5",
+      "    ",
+      "        context = PreprocessingContext(image, settings=settings, roi_bounds=(0, 0, 4, 4))",
+      "        crop_to_roi(context)",
+      "    ",
+      ">       subtract_background(context)",
+      "",
+      "tests\\test_preprocessing_helpers.py:92: ",
+      "_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _"
+    ],
+    "stderr": [],
+    "kept": false
+  },
+  "tests\\test_processing.py": {
+    "returncode": 2,
+    "stdout": [
+      "",
+      "=================================== ERRORS ====================================",
+      "__________________ ERROR collecting tests/test_processing.py __________________",
+      "ImportError while importing test module 'D:\\programacion\\Menipy\\tests\\test_processing.py'.",
+      "Hint: make sure your test modules/packages have valid Python names.",
+      "Traceback:",
+      "C:\\Users\\charl\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\importlib\\__init__.py:88: in import_module",
+      "    return _bootstrap._gcd_import(name[level:], package, level)",
+      "           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "tests\\test_processing.py:4: in <module>",
+      "    from menipy.processing.segmentation import (",
+      "E   ModuleNotFoundError: No module named 'menipy.processing'",
+      "=========================== short test summary info ===========================",
+      "ERROR tests/test_processing.py",
+      "!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!",
+      "1 error in 0.34s"
+    ],
+    "stderr": [],
+    "kept": false
+  },
+  "tests\\test_sessile_metrics.py": {
+    "returncode": 2,
+    "stdout": [
+      "",
+      "=================================== ERRORS ====================================",
+      "_______________ ERROR collecting tests/test_sessile_metrics.py ________________",
+      "ImportError while importing test module 'D:\\programacion\\Menipy\\tests\\test_sessile_metrics.py'.",
+      "Hint: make sure your test modules/packages have valid Python names.",
+      "Traceback:",
+      "C:\\Users\\charl\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\importlib\\__init__.py:88: in import_module",
+      "    return _bootstrap._gcd_import(name[level:], package, level)",
+      "           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "tests\\test_sessile_metrics.py:2: in <module>",
+      "    from menipy.analysis.sessile import compute_metrics as compute_sessile_metrics, contact_points_from_spline",
+      "E   ModuleNotFoundError: No module named 'menipy.analysis'",
+      "=========================== short test summary info ===========================",
+      "ERROR tests/test_sessile_metrics.py",
+      "!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!",
+      "1 error in 0.33s"
+    ],
+    "stderr": [],
+    "kept": false
+  },
+  "tests\\test_sessile_segment.py": {
+    "returncode": 2,
+    "stdout": [
+      "",
+      "=================================== ERRORS ====================================",
+      "_______________ ERROR collecting tests/test_sessile_segment.py ________________",
+      "ImportError while importing test module 'D:\\programacion\\Menipy\\tests\\test_sessile_segment.py'.",
+      "Hint: make sure your test modules/packages have valid Python names.",
+      "Traceback:",
+      "C:\\Users\\charl\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\importlib\\__init__.py:88: in import_module",
+      "    return _bootstrap._gcd_import(name[level:], package, level)",
+      "           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "tests\\test_sessile_segment.py:2: in <module>",
+      "    from menipy.analysis.sessile import smooth_contour_segment",
+      "E   ModuleNotFoundError: No module named 'menipy.analysis'",
+      "=========================== short test summary info ===========================",
+      "ERROR tests/test_sessile_segment.py",
+      "!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!",
+      "1 error in 0.34s"
+    ],
+    "stderr": [],
+    "kept": false
+  },
+  "tests\\test_setup_panel.py": {
+    "returncode": 1,
+    "stdout": [
+      "F.F.F..EEEEE                                                             [100%]",
+      "=================================== ERRORS ====================================",
+      "____________ ERROR at teardown of test_run_all_button_emits_signal ____________",
+      "TEARDOWN ERROR: Exceptions caught in Qt event loop:",
+      "________________________________________________________________________________",
+      "Traceback (most recent call last):",
+      "  File \"D:\\programacion\\Menipy\\src\\menipy\\gui\\logging_bridge.py\", line 58, in <lambda>",
+      "    bridge.log.connect(lambda message: log_view.appendPlainText(str(message)))",
+      "                                       ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^",
+      "RuntimeError: Internal C++ object (PySide6.QtWidgets.QPlainTextEdit) already deleted.",
+      "________________________________________________________________________________",
+      "Traceback (most recent call last):",
+      "  File \"D:\\programacion\\Menipy\\src\\menipy\\gui\\logging_bridge.py\", line 54, in <lambda>",
+      "    bridge.log.connect(lambda message: log_view.appendPlainText(str(message)))",
+      "                                       ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^",
+      "RuntimeError: Internal C++ object (PySide6.QtWidgets.QPlainTextEdit) already deleted.",
+      "________________________________________________________________________________",
+      "Traceback (most recent call last):",
+      "  File \"D:\\programacion\\Menipy\\src\\menipy\\gui\\logging_bridge.py\", line 54, in <lambda>",
+      "    bridge.log.connect(lambda message: log_view.appendPlainText(str(message)))"
+    ],
+    "stderr": [],
+    "kept": false
+  },
+  "tests\\test_smoke_pipelines.py": {
+    "returncode": 1,
+    "stdout": [
+      "FFFFF                                                                    [100%]",
+      "================================== FAILURES ===================================",
+      "________________ test_pipeline_smoke[SessilePipeline-<lambda>] ________________",
+      "",
+      "self = <src.menipy.pipelines.sessile.stages.SessilePipeline object at 0x0000025DBCF1E3C0>",
+      "ctx = Context(frames=[array([[[0, 0, 0],",
+      "        [0, 0, 0],",
+      "        [0, 0, 0],",
+      "        ...,",
+      "        [0, 0, 0],",
+      "        [0, 0...: ValueError(\\'\"Context\" object has no field \"geometry\"\\')', preprocessing_settings=None, edge_detection_settings=None)",
+      "stage_name = 'geometry'",
+      "fn = <bound method SessilePipeline.do_geometry of <src.menipy.pipelines.sessile.stages.SessilePipeline object at 0x0000025DBCF1E3C0>>",
+      "",
+      "    def _call_stage(self, ctx: Context, stage_name: str, fn: Callable[[Context], Optional[Context]]) -> Context:",
+      "        start = time.perf_counter()",
+      "    ",
+      "        def _ctx_summary(c: Context) -> str:",
+      "            try:",
+      "                fr = getattr(c, \"frames\", None)"
+    ],
+    "stderr": [],
+    "kept": false
+  },
+  "tests\\test_spline_contact.py": {
+    "returncode": 2,
+    "stdout": [
+      "",
+      "=================================== ERRORS ====================================",
+      "________________ ERROR collecting tests/test_spline_contact.py ________________",
+      "ImportError while importing test module 'D:\\programacion\\Menipy\\tests\\test_spline_contact.py'.",
+      "Hint: make sure your test modules/packages have valid Python names.",
+      "Traceback:",
+      "C:\\Users\\charl\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\importlib\\__init__.py:88: in import_module",
+      "    return _bootstrap._gcd_import(name[level:], package, level)",
+      "           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "tests\\test_spline_contact.py:4: in <module>",
+      "    from menipy.analysis.sessile import contact_points_from_spline",
+      "E   ModuleNotFoundError: No module named 'menipy.analysis'",
+      "=========================== short test summary info ===========================",
+      "ERROR tests/test_spline_contact.py",
+      "!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!",
+      "1 error in 0.36s"
+    ],
+    "stderr": [],
+    "kept": false
+  },
+  "tests\\test_substrate.py": {
+    "returncode": 2,
+    "stdout": [
+      "",
+      "=================================== ERRORS ====================================",
+      "__________________ ERROR collecting tests/test_substrate.py ___________________",
+      "ImportError while importing test module 'D:\\programacion\\Menipy\\tests\\test_substrate.py'.",
+      "Hint: make sure your test modules/packages have valid Python names.",
+      "Traceback:",
+      "C:\\Users\\charl\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\importlib\\__init__.py:88: in import_module",
+      "    return _bootstrap._gcd_import(name[level:], package, level)",
+      "           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "tests\\test_substrate.py:3: in <module>",
+      "    from menipy.processing import detect_substrate_line, SubstrateNotFoundError",
+      "E   ModuleNotFoundError: No module named 'menipy.processing'",
+      "=========================== short test summary info ===========================",
+      "ERROR tests/test_substrate.py",
+      "!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!",
+      "1 error in 0.37s"
+    ],
+    "stderr": [],
+    "kept": false
+  },
+  "tests\\test_surface_tension.py": {
+    "returncode": 0,
+    "stdout": [
+      "...                                                                      [100%]",
+      "============================== warnings summary ===============================",
+      "tests/test_surface_tension.py::test_volume_from_contour_circle",
+      "  D:\\programacion\\Menipy\\src\\menipy\\models\\surface_tension.py:57: DeprecationWarning: `trapz` is deprecated. Use `trapezoid` instead, or one of the numerical integration functions in `scipy.integrate`.",
+      "    vol = np.pi * np.trapz(r_sorted**2, y_sorted)  # m^3",
+      "",
+      "-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html",
+      "3 passed, 1 warning in 0.86s"
+    ],
+    "stderr": [],
+    "kept": true
+  },
+  "tests\\test_utils.py": {
+    "returncode": 2,
+    "stdout": [
+      "",
+      "=================================== ERRORS ====================================",
+      "____________________ ERROR collecting tests/test_utils.py _____________________",
+      "ImportError while importing test module 'D:\\programacion\\Menipy\\tests\\test_utils.py'.",
+      "Hint: make sure your test modules/packages have valid Python names.",
+      "Traceback:",
+      "C:\\Users\\charl\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\importlib\\__init__.py:88: in import_module",
+      "    return _bootstrap._gcd_import(name[level:], package, level)",
+      "           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "tests\\test_utils.py:3: in <module>",
+      "    from menipy.zoldcalibration import (",
+      "E   ModuleNotFoundError: No module named 'menipy.zoldcalibration'",
+      "=========================== short test summary info ===========================",
+      "ERROR tests/test_utils.py",
+      "!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!",
+      "1 error in 0.19s"
+    ],
+    "stderr": [],
+    "kept": false
+  }
+}

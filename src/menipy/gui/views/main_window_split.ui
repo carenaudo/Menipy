@@ -17,6 +17,7 @@
    <widget class="QMenu" name="menuView">
     <property name="title"><string>&amp;View</string></property>
     <!-- You can add pane toggles or dock toggles here in code -->
+    <addaction name="actionOverlay"/>
    </widget>
    <widget class="QMenu" name="menuRun">
     <property name="title"><string>&amp;Run</string></property>
@@ -106,6 +107,17 @@
   <action name="actionAbout">
    <property name="text"><string>&amp;About</string></property>
   </action>
+    <action name="actionOverlay">
+     <property name="text"><string>&amp;Overlay…</string></property>
+     <property name="shortcut"><string>Ctrl+Shift+O</string></property>
+    <property name="icon">
+     <iconset>
+      <normaloff>:/icons/overlay.svg</normaloff>
+     </iconset>
+    </property>
+    <property name="toolTip"><string>Open overlay configuration and preview overlay styling</string></property>
+    <property name="statusTip"><string>Configure overlay appearance</string></property>
+    </action>
  </widget>
  <resources/>
  <connections/>

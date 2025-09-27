@@ -5,7 +5,8 @@ from typing import Optional, List
 import numpy as np
 
 from menipy.pipelines.base import PipelineBase
-from menipy.models.datatypes import Context, FitConfig
+from menipy.models.context import Context
+from menipy.models.fit import FitConfig
 from menipy.common import edge_detection as edged
 from menipy.common import overlay as ovl
 from menipy.common import solver as common_solver

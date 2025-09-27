@@ -1,6 +1,6 @@
 import numpy as np
 
-from menipy.analysis.commons import compute_drop_metrics, find_apex_index
+from menipy.common.metrics import compute_drop_metrics, find_apex_index
 from .geometry_alt import line_params
 
 

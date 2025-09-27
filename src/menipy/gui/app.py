@@ -102,6 +102,22 @@ def main(argv: list[str] | None = None) -> int:
     w.resize(1200, 800)
     w.show()
 
+    # Ensure controllers can clean up background threads before Qt shuts down
+    def _on_quit():
+        try:
+            if hasattr(w, 'main_controller') and w.main_controller:
+                try:
+                    w.main_controller.shutdown()
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+    try:
+        app.aboutToQuit.connect(_on_quit)
+    except Exception:
+        pass
+
     return app.exec()
 
 if __name__ == "__main__":

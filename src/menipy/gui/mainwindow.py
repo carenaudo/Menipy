@@ -211,26 +211,36 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             "actionRunFull": "run_full_pipeline",
             "actionRunSelected": "run_full_pipeline",
             "actionStop": "stop_pipeline",
+            "actionOverlay": "open_overlay",
             "actionAbout": "show_about_dialog",
         }
 
         for action_name, method_name in actions.items():
             try:
                 action = getattr(self, action_name)
-                if method_name == "close":
-                    handler = self.close
-                elif method_name == "select_camera":
-                    # Use a lambda for methods requiring arguments
-                    handler = lambda: self.main_controller.select_camera(True) # type: ignore
-                else:
-                    handler = getattr(self.main_controller, method_name)
+            except AttributeError:
+                # Action missing from the .ui — skip wiring (we expect the UI to provide actions)
+                logger.warning(f"Action '{action_name}' not found in UI; skipping wiring.")
+                continue
 
+            # Prepare handler mapping
+            if method_name == "close":
+                handler = self.close
+            elif method_name == "select_camera":
+                handler = lambda: self.main_controller.select_camera(True) # type: ignore
+            elif method_name == "open_overlay":
+                # Always call the MainController to open the overlay config
+                handler = lambda: self.main_controller.on_config_stage_requested("overlay")
+            else:
+                handler = getattr(self.main_controller, method_name)
+
+            try:
                 action.triggered.connect(handler)
                 logger.debug(f"Connected {action_name} to {method_name}")
-            except AttributeError as e:
-                logger.warning(f"Failed to wire action '{action_name}': {e}")
             except Exception as e:
-                logger.error(f"Unexpected error wiring action '{action_name}': {e}")
+                logger.error(f"Failed to connect action '{action_name}': {e}")
+
+            # No runtime icon/tooltip setting here; the .ui defines action properties.
 
     def _embed(self, child: QWidget, host_or_layout):
         """Add child into a QWidget host or directly into a QLayout."""

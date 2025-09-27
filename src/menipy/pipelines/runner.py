@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from menipy.models.datatypes import Context, PreprocessingSettings, EdgeDetectionSettings
+from menipy.models.context import Context
+from menipy.models.config import PreprocessingSettings, EdgeDetectionSettings
 from .base import PipelineBase, PipelineError
 from .discover import PIPELINE_MAP
 

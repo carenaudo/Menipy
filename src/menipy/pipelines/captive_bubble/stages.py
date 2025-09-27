@@ -1,26 +1,27 @@
 from __future__ import annotations
-
 from typing import Optional
 import numpy as np
-
-from menipy.pipelines.base import PipelineBase
-from menipy.models.datatypes import Context, FitConfig, EdgeDetectionSettings
-from menipy.common import edge_detection as edged
-from menipy.common import overlay as ovl
-from menipy.common import solver as common_solver
-from menipy.common.plugins import _load_module_from_path
 from pathlib import Path
-# plugins/ is at the repository root relative to this file. parents[4] resolves
-# to the project root (D:/programacion/Menipy) for the typical layout.
+
+from menipy.pipelines.base import (
+    PipelineBase, Context, EdgeDetectionSettings, FitConfig,
+    edged, ovl, common_solver
+)
+from menipy.models.geometry import CaptiveBubbleGeometry
+from menipy.common.plugins import _load_module_from_path
+
 _repo_root = Path(__file__).resolve().parents[4]
 _toy_path = _repo_root / "plugins" / "toy_young_laplace.py"
 _toy_mod = _load_module_from_path(_toy_path, "adsa_plugins.toy_young_laplace")
 young_laplace_sphere = getattr(_toy_mod, "toy_young_laplace")
 
 def _ensure_contour(ctx: Context) -> np.ndarray:
-    if getattr(ctx, "contour", None) is not None and hasattr(ctx.contour, "xy"):
-        return np.asarray(ctx.contour.xy, dtype=float)
-    edged.run(ctx, settings=ctx.edge_detection_settings or EdgeDetectionSettings(method="canny"))
+    """Get contour array, running edge detection if needed."""
+    if not ctx.contour:
+        edged.run(ctx, settings=ctx.edge_detection_settings or EdgeDetectionSettings(method="canny"))
+    # After edge detection, ctx.contour should be a proper Contour object with xy
+    if not ctx.contour or not hasattr(ctx.contour, "xy"):
+        raise ValueError("Could not get valid contour even after edge detection")
     return np.asarray(ctx.contour.xy, dtype=float)
 
 
@@ -50,12 +51,12 @@ class CaptiveBubblePipeline(PipelineBase):
         apex_xy = (float(x[bottom_i]), float(y[bottom_i]))  # for overlay cross
         cap_depth_px = float(np.max(y) - ceiling_y)
 
-        ctx.geometry = {
-            "ceiling_y": ceiling_y,
-            "axis_x": axis_x,
-            "apex_xy": apex_xy,
-            "cap_depth_px": cap_depth_px,
-        }
+        ctx.geometry = CaptiveBubbleGeometry(
+            ceiling_y=ceiling_y,
+            axis_x=axis_x,
+            apex_xy=apex_xy,
+            cap_depth_px=cap_depth_px
+        )
         return ctx
 
     def do_scaling(self, ctx: Context) -> Optional[Context]:
@@ -86,17 +87,27 @@ class CaptiveBubblePipeline(PipelineBase):
         names = fit.get("param_names") or []
         params = fit.get("params", [])
         res = {n: p for n, p in zip(names, params)}
-        res["cap_depth_px"] = (ctx.geometry or {}).get("cap_depth_px")
+        # Type hint to access CaptiveBubbleGeometry specific fields
+        geometry = ctx.geometry
+        if not isinstance(geometry, CaptiveBubbleGeometry):
+            return ctx
+        res["cap_depth_px"] = geometry.cap_depth_px if geometry.cap_depth_px is not None else None
         res["residuals"] = fit.get("residuals", {})
         ctx.results = res
         return ctx
 
     def do_overlay(self, ctx: Context) -> Optional[Context]:
         xy = _ensure_contour(ctx)
-        axis_x = int(round(ctx.geometry["axis_x"]))
-        ceiling_y = int(round(ctx.geometry["ceiling_y"]))
-        apex_x, apex_y = ctx.geometry["apex_xy"]
-        text = f"R0≈{ctx.results.get('R0_mm','?')} mm | depth≈{ctx.geometry.get('cap_depth_px',0):.0f}px"
+        # Type hint to access CaptiveBubbleGeometry specific fields
+        geometry = ctx.geometry
+        if not isinstance(geometry, CaptiveBubbleGeometry):
+            return ctx
+        axis_x = int(round(geometry.axis_x)) if geometry.axis_x is not None else 0
+        ceiling_y = int(round(geometry.ceiling_y)) if geometry.ceiling_y is not None else 0
+        apex_xy = geometry.apex_xy if geometry.apex_xy is not None else (0, 0)
+        apex_x, apex_y = apex_xy
+        cap_depth = geometry.cap_depth_px if geometry.cap_depth_px is not None else 0
+        text = f"R0≈{ctx.results.get('R0_mm','?')} mm | depth≈{cap_depth:.0f}px"
         cmds = [
             {"type": "polyline", "points": xy.tolist(), "closed": True, "color": "yellow", "thickness": 2},
             {"type": "line", "p1": (0, ceiling_y), "p2": (int(np.max(xy[:, 0]) + 10), ceiling_y), "color": "green", "thickness": 2},

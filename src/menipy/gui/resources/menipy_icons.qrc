@@ -5,6 +5,7 @@
   <file>icons/status_done.svg</file>
   <file>icons/status_error.svg</file>
   <file>icons/play.svg</file>
-  <file>icons/settings.svg</file>
+    <file>icons/settings.svg</file>
+    <file>icons/overlay.svg</file>
  </qresource>
 </RCC>

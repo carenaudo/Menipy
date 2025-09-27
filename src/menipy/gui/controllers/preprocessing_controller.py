@@ -8,12 +8,9 @@ import logging
 import numpy as np
 from PySide6.QtCore import QObject, Signal
 
-from menipy.models.datatypes import (
-    Context,
-    PreprocessingSettings,
-    PreprocessingState,
-    MarkerSet,
-)
+from menipy.models.context import Context
+from menipy.models.config import PreprocessingSettings
+from menipy.models.state import PreprocessingState, MarkerSet
 from menipy.common import preprocessing
 
 logger = logging.getLogger(__name__)
@@ -121,7 +118,7 @@ class PreprocessingPipelineController(QObject):
             self.errorOccurred.emit("No source image available for preprocessing")
             return None
         ctx = Context()
-        ctx.frame = self._image
+        ctx.current_frame  = self._image
         if self._roi:
             ctx.roi = self._roi
         if self._roi_mask is not None:

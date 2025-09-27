@@ -1,6 +1,6 @@
 import numpy as np
 
-from menipy.models.geometry import fit_circle, horizontal_intersections
+from menipy.common.geometry import fit_circle, horizontal_intersections
 from menipy.models.properties import (
     droplet_volume,
     estimate_surface_tension,

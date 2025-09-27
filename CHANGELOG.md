@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Preprocessing: "Fill Holes" option**
+  - Adds a preprocessing option to fill interior holes in the region of interest (ROI) mask and remove spurious contour points close to the contact line. This helps produce cleaner droplet contours for downstream geometry and fitting stages.
+  - GUI: available in the Preprocessing Configuration dialog under the new "Fill Holes" page (checkbox + numeric parameters).
+  - Default behavior: disabled. Parameters include `max_hole_area` (default 500 px), `remove_spurious_near_contact` (default true), and `proximity_px` (default 5 px).
+  - Implementation notes: prefers `skimage.morphology` (remove_small_holes/remove_small_objects) when available; falls back to OpenCV contour/connected-component based filling and small-object removal when `skimage` is not present.
+  - Files touched:
+    - `src/menipy/models/config.py` (new `FillHolesSettings` and `fill_holes` field in `PreprocessingSettings`)
+    - `src/menipy/common/preprocessing_helpers.py` (new `fill_holes(context)` helper)
+    - `src/menipy/common/preprocessing.py` (calls `fill_holes` after `crop_to_roi`)
+    - `src/menipy/gui/dialogs/preprocessing_config_dialog.py` (adds UI page and bindings)
+
+### Changed
+
+- Edge-detection & Preview overlays
+  - The Edge Detection controller no longer bakes overlay graphics (contours / contact-point circles) into preview images. Instead it emits the raw preview image and metadata (contour points and detected contact points). The `MainController` now draws overlays using the `ImageView` overlay API which makes overlays easier to update, remove, and style.
+  - Geometry configuration preview can now request the "preprocessed" image: when the geometry dialog's "Use preprocessed image for preview" option is enabled, the main controller requests a one-shot preprocessing preview and uses that image as the source for edge-detection previews.
+  - Visuals: detected contours are shown in red; detected contact points are shown as distinct colored markers.
+  - Files touched:
+    - `src/menipy/gui/controllers/edge_detection_controller.py` (emit contour + contact points as metadata)
+    - `src/menipy/gui/main_controller.py` (draw overlays using ImageView, one-shot preprocessing preview for geometry dialog)
+
+
 
 ## [0.2.0] - 2025-09-22
 

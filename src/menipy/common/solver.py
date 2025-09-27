@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from typing import Callable, Iterable, Literal, Optional, Sequence
-from menipy.models.datatypes import FitConfig
+from menipy.models.fit import FitConfig
 import math
 import numpy as np
 

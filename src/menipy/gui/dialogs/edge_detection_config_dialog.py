@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Optional
 
 from PySide6.QtCore import Qt, Signal
+import numpy as np
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -25,7 +26,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QImage, QPixmap
 
-from menipy.models.datatypes import EdgeDetectionSettings
+from menipy.models.config import EdgeDetectionSettings
 
 
 class EdgeDetectionConfigDialog(QDialog):
@@ -91,6 +92,14 @@ class EdgeDetectionConfigDialog(QDialog):
         self.pages.setMinimumWidth(360)
         pages_layout.addWidget(self.pages)
         content_layout.addWidget(pages_frame, 1)
+
+        # Preview area (matches Preprocessing dialog pattern)
+        self.preview_label = QLabel("No preview available", self)
+        self.preview_label.setAlignment(Qt.AlignCenter)
+        self.preview_label.setMinimumSize(360, 240)
+        self.preview_label.setStyleSheet("background-color: #333; color: #CCC;")
+        self.preview_label.setScaledContents(True)
+        pages_layout.addWidget(self.preview_label)
 
         self.setStyleSheet(
             """
@@ -304,6 +313,7 @@ class EdgeDetectionConfigDialog(QDialog):
         self._button_box.rejected.connect(self.reject)
         self._preview_btn.clicked.connect(self._on_preview)
         self._reset_btn.clicked.connect(self._on_reset)
+    # Dialog can receive preview images via a slot with signature (image, metadata)
 
         self.enabled_checkbox.toggled.connect(self._update_controls_enablement)
         self.method_combo.currentTextChanged.connect(self._update_controls_enablement)
@@ -390,6 +400,29 @@ class EdgeDetectionConfigDialog(QDialog):
     def _on_accept(self) -> None:
         self._collect_settings()
         self.accept()
+
+    def _on_preview_image_ready(self, image: np.ndarray, metadata: dict) -> None:
+        if image is None:
+            self.preview_label.setText("No preview available")
+            self.preview_label.clear()
+            return
+
+        h, w = image.shape[:2]
+        bytes_per_line = 3 * w
+
+        if image.ndim == 2:  # Grayscale
+            q_image = QImage(image.data, w, h, w, QImage.Format.Format_Grayscale8)
+        elif image.ndim == 3 and image.shape[2] == 3:  # BGR
+            q_image = QImage(image.data, w, h, bytes_per_line, QImage.Format.Format_BGR888)
+        elif image.ndim == 3 and image.shape[2] == 4:  # BGRA
+            q_image = QImage(image.data, w, h, bytes_per_line, QImage.Format.Format_ARGB32)
+        else:
+            self.preview_label.setText("Unsupported image format")
+            self.preview_label.clear()
+            return
+
+        pixmap = QPixmap.fromImage(q_image)
+        self.preview_label.setPixmap(pixmap.scaled(self.preview_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
 
     # ------------------------------------------------------------------
     # Control enablement helpers

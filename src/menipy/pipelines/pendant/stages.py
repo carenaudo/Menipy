@@ -2,23 +2,32 @@
 from __future__ import annotations
 
 from typing import Optional
+from pathlib import Path
 import numpy as np
 
 from menipy.pipelines.base import PipelineBase
-from menipy.models.datatypes import Context
+from menipy.models.context import Context
+from menipy.models.fit import FitConfig
+from menipy.models.config import EdgeDetectionSettings
+from menipy.models.geometry import Contour
+from menipy.common import solver as common_solver
 from menipy.common import edge_detection as edged
 from menipy.common import overlay as ovl
-from menipy.common import solver as common_solver
-from pathlib import Path
 from menipy.common.plugins import _load_module_from_path
-from menipy.models.datatypes import EdgeDetectionSettings
+from menipy.models.config import EdgeDetectionSettings
+from menipy.models.geometry import Contour
+from menipy.common import solver as common_solver
+from menipy.common import edge_detection as edged
+from menipy.common import overlay as ovl 
+from menipy.common.plugins import _load_module_from_path
 
-# Load optional plugin implementation dynamically from repository plugins/ directory
+# Load the toy solver from plugins
 _repo_root = Path(__file__).resolve().parents[4]
 _toy_path = _repo_root / "plugins" / "toy_young_laplace.py"
 _toy_mod = _load_module_from_path(_toy_path, "adsa_plugins.toy_young_laplace")
 young_laplace_sphere = getattr(_toy_mod, "toy_young_laplace")
-from menipy.models.datatypes import FitConfig
+from menipy.models.config import EdgeDetectionSettings
+from menipy.models.fit import FitConfig
 
 def _ensure_contour(ctx: Context) -> np.ndarray:
     if getattr(ctx, "contour", None) is not None and hasattr(ctx.contour, "xy"):
@@ -40,7 +49,12 @@ class PendantPipeline(PipelineBase):
         axis_x = float(np.median(x))
         apex_i = int(np.argmax(y))  # pendant apex at bottom
         apex_xy = (float(x[apex_i]), float(y[apex_i]))
-        ctx.geometry = {"axis_x": axis_x, "apex_xy": apex_xy}
+        
+        from menipy.models.geometry import Geometry
+        ctx.geometry = Geometry(
+            axis_x=axis_x,
+            apex_xy=apex_xy
+        )
         return ctx
 
     def do_scaling(self, ctx: Context) -> Optional[Context]:
@@ -73,8 +87,10 @@ class PendantPipeline(PipelineBase):
 
     def do_overlay(self, ctx: Context) -> Optional[Context]:
         xy = _ensure_contour(ctx)
-        axis_x = int(round(ctx.geometry["axis_x"]))
-        apex_x, apex_y = ctx.geometry["apex_xy"]
+        if not ctx.geometry:
+            return ctx
+        axis_x = int(round(ctx.geometry.axis_x)) if ctx.geometry.axis_x is not None else 0
+        apex_x, apex_y = ctx.geometry.apex_xy if ctx.geometry.apex_xy is not None else (0, 0)
         text = f"R0≈{ctx.results.get('R0_mm','?')} mm"
         cmds = [
             {"type": "polyline", "points": xy.tolist(), "closed": True, "color": "yellow", "thickness": 2},

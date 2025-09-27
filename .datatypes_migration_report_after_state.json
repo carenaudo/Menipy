@@ -1,0 +1,28 @@
+{
+  "planned": {
+    "D:\\programacion\\Menipy\\tests\\test_preprocessing_helpers.py": [
+      [
+        "from menipy.models.datatypes import PreprocessingState",
+        "from menipy.models.datatypes import PreprocessingState",
+        "from menipy.models.state import PreprocessingState"
+      ]
+    ],
+    "D:\\programacion\\Menipy\\src\\menipy\\common\\preprocessing.py": [
+      [
+        "from menipy.models.datatypes import PreprocessingState, MarkerSet, PreprocessingStageRecord",
+        "from menipy.models.datatypes import PreprocessingState, MarkerSet, PreprocessingStageRecord",
+        "from menipy.models.state import PreprocessingState, MarkerSet, PreprocessingStageRecord"
+      ]
+    ]
+  },
+  "unknowns": [
+    [
+      "D:\\programacion\\Menipy\\src\\menipy\\common\\preprocessing_helpers.py",
+      "("
+    ],
+    [
+      "D:\\programacion\\Menipy\\src\\menipy\\gui\\controllers\\preprocessing_controller.py",
+      "("
+    ]
+  ]
+}
