@@ -75,8 +75,8 @@ Logs: the application forwards Python logging to the in-app Log tab. Look there 
 
 For developers looking to extend Menipy's functionality, we provide guides on common tasks.
 - 
-- [**Adding a New Analysis Pipeline**](doc/developer_guide_pipelines.md): A step-by-step guide on how to create and integrate a new analysis workflow into the application.
-- [**Adding a New Image Filter Plugin**](doc/developer_guide_plugins.md): A guide on creating and integrating custom image filters using the plugin system.
+- [**Adding a New Analysis Pipeline**](docs/guides/developer_guide_pipelines.md): A step-by-step guide on how to create and integrate a new analysis workflow into the application.
+- [**Adding a New Image Filter Plugin**](docs/guides/developer_guide_plugins.md): A guide on creating and integrating custom image filters using the plugin system.
 ```markdown
 # Menipy
 
@@ -155,7 +155,7 @@ Logs: the application forwards Python logging to the in-app Log tab. Look there 
 
 For developers looking to extend Menipy's functionality, we provide guides on common tasks.
 
-- [**Adding a New Analysis Pipeline**](doc/developer_guide_pipelines.md): A step-by-step guide on how to create and integrate a new analysis workflow into the application.
-- [**Adding a New Image Filter Plugin**](doc/developer_guide_plugins.md): A guide on creating and integrating custom image filters using the plugin system.
+- [**Adding a New Analysis Pipeline**](docs/guides/developer_guide_pipelines.md): A step-by-step guide on how to create and integrate a new analysis workflow into the application.
+- [**Adding a New Image Filter Plugin**](docs/guides/developer_guide_plugins.md): A guide on creating and integrating custom image filters using the plugin system.
 
 ```
