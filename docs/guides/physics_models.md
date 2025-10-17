@@ -6,12 +6,11 @@ This document describes the mathematical models used to analyze pendant and sess
 
 - **Governing Principle**  
   Balance of capillary pressure and hydrostatic pressure:  
-  \[
-    \Delta P = \gamma\,\kappa
-  \]  
+  [\n    \Delta P = \gamma\,\kappa
+  ]  
   where \(\gamma\) is surface tension and \(\kappa\) is curvature.  
 - **Capillary Length**  
-  \(\ell_c = \sqrt{\frac{\gamma}{\Delta\rho\,g}}\)  
+  \(\ell_c = \sqrt{\frac{\gamma}{\Delta\rho\,g}}\)
   quantifies the relative importance of surface tension to gravity. :contentReference[oaicite:0]{index=0}
 - **Bashforth–Adams Equation**  
   Dimensionless form of the Young–Laplace ODE, solved via numerical integration from the drop apex. :contentReference[oaicite:1]{index=1}
@@ -20,20 +19,19 @@ This document describes the mathematical models used to analyze pendant and sess
 
 - **Circular (Spherical Cap) Fit**  
   Approximates small sessile drops as spherical caps. Contact angle:  
-  \[
-    \theta = 2\,\arctan\!\bigl(\tfrac{h}{r}\bigr)
-  \]  
+  [\n    \theta = 2\,\arctan\!\bigl(\tfrac{h}{r}\bigr)
+  ]  
   where \(h\) is height and \(r\) half the base width. :contentReference[oaicite:2]{index=2}
-- **Ellipse Fit**  
+- **Ellipse Fit** *(not yet implemented)*  
   Fits an ellipse to the sessile drop profile (useful for contact angles up to ~130°). :contentReference[oaicite:3]{index=3}
-- **Polynomial (Tangent) Fit**  
-  Local polynomial fit near the contact point to estimate the tangent slope and hence \(\theta\). :contentReference[oaicite:4]{index=4}
+- **Spline (Tangent) Fit**  
+  A local spline is fitted near the contact point to estimate the tangent slope and hence \(\theta\). This is more robust than a simple polynomial fit.
 
 ## 3. Axisymmetric Drop Shape Analysis (ADSA)
 
 - **Full ADSA**  
   Combines Young–Laplace numerical solution with optimization to fit \(\gamma\) (and contact angle for sessile drops) to the detected contour.  
-- **Low-Bond ADSA**  
+- **Low-Bond ADSA** *(not yet implemented)*  
   Perturbation-based approximation for small Bond numbers, fitting both the drop and its reflection to extract contact angle without manual contact-point selection. :contentReference[oaicite:5]{index=5}
 
 
@@ -45,9 +43,8 @@ This document describes the mathematical models used to analyze pendant and sess
   Convert contour into axisymmetric coordinates r(s) vs. z(s), where s is arc-length.  
 - **Fluid Properties**  
   Explicitly include liquid density ρₗ and gas density ρᵍ in the Bond number  
-  \[
-    Bo = \frac{(ρₗ - ρᵍ)\,g\,R^2}{γ}
-  \]  
+  [\n    Bo = \frac{(ρₗ - ρᵍ)\,g\,R^2}{γ}
+  ]
   and in the hydrostatic term of the Young–Laplace equation.  
 - **Optimization Loop**  
   1. Guess γ and ΔP.  
@@ -56,3 +53,16 @@ This document describes the mathematical models used to analyze pendant and sess
   4. Update γ, ΔP to minimize the total squared distance.  
 - **Predicted Profile Generation**  
   Once γ and ΔP converge, generate the full theoretical profile (r(z)) and export it for overlay.
+
+## 5. Captive Bubble Analysis *(Planned)*
+
+- **Governing Principle**: The physics of a captive bubble (a bubble under a solid surface in a liquid) is analogous to an inverted pendant drop. The same Young-Laplace equation governs the shape, but the role of gravity is inverted (buoyancy pushes the bubble upwards).
+- **Implementation Status**: This feature is planned. A `CaptiveBubbleGeometry` data model exists, but the full analysis pipeline is not yet implemented.
+
+## 6. Capillary Rise Analysis *(Planned)*
+
+- **Governing Principle**: This method measures surface tension by analyzing the height a liquid rises in a narrow capillary tube. The height (h) is determined by the balance of surface tension forces and gravity, as described by **Jurin's Law**:
+  [\n    h = \frac{2\gamma \cos\theta}{\rho g r}
+  ]
+  where \(\theta\) is the contact angle, \(\rho\) is the liquid density, \(g\) is gravity, and \(r\) is the tube radius.
+- **Implementation Status**: This feature is planned but not yet implemented.

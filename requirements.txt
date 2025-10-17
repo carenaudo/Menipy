@@ -27,3 +27,4 @@ flake8
 
 # Documentation
 sphinx
+unum

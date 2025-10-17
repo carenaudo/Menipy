@@ -38,7 +38,7 @@ Menipy offers a configurable edge detection stage to accurately identify droplet
     *   `Type`: The type of thresholding (e.g., Binary, Binary Inverse, Truncate, To Zero, To Zero Inverse).
 -   **Sobel/Scharr**: Gradient-based methods for detecting edges. Configurable `Kernel Size` for the Sobel operator.
 -   **Laplacian**: A second-order derivative operator for edge detection. Configurable `Kernel Size`.
--   **Active Contour (Snakes)**: (Planned/Under Development) An iterative method to refine contours to sub-pixel accuracy, often requiring an initial contour.
+-   **Active Contour (Snakes)**: An iterative method to refine contours to sub-pixel accuracy, often requiring an initial contour. The underlying implementation uses `skimage.segmentation.active_contour`.
 
 ### Common Preprocessing:
 
@@ -56,16 +56,12 @@ Beyond general edge detection, Menipy can specifically identify different interf
 -   **Fluid-Droplet Interface**: This typically corresponds to the primary contour detected by the chosen edge detection method, representing the boundary between the droplet and the surrounding fluid (e.g., air).
 -   **Solid-Droplet Interface**: This interface is detected in proximity to the user-defined or automatically determined contact line. The `Solid Interface Proximity` parameter defines the search region (in pixels) around the contact line where the solid-droplet interface is expected to be found.
 
-## 7. Active Contours (Snakes)
-
-- Apply `skimage.segmentation.active_contour` to refine contour to sub-pixel accuracy. :contentReference[oaicite:15]{index=15}
-
-## 8. Reflection Handling (Sessile Drops)
+## 7. Reflection Handling (Sessile Drops)
 
 - Detect baseline (horizontal line at droplet bottom) and exclude contours below it to remove reflections. :contentReference[oaicite:16]{index=16}
 
 
-## 9. Export Contour for Physics Model
+## 8. Export Contour for Physics Model
 
 - After extracting and optionally smoothing the final contour, serialize the (x,y) list (or r,z) into JSON or CSV.  
 - This exported file feeds directly into the Y–L fitting routine, closing the loop between image processing and physics modelling.

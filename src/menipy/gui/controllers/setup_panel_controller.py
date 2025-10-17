@@ -39,6 +39,7 @@ class SetupPanelController(QObject):
     browse_requested = Signal()
     browse_batch_requested = Signal()
     preview_requested = Signal()
+    analyze_requested = Signal()
     # Draw mode payloads can be any Python object; use object to avoid coercion issues.
     draw_mode_requested = Signal(object)
     clear_overlays_requested = Signal()

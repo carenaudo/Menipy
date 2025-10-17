@@ -15,8 +15,7 @@ The curvature of the interface is governed by the dimensionless form of the Youn
 
 Here, \( \beta = \frac{\Delta\rho\,g\,R_0^2}{\gamma} \) is a dimensionless gravity parameter. This compact form balances curvature, gravitational effects, and geometry — widely used in pendant-drop modeling :contentReference[oaicite:2]{index=2}.
 
----
-
+---\n
 ## 2. Volume & Surface Area Expressions
 
 For the axisymmetric drop, we compute:
@@ -29,8 +28,7 @@ For the axisymmetric drop, we compute:
 
 These standard integrals stem from revolving the profile around the axis, widely used in fluid mechanics and tensiometry.
 
----
-
+---\n
 ## 3. Optimization: Fitting Theory to Experimental Data
 
 ### 3.1 Objective Function
@@ -43,13 +41,14 @@ To match theoretical and experimental drop contours:
 
 Solution methods such as **Gauss–Newton** or **Levenberg–Marquardt** are commonly employed for non-linear least squares minimization in drop shape fitting — fundamental to **Axisymmetric Drop Shape Analysis (ADSA)** :contentReference[oaicite:3]{index=3}.
 
+*Note: While these are standard ADSA methods, the current implementation in Menipy uses a direct estimation technique. A full optimization routine using iterative solvers is a planned enhancement.*
+
 ### 3.3 Initialization and Convergence
 
 - **Initial guesses**: Use plausible starting values \( \beta_0 \) and \( R_0 \) to seed the solver.
 - **Convergence criterion**: Achieve \( \Delta\chi^2 < 10^{-6} \) to ensure precise fits.
 
----
-
+---\n
 ## 4. Extracting Surface Tension
 
 Once \( \beta \) and \( R_0 \) are determined from the fit:
@@ -59,8 +58,7 @@ Once \( \beta \) and \( R_0 \) are determined from the fit:
 
 This relation follows directly from the non-dimensional definition of \( \beta \), linking surface tension \( \gamma \) to measurable physical and fit parameters :contentReference[oaicite:4]{index=4}.
 
----
-
+---\n
 ## 5. Quality Assurance Metrics
 
 To assess the fidelity of fits:
@@ -75,8 +73,7 @@ To assess the fidelity of fits:
 
 These metrics provide diagnostics for profile integrity and fit reliability.
 
----
-
+---\n
 ## 6. Advanced Refinements & Techniques
 
 - **Tangent method at the apex**:  
@@ -88,8 +85,7 @@ These metrics provide diagnostics for profile integrity and fit reliability.
 - **Dynamic contact angle measurement for sessile drops**:  
   Captures hysteresis and time-dependent wetting behavior — an advanced consideration in surface/tensiometry studies.
 
----
-
+---\n
 ## 7. Theoretical & Software Foundations
 
 - **Axisymmetric Drop Shape Analysis (ADSA)**:  
@@ -98,8 +94,7 @@ These metrics provide diagnostics for profile integrity and fit reliability.
 - **ImageJ Plugin: Pendent_Drop**:  
   An implementation of ADSA in open-source software, enabling automatic drop profile fitting to extract surface tension, volume, and surface area :contentReference[oaicite:6]{index=6}.
 
----
-
+---\n
 ## 8. Summary Table
 
 | **Component**            | **Description**                                                                 |
@@ -112,13 +107,10 @@ These metrics provide diagnostics for profile integrity and fit reliability.
 | Advanced Techniques      | Tangent method, perturbation, dynamic contact angle                            |
 | Computational Basis      | ADSA framework and ImageJ plugin implementation                               |
 
----
-
+---\n
 ###  References
 
 - Geometric derivation: \( dx/ds = \cos\phi \), \( dz/ds = \sin\phi \), and curvature-based ODEs :contentReference[oaicite:7]{index=7}.  
 - ADSA methodology & variants (profile, height-diameter, numerical stability) :contentReference[oaicite:8]{index=8}.  
 - ImageJ plugin for automated shape analysis and surface tension estimation :contentReference[oaicite:9]{index=9}.  
 - Relation between fitted parameters and surface tension: \( \gamma = \Delta\rho\,g\,R_0 / \beta \), consistent with drop shape methodologies :contentReference[oaicite:10]{index=10}.
-
-
