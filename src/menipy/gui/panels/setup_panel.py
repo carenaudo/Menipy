@@ -39,6 +39,7 @@ class SetupPanelController(QObject):
     browse_requested = Signal()
     browse_batch_requested = Signal()
     preview_requested = Signal()
+    analyze_requested = Signal()
     draw_mode_requested = Signal(int)
     clear_overlays_requested = Signal()
     run_all_requested = Signal()
@@ -256,8 +257,10 @@ class SetupPanelController(QObject):
             self.drawRectBtn.clicked.connect(lambda: self.draw_mode_requested.emit(DRAW_RECT))
         if self.clearOverlayBtn:
             self.clearOverlayBtn.clicked.connect(self.clear_overlays_requested.emit)
+        # The "Run All" button will now trigger the simple analysis.
         if self.runAllBtn:
-            self.runAllBtn.clicked.connect(self.run_all_requested.emit)
+            self.runAllBtn.setText("Analyze")
+            self.runAllBtn.clicked.connect(self.analyze_requested.emit)
         if self.addSopBtn:
             self.addSopBtn.clicked.connect(self.sop_ctrl.on_add_sop)
         combo = self.testCombo or self.pipelineCombo
@@ -387,4 +390,3 @@ class SetupPanelController(QObject):
     def _on_combo_text_changed(self, text: str) -> None:
         if self._mode == self.MODE_CAMERA:
             self._last_camera_id = text.strip() or "0"
-

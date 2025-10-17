@@ -40,6 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Guide for adding new analysis pipelines (`developer_guide_pipelines.md`).
   - Guide for creating new plugins (`developer_guide_plugins.md`).
 
+### Fixed
+- **Pipeline Discovery**: Corrected the dynamic pipeline discovery mechanism to properly find and load pipelines. The developer guide was also updated to reflect the correct file structure for creating new pipelines.
+
 ### Changed
 
 - **Major Architectural Refactoring**:

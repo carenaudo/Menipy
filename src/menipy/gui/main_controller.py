@@ -83,6 +83,7 @@ class MainController(QObject):
         self.setup_ctrl.preview_requested.connect(self.on_preview_requested)
         self.setup_ctrl.run_all_requested.connect(self.run_full_pipeline)
         self.setup_ctrl.play_stage_requested.connect(self.pipeline_ctrl.run_stage)
+        self.setup_ctrl.analyze_requested.connect(self.analyze_current_view)  # New connection
         self.setup_ctrl.config_stage_requested.connect(self.on_config_stage_requested)
         self.setup_ctrl.pipeline_changed.connect(self.on_pipeline_changed)
 
@@ -104,6 +105,11 @@ class MainController(QObject):
                 run_vm.error.connect(self.pipeline_ctrl.on_pipeline_error)
             elif hasattr(run_vm, 'error_occurred'):
                 run_vm.error_occurred.connect(self.pipeline_ctrl.on_pipeline_error)
+
+    @Slot()
+    def analyze_current_view(self):
+        """Triggers a simple, direct analysis of the current view."""
+        self.pipeline_ctrl.run_simple_analysis()
 
     @Slot()
     def browse_image(self):

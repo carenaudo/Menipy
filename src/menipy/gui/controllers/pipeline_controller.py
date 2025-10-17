@@ -1,12 +1,13 @@
 """Pipeline execution helper for Menipy GUI."""
 from __future__ import annotations
 
+import importlib
+import logging
 from typing import Any, Mapping, Optional, Dict
 
 from menipy.gui.controllers.preprocessing_controller import PreprocessingPipelineController
 from menipy.gui.controllers.edge_detection_controller import EdgeDetectionPipelineController
 from PySide6.QtWidgets import QMessageBox, QPlainTextEdit, QMainWindow
-
 
 class PipelineController:
     """Handles pipeline execution and VM callbacks for the main window."""
@@ -34,6 +35,7 @@ class PipelineController:
         self.run_vm = run_vm
         self.log_view = log_view
         self.pipeline_map = {str(k).lower(): v for k, v in (pipeline_map or {}).items()}
+        self.contact_points = None  # Placeholder for manual contact points
         self._latest_acquisition_overlays: Dict[str, Any] = {}
 
     def _collect_acquisition_inputs(self) -> tuple[bool, Dict[str, Any]]:
@@ -101,9 +103,125 @@ class PipelineController:
             return True
         return any((stage or '').strip().lower() == 'acquisition' for stage in stages)
 
+    def _get_analysis_image(self):
+        """Validates and returns the cropped image and its ROI."""
+        if self.preview_panel.image_item is None or self.preview_panel.image_item.pixmap().isNull():
+            self.window.statusBar().showMessage("No image loaded.", 3000)
+            return None, None
+
+        drop_roi_item = self.preview_panel.roi_item()
+        drop_roi_rect = drop_roi_item.rect() if drop_roi_item else None
+        if not drop_roi_rect:
+            self.window.statusBar().showMessage("Please define a drop ROI first.", 3000)
+            return None, None
+
+        image = self.preview_panel.image_item.get_original_image()
+        cropped_image = image[
+            int(drop_roi_rect.top()) : int(drop_roi_rect.bottom()),
+            int(drop_roi_rect.left()) : int(drop_roi_rect.right()),
+        ]
+        return cropped_image, drop_roi_rect
+
+    def _load_pipeline_modules(self, mode: str) -> dict:
+        """Dynamically loads and returns the modules for the given pipeline mode."""
+        geometry_module = importlib.import_module(f".geometry", package=f"menipy.pipelines.{mode}")
+        drawing_module = importlib.import_module(f".drawing", package=f"menipy.pipelines.{mode}")
+
+        # The actual 'analyze' function needs to be implemented in the pipeline files.
+        # For now, we assume it exists.
+        analyze_func = getattr(geometry_module, "analyze", None)
+        if analyze_func is None:
+            raise AttributeError(f"'analyze' function not found in {geometry_module.__name__}")
+
+        return {
+            "analyze_func": analyze_func,
+            "draw_func": getattr(drawing_module, f"draw_{mode}_overlay"),
+            "helper_bundle_class": getattr(geometry_module, "HelperBundle"),
+        }
+
+    def _prepare_helper_bundle(self, mode: str, helper_bundle_class, roi_rect):
+        """Prepares and returns the mode-specific HelperBundle."""
+        # These attributes are on the main window's tabs
+        px_per_mm = self.window.calibration_tab.get_scale()
+        if mode == "pendant":
+            needle_diam_mm = self.window.calibration_tab.get_needle_diameter()
+            liquid_rho = self.window.calibration_tab.get_liquid_density()
+            air_rho = self.window.calibration_tab.get_air_density()
+            delta_rho = liquid_rho - air_rho
+            # apex_window_px could be sourced from a new UI control in the future
+            return helper_bundle_class(
+                px_per_mm=px_per_mm,
+                needle_diam_mm=needle_diam_mm,
+                delta_rho=delta_rho,
+                # g and apex_window_px will use their defaults from the dataclass
+            )
+
+        if mode == "sessile":
+            substrate_line_item = self.preview_panel.substrate_line_item()
+            substrate_line = substrate_line_item.get_line_in_scene() if substrate_line_item else None
+            if substrate_line:
+                p1 = substrate_line.p1() - roi_rect.topLeft()
+                p2 = substrate_line.p2() - roi_rect.topLeft()
+                substrate_line = ((p1.x(), p1.y()), (p2.x(), p2.y()))
+
+            liquid_rho = self.window.calibration_tab.get_liquid_density()
+            air_rho = self.window.calibration_tab.get_air_density()
+            delta_rho = liquid_rho - air_rho
+            # Assuming contact_points is managed by the controller
+            contact_points = self.contact_points if self.contact_points else None
+            return helper_bundle_class(
+                px_per_mm=px_per_mm,
+                substrate_line=substrate_line,
+                contact_points=contact_points,
+                delta_rho=delta_rho,
+                # contact_point_tolerance_px will use its default from the dataclass.
+                # A UI control could be added to override it.
+            )
+
+        QMessageBox.warning(self.window, "Unsupported Mode", f"Analysis mode '{mode}' is not supported.")
+        return None
+
+    def _run_analysis_and_update_ui(self, mode, analyze_func, draw_func, image, helpers):
+        """Runs the analysis, draws overlays, and updates the GUI."""
+        try:
+            # 1. Run the analysis
+            metrics = analyze_func(image, helpers)
+
+            # 2. Draw overlays on the image
+            # The original pixmap is on the main image_item
+            original_pixmap = self.preview_panel.image_item.pixmap()
+            pixmap_with_overlays = draw_func(original_pixmap, metrics)
+            self.preview_panel.display(pixmap_with_overlays)
+
+            # 3. Update the results panel
+            self.results_panel.update(metrics.derived)
+            self.window.statusBar().showMessage("Analysis complete.", 3000)
+        except Exception as e:
+            self.on_pipeline_error(f"An error occurred during analysis: {e}")
+
     # ------------------------------------------------------------------
     # Slots wired by MainWindow
     # ------------------------------------------------------------------
+    def run_simple_analysis(self):
+        """
+        Runs a direct analysis based on the currently selected pipeline mode,
+        bypassing the full SOP runner.
+        """
+        mode = self.setup_ctrl.current_pipeline_name()
+        if not mode:
+            QMessageBox.warning(self.window, "Analysis", "Please select a pipeline first.")
+            return
+
+        image, roi_rect = self._get_analysis_image()
+        if image is None:
+            return
+
+        try:
+            modules = self._load_pipeline_modules(mode)
+            helpers = self._prepare_helper_bundle(mode, modules["helper_bundle_class"], roi_rect)
+            self._run_analysis_and_update_ui(mode, modules["analyze_func"], modules["draw_func"], image, helpers)
+        except Exception as e:
+            self.on_pipeline_error(f"An error occurred during analysis: {e}")
 
     def run_full(self) -> None:
         params = self.setup_ctrl.gather_run_params()

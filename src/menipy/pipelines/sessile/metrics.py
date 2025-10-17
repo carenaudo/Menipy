@@ -1,121 +1,107 @@
+from __future__ import annotations
+
 import numpy as np
 
-from menipy.common.metrics import compute_drop_metrics, find_apex_index
-from .geometry_alt import line_params
 
+from menipy.common.geometry import find_contact_points_from_contour
+from menipy.models.drop_extras import surface_area_mm2
+from menipy.models.surface_tension import volume_from_contour
 
-def compute_metrics(
+def compute_sessile_metrics(
     contour: np.ndarray,
     px_per_mm: float,
     substrate_line: tuple[tuple[float, float], tuple[float, float]] | None = None,
-    *,
-    keep_above: bool | None = None,
+    apex: tuple[int, int] | None = None,
+    delta_rho: float = 998.8,
+    g: float = 9.80665,
+    contact_point_tolerance_px: float = 20.0,
 ) -> dict:
-    """Return sessile-drop metrics for ``contour``.
+    """Placeholder for sessile metrics computation."""
+    # This is a placeholder. The first real metrics to calculate are the
+    # contact points and the base diameter.
+    contact_line = None
+    diameter_px = 0.0
+    height_px = 0.0
+    volume_uL = 0.0
+    contact_surface_mm2 = 0.0
+    drop_surface_mm2 = 0.0
 
-    Parameters
-    ----------
-    contour:
-        Droplet contour points ``(x, y)``.
-    px_per_mm:
-        Calibration factor in pixels per millimetre.
-    substrate_line:
-        Two points defining the substrate line.
-    keep_above:
-        If ``True`` keep contour points above the line, if ``False`` keep the
-        points below it. ``None`` selects the side with the larger area.
-    """
-    if substrate_line is None:
-        return compute_drop_metrics(contour, px_per_mm, "contact-angle")
-
-    apex_idx = find_apex_index(contour, "contact-angle")
-    poly = np.array([substrate_line[0], substrate_line[1]], float)
-
-    geo = geom_metrics_alt(poly, contour, px_per_mm, keep_above=keep_above)
-    droplet_poly = geo.pop("droplet_poly")
-    metrics = compute_drop_metrics(
-        droplet_poly.astype(float),
-        px_per_mm,
-        "contact-angle",
-        substrate_line=substrate_line,
-    )
-    metrics.update(geo)
-
-    try:
-        cp1, cp2 = contact_points_from_spline(contour, substrate_line, delta=0.5)
-        metrics["contact_line"] = (
-            (int(round(cp1[0])), int(round(cp1[1]))),
-            (int(round(cp2[0])), int(round(cp2[1]))),
+    if substrate_line is not None:
+        # The contour might be (N, 1, 2), so we reshape to (N, 2) for the helper.
+        contour_2d = contour.reshape(-1, 2)
+        p1, p2 = find_contact_points_from_contour(
+            contour_2d, substrate_line, tolerance=contact_point_tolerance_px
         )
-    except Exception:
-        pass
 
-    return metrics
+        if p1 is not None and p2 is not None:
+            contact_line = (tuple(p1.astype(int)), tuple(p2.astype(int)))
+            diameter_px = np.linalg.norm(p1 - p2)
 
-__all__ = ["compute_metrics"]
+        # Calculate height as the perpendicular distance from the apex to the substrate line.
+        if apex is not None:
+            p1_line = np.array(substrate_line[0])
+            p2_line = np.array(substrate_line[1])
+            apex_pt = np.array(apex)
+            # Using the formula for the distance from a point to a line defined by two points.
+            num = np.abs(np.cross(p2_line - p1_line, p1_line - apex_pt))
+            den = np.linalg.norm(p2_line - p1_line)
+            if den > 0:
+                height_px = num / den
 
+    diameter_mm = diameter_px / px_per_mm if px_per_mm > 0 else 0.0
+    height_mm = height_px / px_per_mm if px_per_mm > 0 else 0.0
+    contact_angle_deg = 0.0
 
+    # Calculate contact surface area (base of the drop)
+    if diameter_mm > 0:
+        base_radius_mm = diameter_mm / 2.0
+        contact_surface_mm2 = np.pi * (base_radius_mm**2)
 
-def geom_metrics_alt(
-    substrate_poly: np.ndarray,
-    contour_px: np.ndarray,
-    px_per_mm: float,
-    *,
-    keep_above: bool | None = None,
-) -> dict:
-    """Return geometric metrics relative to a substrate polyline."""
-    if px_per_mm <= 0:
-        raise ValueError("px_per_mm must be positive")
+    # Calculate volume by solid of revolution, correctly handling tilted substrates.
+    if apex is not None and contact_line is not None and px_per_mm > 0:
+        contour_2d = contour.reshape(-1, 2)
 
-    line_pt = substrate_poly[0]
-    line_dir = substrate_poly[-1] - substrate_poly[0]
+        # Define the axis of symmetry: a line through the apex, perpendicular to the substrate.
+        p1_sub, p2_sub = np.array(contact_line[0]), np.array(contact_line[1])
+        v_sub = p2_sub - p1_sub
+        v_axis = np.array([-v_sub[1], v_sub[0]])  # Perpendicular vector
+        v_axis = v_axis / (np.linalg.norm(v_axis) or 1)
+        apex_pt = np.array(apex)
 
-    p1, p2 = find_contact_points(contour_px, line_pt, line_dir)
-    contact_seg = trim_poly_between(substrate_poly, p1, p2)
+        # Filter for the droplet profile "above" the substrate line.
+        # A point is "above" if the vector to it from the line has a positive dot product with the axis vector.
+        side = np.sign(np.cross(v_sub, apex_pt - p1_sub))
+        profile_mask = np.sign(np.cross(v_sub, contour_2d - p1_sub)) == side
+        profile = contour_2d[profile_mask]
 
-    if keep_above is None:
-        cont_above = split_contour_by_line(contour_px, line_pt, line_dir, keep_above=True)
-        poly_above = np.vstack([cont_above, contact_seg[::-1]])
-        area_above = _polygon_area(poly_above) if len(poly_above) >= 3 else 0.0
+        if profile.size > 0:
+            # Project profile points onto the axis of symmetry to get coordinates for integration.
+            vec_pa = profile - apex_pt
+            # `z_coords` is the distance along the axis from the apex.
+            z_coords_px = np.dot(vec_pa, v_axis)
+            # `r_coords` is the perpendicular distance from the axis (the radius).
+            r_coords_px = np.abs(np.cross(vec_pa, v_axis))
+            contour_mm = np.column_stack([r_coords_px, z_coords_px]) / px_per_mm
+            volume_uL = volume_from_contour(contour_mm)
+            drop_surface_mm2 = surface_area_mm2(contour_mm)
 
-        cont_below = split_contour_by_line(contour_px, line_pt, line_dir, keep_above=False)
-        poly_below = np.vstack([cont_below, contact_seg[::-1]])
-        area_below = _polygon_area(poly_below) if len(poly_below) >= 3 else 0.0
-
-        keep_above = area_above >= area_below
-        droplet_contour = cont_above if keep_above else cont_below
-        droplet_poly = poly_above if keep_above else poly_below
-    else:
-        droplet_contour = split_contour_by_line(
-            contour_px, line_pt, line_dir, keep_above=keep_above
-        )
-        droplet_poly = np.vstack([droplet_contour, contact_seg[::-1]])
-
-    mode = "sessile" if keep_above else "pendant"
-    apex_px, _ = apex_point(droplet_contour, line_pt, line_dir, mode)
-
-    a, b, c = line_params(tuple(p1), tuple(p2))
-    h_px = abs(a * apex_px[0] + b * apex_px[1] + c)
-    w_px = np.linalg.norm(p2 - p1)
-
-    w_mm = w_px / px_per_mm
-    rb_mm = w_mm / 2.0
-    h_mm = h_px / px_per_mm
-
-    _, foot = project_pts_onto_poly(np.array([apex_px]), substrate_poly)
-    ratio = symmetry_area_ratio(droplet_poly, apex_px, foot[0])
+    # Calculate contact angle using the spherical cap approximation.
+    # This is a simple geometric model. Other methods (tangential, polyfit,
+    # Young-Laplace) can be added later.
+    if diameter_mm > 0 and height_mm > 0:
+        radius_mm = diameter_mm / 2.0
+        # Formula for spherical cap: theta = 2 * arctan(h/r)
+        theta_rad = 2 * np.arctan(height_mm / radius_mm)
+        contact_angle_deg = np.degrees(theta_rad)
 
     return {
-        "xL_px": float(p1[0]),
-        "xR_px": float(p2[0]),
-        "w_mm": float(w_mm),
-        "rb_mm": float(rb_mm),
-        "h_mm": float(h_mm),
-        "droplet_poly": droplet_poly,
-        "a": float(a),
-        "b": float(b),
-        "c": float(c),
-        "contact_segment": contact_seg,
-        "symmetry_ratio": float(ratio),
-        "apex": (int(round(apex_px[0])), int(round(apex_px[1]))),
+        "apex": apex or (0, 0),
+        "diameter_mm": diameter_mm,
+        "height_mm": height_mm,
+        "volume_uL": volume_uL,
+        "contact_angle_deg": contact_angle_deg,
+        "contact_surface_mm2": contact_surface_mm2,
+        "drop_surface_mm2": drop_surface_mm2,
+        "diameter_line": contact_line or ((0, 0), (0, 0)),
+        "contact_line": contact_line,
     }
