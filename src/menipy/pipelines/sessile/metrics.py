@@ -83,7 +83,7 @@ def compute_sessile_metrics(
             r_coords_px = np.abs(np.cross(vec_pa, v_axis))
             contour_mm = np.column_stack([r_coords_px, z_coords_px]) / px_per_mm
             volume_uL = volume_from_contour(contour_mm)
-            drop_surface_mm2 = surface_area_mm2(contour_mm)
+            drop_surface_mm2 = surface_area_mm2(contour_mm, px_per_mm)
 
     # Calculate contact angle using the spherical cap approximation.
     # This is a simple geometric model. Other methods (tangential, polyfit,

@@ -6,6 +6,23 @@ To test the original Menipy code made with minimal interaction use the branch: *
 
 Menipy is a Python-based toolkit aimed at analyzing droplet shapes from images. The goal is to create the software with minimal human involvement in the coding phase. Development is driven by CODEX, an AI agent that orchestrates several specialized sub-agents defined in `AGENTS.md`.
 
+## Objectives and Scope
+
+- Provide a clear, extensible skeleton for droplet and meniscus shape analysis from images.
+- Structure the work as pipelines where each step represents a concrete stage of image analysis (loading, preprocessing, segmentation, contour extraction, geometry fitting, metrics, and reporting).
+- Grow a toolbox of measurements and utilities, expanding beyond the most common metrics typically implemented.
+
+## Origins: “Vibe Coding” Prototype
+
+The original intention of this repository was to explore the feasibility of prototyping applications using primarily “vibe coding” (AI-assisted development with minimal manual coding). You can find the original branch demonstrating this approach here:
+
+- Min-Human-Interaction branch: https://github.com/carenaudo/Menipy/tree/Min-Human-Interaction
+
+## Maintainer
+
+- Maintainer: Carlos Renaudo (PLAPIQUI — Planta Piloto de Ingeniería Química, Universidad Nacional del Sur/CONICET)
+- Group: Tecnología de Partículas, PLAPIQUI
+
 These sub-agents read the step-by-step instructions in `PLAN.md` and consult the reference material under `doc/` to automatically scaffold the project, implement processing and modeling algorithms, build the PySide6 GUI, and configure testing and packaging.
 
 <img width="1909" height="1028" alt="image" src="https://github.com/user-attachments/assets/45fd8f53-98cc-4c6d-bf59-0e0687c5c7fe" />

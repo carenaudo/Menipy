@@ -4,7 +4,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from menipy.common.geometry import extract_external_contour, find_sessile_apex
+from menipy.common.edge_detection import extract_external_contour
+from menipy.common.metrics import find_apex_index
 from menipy.pipelines.base import PipelineBase
 from .metrics import compute_sessile_metrics
 
@@ -32,7 +33,8 @@ class SessileMetrics:
 def analyze(frame: np.ndarray, helpers: HelperBundle) -> SessileMetrics:
     """Return sessile-drop metrics and geometry from ``frame``."""
     contour = extract_external_contour(frame)
-    apex = find_sessile_apex(contour)
+    apex_idx = find_apex_index(contour, "sessile")
+    apex = tuple(contour[apex_idx].astype(int))
     metrics = compute_sessile_metrics(
         contour.astype(float),
         px_per_mm=helpers.px_per_mm,

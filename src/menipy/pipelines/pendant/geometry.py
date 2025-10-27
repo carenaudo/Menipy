@@ -4,7 +4,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from menipy.common.geometry import extract_external_contour, find_pendant_apex
+from menipy.common.edge_detection import extract_external_contour
+from menipy.common.metrics import find_apex_index
 from .metrics import compute_pendant_metrics
 
 
@@ -30,7 +31,8 @@ class PendantMetrics:
 def analyze(frame: np.ndarray, helpers: HelperBundle) -> PendantMetrics:
     """Return pendant-drop metrics and geometry from ``frame``."""
     contour = extract_external_contour(frame)
-    apex = find_pendant_apex(contour)
+    apex_idx = find_apex_index(contour, "pendant")
+    apex = tuple(contour[apex_idx].astype(int))
     metrics = compute_pendant_metrics(
         contour.astype(float),
         px_per_mm=helpers.px_per_mm,
