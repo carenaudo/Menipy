@@ -2,19 +2,23 @@ from __future__ import annotations
 
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
+
+from .unit_types import Density, Length, SurfaceTension
 
 
 class PhysicsParams(BaseModel):
     """
     Physical parameters required by fits (Young–Laplace, Rayleigh–Lamb, Jurin).
+    Values can be provided as strings with units (e.g., "1000 kg/m^3", "72 mN/m").
     """
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    delta_rho: Optional[float] = Field(default=None, description="density difference Δρ [kg/m^3]")
-    g: float = Field(default=9.80665, description="gravity [m/s^2]")
-    surface_tension_guess: Optional[float] = Field(default=None, ge=0)
-    needle_radius_mm: Optional[float] = Field(default=None, ge=0)
-    tube_radius_mm: Optional[float] = Field(default=None, ge=0)
+    delta_rho: Optional[Density] = Field(default=None, description="Density difference Δρ between the two phases.")
+    g: float = Field(default=9.80665, description="Acceleration due to gravity [m/s^2]")
+    surface_tension_guess: Optional[SurfaceTension] = Field(default=None)
+    needle_radius: Optional[Length] = Field(default=None)
+    tube_radius: Optional[Length] = Field(default=None)
     temperature_C: Optional[float] = None
 
 

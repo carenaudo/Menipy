@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from menipy.common.geometry import extract_external_contour, find_sessile_apex
+from menipy.pipelines.base import PipelineBase
 from .metrics import compute_sessile_metrics
 
 

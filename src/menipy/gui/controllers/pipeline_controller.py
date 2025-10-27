@@ -9,6 +9,9 @@ from menipy.gui.controllers.preprocessing_controller import PreprocessingPipelin
 from menipy.gui.controllers.edge_detection_controller import EdgeDetectionPipelineController
 from PySide6.QtWidgets import QMessageBox, QPlainTextEdit, QMainWindow
 
+from menipy.models.config import PhysicsParams
+from unum.units import kg, m, mm
+
 class PipelineController:
     """Handles pipeline execution and VM callbacks for the main window."""
 
@@ -141,19 +144,29 @@ class PipelineController:
 
     def _prepare_helper_bundle(self, mode: str, helper_bundle_class, roi_rect):
         """Prepares and returns the mode-specific HelperBundle."""
-        # These attributes are on the main window's tabs
-        px_per_mm = self.window.calibration_tab.get_scale()
+        # Get the unit-aware physics parameters from settings
+        physics_params: PhysicsParams = getattr(self.window.settings, "physics_config", PhysicsParams())
+
+        # Get scale from the calibration controller/dialog (this part needs to be located and updated)
+        # For now, we'll assume a placeholder value.
+        px_per_mm = 100.0 # Placeholder - this needs to be sourced from the calibration UI/settings
+
+        # Convert unit-aware params to SI floats for the backend
+        try:
+            delta_rho_si = physics_params.delta_rho.asUnit(kg/m**3).value if physics_params.delta_rho else 1000.0
+            needle_diam_mm_si = physics_params.needle_radius.asUnit(mm).value * 2 if physics_params.needle_radius else None
+        except Exception as e:
+            QMessageBox.critical(self.window, "Physics Parameter Error", f"Could not convert physics parameters to SI units: {e}")
+            return None
+
         if mode == "pendant":
-            needle_diam_mm = self.window.calibration_tab.get_needle_diameter()
-            liquid_rho = self.window.calibration_tab.get_liquid_density()
-            air_rho = self.window.calibration_tab.get_air_density()
-            delta_rho = liquid_rho - air_rho
-            # apex_window_px could be sourced from a new UI control in the future
+            if needle_diam_mm_si is None:
+                QMessageBox.warning(self.window, "Missing Parameter", "Needle radius must be defined for pendant drop analysis.")
+                return None
             return helper_bundle_class(
                 px_per_mm=px_per_mm,
-                needle_diam_mm=needle_diam_mm,
-                delta_rho=delta_rho,
-                # g and apex_window_px will use their defaults from the dataclass
+                needle_diam_mm=needle_diam_mm_si,
+                delta_rho=delta_rho_si,
             )
 
         if mode == "sessile":
@@ -164,18 +177,12 @@ class PipelineController:
                 p2 = substrate_line.p2() - roi_rect.topLeft()
                 substrate_line = ((p1.x(), p1.y()), (p2.x(), p2.y()))
 
-            liquid_rho = self.window.calibration_tab.get_liquid_density()
-            air_rho = self.window.calibration_tab.get_air_density()
-            delta_rho = liquid_rho - air_rho
-            # Assuming contact_points is managed by the controller
             contact_points = self.contact_points if self.contact_points else None
             return helper_bundle_class(
                 px_per_mm=px_per_mm,
                 substrate_line=substrate_line,
                 contact_points=contact_points,
-                delta_rho=delta_rho,
-                # contact_point_tolerance_px will use its default from the dataclass.
-                # A UI control could be added to override it.
+                delta_rho=delta_rho_si,
             )
 
         QMessageBox.warning(self.window, "Unsupported Mode", f"Analysis mode '{mode}' is not supported.")

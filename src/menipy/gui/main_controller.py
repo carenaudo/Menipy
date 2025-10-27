@@ -22,6 +22,9 @@ from menipy.gui.dialogs.preprocessing_config_dialog import PreprocessingConfigDi
 from menipy.gui.dialogs.edge_detection_config_dialog import EdgeDetectionConfigDialog
 from menipy.gui.dialogs.geometry_config_dialog import GeometryConfigDialog
 from menipy.gui.dialogs.overlay_config_dialog import OverlayConfigDialog
+from menipy.gui.dialogs.physics_config_dialog import PhysicsConfigDialog
+from menipy.models.config import PhysicsParams
+
 if TYPE_CHECKING:
     from menipy.gui.mainwindow import MainWindow
     from menipy.gui.controllers.pipeline_controller import PipelineController
@@ -151,6 +154,30 @@ class MainController(QObject):
     @Slot(str)
     def on_config_stage_requested(self, stage_name: str) -> None:
         stage = (stage_name or "").strip().lower()
+        # Physics configuration
+        if stage == "physics":
+            # Get the current physics config from settings, or create a default one
+            try:
+                initial_params = getattr(self.settings, "physics_config", PhysicsParams())
+                if not isinstance(initial_params, PhysicsParams):
+                    initial_params = PhysicsParams()
+            except Exception:
+                initial_params = PhysicsParams()
+
+            dialog = PhysicsConfigDialog(initial_params, parent=self.window)
+            if dialog.exec() == QDialog.Accepted:
+                self.settings.physics_config = dialog.get_params()
+                if hasattr(self.settings, "save"):
+                    try:
+                        self.settings.save()
+                    except Exception as exc:
+                        logger.warning("Failed to persist physics configuration: %s", exc)
+                self.window.statusBar().showMessage("Physics configuration saved.", 2000)
+                logger.info("Physics configuration updated: %s", self.settings.physics_config)
+            else:
+                logger.info("Physics configuration cancelled.")
+            return
+
         # Overlay configuration
         if stage == "overlay":
             dialog = OverlayConfigDialog(parent=self.window)

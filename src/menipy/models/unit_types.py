@@ -8,7 +8,7 @@ from unum import Unum
 from unum.units import * # Import common units like m, kg, s, etc.
 
 
-def- unum_parser(v: Any) -> Unum:
+def unum_parser(v: Any) -> Unum:
     """Parses various inputs into a Unum object."""
     if isinstance(v, Unum):
         return v
