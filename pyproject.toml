@@ -17,7 +17,8 @@ dependencies = [
   "opencv-python>=4.7.0.72",
   "matplotlib>=3.5.0",
   "PySide6>=6.5.1",
-  "unum>=4.2.0",
+  "pint",
+  "pydantic-pint",
 ]
 
 [tool.setuptools.packages.find]

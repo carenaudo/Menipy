@@ -1,6 +1,6 @@
 # Sessile Drop Pipeline — Current State and Enhancement Plan
 
-This document analyzes the current “sessile” pipeline (processing and GUI), highlights improvement opportunities, and proposes a concrete, phased plan to enhance accuracy, performance, UX, and maintainability. It mirrors the structure used for the pendant pipeline plan to support cross-pipeline consistency.
+This document analyzes the current "sessile" pipeline (processing and GUI), highlights improvement opportunities, and proposes a concrete, phased plan to enhance accuracy, performance, UX, and maintainability. It leverages shared base pipeline functionality and common utilities to minimize duplication.
 
 ## Scope
 
@@ -18,28 +18,30 @@ This document analyzes the current “sessile” pipeline (processing and GUI), 
   - `src/menipy/pipelines/discover.py` — Dynamic discovery used by GUI and CLI.
 
 - Sessile pipeline
-  - `src/menipy/pipelines/sessile/stages.py` — `SessilePipeline(PipelineBase)` simplified implementation:
+  - `src/menipy/pipelines/sessile/stages.py` — `SessilePipeline(PipelineBase)` basic implementation:
     - Acquisition: loads image via OpenCV if not present in context.
     - Ensures contour via `edge_detection.run(...)` (Canny default if settings absent).
-    - Geometry: baseline at max y, symmetry axis as median x, apex as min y; crude contact angles via local slope at estimated left/right base points; stores angles in `ctx.results`.
+    - Geometry: crude baseline at max y, symmetry axis as median x, apex as min y; crude contact angles via local slope at estimated left/right base points; stores angles in `ctx.results`.
     - Scaling: default `px_per_mm=1.0`.
     - Physics: default densities and `g`.
-    - Solver: toy Young–Laplace “sphere” integrator to estimate `R0_mm` (for display only).
+    - Solver: toy Young–Laplace "sphere" integrator to estimate `R0_mm` (for display only).
     - Outputs: merges `R0_mm` with `theta_left_deg`, `theta_right_deg`, residuals.
     - Overlay: draws contour, symmetry axis, baseline, apex cross, and text label with `R0` and contact angles.
     - Validation: checks toy solver success flag.
 
-  - `src/menipy/pipelines/sessile/geometry.py` — Functional analyzer path used by the GUI’s direct analysis:
-    - `analyze(frame, helpers)` → `extract_external_contour` → `find_sessile_apex` → `compute_sessile_metrics` → returns `SessileMetrics` with contour, apex, diameter/center/contact line, derived metrics.
+  - `src/menipy/pipelines/sessile/geometry.py` — Functional analyzer path used by the GUI's direct analysis:
+    - `analyze(frame, helpers)` → `extract_external_contour` → `find_apex_index` → `compute_sessile_metrics` → returns `SessileMetrics` with contour, apex, diameter/center/contact line, derived metrics.
     - `HelperBundle` inputs: `px_per_mm`, `substrate_line`, optional `contact_points`, density difference/`g`, contact point tolerance.
 
-  - `src/menipy/pipelines/sessile/metrics.py` — `compute_sessile_metrics(...)` placeholder implementation:
-    - If a substrate line is provided, finds contact points via `find_contact_points_from_contour`, estimates base diameter, height (perpendicular distance apex→substrate), contact area (base disk), volume by revolution around an axis perpendicular to substrate through apex, and a spherical-cap-based contact angle.
+  - `src/menipy/pipelines/sessile/metrics.py` — `compute_sessile_metrics(...)` basic implementation:
+    - If substrate line provided, finds contact points via `find_contact_points_from_contour`, estimates base diameter, height (perpendicular distance apex→substrate), contact area (base disk), volume by revolution around axis perpendicular to substrate through apex, and spherical-cap-based contact angle.
     - Returns `derived` metrics including `diameter_mm`, `height_mm`, `volume_uL`, `contact_angle_deg`, `contact_surface_mm2`, `drop_surface_mm2`, plus line overlays.
 
-- Common maths/geometry (shared)
+- Common maths/geometry (shared, DRY principle)
   - `src/menipy/common/geometry.py` — contact point finder, curvature estimates, circle fit, intersections.
-  - `src/menipy/models/surface_tension.py` — `volume_from_contour` (revolution integral) and other physical relations.
+  - `src/menipy/common/metrics.py` — `find_apex_index` for apex detection.
+  - `src/menipy/common/edge_detection.py` — `extract_external_contour` for contour extraction.
+  - `src/menipy/models/surface_tension.py` — `volume_from_contour` (revolution integral) and physical relations.
   - `src/menipy/models/drop_extras.py` — `surface_area_mm2` and related utilities.
 
 - GUI integration
@@ -70,7 +72,7 @@ This document analyzes the current “sessile” pipeline (processing and GUI), 
 - Height: perpendicular distance apex→substrate.
 - Contact angle: spherical-cap approximation from height and diameter (fast, not tangent-based).
 - Volume/surface area: revolution integrals in substrate-normal coordinate system.
-- Solver: toy Y–L “sphere” fit is not physically consistent for sessile geometry; used only for a placeholder `R0_mm` value.
+- Solver: toy Y–L "sphere" fit is not physically consistent for sessile geometry; used only for a placeholder `R0_mm` value.
 
 ### 1.4 Known Gaps / Inconsistencies
 
@@ -80,7 +82,7 @@ This document analyzes the current “sessile” pipeline (processing and GUI), 
 - Reliance on user-provided substrate line; no automatic baseline detection or validation that the line intersects/underlies the drop.
 - Unit handling split across layers; missing mandatory calibration guards.
 - Potential API mismatch for `surface_area_mm2` arguments, similar to pendant pipeline.
-- Several sessile stage modules (e.g., dedicated `edge_detection.py`, `solver.py`, `overlay.py`) are not implemented; logic is consolidated in `stages.py` and `metrics.py`.
+- Several sessile stage modules are empty; logic is consolidated in `stages.py` and `metrics.py`.
 
 ---
 
@@ -104,7 +106,7 @@ This document analyzes the current “sessile” pipeline (processing and GUI), 
 
 ### 2.3 Scalability and Architecture
 
-- Consolidate the two execution paths: drive the GUI’s “Analyze” through the staged pipeline to share configuration and results.
+- Consolidate the two execution paths: drive the GUI's "Analyze" through the staged pipeline to share configuration and results.
 - Separate concerns into stage modules (`geometry`, `edge_detection`, `overlay`, `solver`) and keep `stages.py` as orchestration/thin wiring.
 - Standardize results schema and units across pipelines and document in a shared contract document.
 
@@ -134,26 +136,26 @@ This document analyzes the current “sessile” pipeline (processing and GUI), 
 
 ### 3.1 Goals
 
-- A single, authoritative staged pipeline for sessile runs (both “Analyze” and SOP-driven), producing robust angles and volumes with consistent units.
+- A single, authoritative staged pipeline for sessile runs (both "Analyze" and SOP-driven), producing robust angles and volumes with consistent units.
 - Tooling for baseline/contact management and clear error/diagnostic reporting.
 
 ### 3.2 Architectural Changes
 
 - Move heavy logic from `stages.py` and functional analyzer to dedicated stage modules; keep `stages.py` as adapter.
-- Replace GUI’s direct functional call with a wrapper that invokes the staged pipeline and consumes `Context` (`preview`, `results`).
+- Replace GUI's direct functional call with a wrapper that invokes the staged pipeline and consumes `Context` (`preview`, `results`).
 - Define a sessile results contract (keys/units) and align `ResultsPanel` mapping accordingly.
 
 ### 3.3 Feature Roadmap (Phased)
 
 Phase 0 — Contracts and groundwork (1–2 days)
 
-- Define results schema: `{De_mm, H_mm, theta_left_deg, theta_right_deg, V_uL, A_mm2, baseline_tilt_deg, method}`; document units and methods.
+- Define results schema: `{diameter_mm, height_mm, theta_left_deg, theta_right_deg, volume_uL, drop_surface_mm2, baseline_tilt_deg, method}`; document units and methods.
 - Fix API mismatches (e.g., `surface_area_mm2` usage) and add missing imports/guards in common geometry if needed.
 - Confirm `PIPELINE_MAP` exposure and remove redundant import paths in GUI where applicable.
 
 Phase 1 — Unify execution path (1–2 days)
 
-- Make GUI “Analyze” call into staged pipeline; populate preview from `ctx.preview/overlay` and results from `ctx.results`.
+- Make GUI "Analyze" call into staged pipeline; populate preview from `ctx.preview/overlay` and results from `ctx.results`.
 - Factor current metrics logic into `do_geometry` and friends; ensure edge detection settings are respected.
 
 Phase 2 — Detection and geometry accuracy (3–5 days)
@@ -164,16 +166,15 @@ Phase 2 — Detection and geometry accuracy (3–5 days)
 
 Phase 3 — Contact angle methods (3–5 days)
 
-- Implement tangent-based angle estimation near contact points (poly/arc fit within local window) with uncertainty.
+- Implement tangent-based contact angle estimation near contact points (poly/arc fit within local window) with uncertainty.
 - Provide method selection: `tangent`, `spherical_cap`, `circle_fit`; expose method tag and quality indicators.
 - Update results schema and UI to reflect method and confidence.
- - Physics research deliverables: define contact angle conventions (Young vs. apparent, left/right), select tangent-fit windowing and residual metrics, establish tilt-correction strategy, and assemble validation datasets (reference surfaces/liquids).
 
 Phase 4 — UX, diagnostics, and exports (2–4 days)
 
 - Baseline/contact tools in UI: auto-detect, lock, snap, manual adjust with immediate recompute and overlays for tangent lines.
 - Diagnostics: residual/error plots and logs; progress indicators for batch runs.
-- Results panel: pipeline-aware mapping (sessile schema), include units, method tag, and uncertainty display; exports: CSV/JSON with provenance and method metadata.
+- Results panel: pipeline-aware mapping (sessile schema), include units, method tag, and uncertainty display; exports: CSV/JSON with provenance.
 
 ### 3.4 Detailed Tasks per Phase
 
@@ -201,7 +202,7 @@ Phase 4 — UX, diagnostics, and exports (2–4 days)
 
 - Context inputs: `image_path|frames`, `roi`, `substrate_line`, optional `contact_points`, `px_per_mm`, densities.
 - Intermediates: `contour.xy`, `geometry.baseline_y|tilt_deg`, `geometry.apex_xy`.
-- Outputs (`results`): `{De_mm, H_mm, theta_left_deg, theta_right_deg, V_uL, A_mm2, baseline_tilt_deg, method, residuals?}`.
+- Outputs (`results`): `{diameter_mm, height_mm, theta_left_deg, theta_right_deg, volume_uL, drop_surface_mm2, baseline_tilt_deg, method, residuals?}`.
 
 ### 3.6 Dependencies and Tooling
 
@@ -272,7 +273,7 @@ Total: 10–18 days depending on method breadth and testing depth.
 
 - Behavior
   - Detect active pipeline from execution context and pick the sessile results schema for labels/units.
-  - Core metrics: `De_mm`, `H_mm`, `theta_left_deg`, `theta_right_deg`, mean angle (optional), `V_uL`, `A_mm2`, `baseline_tilt_deg`.
+  - Core metrics: `diameter_mm`, `height_mm`, `theta_left_deg`, `theta_right_deg`, mean angle (optional), `volume_uL`, `drop_surface_mm2`, `baseline_tilt_deg`.
   - Method/uncertainty: display `method` tag (`tangent`, `spherical_cap`, etc.) and per-side fit RMSE or confidence.
 
 - Tasks
@@ -291,9 +292,10 @@ Total: 10–18 days depending on method breadth and testing depth.
 
 - Summary: method used, per-side RMSE and uncertainty, baseline tilt, footprint length.
 - Plots: local fit windows with tangent overlays; angle vs. window size sensitivity curve (optional).
-- Timings: per-stage `timings_ms` and total runtime.
+- Timings: per‑stage `timings_ms` and total runtime.
 - Provenance: schema version, pipeline name, image path, calibration; substrate line and contact points.
 
+---
 
 ## 4) Risks, Dependencies, Prerequisites
 
@@ -319,7 +321,7 @@ Total: 10–18 days depending on method breadth and testing depth.
 
 ## Acceptance Criteria
 
-- Single-path staged pipeline powers “Analyze” and SOP; consistent overlays and results on sample images.
+- Single-path staged pipeline powers "Analyze" and SOP; consistent overlays and results on sample images.
 - Contact angles from tangent method validated against references; spherical-cap value available as a secondary method.
 - Clear diagnostics and error messages for missing/invalid baseline/scale; batch processing exports consistent CSV/JSON with provenance.
 - Tests cover baseline detection, contact points, angle methods, and overlay drawing; CI passes.

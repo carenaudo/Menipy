@@ -81,7 +81,7 @@ def compute_pendant_metrics(
             z_px = contour_2d[:, 1]
             contour_mm = np.column_stack([r_px, z_px]) / px_per_mm
             volume_uL = volume_from_contour(contour_mm)
-            drop_surface_mm2 = surface_area_mm2(contour_mm, px_per_mm)
+            drop_surface_mm2 = surface_area_mm2(contour_mm * px_per_mm, px_per_mm)
 
     # Calculate needle surface area
     if needle_diam_mm is not None and needle_diam_mm > 0:

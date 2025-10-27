@@ -17,6 +17,13 @@ LABEL_MAP = {
     "drop_surface_mm2": "Drop Surface (mm²)",
     "contact_angle_deg": "Contact Angle (°)",
     "contact_surface_mm2": "Contact Surface (mm²)",
+    "theta_left_deg": "Left Contact Angle (°)",
+    "theta_right_deg": "Right Contact Angle (°)",
+    "baseline_tilt_deg": "Baseline Tilt (°)",
+    "method": "Method",
+    "uncertainty_deg": "Angle Uncertainty (°)",
+    "uncertainty_left_deg": "Left Angle Uncertainty (°)",
+    "uncertainty_right_deg": "Right Angle Uncertainty (°)",
 }
 
 
@@ -36,12 +43,27 @@ class ResultsPanel:
         if not results:
             self.table.setRowCount(0)
             return
-        items = list(results.items())
+
+        # Special handling for uncertainty_deg which is a dict
+        items = []
+        for key, value in results.items():
+            if key == "uncertainty_deg" and isinstance(value, dict):
+                # Display left/right uncertainties separately
+                if "left" in value:
+                    items.append(("uncertainty_left_deg", value["left"]))
+                if "right" in value:
+                    items.append(("uncertainty_right_deg", value["right"]))
+            else:
+                items.append((key, value))
+
         self.table.setRowCount(len(items))
         for row, (key, value) in enumerate(items):
             label = LABEL_MAP.get(key, str(key).replace("_", " ").title())
             if isinstance(value, float):
-                value_str = f"{value:.4f}"
+                if "angle" in key.lower() or "tilt" in key.lower():
+                    value_str = f"{value:.1f}"
+                else:
+                    value_str = f"{value:.4f}"
             else:
                 value_str = str(value)
             self.table.setItem(row, 0, QTableWidgetItem(label))

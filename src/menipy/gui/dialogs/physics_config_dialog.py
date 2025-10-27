@@ -27,7 +27,7 @@ class PhysicsConfigDialog(QDialog):
         self.needle_radius_edit = QLineEdit()
         self.tube_radius_edit = QLineEdit()
 
-        # Set initial text from the Unum objects
+        # Set initial text from the Pint quantities
         if self.params.delta_rho:
             self.delta_rho_edit.setText(str(self.params.delta_rho))
         if self.params.surface_tension_guess:

@@ -9,20 +9,20 @@ This document defines the sessile pipeline results contract used by the GUI Resu
 - required keys (baseline):
   - `diameter_mm` (float) — Base diameter in millimetres (distance between contact points along substrate).
   - `height_mm` (float) — Height in millimetres (apex to substrate distance, perpendicular to substrate).
-  - `drop_surface_mm2` (float) — Drop surface area in mm².
-  - `volume_uL` (float) — Volume in microlitres.
-- recommended keys (angles):
   - `theta_left_deg` (float) — Left contact angle in degrees (tangent method preferred).
   - `theta_right_deg` (float) — Right contact angle in degrees.
-- optional keys:
-  - `contact_angle_deg` (float) — Single angle from spherical‑cap approximation (legacy/quick estimate).
+  - `volume_uL` (float) — Volume in microlitres.
+  - `drop_surface_mm2` (float) — Drop surface area in mm².
   - `baseline_tilt_deg` (float) — Estimated substrate tilt in degrees.
   - `method` (string) — Angle method tag: `tangent`, `spherical_cap`, `circle_fit`, `young_laplace`.
-  - `uncertainty_deg` (float|object) — Angle uncertainty; per‑side object preferred: `{ "left": x, "right": y }`.
+- optional keys:
+  - `contact_angle_deg` (float) — Single angle from spherical‑cap approximation (legacy/quick estimate).
+  - `uncertainty_deg` (object) — Angle uncertainty per side: `{ "left": x, "right": y }`.
   - `contact_line` (object) — Contact line endpoints: `[[x1, y1], [x2, y2]]`.
   - `diameter_line` (object) — Visualization line; same format as `contact_line`.
   - `timings_ms` (object) — Per‑stage timings populated by the pipeline runner.
   - `image_path` (string) — Source image path (for provenance in exports).
+  - `diagnostics` (object) — Optional diagnostics including residuals, fit quality metrics, etc.
 
 Notes
 - Current implementation may emit only `contact_angle_deg` and omit left/right angles; both schemas are supported. The Results Panel must handle either gracefully.

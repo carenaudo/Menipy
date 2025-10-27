@@ -10,7 +10,6 @@ from menipy.gui.controllers.edge_detection_controller import EdgeDetectionPipeli
 from PySide6.QtWidgets import QMessageBox, QPlainTextEdit, QMainWindow
 
 from menipy.models.config import PhysicsParams
-from unum.units import kg, m, mm
 
 class PipelineController:
     """Handles pipeline execution and VM callbacks for the main window."""
@@ -153,8 +152,8 @@ class PipelineController:
 
         # Convert unit-aware params to SI floats for the backend
         try:
-            delta_rho_si = physics_params.delta_rho.asUnit(kg/m**3).value if physics_params.delta_rho else 1000.0
-            needle_diam_mm_si = physics_params.needle_radius.asUnit(mm).value * 2 if physics_params.needle_radius else None
+            delta_rho_si = physics_params.delta_rho.to("kg/m**3").m if physics_params.delta_rho else 1000.0
+            needle_diam_mm_si = physics_params.needle_radius.to("mm").m * 2 if physics_params.needle_radius else None
         except Exception as e:
             QMessageBox.critical(self.window, "Physics Parameter Error", f"Could not convert physics parameters to SI units: {e}")
             return None
@@ -211,24 +210,72 @@ class PipelineController:
     # ------------------------------------------------------------------
     def run_simple_analysis(self):
         """
-        Runs a direct analysis based on the currently selected pipeline mode,
-        bypassing the full SOP runner.
+        Runs a staged pipeline analysis for the current view, unifying the execution path.
         """
         mode = self.setup_ctrl.current_pipeline_name()
         if not mode:
             QMessageBox.warning(self.window, "Analysis", "Please select a pipeline first.")
             return
 
+        if mode.lower() != "sessile":
+            # Fallback to old functional path for non-sessile modes
+            image, roi_rect = self._get_analysis_image()
+            if image is None:
+                return
+            try:
+                modules = self._load_pipeline_modules(mode)
+                helpers = self._prepare_helper_bundle(mode, modules["helper_bundle_class"], roi_rect)
+                self._run_analysis_and_update_ui(mode, modules["analyze_func"], modules["draw_func"], image, helpers)
+            except Exception as e:
+                self.on_pipeline_error(f"An error occurred during analysis: {e}")
+            return
+
+        # Unified staged path for sessile
         image, roi_rect = self._get_analysis_image()
         if image is None:
             return
 
         try:
-            modules = self._load_pipeline_modules(mode)
-            helpers = self._prepare_helper_bundle(mode, modules["helper_bundle_class"], roi_rect)
-            self._run_analysis_and_update_ui(mode, modules["analyze_func"], modules["draw_func"], image, helpers)
+            # Prepare context with image and overlays
+            from menipy.models.context import Context
+            ctx = Context()
+            ctx.image = image
+
+            # Set substrate line if available
+            substrate_line_item = self.preview_panel.substrate_line_item()
+            if substrate_line_item:
+                substrate_line = substrate_line_item.get_line_in_scene()
+                if substrate_line:
+                    p1 = substrate_line.p1() - roi_rect.topLeft()
+                    p2 = substrate_line.p2() - roi_rect.topLeft()
+                    ctx.substrate_line = ((p1.x(), p1.y()), (p2.x(), p2.y()))
+
+            # Set scale from calibration (placeholder for now)
+            px_per_mm = 100.0  # TODO: get from calibration UI
+            ctx.scale = {"px_per_mm": px_per_mm}
+
+            # Set edge detection settings
+            if self.edge_detection_ctrl:
+                ctx.edge_detection_settings = self.edge_detection_ctrl.settings
+
+            # Run staged pipeline
+            from menipy.pipelines.discover import PIPELINE_MAP
+            pipeline_cls = PIPELINE_MAP.get("sessile")
+            if not pipeline_cls:
+                raise ValueError("Sessile pipeline not found")
+
+            pipeline = pipeline_cls()
+            ctx = pipeline.run(**ctx.__dict__)
+
+            # Update UI with results
+            if ctx.preview is not None:
+                self.preview_panel.display(ctx.preview)
+            if ctx.results:
+                self.results_panel.update(ctx.results)
+            self.window.statusBar().showMessage("Analysis complete.", 3000)
+
         except Exception as e:
-            self.on_pipeline_error(f"An error occurred during analysis: {e}")
+            self.on_pipeline_error(f"An error occurred during staged analysis: {e}")
 
     def run_full(self) -> None:
         params = self.setup_ctrl.gather_run_params()
@@ -427,7 +474,7 @@ class PipelineController:
                 ctx = pipeline.run_with_plan(only=only, include_prereqs=True, **kwargs)
             else:
                 ctx = pipeline.run(**kwargs)
-            if getattr(ctx, "preview", None) is not None:
+            if ctx.preview is not None:
                 self.preview_panel.display(ctx.preview)
             if getattr(ctx, "results", None):
                 self.results_panel.update(ctx.results)

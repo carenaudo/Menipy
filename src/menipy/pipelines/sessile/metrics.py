@@ -3,7 +3,15 @@ from __future__ import annotations
 import numpy as np
 
 
-from menipy.common.geometry import find_contact_points_from_contour
+from menipy.common.geometry import (
+    find_contact_points_from_contour,
+    detect_baseline_ransac,
+    refine_apex_curvature,
+    estimate_contact_angle_tangent,
+    estimate_contact_angle_circle_fit,
+    tangent_angle_at_point,
+    circle_fit_angle_at_point
+)
 from menipy.models.drop_extras import surface_area_mm2
 from menipy.models.surface_tension import volume_from_contour
 
@@ -15,10 +23,25 @@ def compute_sessile_metrics(
     delta_rho: float = 998.8,
     g: float = 9.80665,
     contact_point_tolerance_px: float = 20.0,
+    auto_detect_baseline: bool = False,
+    auto_detect_apex: bool = False,
+    contact_angle_method: str = "tangent",
 ) -> dict:
-    """Placeholder for sessile metrics computation."""
-    # This is a placeholder. The first real metrics to calculate are the
-    # contact points and the base diameter.
+    """Compute sessile drop metrics with optional auto-detection."""
+    contour_2d = contour.reshape(-1, 2)
+
+    # Auto-detect baseline if requested and not provided
+    baseline_confidence = 1.0
+    if substrate_line is None and auto_detect_baseline:
+        p1, p2, baseline_confidence = detect_baseline_ransac(contour_2d)
+        substrate_line = ((float(p1[0]), float(p1[1])), (float(p2[0]), float(p2[1])))
+
+    # Auto-detect apex if requested and not provided
+    apex_confidence = 1.0
+    if apex is None and auto_detect_apex:
+        apex_pt, apex_confidence = refine_apex_curvature(contour_2d)
+        apex = (float(apex_pt[0]), float(apex_pt[1]))
+
     contact_line = None
     diameter_px = 0.0
     height_px = 0.0
@@ -48,9 +71,29 @@ def compute_sessile_metrics(
             if den > 0:
                 height_px = num / den
 
+        # Use tilt-corrected coordinates for diameter and height if substrate is tilted
+        if substrate_line is not None and apex is not None:
+            p1_line = np.array(substrate_line[0])
+            p2_line = np.array(substrate_line[1])
+            line_vec = p2_line - p1_line
+            line_len = np.linalg.norm(line_vec)
+            if line_len > 0:
+                # Unit vector along the line
+                unit_line = line_vec / line_len
+                # Perpendicular unit vector
+                unit_perp = np.array([-unit_line[1], unit_line[0]])
+
+                # Project contact points and apex onto tilt-corrected coordinate system
+                apex_proj = np.dot(np.array(apex) - p1_line, unit_perp)
+                if p1 is not None and p2 is not None:
+                    p1_proj = np.dot(p1 - p1_line, unit_line)
+                    p2_proj = np.dot(p2 - p1_line, unit_line)
+                    diameter_px = abs(p2_proj - p1_proj)
+                height_px = abs(apex_proj)
+
     diameter_mm = diameter_px / px_per_mm if px_per_mm > 0 else 0.0
     height_mm = height_px / px_per_mm if px_per_mm > 0 else 0.0
-    contact_angle_deg = 0.0
+    contact_angle_deg = 0.0  # Initialize for legacy compatibility
 
     # Calculate contact surface area (base of the drop)
     if diameter_mm > 0:
@@ -74,7 +117,7 @@ def compute_sessile_metrics(
         profile_mask = np.sign(np.cross(v_sub, contour_2d - p1_sub)) == side
         profile = contour_2d[profile_mask]
 
-        if profile.size > 0:
+        if profile.size > 0 and len(profile) > 3:  # Need enough points for gradient
             # Project profile points onto the axis of symmetry to get coordinates for integration.
             vec_pa = profile - apex_pt
             # `z_coords` is the distance along the axis from the apex.
@@ -83,25 +126,83 @@ def compute_sessile_metrics(
             r_coords_px = np.abs(np.cross(vec_pa, v_axis))
             contour_mm = np.column_stack([r_coords_px, z_coords_px]) / px_per_mm
             volume_uL = volume_from_contour(contour_mm)
-            drop_surface_mm2 = surface_area_mm2(contour_mm, px_per_mm)
+            drop_surface_mm2 = surface_area_mm2(contour_mm * px_per_mm, px_per_mm)
 
-    # Calculate contact angle using the spherical cap approximation.
-    # This is a simple geometric model. Other methods (tangential, polyfit,
-    # Young-Laplace) can be added later.
-    if diameter_mm > 0 and height_mm > 0:
-        radius_mm = diameter_mm / 2.0
-        # Formula for spherical cap: theta = 2 * arctan(h/r)
-        theta_rad = 2 * np.arctan(height_mm / radius_mm)
-        contact_angle_deg = np.degrees(theta_rad)
+    # Calculate contact angles using selected method
+    theta_left_deg = 0.0
+    theta_right_deg = 0.0
+    uncertainty_left = 0.0
+    uncertainty_right = 0.0
+
+    if substrate_line is not None and p1 is not None and p2 is not None:
+        if contact_angle_method == "tangent":
+            # Use tangent method
+            theta_left_deg, uncertainty_left = tangent_angle_at_point(
+                contour, p1, substrate_line
+            )
+            theta_right_deg, uncertainty_right = tangent_angle_at_point(
+                contour, p2, substrate_line
+            )
+        elif contact_angle_method == "circle_fit":
+            # Use circle fit method
+            theta_left_deg, uncertainty_left = circle_fit_angle_at_point(
+                contour, p1, substrate_line
+            )
+            theta_right_deg, uncertainty_right = circle_fit_angle_at_point(
+                contour, p2, substrate_line
+            )
+        elif contact_angle_method == "spherical_cap":
+            # Use spherical cap approximation (legacy)
+            if diameter_mm > 0 and height_mm > 0:
+                radius_mm = diameter_mm / 2.0
+                theta_rad = 2 * np.arctan(height_mm / radius_mm)
+                contact_angle_deg = np.degrees(theta_rad)
+                theta_left_deg = contact_angle_deg
+                theta_right_deg = contact_angle_deg
+                # Estimate uncertainty based on geometric approximation
+                uncertainty_left = uncertainty_right = 2.0  # Rough estimate
+        else:
+            # Default to spherical cap
+            if diameter_mm > 0 and height_mm > 0:
+                radius_mm = diameter_mm / 2.0
+                theta_rad = 2 * np.arctan(height_mm / radius_mm)
+                contact_angle_deg = np.degrees(theta_rad)
+                theta_left_deg = contact_angle_deg
+                theta_right_deg = contact_angle_deg
+                uncertainty_left = uncertainty_right = 2.0
+    else:
+        # Fallback to spherical cap if no substrate/contact points
+        if diameter_mm > 0 and height_mm > 0:
+            radius_mm = diameter_mm / 2.0
+            theta_rad = 2 * np.arctan(height_mm / radius_mm)
+            contact_angle_deg = np.degrees(theta_rad)
+            theta_left_deg = contact_angle_deg
+            theta_right_deg = contact_angle_deg
+            uncertainty_left = uncertainty_right = 2.0
+
+    # Determine method tags
+    baseline_method = "auto_ransac" if auto_detect_baseline and substrate_line is not None else "manual"
+    apex_method = "auto_curvature" if auto_detect_apex and apex is not None else "manual"
 
     return {
         "apex": apex or (0, 0),
         "diameter_mm": diameter_mm,
         "height_mm": height_mm,
         "volume_uL": volume_uL,
-        "contact_angle_deg": contact_angle_deg,
+        "contact_angle_deg": (theta_left_deg + theta_right_deg) / 2 if theta_left_deg > 0 and theta_right_deg > 0 else contact_angle_deg,  # Legacy compatibility
+        "theta_left_deg": theta_left_deg,
+        "theta_right_deg": theta_right_deg,
         "contact_surface_mm2": contact_surface_mm2,
         "drop_surface_mm2": drop_surface_mm2,
         "diameter_line": contact_line or ((0, 0), (0, 0)),
         "contact_line": contact_line,
+        "baseline_confidence": baseline_confidence,
+        "apex_confidence": apex_confidence,
+        "baseline_method": baseline_method,
+        "apex_method": apex_method,
+        "method": contact_angle_method,
+        "uncertainty_deg": {
+            "left": uncertainty_left,
+            "right": uncertainty_right
+        },
     }

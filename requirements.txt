@@ -27,4 +27,7 @@ flake8
 
 # Documentation
 sphinx
-unum
+
+# Units
+pint
+pydantic-pint

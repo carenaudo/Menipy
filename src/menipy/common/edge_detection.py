@@ -141,6 +141,10 @@ def run(ctx, settings: EdgeDetectionSettings):
             img = frames
     if img is None: img = getattr(ctx, "image", None)
     if img is None: img = getattr(ctx, "preview", None)
+
+    # Handle Frame object
+    if hasattr(img, "image"):
+        img = img.image
     state = getattr(ctx, "preprocessed_state", None)
     roi_bounds = getattr(ctx, "roi", None)
     roi_image_override = None

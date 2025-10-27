@@ -27,6 +27,21 @@ young_laplace_sphere = getattr(_toy_mod, "toy_young_laplace")
 def _ensure_contour(ctx: Context) -> np.ndarray:
     if getattr(ctx, "contour", None) is not None and hasattr(ctx.contour, "xy"):
         return np.asarray(ctx.contour.xy, dtype=float)
+
+    # Get image from context
+    img = getattr(ctx, "frame", None)
+    if img is None and hasattr(ctx, "frames") and ctx.frames:
+        img = ctx.frames[0]
+    if img is None:
+        img = getattr(ctx, "image", None)
+
+    # Handle Frame object
+    if hasattr(img, "image"):
+        img = img.image
+
+    if img is None:
+        raise RuntimeError("No image available for edge detection")
+
     edged.run(ctx, settings=ctx.edge_detection_settings or EdgeDetectionSettings(method="canny"))
     return np.asarray(ctx.contour.xy, dtype=float)
 
@@ -57,36 +72,72 @@ class SessilePipeline(PipelineBase):
         xy = _ensure_contour(ctx)
         x, y = xy[:, 0], xy[:, 1]
 
-        baseline_y = float(np.max(y))
+        # Use substrate line if provided, otherwise auto-detect
+        substrate_line = getattr(ctx, 'substrate_line', None)
+        auto_detect_baseline = substrate_line is None
+        auto_detect_apex = True  # Always refine apex
+
+        if substrate_line:
+            # substrate_line is ((x1,y1), (x2,y2))
+            p1, p2 = substrate_line
+            baseline_y = float((p1[1] + p2[1]) / 2)  # approximate baseline y
+            # Calculate tilt
+            dx = p2[0] - p1[0]
+            dy = p2[1] - p1[1]
+            tilt_deg = float(np.degrees(np.arctan2(dy, dx)))
+        else:
+            baseline_y = float(np.max(y))
+            tilt_deg = 0.0
+
         axis_x = float(np.median(x))
         apex_i = int(np.argmin(y))
         apex_xy = (float(x[apex_i]), float(y[apex_i]))
 
-        # crude contact angles (placeholder)
-        def slope_at(i: int) -> float:
-            j0 = max(0, i - 1); j1 = min(len(x) - 1, i + 1)
-            dx = x[j1] - x[j0]; dy = y[j1] - y[j0]
-            return float(dy / (dx + 1e-9))
-
-        left_i = int(np.argmin(x + 10 * (baseline_y - y)))
-        right_i = int(np.argmin(-x + 10 * (baseline_y - y)))
-        mL, mR = slope_at(left_i), slope_at(right_i)
-        thetaL = float(np.degrees(np.arctan2(-mL, 1.0)))
-        thetaR = float(np.degrees(np.arctan2(mR, 1.0)))
+        # Compute diameter, height, contact points using metrics logic with auto-detection
+        px_per_mm = ctx.scale.get('px_per_mm', 1.0) if ctx.scale else 1.0
+        # Get contact angle method from context or default to tangent
+        contact_angle_method = getattr(ctx, 'contact_angle_method', 'tangent')
+        if contact_angle_method not in ['tangent', 'circle_fit', 'spherical_cap']:
+            contact_angle_method = 'tangent'  # Default fallback
+        from .metrics import compute_sessile_metrics
+        metrics = compute_sessile_metrics(
+            xy,
+            px_per_mm=px_per_mm,
+            substrate_line=substrate_line,
+            apex=apex_xy,
+            contact_point_tolerance_px=20.0,  # default
+            auto_detect_baseline=auto_detect_baseline,
+            auto_detect_apex=auto_detect_apex,
+            contact_angle_method=contact_angle_method,
+        )
 
         from menipy.models.geometry import Geometry
         ctx.geometry = Geometry(
             axis_x=axis_x,
             baseline_y=baseline_y,
             apex_xy=apex_xy,
-            tilt_deg=0.0  # these angles are in the results, not geometry
+            tilt_deg=tilt_deg
         )
-        # Store contact angles in results
+
+        # Store computed metrics in results
         if not hasattr(ctx, 'results'):
             ctx.results = {}
         ctx.results.update({
-            'theta_left_deg': thetaL,
-            'theta_right_deg': thetaR
+            'diameter_mm': metrics.get('diameter_mm', 0.0),
+            'height_mm': metrics.get('height_mm', 0.0),
+            'volume_uL': metrics.get('volume_uL', 0.0),
+            'contact_angle_deg': metrics.get('contact_angle_deg', 0.0),  # legacy compatibility
+            'theta_left_deg': metrics.get('theta_left_deg', 0.0),
+            'theta_right_deg': metrics.get('theta_right_deg', 0.0),
+            'contact_surface_mm2': metrics.get('contact_surface_mm2', 0.0),
+            'drop_surface_mm2': metrics.get('drop_surface_mm2', 0.0),
+            'baseline_tilt_deg': tilt_deg,
+            'method': metrics.get('method', 'spherical_cap'),
+            'uncertainty_deg': metrics.get('uncertainty_deg', {'left': 0.0, 'right': 0.0}),
+            'baseline_confidence': metrics.get('baseline_confidence', 1.0),
+            'apex_confidence': metrics.get('apex_confidence', 1.0),
+            'baseline_method': metrics.get('baseline_method', 'manual'),
+            'apex_method': metrics.get('apex_method', 'manual'),
         })
         return ctx
 
@@ -117,35 +168,48 @@ class SessilePipeline(PipelineBase):
         params = fit.get("params", [])
         res = {n: p for n, p in zip(names, params)}
         res.update({
-            "theta_left_deg": getattr(ctx.geometry, "theta_left_deg", None),
-            "theta_right_deg": getattr(ctx.geometry, "theta_right_deg", None),
             "residuals": fit.get("residuals", {}),
         })
-        ctx.results = res
+        # Merge with existing results from geometry
+        if hasattr(ctx, 'results') and ctx.results:
+            ctx.results.update(res)
+        else:
+            ctx.results = res
         return ctx
 
     def do_overlay(self, ctx: Context) -> Optional[Context]:
-        xy = _ensure_contour(ctx)
-        if not ctx.geometry:
-            return ctx
-        axis_x = int(round(ctx.geometry.axis_x)) if ctx.geometry.axis_x is not None else 0
-        baseline_y = int(round(ctx.geometry.baseline_y)) if ctx.geometry.baseline_y is not None else 0
-        apex_x, apex_y = ctx.geometry.apex_xy if ctx.geometry.apex_xy is not None else (0, 0)
-        theta_l = ctx.results.get('theta_left_deg') 
-        theta_r = ctx.results.get('theta_right_deg')
-        text = (
-            f"R0≈{ctx.results.get('R0_mm','?')} mm | "
-            f"θL≈{theta_l if theta_l is not None else '?'}° "
-            f"θR≈{theta_r if theta_r is not None else '?'}°"
-        )
-        cmds = [
-            {"type": "polyline", "points": xy.tolist(), "closed": True, "color": "yellow", "thickness": 2},
-            {"type": "line", "p1": (axis_x, 0), "p2": (axis_x, int(np.max(xy[:, 1]) + 10)), "color": "cyan", "thickness": 1},
-            {"type": "line", "p1": (0, baseline_y), "p2": (int(np.max(xy[:, 0]) + 10), baseline_y), "color": "green", "thickness": 2},
-            {"type": "cross", "p": (int(apex_x), int(apex_y)), "color": "red", "size": 6, "thickness": 2},
-            {"type": "text", "p": (10, 20), "text": text, "color": "white", "scale": 0.55},
-        ]
-        return ovl.run(ctx, commands=cmds, alpha=0.6)
+        if ctx.image is not None and ctx.contour is not None:
+            # Create a simple overlay with contour and geometry info
+            overlay_img = ctx.image.copy()
+            contour_xy = np.asarray(ctx.contour.xy, dtype=int)
+            cv2.drawContours(overlay_img, [contour_xy], -1, (0, 255, 0), 2)
+
+            # Draw geometry info if available
+            if ctx.geometry:
+                geom = ctx.geometry
+                # Draw apex
+                if geom.apex_xy:
+                    cv2.circle(overlay_img, (int(geom.apex_xy[0]), int(geom.apex_xy[1])), 5, (255, 0, 0), -1)
+                # Draw axis line
+                if geom.axis_x is not None:
+                    cv2.line(overlay_img, (int(geom.axis_x), 0), (int(geom.axis_x), overlay_img.shape[0]), (255, 255, 0), 1)
+                # Draw baseline
+                if geom.baseline_y is not None:
+                    cv2.line(overlay_img, (0, int(geom.baseline_y)), (overlay_img.shape[1], int(geom.baseline_y)), (0, 255, 255), 1)
+
+            # Add text with results
+            if ctx.results:
+                y_offset = 30
+                for key, value in ctx.results.items():
+                    if isinstance(value, (int, float)):
+                        text = f"{key}: {value:.2f}"
+                        cv2.putText(overlay_img, text, (10, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+                        y_offset += 25
+                        if y_offset > overlay_img.shape[0] - 50:
+                            break
+
+            ctx.preview = overlay_img
+        return ctx
 
     def do_validation(self, ctx: Context) -> Optional[Context]:
         ok = bool(ctx.fit and ctx.fit.get("solver", {}).get("success", False))

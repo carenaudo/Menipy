@@ -108,14 +108,18 @@ class PipelineBase:
         if not hasattr(ctx, "timings_ms"):
             ctx.timings_ms = {}
 
-        image = kwargs.get("image") or kwargs.get("image_path")
+        image = kwargs.get("image")
+        image_path = kwargs.get("image_path")
         if image is not None:
-            ctx.image_path = image
+            ctx.image = image
+        elif image_path is not None:
+            ctx.image_path = image_path
 
         # For single-image processing, also populate current_frame
-        if image and not kwargs.get("camera"):
-            from menipy.common import acquisition
-            ctx.current_frame = acquisition.from_file([image])[0]
+        if image is not None and not kwargs.get("camera"):
+            from menipy.models.frame import Frame
+            ctx.current_frame = Frame(image=image)
+            ctx.frames = [ctx.current_frame]  # Also set frames for compatibility
         cam = kwargs.get("camera")
         if cam is None:
             cam = kwargs.get("cam_id")

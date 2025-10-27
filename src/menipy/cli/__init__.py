@@ -52,28 +52,12 @@ def _save_image_bgr(path: Path, img):
 
 
 def _pick_pipeline(name: str) -> PipelineBase:
+	from menipy.pipelines.discover import PIPELINE_MAP
 	name = name.lower()
-	if name == "sessile":
-		from menipy.pipelines.sessile.stages import SessilePipeline
-
-		return SessilePipeline()
-	if name == "oscillating":
-		from menipy.pipelines.oscillating.stages import OscillatingPipeline
-
-		return OscillatingPipeline()
-	if name == "capillary_rise":
-		from menipy.pipelines.capillary_rise.stages import CapillaryRisePipeline
-
-		return CapillaryRisePipeline()
-	if name == "pendant":
-		from menipy.pipelines.pendant.stages import PendantPipeline
-
-		return PendantPipeline()
-	if name == "captive_bubble":
-		from menipy.pipelines.captive_bubble.stages import CaptiveBubblePipeline
-
-		return CaptiveBubblePipeline()
-	raise SystemExit(f"Unknown pipeline '{name}'")
+	pipeline_cls = PIPELINE_MAP.get(name)
+	if pipeline_cls is None:
+		raise SystemExit(f"Unknown pipeline '{name}'")
+	return pipeline_cls()
 
 
 def _patch_acquisition(p: PipelineBase, *, image: Optional[Path], camera: Optional[int], frames: int):
