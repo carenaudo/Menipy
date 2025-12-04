@@ -27,6 +27,133 @@
     <number>8</number>
    </property>
    <item>
+    <widget class="QGroupBox" name="pipelineGroup">
+     <property name="title">
+      <string>Pipeline Type</string>
+     </property>
+     <layout class="QVBoxLayout" name="pipelineButtonLayout">
+      <item>
+       <layout class="QHBoxLayout" name="pipelineButtons">
+        <item>
+         <widget class="QPushButton" name="sessileBtn">
+          <property name="text">
+           <string>Sessile Drop</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../resources/menipy_icons.qrc">
+            <normaloff>:/icons/sessile.svg</normaloff>
+           </iconset>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>true</bool>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton { text-align: center; padding: 8px; border: 2px solid #4A90E2; border-radius: 6px; background-color: #f8f9fa; }
+QPushButton:checked { background-color: #4A90E2; color: white; font-weight: bold; }</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pendantBtn">
+          <property name="text">
+           <string>Pendant Drop</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../resources/menipy_icons.qrc">
+            <normaloff>:/icons/pendant.svg</normaloff>
+           </iconset>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>true</bool>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton { text-align: center; padding: 8px; border: 2px solid #7ED321; border-radius: 6px; background-color: #f8f9fa; }
+QPushButton:checked { background-color: #7ED321; color: white; font-weight: bold; }</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="oscillatingBtn">
+          <property name="text">
+           <string>Oscillating</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../resources/menipy_icons.qrc">
+            <normaloff>:/icons/oscillating.svg</normaloff>
+           </iconset>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>true</bool>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton { text-align: center; padding: 8px; border: 2px solid #F5A623; border-radius: 6px; background-color: #f8f9fa; }
+QPushButton:checked { background-color: #F5A623; color: white; font-weight: bold; }</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="pipelineButtonsRow2">
+        <item>
+         <widget class="QPushButton" name="capillaryBtn">
+          <property name="text">
+           <string>Capillary Rise</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../resources/menipy_icons.qrc">
+            <normaloff>:/icons/capillary_rise.svg</normaloff>
+           </iconset>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>true</bool>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton { text-align: center; padding: 8px; border: 2px solid #9B59B6; border-radius: 6px; background-color: #f8f9fa; }
+QPushButton:checked { background-color: #9B59B6; color: white; font-weight: bold; }</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="captiveBtn">
+          <property name="text">
+           <string>Captive Bubble</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../resources/menipy_icons.qrc">
+            <normaloff>:/icons/captive_bubble.svg</normaloff>
+           </iconset>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>true</bool>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton { text-align: center; padding: 8px; border: 2px solid #50E3C2; border-radius: 6px; background-color: #f8f9fa; }
+QPushButton:checked { background-color: #50E3C2; color: white; font-weight: bold; }</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
     <widget class="QGroupBox" name="sourceGroup">
      <property name="title">
       <string>Image Source</string>
@@ -38,39 +165,11 @@
      <property name="title">
       <string>Calibration</string>
      </property>
-     <layout class="QGridLayout" name="calibrationLayout">
-      <item row="3" column="1">
-       <widget class="QPushButton" name="drawLineBtn">
-        <property name="text">
-         <string>Line</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="1">
-       <widget class="QPushButton" name="clearOverlayBtn">
-        <property name="text">
-         <string>Clear</string>
-        </property>
-       </widget>
-      </item>
+     <layout class="QFormLayout" name="calibrationForm">
       <item row="0" column="0">
-       <widget class="QLabel" name="label">
+       <widget class="QLabel" name="previewLabel">
         <property name="text">
-         <string>Previsualizar</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="0">
-       <widget class="QPushButton" name="drawPointBtn">
-        <property name="text">
-         <string>Point</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="0">
-       <widget class="QPushButton" name="drawRectBtn">
-        <property name="text">
-         <string>Rect</string>
+         <string>Preview</string>
         </property>
        </widget>
       </item>
@@ -84,49 +183,96 @@
         </property>
        </widget>
       </item>
-     </layout>
-    </widget>
-   </item>
-   <item>
-    <widget class="QGroupBox" name="pipelineGroup">
-     <property name="title">
-      <string>Pipeline</string>
-     </property>
-     <layout class="QFormLayout" name="pipeForm">
-      <item row="0" column="0">
-       <widget class="QLabel" name="labelType">
+      <item row="1" column="0">
+       <widget class="QLabel" name="needleLengthLabel">
         <property name="text">
-         <string>Type</string>
+         <string>Needle Length (mm)</string>
         </property>
        </widget>
       </item>
-      <item row="0" column="1">
-       <widget class="QComboBox" name="testCombo">
-        <item>
-         <property name="text">
-          <string>sessile</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>pendant</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>oscillating</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>capillary_rise</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>captive_bubble</string>
-         </property>
-        </item>
+      <item row="1" column="1">
+       <widget class="QDoubleSpinBox" name="needleLengthSpin">
+        <property name="minimum">
+         <double>0.100000000000000</double>
+        </property>
+        <property name="maximum">
+         <double>100.000000000000000</double>
+        </property>
+        <property name="value">
+         <double>10.000000000000000</double>
+        </property>
+        <property name="decimals">
+         <number>2</number>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="dropDensityLabel">
+        <property name="text">
+         <string>Drop Density (kg/m³)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QDoubleSpinBox" name="dropDensitySpin">
+        <property name="minimum">
+         <double>500.000000000000000</double>
+        </property>
+        <property name="maximum">
+         <double>20000.000000000000000</double>
+        </property>
+        <property name="value">
+         <double>1000.000000000000000</double>
+        </property>
+        <property name="decimals">
+         <number>1</number>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="fluidDensityLabel">
+        <property name="text">
+         <string>Fluid Density (kg/m³)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QDoubleSpinBox" name="fluidDensitySpin">
+        <property name="minimum">
+         <double>1.000000000000000</double>
+        </property>
+        <property name="maximum">
+         <double>2000.000000000000000</double>
+        </property>
+        <property name="value">
+         <double>1.200000000000000</double>
+        </property>
+        <property name="decimals">
+         <number>1</number>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="substrateAngleLabel">
+        <property name="text">
+         <string>Substrate Contact Angle (°)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QDoubleSpinBox" name="substrateAngleSpin">
+        <property name="minimum">
+         <double>0.000000000000000</double>
+        </property>
+        <property name="maximum">
+         <double>180.000000000000000</double>
+        </property>
+        <property name="value">
+         <double>0.000000000000000</double>
+        </property>
+        <property name="decimals">
+         <number>1</number>
+        </property>
        </widget>
       </item>
      </layout>

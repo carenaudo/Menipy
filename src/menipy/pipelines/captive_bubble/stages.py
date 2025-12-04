@@ -38,6 +38,16 @@ class CaptiveBubblePipeline(PipelineBase):
 
     name = "captive_bubble"
 
+    # UI metadata for plugin-centric configuration
+    ui_metadata = {
+        "display_name": "Captive Bubble",
+        "icon": "captive_bubble.svg",
+        "color": "#50E3C2",
+        "stages": ["acquisition", "edge_detection", "geometry", "physics"],
+        "calibration_params": ["needle_diameter_mm", "drop_density_kg_m3", "fluid_density_kg_m3"],
+        "primary_metrics": ["surface_tension_mN_m", "bubble_volume_uL", "pressure_difference"]
+    }
+
     def do_acquisition(self, ctx: Context) -> Optional[Context]: return ctx
     def do_preprocessing(self, ctx: Context) -> Optional[Context]: return ctx
 

@@ -31,6 +31,16 @@ class CapillaryRisePipeline(PipelineBase):
 
     name = "capillary_rise"
 
+    # UI metadata for plugin-centric configuration
+    ui_metadata = {
+        "display_name": "Capillary Rise",
+        "icon": "capillary_rise.svg",
+        "color": "#9B59B6",
+        "stages": ["acquisition", "edge_detection", "scaling", "solver"],
+        "calibration_params": ["tube_diameter_mm", "fluid_density_kg_m3", "contact_angle_deg"],
+        "primary_metrics": ["capillary_height_mm", "surface_tension_mN_m", "contact_angle_deg"]
+    }
+
     def do_acquisition(self, ctx: Context) -> Optional[Context]: return ctx
     def do_preprocessing(self, ctx: Context) -> Optional[Context]: return ctx
 

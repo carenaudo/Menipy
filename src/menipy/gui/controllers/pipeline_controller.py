@@ -250,13 +250,22 @@ class PipelineController:
                     p2 = substrate_line.p2() - roi_rect.topLeft()
                     ctx.substrate_line = ((p1.x(), p1.y()), (p2.x(), p2.y()))
 
-            # Set scale from calibration (placeholder for now)
-            px_per_mm = 100.0  # TODO: get from calibration UI
+            # Set scale and physics from calibration UI
+            calibration_params = self.setup_ctrl.get_calibration_params()
+            px_per_mm = calibration_params["needle_length_mm"] / 100.0  # Assume 100px needle for now
             ctx.scale = {"px_per_mm": px_per_mm}
 
             # Set edge detection settings
             if self.edge_detection_ctrl:
                 ctx.edge_detection_settings = self.edge_detection_ctrl.settings
+
+            # Set physics parameters from calibration
+            calibration_params = self.setup_ctrl.get_calibration_params()
+            ctx.physics = {
+                "rho1": calibration_params["drop_density_kg_m3"],  # Drop density
+                "rho2": calibration_params["fluid_density_kg_m3"],  # Fluid density
+                "g": 9.80665,  # Gravity
+            }
 
             # Run staged pipeline
             from menipy.pipelines.discover import PIPELINE_MAP
@@ -272,6 +281,8 @@ class PipelineController:
                 self.preview_panel.display(ctx.preview)
             if ctx.results:
                 self.results_panel.update(ctx.results)
+                # Add to measurement history
+                self.add_measurement_to_history(ctx, "sessile")
             self.window.statusBar().showMessage("Analysis complete.", 3000)
 
         except Exception as e:
@@ -371,6 +382,16 @@ class PipelineController:
 
         self._run_pipeline_direct(pipeline_cls, **run_kwargs)
 
+    def run_sop(self) -> None:
+        """Run the current SOP (Standard Operating Procedure)."""
+        if not self.sops:
+            QMessageBox.warning(self.window, "Run SOP", "No SOP system available.")
+            return
+
+        # This would integrate with the SOP system
+        # For now, delegate to run_all
+        self.run_all()
+
     def run_stage(self, stage_name: str) -> None:
         stage_lower = (stage_name or "").strip().lower()
         params = self.setup_ctrl.gather_run_params()
@@ -403,6 +424,7 @@ class PipelineController:
                 return
             except Exception as exc:
                 print("[run_vm single step] falling back to pipeline:", exc)
+                # Continue to direct pipeline execution
 
         name = (params.get("name") or "sessile" or "").lower()
         pipeline_cls = self.pipeline_map.get(name)
@@ -433,7 +455,14 @@ class PipelineController:
             if self.edge_detection_ctrl:
                 run_kwargs_pipe["edge_detection_settings"] = self.edge_detection_ctrl.settings
 
-            pipe.run_with_plan(**run_kwargs_pipe)
+            ctx = pipe.run_with_plan(**run_kwargs_pipe)
+            if ctx.preview is not None:
+                self.preview_panel.display(ctx.preview)
+            if getattr(ctx, "results", None):
+                self.results_panel.update(ctx.results)
+                # Add to measurement history
+                pipeline_name = (params.get("name") or "sessile" or "").lower()
+                self.add_measurement_to_history(ctx, pipeline_name)
         except Exception as exc:
             self.on_pipeline_error(str(exc))
 
@@ -447,6 +476,44 @@ class PipelineController:
     def on_results_ready(self, results: Mapping[str, Any]) -> None:
         self.results_panel.update(results)
         self.window.statusBar().showMessage("Results ready", 1000)
+
+    def add_measurement_to_history(self, ctx: Any, pipeline_name: str) -> None:
+        """Add a completed measurement to the results history."""
+        from datetime import datetime
+        from menipy.models.results import MeasurementResult, get_results_history
+        import uuid
+
+        if not hasattr(ctx, 'results') or not ctx.results:
+            return
+
+        # Generate measurement ID
+        timestamp = datetime.now()
+        sequence = len(get_results_history().measurements) + 1
+        measurement_id = f"{timestamp.strftime('%Y%m%d_%H%M%S')}_{sequence:03d}"
+
+        # Extract file information
+        file_path = getattr(ctx, 'image_path', None)
+        file_name = None
+        if file_path:
+            from pathlib import Path
+            file_name = Path(file_path).name
+        elif hasattr(ctx, 'image') and isinstance(ctx.image, str):
+            from pathlib import Path
+            file_name = Path(ctx.image).name
+
+        # Create measurement result
+        measurement = MeasurementResult(
+            id=measurement_id,
+            timestamp=timestamp,
+            pipeline=pipeline_name,
+            file_path=file_path,
+            file_name=file_name,
+            results=dict(ctx.results)
+        )
+
+        # Add to history
+        self.results_panel.add_measurement(measurement)
+        print(f"[DEBUG] Added measurement to history: {measurement.file_name} ({measurement.pipeline})")
 
     def append_logs(self, lines: Any) -> None:
         if not self.log_view:
@@ -478,6 +545,8 @@ class PipelineController:
                 self.preview_panel.display(ctx.preview)
             if getattr(ctx, "results", None):
                 self.results_panel.update(ctx.results)
+                # Add to measurement history
+                self.add_measurement_to_history(ctx, name)
             self.window.statusBar().showMessage("Done", 1500)
         except Exception as exc:
             self.on_pipeline_error(str(exc))

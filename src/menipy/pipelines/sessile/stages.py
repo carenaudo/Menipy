@@ -51,8 +51,29 @@ class SessilePipeline(PipelineBase):
 
     name = "sessile"
 
+    # UI metadata for plugin-centric configuration
+    ui_metadata = {
+        "display_name": "Sessile Drop",
+        "icon": "sessile.svg",
+        "color": "#4A90E2",
+        "stages": ["acquisition", "edge_detection", "geometry", "overlay", "physics"],
+        "calibration_params": ["needle_length_mm", "drop_density_kg_m3", "fluid_density_kg_m3", "substrate_contact_angle_deg"],
+        "primary_metrics": ["contact_angle_deg", "surface_tension_mN_m", "volume_uL"]
+    }
+
     def do_acquisition(self, ctx: Context) -> Optional[Context]:
         if ctx.image is not None:
+            # If image is a string path, load it
+            if isinstance(ctx.image, str):
+                try:
+                    img = cv2.imread(ctx.image, cv2.IMREAD_COLOR)
+                    if img is None:
+                        logger.warning("Could not load image from path: %s", ctx.image)
+                        return ctx
+                    ctx.image = img
+                except Exception as exc:
+                    logger.error("Error loading image %s: %s", ctx.image, exc)
+                    return ctx
             return ctx
         if ctx.image_path:
             try:
@@ -179,6 +200,18 @@ class SessilePipeline(PipelineBase):
 
     def do_overlay(self, ctx: Context) -> Optional[Context]:
         if ctx.image is not None and ctx.contour is not None:
+            # Ensure image is loaded if it's a string path
+            if isinstance(ctx.image, str):
+                try:
+                    import cv2
+                    img = cv2.imread(ctx.image, cv2.IMREAD_COLOR)
+                    if img is None:
+                        logger.warning("Could not load image from path in overlay: %s", ctx.image)
+                        return ctx
+                    ctx.image = img
+                except Exception as exc:
+                    logger.error("Error loading image in overlay %s: %s", ctx.image, exc)
+                    return ctx
             # Create a simple overlay with contour and geometry info
             overlay_img = ctx.image.copy()
             contour_xy = np.asarray(ctx.contour.xy, dtype=int)
@@ -197,16 +230,19 @@ class SessilePipeline(PipelineBase):
                 if geom.baseline_y is not None:
                     cv2.line(overlay_img, (0, int(geom.baseline_y)), (overlay_img.shape[1], int(geom.baseline_y)), (0, 255, 255), 1)
 
-            # Add text with results
+            # Add text with results - only show a few key metrics
             if ctx.results:
                 y_offset = 30
-                for key, value in ctx.results.items():
-                    if isinstance(value, (int, float)):
-                        text = f"{key}: {value:.2f}"
-                        cv2.putText(overlay_img, text, (10, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
-                        y_offset += 25
-                        if y_offset > overlay_img.shape[0] - 50:
-                            break
+                key_metrics = ['diameter_mm', 'height_mm', 'contact_angle_deg', 'volume_uL']
+                for key in key_metrics:
+                    if key in ctx.results:
+                        value = ctx.results[key]
+                        if isinstance(value, (int, float)):
+                            text = f"{key.replace('_', ' ').title()}: {value:.2f}"
+                            cv2.putText(overlay_img, text, (10, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+                            y_offset += 25
+                            if y_offset > overlay_img.shape[0] - 50:
+                                break
 
             ctx.preview = overlay_img
         return ctx

@@ -1,0 +1,6 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Sessile drop icon - drop sitting on surface -->
+  <ellipse cx="12" cy="16" rx="6" ry="4" fill="#4A90E2" stroke="#2E5C8A" stroke-width="1.5"/>
+  <line x1="6" y1="20" x2="18" y2="20" stroke="#2E5C8A" stroke-width="2"/>
+  <circle cx="12" cy="12" r="2" fill="#FFFFFF" opacity="0.8"/>
+</svg>

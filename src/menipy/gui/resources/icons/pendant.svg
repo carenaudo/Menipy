@@ -1,0 +1,6 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Pendant drop icon - drop hanging from needle -->
+  <ellipse cx="12" cy="8" rx="6" ry="4" fill="#7ED321" stroke="#4A7C1A" stroke-width="1.5"/>
+  <line x1="12" y1="4" x2="12" y2="12" stroke="#4A7C1A" stroke-width="2"/>
+  <circle cx="12" cy="6" r="1.5" fill="#FFFFFF" opacity="0.8"/>
+</svg>

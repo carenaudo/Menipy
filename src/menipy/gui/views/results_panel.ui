@@ -1,37 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>ResultsPanel</class>
- <widget class="QWidget" name="ResultsPanel">
-  <property name="windowTitle"><string>Results</string></property>
-  <layout class="QVBoxLayout" name="verticalLayout">
-   <item><widget class="QLabel" name="labelParams"><property name="text"><string>Parameters</string></property></widget></item>
-   <item>
-    <widget class="QTableWidget" name="paramsTable">
-     <property name="columnCount"><number>2</number></property>
-     <column><property name="text"><string>Name</string></property></column>
-     <column><property name="text"><string>Value</string></property></column>
-    </widget>
-   </item>
-
-   <item><widget class="QLabel" name="labelResiduals"><property name="text"><string>Residuals</string></property></widget></item>
-   <item>
-    <widget class="QTableWidget" name="residualsTable">
-     <property name="columnCount"><number>2</number></property>
-     <column><property name="text"><string>Metric</string></property></column>
-     <column><property name="text"><string>Value</string></property></column>
-    </widget>
-   </item>
-
-   <item><widget class="QLabel" name="labelTimings"><property name="text"><string>Timings</string></property></widget></item>
-   <item>
-    <widget class="QTableWidget" name="timingsTable">
-     <property name="columnCount"><number>2</number></property>
-     <column><property name="text"><string>Stage</string></property></column>
-     <column><property name="text"><string>ms</string></property></column>
-    </widget>
-   </item>
-  </layout>
- </widget>
- <resources/>
- <connections/>
+  <class>ResultsPanel</class>
+  <widget class="QWidget" name="ResultsPanel">
+   <property name="windowTitle"><string>Results</string></property>
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QTableWidget" name="resultsTable">
+      <property name="columnCount"><number>0</number></property>
+      <property name="rowCount"><number>0</number></property>
+      <attribute name="horizontalHeaderVisible">
+       <bool>true</bool>
+      </attribute>
+      <attribute name="verticalHeaderVisible">
+       <bool>true</bool>
+      </attribute>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <resources/>
+  <connections/>
 </ui>

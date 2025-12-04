@@ -48,6 +48,16 @@ class OscillatingPipeline(PipelineBase):
 
     name = "oscillating"
 
+    # UI metadata for plugin-centric configuration
+    ui_metadata = {
+        "display_name": "Oscillating Drop",
+        "icon": "oscillating.svg",
+        "color": "#F5A623",
+        "stages": ["acquisition", "preprocessing", "edge_detection", "geometry", "physics"],
+        "calibration_params": ["needle_length_mm", "drop_density_kg_m3", "fluid_density_kg_m3"],
+        "primary_metrics": ["surface_tension_mN_m", "oscillation_frequency", "damping_ratio"]
+    }
+
     def do_acquisition(self, ctx: Context) -> Optional[Context]: return ctx
     def do_preprocessing(self, ctx: Context) -> Optional[Context]: return ctx
 

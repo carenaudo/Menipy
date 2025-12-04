@@ -119,7 +119,7 @@ class PipelineBase:
             ctx.image_path = image_path
 
         # For single-image processing, also populate current_frame
-        if image is not None and not kwargs.get("camera"):
+        if image is not None and not kwargs.get("camera") and isinstance(image, np.ndarray):
             from menipy.models.frame import Frame
             ctx.current_frame = Frame(image=image)
             ctx.frames = [ctx.current_frame]  # Also set frames for compatibility
