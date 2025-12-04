@@ -1,3 +1,6 @@
+"""
+Dialog for overlay visualization settings.
+"""
 from __future__ import annotations
 
 """Dialog to configure overlay styling (contours, points, lines).

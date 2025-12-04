@@ -1,3 +1,6 @@
+"""
+Additional droplet property calculations (Worthington number, curvature, surface area, etc.).
+"""
 import numpy as np
 import math
 

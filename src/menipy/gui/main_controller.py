@@ -1,3 +1,6 @@
+"""
+Main window controller coordinating GUI components.
+"""
 # src/menipy/gui/controllers/main_controller.py
 from __future__ import annotations
 

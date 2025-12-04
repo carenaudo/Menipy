@@ -1,3 +1,6 @@
+"""
+Controller for edge detection configuration and execution.
+"""
 from __future__ import annotations
 
 """GUI controller for Menipy edge detection pipeline."""

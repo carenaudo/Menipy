@@ -1,4 +1,7 @@
 # src/adsa/common/solver.py
+"""
+Solver stage utilities for fitting physical models to contours.
+"""
 from __future__ import annotations
 
 from typing import Callable, Iterable, Literal, Optional, Sequence

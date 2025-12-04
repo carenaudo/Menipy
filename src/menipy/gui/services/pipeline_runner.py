@@ -1,3 +1,6 @@
+"""
+Service for running pipelines in the GUI context.
+"""
 # src/adsa/gui/services/pipeline_runner.py
 from __future__ import annotations
 from typing import Optional

@@ -1,3 +1,6 @@
+"""
+Dialog for edge detection method configuration.
+"""
 from __future__ import annotations
 
 """Configuration dialog for edge detection pipeline settings."""

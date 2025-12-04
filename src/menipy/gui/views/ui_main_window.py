@@ -1,3 +1,8 @@
+"""
+UI definition for main window (likely auto-generated).
+
+Note: This file may be auto-generated. Avoid manual modifications.
+"""
 # -*- coding: utf-8 -*-
 
 ################################################################################

@@ -1,3 +1,6 @@
+"""
+Standard Operating Procedure (SOP) management service.
+"""
 from __future__ import annotations
 from dataclasses import dataclass, asdict
 from pathlib import Path

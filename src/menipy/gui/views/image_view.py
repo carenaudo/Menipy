@@ -1,3 +1,6 @@
+"""
+Custom image viewer widget.
+"""
 from __future__ import annotations
 
 import logging

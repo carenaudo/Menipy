@@ -1,4 +1,7 @@
 # src/adsa/common/overlay.py
+"""
+Overlay drawing utilities for visualizing analysis results on images.
+"""
 from __future__ import annotations
 from typing import Iterable, Literal, Tuple, Union, Dict, Any
 import numpy as np

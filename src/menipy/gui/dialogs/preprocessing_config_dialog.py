@@ -1,3 +1,6 @@
+"""
+Dialog for preprocessing settings configuration.
+"""
 
 from __future__ import annotations
 

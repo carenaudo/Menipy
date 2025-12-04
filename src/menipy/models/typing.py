@@ -1,4 +1,7 @@
 # src/menipy/models/typing.py
+"""
+Type aliases for numpy arrays used throughout Menipy.
+"""
 from __future__ import annotations
 
 from typing import Union

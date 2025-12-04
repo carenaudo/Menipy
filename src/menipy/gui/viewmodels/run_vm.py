@@ -1,3 +1,6 @@
+"""
+View model for pipeline run management.
+"""
 # src/menipy/gui/viewmodels/run_vm.py
 from __future__ import annotations
 from PySide6.QtCore import QObject, Signal

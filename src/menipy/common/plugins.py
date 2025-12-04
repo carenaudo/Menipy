@@ -1,3 +1,6 @@
+"""
+Plugin discovery, loading, and management utilities.
+"""
 from __future__ import annotations
 import sys, importlib.util
 from pathlib import Path

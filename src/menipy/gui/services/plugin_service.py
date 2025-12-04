@@ -1,3 +1,6 @@
+"""
+Plugin management service for GUI.
+"""
 # src/adsa/gui/services/plugin_service.py
 from __future__ import annotations
 from pathlib import Path

@@ -1,3 +1,6 @@
+"""
+Geometric models for contours, geometry landmarks, and spatial features.
+"""
 from __future__ import annotations
 
 from typing import Literal, Optional, Tuple

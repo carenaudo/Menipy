@@ -1,4 +1,7 @@
 # src/adsa/models/datatypes.py
+"""
+Common data types and structures for analysis records and preprocessing state.
+"""
 from __future__ import annotations
 
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union

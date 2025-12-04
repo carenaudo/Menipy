@@ -1,3 +1,6 @@
+"""
+Main window implementation (legacy - check if still used).
+"""
 import importlib
 import logging
 

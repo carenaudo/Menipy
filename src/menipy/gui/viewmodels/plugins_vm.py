@@ -1,3 +1,6 @@
+"""
+View model for plugin management UI.
+"""
 # src/adsa/gui/viewmodels/plugins_vm.py
 from __future__ import annotations
 from PySide6.QtCore import QObject, Signal

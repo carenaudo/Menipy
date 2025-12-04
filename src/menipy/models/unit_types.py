@@ -1,4 +1,7 @@
 # src/menipy/models/unit_types.py
+"""
+Pydantic-Pint unit types for physical quantities.
+"""
 from typing import Annotated
 from pint.facets.plain import PlainQuantity as Quantity
 from pydantic_pint import PydanticPintQuantity

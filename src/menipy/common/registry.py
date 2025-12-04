@@ -1,4 +1,7 @@
 # src/adsa/common/registry.py
+"""
+Central registry for pipeline components and plugins.
+"""
 from __future__ import annotations
 from typing import Callable, Dict, Any
 

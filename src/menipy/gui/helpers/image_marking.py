@@ -1,3 +1,6 @@
+"""
+Interactive image marking and annotation tools.
+"""
 
 from __future__ import annotations
 

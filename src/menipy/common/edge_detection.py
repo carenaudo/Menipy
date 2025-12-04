@@ -1,3 +1,6 @@
+"""
+Edge detection utilities and pipeline stage logic.
+"""
 from __future__ import annotations
 from typing import Callable, Optional
 import numpy as np

@@ -1,3 +1,6 @@
+"""
+Dialog for configuring image acquisition settings.
+"""
 
 from __future__ import annotations
 

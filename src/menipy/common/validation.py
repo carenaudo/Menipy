@@ -1,4 +1,7 @@
 # src/adsa/common/validation.py
+"""
+Validation stage utilities for quality assurance of results.
+"""
 from __future__ import annotations
 
 def run(ctx):

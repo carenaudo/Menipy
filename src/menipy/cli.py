@@ -1,3 +1,6 @@
+"""
+Command-line interface for running Menipy pipelines.
+"""
 from __future__ import annotations
 import argparse, json
 from pathlib import Path

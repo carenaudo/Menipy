@@ -1,3 +1,6 @@
+"""
+Controller for preprocessing stage configuration.
+"""
 from __future__ import annotations
 
 """GUI controller for Menipy preprocessing pipeline."""

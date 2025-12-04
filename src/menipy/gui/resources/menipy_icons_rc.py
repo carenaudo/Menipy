@@ -1,3 +1,8 @@
+"""
+Generated Qt resource file for icons (auto-generated).
+
+Note: This file may be auto-generated. Avoid manual modifications.
+"""
 # Resource object code (Python 3)
 # Created by: object code
 # Created by: The Resource Compiler for Qt version 6.9.1

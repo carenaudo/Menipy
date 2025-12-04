@@ -1,140 +1,229 @@
 # Python Files Overview
 
-This document summarizes each Python file in the repository so contributors can quickly locate functionality.
+This document summarizes each Python file in the repository.
 
 ## Root-level Files
-- `setup.py`: Packaging configuration for the Menipy package.
-- `src/__init__.py`: Package initializer for top-level source directory.
-- `src/__main__.py`: CLI entry point for launching the GUI.
 
-## scripts
-- `scripts/generate_legacy_map.py`: Utility for scanning imports and generating a legacy module map.
+- `.\__init__.py`: Refactored Menipy package stubs.
+- `.\__main__.py`: Entry point for running Menipy as a module.
 
-## docs
-- `docs/conf.py`: Sphinx configuration for building project documentation.
+## menipy
 
-## src/menipy Package
-- `src/menipy/__init__.py`: Initializes the Menipy library.
-- `src/menipy/batch.py`: Batch image processing orchestrator with `_iter_image_paths` and `run_batch`.
-- `src/menipy/cli.py`: Command-line interface exposing the `main` entry.
-- `src/menipy/contact_angle.py`: Contact-angle analysis utilities such as `height_width_ca`, `circle_fit_ca`, and `adsa_ca` along with derived property helpers.
-- `src/menipy/gui.py`: Launches the Menipy GUI via `main`.
-- `src/menipy/plugins.py`: Lightweight plugin loader through `load_plugins`.
-- `src/menipy/sharpen_plugin.py`: Implements a simple `sharpen_filter` plugin.
-- `src/menipy/utils.py`: Miscellaneous helpers including `log`.
+- `menipy\__init__.py`: Top-level menipy package.
+- `menipy\__main__.py`: Run menipy as a module: `python -m menipy` -> GUI entrypoint.
+- `menipy\cli.py`: Command-line interface for running Menipy pipelines.
 
-### Calibration
-- `src/menipy/calibration/__init__.py`: Calibration utilities namespace.
-- `src/menipy/calibration/calibrator.py`: `Calibration` class and helpers for pixel/mm conversions and auto-calibration.
+## menipy\cli
 
-### Detection
-- `src/menipy/detection/__init__.py`: Stub package for detection utilities.
-- `src/menipy/detection/droplet.py`: Droplet detection algorithms with `Droplet`, `SessileDroplet`, `PendantDroplet`, and helpers like `detect_droplet`.
-- `src/menipy/detection/needle.py`: Needle detection via `detect_vertical_edges`.
-- `src/menipy/detection/substrate.py`: Substrate line detection with `clip_line_to_roi` and `detect_substrate_line`.
+- `menipy\cli\__init__.py`: Command-line interface (console-script entrypoint).
 
-### Detectors (Alt Geometry)
-- `src/menipy/detectors/__init__.py`: Package placeholder.
-- `src/menipy/detectors/geometry_alt.py`: Alternate geometry helpers such as `trim_poly_between`, `symmetry_axis`, and `geom_metrics_alt`.
+## menipy\common
 
-### Physics
-- `src/menipy/physics/__init__.py`: Physics utilities namespace.
-- `src/menipy/physics/contact_geom.py`: Geometry helpers for contact analysis (`line_params`, `contour_line_intersections`, etc.).
+- `menipy\common\__init__.py`: (no docstring)
+- `menipy\common\acquisition.py`: Common acquisition utilities for loading images from files or cameras.
+- `menipy\common\edge_detection.py`: Edge detection utilities and pipeline stage logic.
+- `menipy\common\geometry.py`: Common, low-level geometric utilities.
+- `menipy\common\metrics.py`: Common metrics calculations for droplet analysis.
+- `menipy\common\optimization.py`: Optimization stage utilities for refining solver results.
+- `menipy\common\outputs.py`: Output formatting and normalization for pipeline results.
+- `menipy\common\overlay.py`: Overlay drawing utilities for visualizing analysis results on images.
+- `menipy\common\physics.py`: Physics constants and parameter management.
+- `menipy\common\plugin_db.py`: Database abstraction for managing plugins.
+- `menipy\common\plugin_loader.py`: Utilities to apply registered plugin functions into pipeline instances.
+- `menipy\common\plugins.py`: Plugin discovery, loading, and management utilities.
+- `menipy\common\preprocessing.py`: Preprocessing pipeline stage implementation.
+- `menipy\common\preprocessing_helpers.py`: (no docstring)
+- `menipy\common\registry.py`: Central registry for pipeline components and plugins.
+- `menipy\common\scaling.py`: Scaling stage utilities for pixel-to-mm conversion.
+- `menipy\common\solver.py`: Solver stage utilities for fitting physical models to contours.
+- `menipy\common\units.py`: Unit registry configuration using Pint.
+- `menipy\common\validation.py`: Validation stage utilities for quality assurance of results.
+- `menipy\common\zold_detection.py`: Deprecated/Empty file.
 
-### Metrics
-- `src/menipy/metrics/__init__.py`: Metrics package stub.
-- `src/menipy/metrics/metrics.py`: Statistical utilities with `compute_statistics`.
+## menipy\gui
 
-### Models
-- `src/menipy/models/__init__.py`: Model utilities package.
-- `src/menipy/models/drop_extras.py`: Extra droplet metrics like `worthington_number` and `surface_area_mm2`.
-- `src/menipy/models/geometry.py`: Geometric fitting (`fit_circle`, `horizontal_intersections`).
-- `src/menipy/models/physics.py`: Young–Laplace solver (`young_laplace_ode`, `solve_young_laplace`).
-- `src/menipy/models/properties.py`: Property calculations such as `droplet_volume` and `estimate_surface_tension`.
-- `src/menipy/models/surface_tension.py`: Pendant-drop surface tension calculations (`jennings_pallas_beta`, `surface_tension`).
+- `menipy\gui\__init__.py`: GUI package initialization.
+- `menipy\gui\__main__.py`: GUI entry point for running Menipy GUI directly.
+- `menipy\gui\app.py`: Main GUI application setup and initialization.
+- `menipy\gui\logging_bridge.py`: Qt logging bridge utilities for streaming Python logs into Qt widgets.
+- `menipy\gui\main_controller.py`: Main window controller coordinating GUI components.
+- `menipy\gui\main_window.py`: Main window implementation (legacy - check if still used).
+- `menipy\gui\mainwindow.py`: Main window class for Menipy GUI.
+- `menipy\gui\overlay.py`: Overlay rendering and display utilities.
+- `menipy\gui\plugins_panel.py`: Plugin dock and menu controller for the main window.
+- `menipy\gui\zold_drawing_alt.py`: Legacy drawing utilities (deprecated).
 
-### Analysis
-- `src/menipy/analysis/__init__.py`: Drop analysis package.
-- `src/menipy/analysis/commons.py`: Shared contour helpers (`extract_external_contour`, `compute_drop_metrics`).
-- `src/menipy/analysis/drop.py`: Entry points for droplet metric calculations.
-- `src/menipy/analysis/pendant.py`: Pendant drop analysis via `compute_metrics`.
-- `src/menipy/analysis/plotting.py`: Contour plotting utilities (`save_contour_sides_image`, etc.).
-- `src/menipy/analysis/sessile.py`: Sessile drop analysis (`compute_metrics`, `contact_points_from_spline`, smoothing helpers).
-- `src/menipy/analysis/sessile_alt.py`: Alternative sessile analysis with similar helpers.
+## menipy\gui\controllers
 
-### Pipelines
-- `src/menipy/pipelines/__init__.py`: High-level analysis pipelines.
-- `src/menipy/pipelines/pendant/__init__.py`: Pendant pipeline namespace.
-- `src/menipy/pipelines/pendant/drawing.py`: Drawing helpers for pendant analysis (`draw_overlays`).
-- `src/menipy/pipelines/pendant/geometry.py`: Pendant analysis pipeline (`analyze`, `HelperBundle`, `PendantMetrics`).
-- `src/menipy/pipelines/sessile/__init__.py`: Sessile pipeline namespace.
-- `src/menipy/pipelines/sessile/drawing.py`: Drawing overlays for sessile analysis.
-- `src/menipy/pipelines/sessile/drawing_alt.py`: Alternate sessile drawing helpers.
-- `src/menipy/pipelines/sessile/geometry.py`: Sessile analysis pipeline (`analyze`, `HelperBundle`, `SessileMetrics`).
-- `src/menipy/pipelines/sessile/geometry_alt.py`: Alternative sessile pipeline with contour filtering, contact detection, and `analyze`.
+- `menipy\gui\controllers\edge_detection_controller.py`: Controller for edge detection configuration and execution.
+- `menipy\gui\controllers\pipeline_controller.py`: Pipeline execution helper for Menipy GUI.
+- `menipy\gui\controllers\preprocessing_controller.py`: Controller for preprocessing stage configuration.
+- `menipy\gui\controllers\setup_panel_controller.py`: Controller for the setup panel widgets.
+- `menipy\gui\controllers\sop_controller.py`: SOP management helper for Menipy GUI.
 
-### Processing
-- `src/menipy/processing/__init__.py`: Processing package placeholder.
-- `src/menipy/processing/classification.py`: Detects drop mode via `classify_drop_mode`.
-- `src/menipy/processing/detection.py`: Image-based droplet detection (`Droplet` classes and `detect_droplet`).
-- `src/menipy/processing/geometry.py`: ROI geometry helper `clip_line_to_roi`.
-- `src/menipy/processing/metrics.py`: Droplet metric helpers (`metrics_sessile`, `metrics_pendant`).
-- `src/menipy/processing/reader.py`: Image loading through `load_image`.
-- `src/menipy/processing/region.py`: Region utilities (`close_droplet`).
-- `src/menipy/processing/segmentation.py`: Thresholding, contour extraction, and `ml_segment`.
-- `src/menipy/processing/substrate.py`: Substrate detection with `detect_substrate_line`.
+## menipy\gui\dialogs
 
-### GUI
-- `src/menipy/gui/__init__.py`: Makes the `gui` package runnable, launching the application via `app.main`.
-- `src/menipy/gui/app.py`: Contains the `main` function that bootstraps the `QApplication` and `MainWindow`.
-- `src/menipy/gui/mainwindow.py`: The main window shell, responsible for UI setup and delegating all logic to controllers.
-- `src/menipy/gui/calibration_dialog.py`: Interactive `CalibrationDialog` for scale selection.
-- `src/menipy/gui/logging_bridge.py`: Utilities to stream Python's `logging` messages into a Qt widget.
-- `src/menipy/gui/plugins_panel.py`: Controller for the plugins dock and menu actions.
-- `src/menipy/gui/sop_controller.py`: Helper class for managing Standard Operating Procedure (SOP) steps and UI.
-- `src/menipy/gui/items.py`: Graphics items such as `SubstrateLineItem`.
-- `src/menipy/gui/overlay.py`: Rendering helpers like `draw_drop_overlay`.
-- `src/menipy/gui/controllers/main_controller.py`: The central controller that orchestrates all services, view models, and other controllers.
-- `src/menipy/gui/controllers/pipeline_controller.py`: Manages the execution of analysis pipelines and updates the GUI with results.
-- `src/menipy/gui/controllers/setup_panel_controller.py`: Controller for the "Setup" panel, managing user inputs for pipeline selection, source, and SOPs.
-- `src/menipy/gui/panels/preview_panel.py`: A helper class that encapsulates interactions with the image preview area.
-- `src/menipy/gui/panels/results_panel.py`: A helper class for displaying analysis results in a table.
-- `src/menipy/gui/services/camera_service.py`: A Qt-friendly service for capturing live video from a camera in a non-blocking background thread.
-- `src/menipy/gui/services/pipeline_runner.py`: A background service for running analysis pipelines in a separate thread.
-- `src/menipy/gui/services/settings_service.py`: Manages loading and saving of application settings.
-- `src/menipy/gui/services/sop_service.py`: Manages loading and saving of Standard Operating Procedures (SOPs).
-- `src/menipy/gui/views/image_view.py`: `ImageView` widget wrapping `QGraphicsView` for displaying images and overlays.
+- `menipy\gui\dialogs\acquisition_config_dialog.py`: Dialog for configuring image acquisition settings.
+- `menipy\gui\dialogs\edge_detection_config_dialog.py`: Dialog for edge detection method configuration.
+- `menipy\gui\dialogs\geometry_config_dialog.py`: Geometry configuration dialog for Menipy.
+- `menipy\gui\dialogs\overlay_config_dialog.py`: Dialog for overlay visualization settings.
+- `menipy\gui\dialogs\physics_config_dialog.py`: Dialog for editing physics parameters with unit support.
+- `menipy\gui\dialogs\plugin_manager_dialog.py`: Dialog for managing and configuring plugins.
+- `menipy\gui\dialogs\preprocessing_config_dialog.py`: Dialog for preprocessing settings configuration.
 
-### UI
-- `src/menipy/ui/__init__.py`: UI components package.
-- `src/menipy/ui/main_window.py`: Contains the `MainWindow` class that was previously used, now kept for reference or potential reuse. The primary `MainWindow` is in `gui/mainwindow.py`.
-- `src/menipy/ui/views/step_item_widget.py`: A custom widget for displaying a single step in the SOP list.
-- `src/menipy/ui/views/ui_main_window.py`: The compiled Python UI class generated from `main_window_split.ui`.
+## menipy\gui\helpers
 
-## tests
-- `tests/__init__.py`: Test package marker.
-- `tests/conftest.py`: Pytest fixtures.
-- `tests/test_alt_workflow.py`: Validates alternative sessile workflow.
-- `tests/test_analysis.py`: Regression tests for analysis helpers.
-- `tests/test_batch.py`: Ensures batch processing operates correctly.
-- `tests/test_classification.py`: Tests drop mode classification.
-- `tests/test_contact_angle.py`: Verifies contact-angle calculations.
-- `tests/test_contact_angle_alt.py`: Tests alternate contact-angle geometry helpers.
-- `tests/test_contact_geom.py`: Checks geometric intersection helpers.
-- `tests/test_contact_region.py`: Tests droplet region helpers and metrics.
-- `tests/test_drop_extras.py`: Validates extra droplet metrics.
-- `tests/test_drop_metrics.py`: Regression tests for apex detection and area calculations.
-- `tests/test_geometry.py`: Validates geometry metrics and apex calculations.
-- `tests/test_gui.py`: GUI integration tests covering widgets and workflows.
-- `tests/test_models.py`: Tests geometric and physical models.
-- `tests/test_plotting.py`: Ensures plotting utilities save expected images.
-- `tests/test_processing.py`: Exercises segmentation, detection, and ML toggle.
-- `tests/test_sessile_metrics.py`: Confirms sessile metrics calculations.
-- `tests/test_sessile_segment.py`: Checks segment filtering for sessile analysis.
-- `tests/test_spline_contact.py`: Validates spline-based contact detection.
-- `tests/test_substrate.py`: Verifies substrate detection helpers.
-- `tests/test_surface_tension.py`: Tests surface tension calculations.
-- `tests/test_utils.py`: Calibration utility tests.
+- `menipy\gui\helpers\image_marking.py`: Interactive image marking and annotation tools.
 
-## Other
-- `tests/test_drop_metrics.py`, etc.: Additional targeted tests listed above ensure correct functionality across modules.
+## menipy\gui\panels
+
+- `menipy\gui\panels\__init__.py`: GUI panels package.
+- `menipy\gui\panels\discover.py`: Panel discovery and registration utilities.
+- `menipy\gui\panels\preview_panel.py`: Live preview panel for image display and interaction.
+- `menipy\gui\panels\results_panel.py`: Results panel helper for Menipy GUI.
+- `menipy\gui\panels\setup_panel.py`: Controller for the setup panel widgets.
+
+## menipy\gui\resources
+
+- `menipy\gui\resources\menipy_icons_rc.py`: Generated Qt resource file for icons (auto-generated).
+
+## menipy\gui\services
+
+- `menipy\gui\services\camera_service.py`: Qt-friendly camera capture service for Menipy GUI.
+- `menipy\gui\services\image_convert.py`: Image format conversion utilities for Qt.
+- `menipy\gui\services\pipeline_runner.py`: Service for running pipelines in the GUI context.
+- `menipy\gui\services\plugin_service.py`: Plugin management service for GUI.
+- `menipy\gui\services\settings_service.py`: Application settings persistence service.
+- `menipy\gui\services\sop_service.py`: Standard Operating Procedure (SOP) management service.
+
+## menipy\gui\viewmodels
+
+- `menipy\gui\viewmodels\plugins_vm.py`: View model for plugin management UI.
+- `menipy\gui\viewmodels\results_vm.py`: View model for results display.
+- `menipy\gui\viewmodels\run_vm.py`: View model for pipeline run management.
+
+## menipy\gui\views
+
+- `menipy\gui\views\__init__.py`: GUI views package.
+- `menipy\gui\views\image_view.py`: Custom image viewer widget.
+- `menipy\gui\views\step_item_widget.py`: Widget for displaying pipeline step items.
+- `menipy\gui\views\ui_main_window.py`: UI definition for main window (likely auto-generated).
+
+## menipy\math
+
+- `menipy\math\jurin.py`: Placeholder for Jurin's law (capillary rise) calculations.
+- `menipy\math\rayleigh_lamb.py`: Placeholder for Rayleigh-Lamb oscillation frequency calculations.
+- `menipy\math\young_laplace.py`: Placeholder for Young-Laplace equation solver implementation.
+
+## menipy\models
+
+- `menipy\models\__init__.py`: Model utilities for Menipy.
+- `menipy\models\config.py`: Configuration models for pipeline settings and physical parameters.
+- `menipy\models\context.py`: Context model for sharing state between pipeline stages.
+- `menipy\models\datatypes.py`: Common data types and structures for analysis records and preprocessing state.
+- `menipy\models\drop_extras.py`: Additional droplet property calculations (Worthington number, curvature, surface area, etc.).
+- `menipy\models\fit.py`: Data models for numerical fitting results and configuration.
+- `menipy\models\frame.py`: Frame model for representing images with metadata, calibration, and timing information.
+- `menipy\models\geometry.py`: Geometric models for contours, geometry landmarks, and spatial features.
+- `menipy\models\physics.py`: Physical modeling utilities.
+- `menipy\models\properties.py`: Basic geometric and physical property calculations for droplets.
+- `menipy\models\result.py`: Data models for final, high-level analysis outputs.
+- `menipy\models\state.py`: Runtime state models for Menipy (migrated from datatypes.py).
+- `menipy\models\surface_tension.py`: Surface tension and related pendant-drop calculations.
+- `menipy\models\typing.py`: Type aliases for numpy arrays used throughout Menipy.
+- `menipy\models\unit_types.py`: Pydantic-Pint unit types for physical quantities.
+
+## menipy\pipelines
+
+- `menipy\pipelines\__init__.py`: This package contains the core analysis pipelines for different measurement modes.
+- `menipy\pipelines\base.py`: Base pipeline class with template method pattern for stage-based execution.
+- `menipy\pipelines\discover.py`: Centralized pipeline discovery.
+- `menipy\pipelines\runner.py`: Simple runner for executing pipelines non-interactively.
+
+## menipy\pipelines\capillary_rise
+
+- `menipy\pipelines\capillary_rise\__init__.py`: (no docstring)
+- `menipy\pipelines\capillary_rise\acquisition.py`: STUB: Capillary Rise Pipeline - Acquisition Stage
+- `menipy\pipelines\capillary_rise\edge_detection.py`: STUB: Capillary Rise Pipeline - Edge Detection Stage
+- `menipy\pipelines\capillary_rise\geometry.py`: STUB: Capillary Rise Pipeline - Geometry Stage
+- `menipy\pipelines\capillary_rise\optimization.py`: STUB: Capillary Rise Pipeline - Optimization Stage
+- `menipy\pipelines\capillary_rise\outputs.py`: STUB: Capillary Rise Pipeline - Outputs Stage
+- `menipy\pipelines\capillary_rise\overlay.py`: STUB: Capillary Rise Pipeline - Overlay Stage
+- `menipy\pipelines\capillary_rise\physics.py`: STUB: Capillary Rise Pipeline - Physics Stage
+- `menipy\pipelines\capillary_rise\preprocessing.py`: STUB: Capillary Rise Pipeline - Preprocessing Stage
+- `menipy\pipelines\capillary_rise\scaling.py`: STUB: Capillary Rise Pipeline - Scaling Stage
+- `menipy\pipelines\capillary_rise\solver.py`: STUB: Capillary Rise Pipeline - Solver Stage
+- `menipy\pipelines\capillary_rise\stages.py`: (no docstring)
+- `menipy\pipelines\capillary_rise\validation.py`: STUB: Capillary Rise Pipeline - Validation Stage
+
+## menipy\pipelines\captive_bubble
+
+- `menipy\pipelines\captive_bubble\__init__.py`: (no docstring)
+- `menipy\pipelines\captive_bubble\acquisition.py`: STUB: Captive Bubble Pipeline - Acquisition Stage
+- `menipy\pipelines\captive_bubble\edge_detection.py`: STUB: Captive Bubble Pipeline - Edge Detection Stage
+- `menipy\pipelines\captive_bubble\geometry.py`: STUB: Captive Bubble Pipeline - Geometry Stage
+- `menipy\pipelines\captive_bubble\optimization.py`: STUB: Captive Bubble Pipeline - Optimization Stage
+- `menipy\pipelines\captive_bubble\outputs.py`: STUB: Captive Bubble Pipeline - Outputs Stage
+- `menipy\pipelines\captive_bubble\overlay.py`: STUB: Captive Bubble Pipeline - Overlay Stage
+- `menipy\pipelines\captive_bubble\physics.py`: STUB: Captive Bubble Pipeline - Physics Stage
+- `menipy\pipelines\captive_bubble\preprocessing.py`: STUB: Captive Bubble Pipeline - Preprocessing Stage
+- `menipy\pipelines\captive_bubble\scaling.py`: STUB: Captive Bubble Pipeline - Scaling Stage
+- `menipy\pipelines\captive_bubble\solver.py`: STUB: Captive Bubble Pipeline - Solver Stage
+- `menipy\pipelines\captive_bubble\stages.py`: (no docstring)
+- `menipy\pipelines\captive_bubble\validation.py`: STUB: Captive Bubble Pipeline - Validation Stage
+
+## menipy\pipelines\oscillating
+
+- `menipy\pipelines\oscillating\__init__.py`: (no docstring)
+- `menipy\pipelines\oscillating\acquisition.py`: STUB: Oscillating Pipeline - Acquisition Stage
+- `menipy\pipelines\oscillating\edge_detection.py`: STUB: Oscillating Pipeline - Edge Detection Stage
+- `menipy\pipelines\oscillating\geometry.py`: STUB: Oscillating Pipeline - Geometry Stage
+- `menipy\pipelines\oscillating\optimization.py`: STUB: Oscillating Pipeline - Optimization Stage
+- `menipy\pipelines\oscillating\outputs.py`: STUB: Oscillating Pipeline - Outputs Stage
+- `menipy\pipelines\oscillating\overlay.py`: STUB: Oscillating Pipeline - Overlay Stage
+- `menipy\pipelines\oscillating\physics.py`: STUB: Oscillating Pipeline - Physics Stage
+- `menipy\pipelines\oscillating\preprocessing.py`: STUB: Oscillating Pipeline - Preprocessing Stage
+- `menipy\pipelines\oscillating\scaling.py`: STUB: Oscillating Pipeline - Scaling Stage
+- `menipy\pipelines\oscillating\solver.py`: STUB: Oscillating Pipeline - Solver Stage
+- `menipy\pipelines\oscillating\stages.py`: (no docstring)
+- `menipy\pipelines\oscillating\validation.py`: STUB: Oscillating Pipeline - Validation Stage
+
+## menipy\pipelines\pendant
+
+- `menipy\pipelines\pendant\__init__.py`: (no docstring)
+- `menipy\pipelines\pendant\acquisition.py`: STUB: Pendant Pipeline - Acquisition Stage
+- `menipy\pipelines\pendant\drawing.py`: STUB: Pendant Pipeline - Drawing Stage
+- `menipy\pipelines\pendant\edge_detection.py`: STUB: Pendant Pipeline - Edge Detection Stage
+- `menipy\pipelines\pendant\geometry.py`: (no docstring)
+- `menipy\pipelines\pendant\metrics.py`: (no docstring)
+- `menipy\pipelines\pendant\optimization.py`: STUB: Pendant Pipeline - Optimization Stage
+- `menipy\pipelines\pendant\outputs.py`: STUB: Pendant Pipeline - Outputs Stage
+- `menipy\pipelines\pendant\overlay.py`: STUB: Pendant Pipeline - Overlay Stage
+- `menipy\pipelines\pendant\physics.py`: STUB: Pendant Pipeline - Physics Stage
+- `menipy\pipelines\pendant\preprocessing.py`: STUB: Pendant Pipeline - Preprocessing Stage
+- `menipy\pipelines\pendant\scaling.py`: STUB: Pendant Pipeline - Scaling Stage
+- `menipy\pipelines\pendant\solver.py`: STUB: Pendant Pipeline - Solver Stage
+- `menipy\pipelines\pendant\stages.py`: (no docstring)
+- `menipy\pipelines\pendant\validation.py`: STUB: Pendant Pipeline - Validation Stage
+
+## menipy\pipelines\sessile
+
+- `menipy\pipelines\sessile\__init__.py`: (no docstring)
+- `menipy\pipelines\sessile\acquisition.py`: STUB: Sessile Pipeline - Acquisition Stage
+- `menipy\pipelines\sessile\drawing.py`: STUB: Sessile Pipeline - Drawing Stage
+- `menipy\pipelines\sessile\edge_detection.py`: STUB: Sessile Pipeline - Edge Detection Stage
+- `menipy\pipelines\sessile\geometry.py`: (no docstring)
+- `menipy\pipelines\sessile\metrics.py`: (no docstring)
+- `menipy\pipelines\sessile\optimization.py`: STUB: Sessile Pipeline - Optimization Stage
+- `menipy\pipelines\sessile\outputs.py`: STUB: Sessile Pipeline - Outputs Stage
+- `menipy\pipelines\sessile\overlay.py`: STUB: Sessile Pipeline - Overlay Stage
+- `menipy\pipelines\sessile\physics.py`: STUB: Sessile Pipeline - Physics Stage
+- `menipy\pipelines\sessile\preprocessing.py`: STUB: Sessile Pipeline - Preprocessing Stage
+- `menipy\pipelines\sessile\scaling.py`: STUB: Sessile Pipeline - Scaling Stage
+- `menipy\pipelines\sessile\solver.py`: STUB: Sessile Pipeline - Solver Stage
+- `menipy\pipelines\sessile\stages.py`: (no docstring)
+- `menipy\pipelines\sessile\validation.py`: STUB: Sessile Pipeline - Validation Stage
+
+## menipy\viz
+
+- `menipy\viz\plots.py`: Placeholder for plotting utilities.

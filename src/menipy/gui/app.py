@@ -1,3 +1,6 @@
+"""
+Main GUI application setup and initialization.
+"""
 # src/menipy/gui/app.py
 from __future__ import annotations
 

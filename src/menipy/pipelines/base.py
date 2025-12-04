@@ -1,4 +1,7 @@
 # src/menipy/pipeline/base.py
+"""
+Base pipeline class with template method pattern for stage-based execution.
+"""
 from __future__ import annotations
 
 import logging

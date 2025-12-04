@@ -26,3 +26,13 @@ Once the core ADSA model is robust, the project will expand to include other com
 As development proceeds, documentation will be kept in sync with the implementation to ensure the project remains maintainable and accessible to new contributors.
 
 - **3.1: Documentation Synchronization**: Systematically review and update all foundational documents in the `docs/guides/` directory to reflect the latest implemented features and code architecture.
+
+## 4. Pipeline Specific Plans
+
+Detailed implementation plans for each pipeline can be found in the following documents:
+
+- [Pendant Drop Pipeline](file:///d:/programacion/Menipy/pendant_plan_pipeline.md)
+- [Sessile Drop Pipeline](file:///d:/programacion/Menipy/sessile_plan_pipeline.md)
+- [Capillary Rise Pipeline](file:///d:/programacion/Menipy/capillary_rise_plan_pipeline.md)
+- [Oscillating Drop Pipeline](file:///d:/programacion/Menipy/oscillating_plan_pipeline.md)
+- [Captive Bubble Pipeline](file:///d:/programacion/Menipy/captive_bubble_plan_pipeline.md)

@@ -1,3 +1,6 @@
+"""
+Overlay rendering and display utilities.
+"""
 import numpy as np
 from PySide6.QtGui import QImage, QPixmap, QPainter, QPen, QColor, QBrush
 from PySide6.QtCore import QPointF, Qt

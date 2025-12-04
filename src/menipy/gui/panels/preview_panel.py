@@ -1,3 +1,6 @@
+"""
+Live preview panel for image display and interaction.
+"""
 from __future__ import annotations
 
 import logging

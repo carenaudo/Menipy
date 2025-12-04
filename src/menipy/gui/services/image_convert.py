@@ -1,3 +1,6 @@
+"""
+Image format conversion utilities for Qt.
+"""
 # src/menipy/gui/services/image_convert.py
 import numpy as np
 from PySide6.QtGui import QImage, QPixmap

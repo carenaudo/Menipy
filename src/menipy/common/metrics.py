@@ -1,3 +1,6 @@
+"""
+Common metrics calculations for droplet analysis.
+"""
 import numpy as np
 
 def compute_drop_metrics(contour: np.ndarray, px_per_mm: float, mode: str, needle_diam_mm: float | None = None) -> dict:

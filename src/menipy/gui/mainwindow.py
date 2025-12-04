@@ -1,3 +1,6 @@
+"""
+Main window class for Menipy GUI.
+"""
 # src/menipy/gui/mainwindow.py
 from __future__ import annotations
  

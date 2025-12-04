@@ -1,1 +1,4 @@
+"""
+GUI panels package.
+"""
 
