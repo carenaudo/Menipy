@@ -157,6 +157,7 @@ class SetupPanelController(QObject):
         self._populate_pipeline_combo()
         self._restore_settings()
         self.sop_ctrl.initialize()
+        self._apply_theme_aware_button_styling()
         self._wire_controls()
         self._apply_mode(self._mode, emit=False)
         self._initial_pipeline_refresh()
@@ -309,6 +310,56 @@ class SetupPanelController(QObject):
         return params
 
     # -------------------------- internal helpers --------------------------
+
+    def _apply_theme_aware_button_styling(self) -> None:
+        """Apply theme-aware styling to pipeline selection buttons."""
+        from PySide6.QtWidgets import QApplication
+        from PySide6.QtGui import QPalette
+        
+        # Get the application palette to detect light/dark theme
+        palette = QApplication.palette()
+        is_dark_theme = palette.color(QPalette.ColorRole.Window).lightness() < 128
+        
+        # Define base background and text colors based on theme
+        if is_dark_theme:
+            # Use a dark background for dark themes
+            base_bg = "#2b2b2b"  # Dark gray background
+            base_text = "#e0e0e0"  # Light text
+        else:
+            base_bg = "#f8f9fa"  # Light gray for light themes
+            base_text = "#212529"  # Dark text for light backgrounds
+        
+        # Button color schemes (accent color when checked)
+        button_styles = {
+            self.sessileBtn: "#4A90E2",  # Blue
+            self.pendantBtn: "#7ED321",  # Green
+            self.oscillatingBtn: "#F5A623",  # Orange
+            self.capillaryBtn: "#9B59B6",  # Purple
+            self.captiveBtn: "#50E3C2",  # Cyan
+        }
+        
+        for button, accent_color in button_styles.items():
+            if button:
+                style = f"""
+                    QPushButton {{
+                        text-align: center;
+                        padding: 8px;
+                        border: 2px solid {accent_color};
+                        border-radius: 6px;
+                        background-color: {base_bg};
+                        color: {base_text};
+                    }}
+                    QPushButton:checked {{
+                        background-color: {accent_color};
+                        color: white;
+                        font-weight: bold;
+                    }}
+                    QPushButton:hover:!checked {{
+                        border: 3px solid {accent_color};
+                    }}
+                """
+                button.setStyleSheet(style)
+
 
     def _populate_pipeline_combo(self) -> None:
         combo = self.testCombo or self.pipelineCombo

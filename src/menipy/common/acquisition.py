@@ -6,18 +6,39 @@ Common acquisition utilities for loading images from files or cameras.
 Edge detection utilities and pipeline stage logic.
 """
 from __future__ import annotations
-from typing import Optional, Sequence
+from typing import Sequence
 import numpy as np
 
+try:
+    import cv2  # type: ignore
+except Exception:  # pragma: no cover - optional dependency
+    cv2 = None  # type: ignore
+
+def _load_image(path: str) -> np.ndarray:
+    """
+    Attempt to load an image from disk using OpenCV when available, falling back
+    to Pillow for environments without cv2.
+    """
+    if cv2 is not None:
+        img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+        if img is not None:
+            return img
+
+    try:
+        from PIL import Image  # type: ignore
+
+        with Image.open(path) as im:
+            im = im.convert("L")
+            return np.array(im)
+    except Exception as exc:
+        raise RuntimeError(f"Could not read image '{path}': {exc}") from exc
+
+
 def from_file(paths: Sequence[str]) -> Sequence[np.ndarray]:
-    """Load images from disk (placeholder). TODO: implement with cv2.imread."""
-    import cv2  # uncomment when using OpenCV
+    """Load images from disk into grayscale numpy arrays."""
     frames = []
     for p in paths:
-         img = cv2.imread(p, cv2.IMREAD_GRAYSCALE)
-         assert img is not None, f"Could not read {p}"
-         frames.append(img)
-        # frames.append(np.zeros((480, 640), dtype=np.uint8))  # placeholder
+        frames.append(_load_image(str(p)))
     return frames
 
 def from_camera(device: int = 0, n_frames: int = 1) -> Sequence[np.ndarray]:

@@ -20,6 +20,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `src/menipy/common/preprocessing.py` (calls `fill_holes` after `crop_to_roi`)
     - `src/menipy/gui/dialogs/preprocessing_config_dialog.py` (adds UI page and bindings)
 
+### Fixed
+
+- **Sessile Pipeline Overlay Stage**:
+  - Fixed `UnboundLocalError` in the overlay stage caused by a redundant `import cv2` statement that shadowed the module-level import.
+  - Fixed contour drawing by properly reshaping the contour array to the expected OpenCV format `(n, 1, 2)` for `cv2.drawContours`.
+  - Added validation for contour data to prevent crashes when contour is empty or has an invalid shape.
+  - Files touched:
+    - `src/menipy/pipelines/sessile/stages.py` (fixed overlay method contour handling)
+
+- **Results History - Phase 4 UI Enhancements**:
+  - Added measurement sequence numbering to pipeline overlays - displays "Measurement #X" on preview images with semi-transparent background
+  - Enhanced status bar messages to show measurement count after analysis completes (e.g., "Analysis complete - 5 measurements recorded")
+  - Updated all pipeline overlays to display measurement numbers: sessile, pendant, oscillating, captive_bubble, capillary_rise
+  - Added `measurement_id` and `measurement_sequence` fields to Context model for tracking
+  - Files touched:
+    - `src/menipy/models/context.py` (added measurement tracking fields)
+    - `src/menipy/pipelines/base.py` (pass measurement fields to Context)
+    - `src/menipy/gui/controllers/pipeline_controller.py` (populate measurement tracking, enhanced status messages)
+    - `src/menipy/pipelines/*/stages.py` (all pipeline overlays updated)
+
 ### Changed
 
 - Edge-detection & Preview overlays

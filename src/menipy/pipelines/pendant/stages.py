@@ -12,7 +12,7 @@ from menipy.models.config import EdgeDetectionSettings
 from menipy.models.geometry import Contour
 from menipy.common import solver as common_solver
 from menipy.common import edge_detection as edged
-from menipy.common import overlay as ovl
+from menipy.common import overlay as ovl 
 from menipy.common.plugins import _load_module_from_path
 from menipy.models.config import EdgeDetectionSettings
 from menipy.models.geometry import Contour
@@ -32,6 +32,20 @@ from menipy.models.fit import FitConfig
 def _ensure_contour(ctx: Context) -> np.ndarray:
     if getattr(ctx, "contour", None) is not None and hasattr(ctx.contour, "xy"):
         return np.asarray(ctx.contour.xy, dtype=float)
+
+    # Ensure we have at least one frame to run edge detection on
+    frames = getattr(ctx, "frames", None)
+    if (not frames or len(frames) == 0) and getattr(ctx, "image_path", None):
+        try:
+            from menipy.common import acquisition as acq
+            loaded = acq.from_file([ctx.image_path])
+        except Exception:
+            loaded = []
+        if loaded:
+            ctx.frames = loaded
+            ctx.frame = loaded[0]
+            ctx.image = loaded[0]
+
     edged.run(ctx, settings=ctx.edge_detection_settings or EdgeDetectionSettings(method="canny"))
     return np.asarray(ctx.contour.xy, dtype=float)
 
@@ -50,7 +64,26 @@ class PendantPipeline(PipelineBase):
         "primary_metrics": ["surface_tension_mN_m", "volume_uL", "beta"]
     }
 
-    def do_acquisition(self, ctx: Context) -> Optional[Context]: return ctx
+    def do_acquisition(self, ctx: Context) -> Optional[Context]:
+        """Load frames from disk if the context only has a path reference."""
+        if getattr(ctx, "frames", None):
+            return ctx
+
+        image_path = getattr(ctx, "image_path", None)
+        if not image_path:
+            return ctx
+
+        try:
+            from menipy.common import acquisition as acq
+            frames = acq.from_file([image_path])
+        except Exception:
+            frames = []
+
+        if frames:
+            ctx.frames = frames
+            ctx.frame = frames[0]
+            ctx.image = frames[0]
+        return ctx
     def do_preprocessing(self, ctx: Context) -> Optional[Context]: return ctx
 
     def do_geometry(self, ctx: Context) -> Optional[Context]:
@@ -102,7 +135,10 @@ class PendantPipeline(PipelineBase):
         axis_x = int(round(ctx.geometry.axis_x)) if ctx.geometry.axis_x is not None else 0
         apex_x, apex_y = ctx.geometry.apex_xy if ctx.geometry.apex_xy is not None else (0, 0)
         text = f"R0≈{ctx.results.get('R0_mm','?')} mm"
+        measurement_text = f"Measurement #{ctx.measurement_sequence}" if hasattr(ctx, 'measurement_sequence') and ctx.measurement_sequence else ""
         cmds = [
+            # Measurement number overlay
+            {"type": "text", "p": (10, 25), "text": measurement_text, "color": "white", "scale": 0.7, "thickness": 2},
             {"type": "polyline", "points": xy.tolist(), "closed": True, "color": "yellow", "thickness": 2},
             {"type": "line", "p1": (axis_x, 0), "p2": (axis_x, int(np.max(xy[:, 1]) + 10)), "color": "cyan", "thickness": 1},
             {"type": "cross", "p": (int(apex_x), int(apex_y)), "color": "red", "size": 6, "thickness": 2},

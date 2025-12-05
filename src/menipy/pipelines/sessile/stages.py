@@ -203,7 +203,6 @@ class SessilePipeline(PipelineBase):
             # Ensure image is loaded if it's a string path
             if isinstance(ctx.image, str):
                 try:
-                    import cv2
                     img = cv2.imread(ctx.image, cv2.IMREAD_COLOR)
                     if img is None:
                         logger.warning("Could not load image from path in overlay: %s", ctx.image)
@@ -214,8 +213,50 @@ class SessilePipeline(PipelineBase):
                     return ctx
             # Create a simple overlay with contour and geometry info
             overlay_img = ctx.image.copy()
-            contour_xy = np.asarray(ctx.contour.xy, dtype=int)
+            
+            # Validate contour data before drawing
+            if not hasattr(ctx.contour, 'xy') or ctx.contour.xy is None:
+                logger.warning("Contour has no xy data, skipping overlay")
+                return ctx
+            
+            contour_array = np.asarray(ctx.contour.xy, dtype=np.float64)
+            
+            # Check if contour is valid
+            if contour_array.size == 0:
+                logger.warning("Contour is empty, skipping overlay")
+                return ctx
+            
+            if contour_array.ndim != 2 or contour_array.shape[1] != 2:
+                logger.warning(f"Contour has invalid shape {contour_array.shape}, expected (N, 2)")
+                return ctx
+            
+            # Convert to int32 and reshape for OpenCV
+            contour_xy = contour_array.astype(np.int32).reshape(-1, 1, 2)
             cv2.drawContours(overlay_img, [contour_xy], -1, (0, 255, 0), 2)
+
+            # Draw measurement number if available
+            if hasattr(ctx, 'measurement_sequence') and ctx.measurement_sequence is not None:
+                measurement_text = f"Measurement #{ctx.measurement_sequence}"
+                # Add semi-transparent background for readability
+                (text_width, text_height), baseline = cv2.getTextSize(
+                    measurement_text, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2
+                )
+                cv2.rectangle(
+                    overlay_img, 
+                    (5, 5), 
+                    (15 + text_width, 15 + text_height), 
+                    (0, 0, 0), 
+                    -1  # Filled rectangle
+                )
+                cv2.putText(
+                    overlay_img, 
+                    measurement_text, 
+                    (10, 10 + text_height), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 
+                    0.7, 
+                    (255, 255, 255), 
+                    2
+                )
 
             # Draw geometry info if available
             if ctx.geometry:

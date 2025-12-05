@@ -57,6 +57,10 @@ class Context(BaseModel):
     log: list[str] = Field(default_factory=list)
     error: Optional[str] = None
 
+    # Measurement tracking (for results history)
+    measurement_id: Optional[str] = None  # Unique identifier (e.g., "20251204_150000_001")
+    measurement_sequence: Optional[int] = None  # Sequential number (e.g., 42)
+
     # Settings for pipeline stages
     preprocessing_settings: Optional[PreprocessingSettings] = None
     edge_detection_settings: Optional[EdgeDetectionSettings] = None

@@ -200,7 +200,14 @@ class PipelineController:
             self.preview_panel.display(pixmap_with_overlays)
 
             # 3. Update the results panel
-            self.results_panel.update(metrics.derived)
+
+            
+            # 4. Add to measurement history
+            from menipy.models.context import Context
+            ctx = Context()
+            ctx.results = metrics.derived
+            self.add_measurement_to_history(ctx, mode)
+            
             self.window.statusBar().showMessage("Analysis complete.", 3000)
         except Exception as e:
             self.on_pipeline_error(f"An error occurred during analysis: {e}")
@@ -216,6 +223,9 @@ class PipelineController:
         if not mode:
             QMessageBox.warning(self.window, "Analysis", "Please select a pipeline first.")
             return
+        
+        # Show which pipeline is selected
+        self.window.statusBar().showMessage(f"Running {mode} analysis...", 2000)
 
         if mode.lower() != "sessile":
             # Fallback to old functional path for non-sessile modes
@@ -274,15 +284,17 @@ class PipelineController:
                 raise ValueError("Sessile pipeline not found")
 
             pipeline = pipeline_cls()
+            # Prepare measurement tracking
+            ctx_dict = self._prepare_measurement_tracking(**ctx.__dict__)
             ctx = pipeline.run(**ctx.__dict__)
 
             # Update UI with results
             if ctx.preview is not None:
                 self.preview_panel.display(ctx.preview)
             if ctx.results:
-                self.results_panel.update(ctx.results)
+
                 # Add to measurement history
-                self.add_measurement_to_history(ctx, "sessile")
+                self.add_measurement_to_history(ctx, mode)
             self.window.statusBar().showMessage("Analysis complete.", 3000)
 
         except Exception as e:
@@ -459,7 +471,7 @@ class PipelineController:
             if ctx.preview is not None:
                 self.preview_panel.display(ctx.preview)
             if getattr(ctx, "results", None):
-                self.results_panel.update(ctx.results)
+
                 # Add to measurement history
                 pipeline_name = (params.get("name") or "sessile" or "").lower()
                 self.add_measurement_to_history(ctx, pipeline_name)
@@ -476,6 +488,22 @@ class PipelineController:
     def on_results_ready(self, results: Mapping[str, Any]) -> None:
         self.results_panel.update(results)
         self.window.statusBar().showMessage("Results ready", 1000)
+
+    def _prepare_measurement_tracking(self, **kwargs) -> dict:
+        """Prepare measurement tracking fields for Context before pipeline runs."""
+        from datetime import datetime
+        from menipy.models.results import get_results_history
+        
+        history = get_results_history()
+        sequence = len(history.measurements) + 1
+        timestamp = datetime.now()
+        measurement_id = f"{timestamp.strftime('%Y%m%d_%H%M%S')}_{sequence:03d}"
+        
+        # Add to run kwargs
+        tracking_kwargs = dict(kwargs)
+        tracking_kwargs['measurement_id'] = measurement_id
+        tracking_kwargs['measurement_sequence'] = sequence
+        return tracking_kwargs
 
     def add_measurement_to_history(self, ctx: Any, pipeline_name: str) -> None:
         """Add a completed measurement to the results history."""
@@ -513,7 +541,9 @@ class PipelineController:
 
         # Add to history
         self.results_panel.add_measurement(measurement)
-        print(f"[DEBUG] Added measurement to history: {measurement.file_name} ({measurement.pipeline})")
+        # Update status bar with measurement count
+        total_measurements = len(get_results_history().measurements)
+        self.window.statusBar().showMessage(f"Analysis complete - {total_measurements} measurements recorded", 3000)
 
     def append_logs(self, lines: Any) -> None:
         if not self.log_view:
@@ -536,6 +566,8 @@ class PipelineController:
     def _run_pipeline_direct(self, pipeline_cls: type, **kwargs: Any) -> None:
         try:
             pipeline = pipeline_cls()
+            # Prepare measurement tracking
+            kwargs = self._prepare_measurement_tracking(**kwargs)
             only = kwargs.pop("only", None)
             if only:
                 ctx = pipeline.run_with_plan(only=only, include_prereqs=True, **kwargs)
@@ -544,9 +576,11 @@ class PipelineController:
             if ctx.preview is not None:
                 self.preview_panel.display(ctx.preview)
             if getattr(ctx, "results", None):
-                self.results_panel.update(ctx.results)
+
                 # Add to measurement history
-                self.add_measurement_to_history(ctx, name)
+                params = self.setup_ctrl.gather_run_params()
+                pipeline_name = (params.get("name") or "sessile" or "").lower()
+                self.add_measurement_to_history(ctx, pipeline_name)
             self.window.statusBar().showMessage("Done", 1500)
         except Exception as exc:
             self.on_pipeline_error(str(exc))

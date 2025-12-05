@@ -113,9 +113,16 @@ class PipelineBase:
 
         image = kwargs.get("image")
         image_path = kwargs.get("image_path")
+
+        # If callers pass a file path as `image`, normalize it to image_path so downstream
+        # stages don't treat a string as pixel data.
+        if isinstance(image, (str, Path)):
+            image_path = str(image)
+            image = None
+
         if image is not None:
             ctx.image = image
-        elif image_path is not None:
+        if image_path is not None:
             ctx.image_path = image_path
 
         # For single-image processing, also populate current_frame
@@ -149,6 +156,13 @@ class PipelineBase:
         if "edge_detection_settings" not in kwargs:
             kwargs["edge_detection_settings"] = self.edge_detection_settings
         ctx.edge_detection_settings = kwargs["edge_detection_settings"]
+
+
+        # Measurement tracking (for results history overlay display)
+        if "measurement_id" in kwargs:
+            ctx.measurement_id = kwargs["measurement_id"]
+        if "measurement_sequence" in kwargs:
+            ctx.measurement_sequence = kwargs["measurement_sequence"]
 
         return ctx
 

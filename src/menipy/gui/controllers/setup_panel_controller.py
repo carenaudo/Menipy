@@ -72,6 +72,19 @@ class SetupPanelController(QObject):
         self.pipelineCombo: Optional[QComboBox] = panel.findChild(QComboBox, "pipelineCombo")
         self.sopCombo: Optional[QComboBox] = panel.findChild(QComboBox, "sopCombo")
         self.addSopBtn: Optional[QToolButton] = panel.findChild(QToolButton, "addSopBtn")
+        # Segmented pipeline selection buttons introduced in the revamped UI
+        self.sessileBtn: Optional[QPushButton] = panel.findChild(QPushButton, "sessileBtn")
+        self.pendantBtn: Optional[QPushButton] = panel.findChild(QPushButton, "pendantBtn")
+        self.oscillatingBtn: Optional[QPushButton] = panel.findChild(QPushButton, "oscillatingBtn")
+        self.capillaryBtn: Optional[QPushButton] = panel.findChild(QPushButton, "capillaryBtn")
+        self.captiveBtn: Optional[QPushButton] = panel.findChild(QPushButton, "captiveBtn")
+        self._pipeline_button_map: dict[Optional[QPushButton], str] = {
+            self.sessileBtn: "sessile",
+            self.pendantBtn: "pendant",
+            self.oscillatingBtn: "oscillating",
+            self.capillaryBtn: "capillary_rise",
+            self.captiveBtn: "captive_bubble",
+        }
 
         self.singleModeRadio: Optional[QRadioButton] = panel.findChild(QRadioButton, "singleModeRadio")
         self.batchModeRadio: Optional[QRadioButton] = panel.findChild(QRadioButton, "batchModeRadio")
@@ -138,7 +151,12 @@ class SetupPanelController(QObject):
     # -------------------------- public API --------------------------
 
     def current_pipeline_name(self) -> Optional[str]:
-        """Gets the canonical pipeline name from the combo box's user data."""
+        """Gets the canonical pipeline name from the UI selection."""
+        # Prefer segmented buttons if present
+        for button, pipeline in self._pipeline_button_map.items():
+            if button and button.isChecked():
+                return pipeline
+
         combo = self.testCombo or self.pipelineCombo
         if not combo:
             return None
@@ -243,6 +261,8 @@ class SetupPanelController(QObject):
             index = combo.findData(selected)
             if index != -1:
                 combo.setCurrentIndex(index)
+        if selected:
+            self._select_pipeline_button(selected)
 
     def _wire_controls(self) -> None:
         if self.browseBtn:
@@ -264,9 +284,12 @@ class SetupPanelController(QObject):
         if self.addSopBtn:
             # Route through a lambda so tests can monkeypatch sop_ctrl.on_add_sop and observe the call
             self.addSopBtn.clicked.connect(lambda: getattr(self.sop_ctrl, 'on_add_sop')())
+        for button, pipeline_name in self._pipeline_button_map.items():
+            if button:
+                button.clicked.connect(lambda _checked=False, name=pipeline_name: self._on_pipeline_button_clicked(name))
         combo = self.testCombo or self.pipelineCombo
         if combo:
-            combo.currentTextChanged.connect(self.sop_ctrl.on_pipeline_changed)
+            combo.currentTextChanged.connect(self._on_pipeline_combo_changed)
         # Debounce refresh calls triggered by text changes so tests that call setText
         # and then explicitly emit textChanged don't produce duplicate refreshes.
         def _schedule_refresh():
@@ -283,7 +306,60 @@ class SetupPanelController(QObject):
             self.sourceIdCombo.currentTextChanged.connect(self._on_combo_text_changed)
         self._mode_group.buttonToggled.connect(self._on_mode_toggled)
 
+    def _sync_combo_to_pipeline(self, pipeline_name: str) -> bool:
+        """Ensure the legacy combo box reflects the segmented button selection."""
+        combo = self.testCombo or self.pipelineCombo
+        if not combo:
+            return False
+        index = combo.findData(pipeline_name)
+        if index == -1:
+            return False
+        prev = combo.blockSignals(True)
+        try:
+            combo.setCurrentIndex(index)
+        finally:
+            combo.blockSignals(prev)
+        return True
+
+    def _select_pipeline_button(self, pipeline_name: Optional[str]) -> bool:
+        """Select the matching segmented button without emitting extra signals."""
+        if not pipeline_name:
+            return False
+        found = False
+        for button, name in self._pipeline_button_map.items():
+            if not button:
+                continue
+            if name == pipeline_name:
+                if not button.isChecked():
+                    button.setChecked(True)
+                found = True
+        return found
+
+    def _on_pipeline_button_clicked(self, pipeline_name: str) -> None:
+        """Handle clicks from the segmented pipeline buttons."""
+        self._sync_combo_to_pipeline(pipeline_name)
+        self.sop_ctrl.on_pipeline_changed(pipeline_name)
+
+    def _on_pipeline_combo_changed(self, text: str) -> None:
+        """Keep segmented buttons in sync when legacy combo changes."""
+        pipeline = (text or "").strip().lower().replace(" ", "_")
+        if pipeline and pipeline not in self._pipeline_keys:
+            pipeline = None
+        self._select_pipeline_button(pipeline)
+        self.sop_ctrl.on_pipeline_changed(text)
+
     def _initial_pipeline_refresh(self) -> None:
+        pipeline = self.current_pipeline_name()
+        if not pipeline:
+            preferred = getattr(self.settings, "selected_pipeline", None)
+            if not self._select_pipeline_button(preferred):
+                self._select_pipeline_button("sessile")
+            pipeline = self.current_pipeline_name()
+
+        if pipeline:
+            self.sop_ctrl.on_pipeline_changed(pipeline)
+            return
+
         combo = self.testCombo or self.pipelineCombo
         if combo:
             self.sop_ctrl.on_pipeline_changed(combo.currentText())

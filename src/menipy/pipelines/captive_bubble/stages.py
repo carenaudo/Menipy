@@ -107,6 +107,20 @@ class CaptiveBubblePipeline(PipelineBase):
         return ctx
 
     def do_overlay(self, ctx: Context) -> Optional[Context]:
+        # Draw measurement number if available
+        if hasattr(ctx, 'image') and ctx.image is not None:
+            if hasattr(ctx, 'measurement_sequence') and ctx.measurement_sequence is not None:
+                import cv2
+                img = ctx.image.copy() if not hasattr(ctx, 'preview') or ctx.preview is None else ctx.preview.copy()
+                measurement_text = f"Measurement #{ctx.measurement_sequence}"
+                (text_width, text_height), baseline = cv2.getTextSize(
+                    measurement_text, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2
+                )
+                cv2.rectangle(img, (5, 5), (15 + text_width, 15 + text_height), (0, 0, 0), -1)
+                cv2.putText(img, measurement_text, (10, 10 + text_height), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+                ctx.preview = img
+        
         xy = _ensure_contour(ctx)
         # Type hint to access CaptiveBubbleGeometry specific fields
         geometry = ctx.geometry
