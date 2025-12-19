@@ -55,11 +55,11 @@ class _Job(QRunnable):
                 edge_detection_settings=self.edge_detection_settings,
             )
 
-            # patch acquisition
-            if self.image:
-                p.do_acquisition = (lambda ctx: setattr(ctx, "frames", acq.from_file([self.image])) or ctx)  # type: ignore
-            else:
-                p.do_acquisition = (lambda ctx: setattr(ctx, "frames", acq.from_camera(device=self.camera or 0, n_frames=self.frames)) or ctx)  # type: ignore
+            # patch acquisition - DISABLED to allow pipeline class method to run (and use logging)
+            # if self.image:
+            #     p.do_acquisition = (lambda ctx: setattr(ctx, "frames", acq.from_file([self.image])) or ctx)  # type: ignore
+            # else:
+            #     p.do_acquisition = (lambda ctx: setattr(ctx, "frames", acq.from_camera(device=self.camera or 0, n_frames=self.frames)) or ctx)  # type: ignore
             run_kwargs = {
                 'roi': self.roi,
                 'needle_rect': self.needle_rect,

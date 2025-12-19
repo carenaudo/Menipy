@@ -13,41 +13,14 @@ from menipy.models.geometry import Contour
 from menipy.common import solver as common_solver
 from menipy.common import edge_detection as edged
 from menipy.common import overlay as ovl 
-from menipy.common.plugins import _load_module_from_path
-from menipy.models.config import EdgeDetectionSettings
-from menipy.models.geometry import Contour
-from menipy.common import solver as common_solver
-from menipy.common import edge_detection as edged
-from menipy.common import overlay as ovl 
-from menipy.common.plugins import _load_module_from_path
+from menipy.common.plugin_loader import get_solver
+from menipy.pipelines.utils import ensure_contour
 
-# Load the toy solver from plugins
-_repo_root = Path(__file__).resolve().parents[4]
-_toy_path = _repo_root / "plugins" / "toy_young_laplace.py"
-_toy_mod = _load_module_from_path(_toy_path, "adsa_plugins.toy_young_laplace")
-young_laplace_sphere = getattr(_toy_mod, "toy_young_laplace")
-from menipy.models.config import EdgeDetectionSettings
-from menipy.models.fit import FitConfig
+# Get solvers from registry (loaded at startup)
+young_laplace_adsa = get_solver("young_laplace_adsa")
+calculate_surface_tension = get_solver("calculate_surface_tension")
 
-def _ensure_contour(ctx: Context) -> np.ndarray:
-    if getattr(ctx, "contour", None) is not None and hasattr(ctx.contour, "xy"):
-        return np.asarray(ctx.contour.xy, dtype=float)
 
-    # Ensure we have at least one frame to run edge detection on
-    frames = getattr(ctx, "frames", None)
-    if (not frames or len(frames) == 0) and getattr(ctx, "image_path", None):
-        try:
-            from menipy.common import acquisition as acq
-            loaded = acq.from_file([ctx.image_path])
-        except Exception:
-            loaded = []
-        if loaded:
-            ctx.frames = loaded
-            ctx.frame = loaded[0]
-            ctx.image = loaded[0]
-
-    edged.run(ctx, settings=ctx.edge_detection_settings or EdgeDetectionSettings(method="canny"))
-    return np.asarray(ctx.contour.xy, dtype=float)
 
 class PendantPipeline(PipelineBase):
     """Pendant drop pipeline (simplified): contour → axis/apex → toy Y–L radius fit."""
@@ -65,29 +38,50 @@ class PendantPipeline(PipelineBase):
     }
 
     def do_acquisition(self, ctx: Context) -> Optional[Context]:
-        """Load frames from disk if the context only has a path reference."""
-        if getattr(ctx, "frames", None):
+        """Load frames from disk or wrap existing image in frames."""
+        # Debug: log what we received using pipeline logger
+        self.logger.info(f"[do_acquisition] ctx.image type: {type(getattr(ctx, 'image', None))}, ctx.image_path: {getattr(ctx, 'image_path', None)}")
+        
+        # If frames already exist, nothing to do
+        if getattr(ctx, "frames", None) and len(ctx.frames) > 0:
+            self.logger.info(f"[do_acquisition] Frames already exist: {len(ctx.frames)}")
             return ctx
 
+        # Check if we have a direct image (numpy array)
+        image = getattr(ctx, "image", None)
+        if image is not None and isinstance(image, np.ndarray):
+            from menipy.models.frame import Frame
+            frame = Frame(image=image)
+            ctx.frames = [frame]
+            ctx.frame = frame
+            self.logger.info(f"[do_acquisition] Wrapped ctx.image in frame, shape: {image.shape}")
+            return ctx
+
+        # Try to load from file path
         image_path = getattr(ctx, "image_path", None)
         if not image_path:
+            # No image source available
+            self.logger.warning("[do_acquisition] No image or image_path available!")
             return ctx
 
         try:
             from menipy.common import acquisition as acq
+            self.logger.info(f"[do_acquisition] Loading from file: {image_path}")
             frames = acq.from_file([image_path])
-        except Exception:
+        except Exception as e:
+            self.logger.error(f"[do_acquisition] Failed to load from file: {e}")
             frames = []
 
         if frames:
             ctx.frames = frames
             ctx.frame = frames[0]
             ctx.image = frames[0]
+            self.logger.info(f"[do_acquisition] Loaded {len(frames)} frames from disk")
         return ctx
     def do_preprocessing(self, ctx: Context) -> Optional[Context]: return ctx
 
     def do_geometry(self, ctx: Context) -> Optional[Context]:
-        xy = _ensure_contour(ctx)
+        xy = ensure_contour(ctx)
         x, y = xy[:, 0], xy[:, 1]
         axis_x = float(np.median(x))
         apex_i = int(np.argmax(y))  # pendant apex at bottom
@@ -101,7 +95,47 @@ class PendantPipeline(PipelineBase):
         return ctx
 
     def do_scaling(self, ctx: Context) -> Optional[Context]:
-        ctx.scale = ctx.scale or {"px_per_mm": 1.0}
+        """Calculate px_per_mm from needle calibration and scale contour to mm."""
+        # Check if scaling already set
+        if ctx.scale and ctx.scale.get("px_per_mm", 1.0) != 1.0:
+            return ctx
+        
+        # Try to calculate px_per_mm from needle calibration
+        needle_diameter_mm = getattr(ctx, "needle_diameter_mm", None)
+        needle_rect = getattr(ctx, "needle_rect", None)
+        
+        px_per_mm = 1.0  # Default (no scaling)
+        
+        if needle_diameter_mm and needle_rect:
+            # needle_rect is typically (x, y, width, height) in pixels
+            try:
+                if hasattr(needle_rect, '__iter__') and len(needle_rect) >= 3:
+                    needle_width_px = needle_rect[2]  # width in pixels
+                    if needle_width_px > 0 and needle_diameter_mm > 0:
+                        px_per_mm = needle_width_px / needle_diameter_mm
+                        self.logger.info(f"Calibration: needle {needle_width_px}px = {needle_diameter_mm}mm → {px_per_mm:.2f} px/mm")
+            except Exception as e:
+                self.logger.warning(f"Could not calculate scale from needle: {e}")
+        elif needle_diameter_mm:
+            self.logger.warning(f"needle_diameter_mm={needle_diameter_mm} but no needle_rect provided for calibration")
+        
+        ctx.scale = {"px_per_mm": px_per_mm}
+        
+        # Scale the contour to mm if we have valid calibration
+        if px_per_mm != 1.0 and ctx.contour and hasattr(ctx.contour, "xy"):
+            from menipy.models.geometry import Contour
+            xy_px = np.asarray(ctx.contour.xy, dtype=float)
+            xy_mm = xy_px / px_per_mm
+            ctx.contour = Contour(xy=xy_mm.tolist())
+            self.logger.info(f"Scaled contour from pixels to mm (factor: 1/{px_per_mm:.2f})")
+            
+            # Also update geometry apex_xy if present
+            if ctx.geometry and ctx.geometry.apex_xy:
+                apex_x, apex_y = ctx.geometry.apex_xy
+                ctx.geometry.apex_xy = (apex_x / px_per_mm, apex_y / px_per_mm)
+                if ctx.geometry.axis_x:
+                    ctx.geometry.axis_x = ctx.geometry.axis_x / px_per_mm
+        
         return ctx
 
     def do_physics(self, ctx: Context) -> Optional[Context]:
@@ -109,14 +143,16 @@ class PendantPipeline(PipelineBase):
         return ctx
 
     def do_solver(self, ctx: Context) -> Optional[Context]:
+        # Fit both apex radius (R0) and Bond number (beta)
+        # beta = (delta_rho * g * R0^2) / gamma
         cfg = FitConfig(
-            x0=[25.0],
-            bounds=([1.0], [2000.0]),
+            x0=[5.0, 0.3],  # Initial guess: R0=5mm, beta=0.3
+            bounds=([0.1, 0.01], [50.0, 2.0]),  # R0: 0.1-50mm, beta: 0.01-2.0
             loss="soft_l1",
             distance="pointwise",
-            param_names=["R0_mm"],
+            param_names=["r0_mm", "beta"],
         )
-        common_solver.run(ctx, integrator=young_laplace_sphere, config=cfg)
+        common_solver.run(ctx, integrator=young_laplace_adsa, config=cfg)
         return ctx
 
     def do_optimization(self, ctx: Context) -> Optional[Context]: return ctx
@@ -125,16 +161,72 @@ class PendantPipeline(PipelineBase):
         fit = ctx.fit or {}
         names = fit.get("param_names") or []
         params = fit.get("params", [])
-        ctx.results = {n: p for n, p in zip(names, params)} | {"residuals": fit.get("residuals", {})}
+        
+        # Base results from fit
+        results = {n: p for n, p in zip(names, params)} | {"residuals": fit.get("residuals", {})}
+
+        # --- Geometric Calculations ---
+        # 1. Scale
+        scale = ctx.scale or {}
+        px_per_mm = scale.get("px_per_mm", 1.0)
+        
+        # 2. Contour Data
+        try:
+            xy = ensure_contour(ctx)
+            x, y = xy[:, 0], xy[:, 1]
+            
+            # 3. Height (mm)
+            height_px = np.max(y) - np.min(y)
+            results["height_mm"] = height_px / px_per_mm
+            
+            # 4. Diameter (mm) - derived from R0 fit for consistency with spherical model
+            if "r0_mm" in results:
+                results["diameter_mm"] = 2 * results["r0_mm"]
+            
+            # 5. Volume (uL) - Disk integration method
+            axis_x = ctx.geometry.axis_x if ctx.geometry else np.mean(x)
+            r_px = np.abs(x - axis_x)
+            
+            sort_idx = np.argsort(y)
+            y_sorted = y[sort_idx]
+            r_sorted = r_px[sort_idx]
+            
+            vol_px3 = np.pi * np.trapz(r_sorted**2, y_sorted)
+            results["volume_uL"] = abs(vol_px3) / (px_per_mm**3)
+            
+        except Exception as e:
+            self.logger.warning(f"Failed to calculate geometric stats: {e}")
+
+        # --- Surface Tension Calculation ---
+        # gamma = (delta_rho * g * R0^2) / beta
+        try:
+            if "r0_mm" in results and "beta" in results:
+                physics = ctx.physics or {}
+                rho1 = physics.get("rho1", 1000.0)  # liquid density kg/m³
+                rho2 = physics.get("rho2", 1.2)      # ambient density kg/m³
+                g = physics.get("g", 9.80665)
+                delta_rho = rho1 - rho2
+                
+                gamma = calculate_surface_tension(
+                    R0_mm=results["r0_mm"],
+                    beta=results["beta"],
+                    delta_rho_kg_m3=delta_rho,
+                    g=g
+                )
+                results["surface_tension_mN_m"] = gamma
+        except Exception as e:
+            self.logger.warning(f"Failed to calculate surface tension: {e}")
+
+        ctx.results = results
         return ctx
 
     def do_overlay(self, ctx: Context) -> Optional[Context]:
-        xy = _ensure_contour(ctx)
+        xy = ensure_contour(ctx)
         if not ctx.geometry:
             return ctx
         axis_x = int(round(ctx.geometry.axis_x)) if ctx.geometry.axis_x is not None else 0
         apex_x, apex_y = ctx.geometry.apex_xy if ctx.geometry.apex_xy is not None else (0, 0)
-        text = f"R0≈{ctx.results.get('R0_mm','?')} mm"
+        text = f"R0≈{ctx.results.get('r0_mm','?')} mm"
         measurement_text = f"Measurement #{ctx.measurement_sequence}" if hasattr(ctx, 'measurement_sequence') and ctx.measurement_sequence else ""
         cmds = [
             # Measurement number overlay

@@ -148,6 +148,13 @@ class PipelineBase:
             ctx.needle_rect = kwargs["needle_rect"]
         if "contact_line" in kwargs and kwargs["contact_line"] is not None:
             ctx.contact_line = kwargs["contact_line"]
+        
+        # Calibration parameters
+        if "needle_diameter_mm" in kwargs and kwargs["needle_diameter_mm"] is not None:
+            ctx.needle_diameter_mm = kwargs["needle_diameter_mm"]
+        if "calibration_params" in kwargs and kwargs["calibration_params"] is not None:
+            for key, value in kwargs["calibration_params"].items():
+                setattr(ctx, key, value)
 
         # Prioritize kwargs over instance settings to avoid multiple value errors.
         if "preprocessing_settings" not in kwargs:

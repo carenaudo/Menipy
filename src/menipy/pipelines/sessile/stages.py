@@ -15,35 +15,14 @@ from menipy.models.geometry import Contour
 from menipy.common import edge_detection as edged
 from menipy.common import overlay as ovl
 from menipy.common import solver as common_solver
-from menipy.common.plugins import _load_module_from_path
-from pathlib import Path
+from menipy.common.plugin_loader import get_solver
+from menipy.pipelines.utils import ensure_contour
 
-_repo_root = Path(__file__).resolve().parents[4]
-_toy_path = _repo_root / "plugins" / "toy_young_laplace.py"
-_toy_mod = _load_module_from_path(_toy_path, "adsa_plugins.toy_young_laplace")
-young_laplace_sphere = getattr(_toy_mod, "toy_young_laplace")
+# Get solver from registry (loaded at startup)
+young_laplace_sphere = get_solver("toy_young_laplace")
 
 
-def _ensure_contour(ctx: Context) -> np.ndarray:
-    if getattr(ctx, "contour", None) is not None and hasattr(ctx.contour, "xy"):
-        return np.asarray(ctx.contour.xy, dtype=float)
 
-    # Get image from context
-    img = getattr(ctx, "frame", None)
-    if img is None and hasattr(ctx, "frames") and ctx.frames:
-        img = ctx.frames[0]
-    if img is None:
-        img = getattr(ctx, "image", None)
-
-    # Handle Frame object
-    if hasattr(img, "image"):
-        img = img.image
-
-    if img is None:
-        raise RuntimeError("No image available for edge detection")
-
-    edged.run(ctx, settings=ctx.edge_detection_settings or EdgeDetectionSettings(method="canny"))
-    return np.asarray(ctx.contour.xy, dtype=float)
 
 
 class SessilePipeline(PipelineBase):
@@ -90,7 +69,7 @@ class SessilePipeline(PipelineBase):
     def do_preprocessing(self, ctx: Context) -> Optional[Context]: return ctx
 
     def do_geometry(self, ctx: Context) -> Optional[Context]:
-        xy = _ensure_contour(ctx)
+        xy = ensure_contour(ctx)
         x, y = xy[:, 0], xy[:, 1]
 
         # Use substrate line if provided, otherwise auto-detect

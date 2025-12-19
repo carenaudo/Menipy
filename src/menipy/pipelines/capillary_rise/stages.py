@@ -10,20 +10,14 @@ from menipy.models.config import EdgeDetectionSettings
 from menipy.common import edge_detection as edged
 from menipy.common import overlay as ovl
 from menipy.common import solver as common_solver
-from pathlib import Path
-from menipy.common.plugins import _load_module_from_path
+from menipy.common.plugin_loader import get_solver
+from menipy.pipelines.utils import ensure_contour
 
-_repo_root = Path(__file__).resolve().parents[4]
-_toy_path = _repo_root / "plugins" / "toy_young_laplace.py"
-_toy_mod = _load_module_from_path(_toy_path, "adsa_plugins.toy_young_laplace")
-young_laplace_sphere = getattr(_toy_mod, "toy_young_laplace")
+# Get solver from registry (loaded at startup)
+young_laplace_sphere = get_solver("toy_young_laplace")
 
 
-def _ensure_contour(ctx: Context) -> np.ndarray:
-    if getattr(ctx, "contour", None) is not None and hasattr(ctx.contour, "xy"):
-        return np.asarray(ctx.contour.xy, dtype=float)
-    edged.run(ctx, settings=ctx.edge_detection_settings or EdgeDetectionSettings(method="canny"))
-    return np.asarray(ctx.contour.xy, dtype=float)
+
 
 
 class CapillaryRisePipeline(PipelineBase):
@@ -45,7 +39,7 @@ class CapillaryRisePipeline(PipelineBase):
     def do_preprocessing(self, ctx: Context) -> Optional[Context]: return ctx
 
     def do_geometry(self, ctx: Context) -> Optional[Context]:
-        xy = _ensure_contour(ctx)
+        xy = ensure_contour(ctx)
         x, y = xy[:, 0], xy[:, 1]
         baseline_y = float(np.max(y))          # assume tube base at bottom of image
         apex_i = int(np.argmin(y))             # meniscus apex (highest point)
@@ -96,7 +90,7 @@ class CapillaryRisePipeline(PipelineBase):
         return ctx
 
     def do_overlay(self, ctx: Context) -> Optional[Context]:
-        xy = _ensure_contour(ctx)
+        xy = ensure_contour(ctx)
         baseline_y = int(round(ctx.geometry["baseline_y"]))
         axis_x = int(round(ctx.geometry["axis_x"]))
         apex_x, apex_y = ctx.geometry["apex_xy"]

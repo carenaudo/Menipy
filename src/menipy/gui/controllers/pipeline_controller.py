@@ -374,6 +374,8 @@ class PipelineController:
             run_kwargs['camera'] = cam_id
         if frames is not None:
             run_kwargs['frames'] = frames
+        if params.get("calibration_params"):
+            run_kwargs['calibration_params'] = params.get("calibration_params")
 
         run_kwargs['only'] = [stage for stage in stages]
 
@@ -425,6 +427,7 @@ class PipelineController:
                     "roi": overlays.get('roi'),
                     "needle_rect": overlays.get('needle_rect'),
                     "contact_line": overlays.get('contact_line'),
+                    "calibration_params": params.get("calibration_params"),
                 }
                 if self.preprocessing_ctrl:
                     run_kwargs_vm["preprocessing_settings"] = self.preprocessing_ctrl.settings.model_copy(deep=True)
@@ -461,6 +464,7 @@ class PipelineController:
                 "roi": overlays.get('roi'),
                 "needle_rect": overlays.get('needle_rect'),
                 "contact_line": overlays.get('contact_line'),
+                "calibration_params": params.get("calibration_params"),
             }
             if self.preprocessing_ctrl:
                 run_kwargs_pipe["preprocessing_settings"] = self.preprocessing_ctrl.settings
@@ -486,7 +490,9 @@ class PipelineController:
         self.window.statusBar().showMessage("Preview updated", 1000)
 
     def on_results_ready(self, results: Mapping[str, Any]) -> None:
-        self.results_panel.update(results)
+        params = self.setup_ctrl.gather_run_params()
+        pipeline_name = (params.get("name") or "unknown").lower()
+        self.results_panel.update_single_measurement(results, pipeline_name=pipeline_name)
         self.window.statusBar().showMessage("Results ready", 1000)
 
     def _prepare_measurement_tracking(self, **kwargs) -> dict:

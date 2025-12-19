@@ -1,28 +1,19 @@
 from __future__ import annotations
 from typing import Optional
 import numpy as np
-from pathlib import Path
 
 from menipy.pipelines.base import (
     PipelineBase, Context, EdgeDetectionSettings, FitConfig,
     edged, ovl, common_solver
 )
 from menipy.models.geometry import CaptiveBubbleGeometry
-from menipy.common.plugins import _load_module_from_path
+from menipy.common.plugin_loader import get_solver
+from menipy.pipelines.utils import ensure_contour
 
-_repo_root = Path(__file__).resolve().parents[4]
-_toy_path = _repo_root / "plugins" / "toy_young_laplace.py"
-_toy_mod = _load_module_from_path(_toy_path, "adsa_plugins.toy_young_laplace")
-young_laplace_sphere = getattr(_toy_mod, "toy_young_laplace")
+# Get solver from registry (loaded at startup)
+young_laplace_sphere = get_solver("toy_young_laplace")
 
-def _ensure_contour(ctx: Context) -> np.ndarray:
-    """Get contour array, running edge detection if needed."""
-    if not ctx.contour:
-        edged.run(ctx, settings=ctx.edge_detection_settings or EdgeDetectionSettings(method="canny"))
-    # After edge detection, ctx.contour should be a proper Contour object with xy
-    if not ctx.contour or not hasattr(ctx.contour, "xy"):
-        raise ValueError("Could not get valid contour even after edge detection")
-    return np.asarray(ctx.contour.xy, dtype=float)
+
 
 
 class CaptiveBubblePipeline(PipelineBase):
@@ -52,7 +43,7 @@ class CaptiveBubblePipeline(PipelineBase):
     def do_preprocessing(self, ctx: Context) -> Optional[Context]: return ctx
 
     def do_geometry(self, ctx: Context) -> Optional[Context]:
-        xy = _ensure_contour(ctx)
+        xy = ensure_contour(ctx)
         x, y = xy[:, 0], xy[:, 1]
 
         ceiling_y = float(np.min(y))          # ceiling at image top
@@ -121,7 +112,7 @@ class CaptiveBubblePipeline(PipelineBase):
                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
                 ctx.preview = img
         
-        xy = _ensure_contour(ctx)
+        xy = ensure_contour(ctx)
         # Type hint to access CaptiveBubbleGeometry specific fields
         geometry = ctx.geometry
         if not isinstance(geometry, CaptiveBubbleGeometry):
