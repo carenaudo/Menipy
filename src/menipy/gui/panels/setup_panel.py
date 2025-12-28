@@ -1,4 +1,5 @@
 """Controller for the setup panel widgets."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -67,43 +68,89 @@ class SetupPanelController(QObject):
         self.sops = sops
         self.stage_order = list(stage_order)
         self.step_item_cls = step_item_cls
-        self._pipeline_keys = {str(k).lower() for k in (pipeline_keys or PIPELINE_MAP.keys()) if k}
+        self._pipeline_keys = {
+            str(k).lower() for k in (pipeline_keys or PIPELINE_MAP.keys()) if k
+        }
 
         # Pipeline selection buttons (replacing combo boxes)
-        self.sessileBtn: Optional[QPushButton] = panel.findChild(QPushButton, "sessileBtn")
-        self.pendantBtn: Optional[QPushButton] = panel.findChild(QPushButton, "pendantBtn")
-        self.oscillatingBtn: Optional[QPushButton] = panel.findChild(QPushButton, "oscillatingBtn")
-        self.capillaryBtn: Optional[QPushButton] = panel.findChild(QPushButton, "capillaryBtn")
-        self.captiveBtn: Optional[QPushButton] = panel.findChild(QPushButton, "captiveBtn")
+        self.sessileBtn: Optional[QPushButton] = panel.findChild(
+            QPushButton, "sessileBtn"
+        )
+        self.pendantBtn: Optional[QPushButton] = panel.findChild(
+            QPushButton, "pendantBtn"
+        )
+        self.oscillatingBtn: Optional[QPushButton] = panel.findChild(
+            QPushButton, "oscillatingBtn"
+        )
+        self.capillaryBtn: Optional[QPushButton] = panel.findChild(
+            QPushButton, "capillaryBtn"
+        )
+        self.captiveBtn: Optional[QPushButton] = panel.findChild(
+            QPushButton, "captiveBtn"
+        )
 
         # Legacy combo boxes (kept for backward compatibility)
         self.testCombo: Optional[QComboBox] = panel.findChild(QComboBox, "testCombo")
-        self.pipelineCombo: Optional[QComboBox] = panel.findChild(QComboBox, "pipelineCombo")
+        self.pipelineCombo: Optional[QComboBox] = panel.findChild(
+            QComboBox, "pipelineCombo"
+        )
         self.sopCombo: Optional[QComboBox] = panel.findChild(QComboBox, "sopCombo")
-        self.addSopBtn: Optional[QToolButton] = panel.findChild(QToolButton, "addSopBtn")
+        self.addSopBtn: Optional[QToolButton] = panel.findChild(
+            QToolButton, "addSopBtn"
+        )
 
-        self.singleModeRadio: Optional[QRadioButton] = panel.findChild(QRadioButton, "singleModeRadio")
-        self.batchModeRadio: Optional[QRadioButton] = panel.findChild(QRadioButton, "batchModeRadio")
-        self.cameraModeRadio: Optional[QRadioButton] = panel.findChild(QRadioButton, "cameraModeRadio")
+        self.singleModeRadio: Optional[QRadioButton] = panel.findChild(
+            QRadioButton, "singleModeRadio"
+        )
+        self.batchModeRadio: Optional[QRadioButton] = panel.findChild(
+            QRadioButton, "batchModeRadio"
+        )
+        self.cameraModeRadio: Optional[QRadioButton] = panel.findChild(
+            QRadioButton, "cameraModeRadio"
+        )
 
-        self.imagePathEdit: Optional[QLineEdit] = panel.findChild(QLineEdit, "imagePathEdit")
-        self.batchPathEdit: Optional[QLineEdit] = panel.findChild(QLineEdit, "batchPathEdit")
-        self.sourceIdCombo: Optional[QComboBox] = panel.findChild(QComboBox, "sourceIdCombo")
+        self.imagePathEdit: Optional[QLineEdit] = panel.findChild(
+            QLineEdit, "imagePathEdit"
+        )
+        self.batchPathEdit: Optional[QLineEdit] = panel.findChild(
+            QLineEdit, "batchPathEdit"
+        )
+        self.sourceIdCombo: Optional[QComboBox] = panel.findChild(
+            QComboBox, "sourceIdCombo"
+        )
 
-        self.browseBtn: Optional[QToolButton] = panel.findChild(QToolButton, "browseBtn")
-        self.batchBrowseBtn: Optional[QToolButton] = panel.findChild(QToolButton, "batchBrowseBtn")
-        self.previewBtn: Optional[QToolButton] = panel.findChild(QToolButton, "previewBtn")
+        self.browseBtn: Optional[QToolButton] = panel.findChild(
+            QToolButton, "browseBtn"
+        )
+        self.batchBrowseBtn: Optional[QToolButton] = panel.findChild(
+            QToolButton, "batchBrowseBtn"
+        )
+        self.previewBtn: Optional[QToolButton] = panel.findChild(
+            QToolButton, "previewBtn"
+        )
 
         # Calibration input widgets
-        self.needleLengthSpin: Optional[QDoubleSpinBox] = panel.findChild(QDoubleSpinBox, "needleLengthSpin")
-        self.dropDensitySpin: Optional[QDoubleSpinBox] = panel.findChild(QDoubleSpinBox, "dropDensitySpin")
-        self.fluidDensitySpin: Optional[QDoubleSpinBox] = panel.findChild(QDoubleSpinBox, "fluidDensitySpin")
-        self.substrateAngleSpin: Optional[QDoubleSpinBox] = panel.findChild(QDoubleSpinBox, "substrateAngleSpin")
+        self.needleLengthSpin: Optional[QDoubleSpinBox] = panel.findChild(
+            QDoubleSpinBox, "needleLengthSpin"
+        )
+        self.dropDensitySpin: Optional[QDoubleSpinBox] = panel.findChild(
+            QDoubleSpinBox, "dropDensitySpin"
+        )
+        self.fluidDensitySpin: Optional[QDoubleSpinBox] = panel.findChild(
+            QDoubleSpinBox, "fluidDensitySpin"
+        )
+        self.substrateAngleSpin: Optional[QDoubleSpinBox] = panel.findChild(
+            QDoubleSpinBox, "substrateAngleSpin"
+        )
 
         self.framesSpin: Optional[QSpinBox] = panel.findChild(QSpinBox, "framesSpin")
 
-        self.stepsList: Optional[QListWidget] = panel.findChild(QListWidget, "stepsList")
-        self.runAllBtn: Optional[QPushButton] = panel.findChild(QPushButton, "runAllBtn")
+        self.stepsList: Optional[QListWidget] = panel.findChild(
+            QListWidget, "stepsList"
+        )
+        self.runAllBtn: Optional[QPushButton] = panel.findChild(
+            QPushButton, "runAllBtn"
+        )
 
         # Pipeline UI Manager for dynamic configuration
         self.pipeline_ui_manager = PipelineUIManager()
@@ -116,7 +163,9 @@ class SetupPanelController(QObject):
             steps_list=self.stepsList,
             sop_combo=self.sopCombo,
             pipeline_getter=self.current_pipeline_name,
-            pipeline_changed_callback=lambda pipeline: self.pipeline_changed.emit(pipeline),
+            pipeline_changed_callback=lambda pipeline: self.pipeline_changed.emit(
+                pipeline
+            ),
             play_callback=self.play_stage_requested.emit,
             config_callback=self.config_stage_requested.emit,
         )
@@ -172,7 +221,7 @@ class SetupPanelController(QObject):
             self.pendantBtn: "pendant",
             self.oscillatingBtn: "oscillating",
             self.capillaryBtn: "capillary_rise",
-            self.captiveBtn: "captive_bubble"
+            self.captiveBtn: "captive_bubble",
         }
 
         for button, pipeline_name in button_map.items():
@@ -268,9 +317,21 @@ class SetupPanelController(QObject):
         if not pipeline_name:
             # Fallback to basic parameters if no pipeline selected
             return {
-                "needle_length_mm": float(self.needleLengthSpin.value()) if self.needleLengthSpin else 10.0,
-                "drop_density_kg_m3": float(self.dropDensitySpin.value()) if self.dropDensitySpin else 1000.0,
-                "fluid_density_kg_m3": float(self.fluidDensitySpin.value()) if self.fluidDensitySpin else 1.2,
+                "needle_length_mm": (
+                    float(self.needleLengthSpin.value())
+                    if self.needleLengthSpin
+                    else 10.0
+                ),
+                "drop_density_kg_m3": (
+                    float(self.dropDensitySpin.value())
+                    if self.dropDensitySpin
+                    else 1000.0
+                ),
+                "fluid_density_kg_m3": (
+                    float(self.fluidDensitySpin.value())
+                    if self.fluidDensitySpin
+                    else 1.2
+                ),
             }
 
         # Get pipeline-specific calibration parameters
@@ -294,7 +355,9 @@ class SetupPanelController(QObject):
             elif param_name == "contact_angle_deg":
                 # Default contact angle if no widget yet
                 params[param_name] = 0.0
-            elif param_name == "substrate_contact_angle_deg" and self.substrateAngleSpin:
+            elif (
+                param_name == "substrate_contact_angle_deg" and self.substrateAngleSpin
+            ):
                 params[param_name] = float(self.substrateAngleSpin.value())
             else:
                 # Default values for unknown parameters
@@ -315,11 +378,11 @@ class SetupPanelController(QObject):
         """Apply theme-aware styling to pipeline selection buttons."""
         from PySide6.QtWidgets import QApplication
         from PySide6.QtGui import QPalette
-        
+
         # Get the application palette to detect light/dark theme
         palette = QApplication.palette()
         is_dark_theme = palette.color(QPalette.ColorRole.Window).lightness() < 128
-        
+
         # Define base background and text colors based on theme
         if is_dark_theme:
             # Use a dark background for dark themes
@@ -328,7 +391,7 @@ class SetupPanelController(QObject):
         else:
             base_bg = "#f8f9fa"  # Light gray for light themes
             base_text = "#212529"  # Dark text for light backgrounds
-        
+
         # Button color schemes (accent color when checked)
         button_styles = {
             self.sessileBtn: "#4A90E2",  # Blue
@@ -337,7 +400,7 @@ class SetupPanelController(QObject):
             self.capillaryBtn: "#9B59B6",  # Purple
             self.captiveBtn: "#50E3C2",  # Cyan
         }
-        
+
         for button, accent_color in button_styles.items():
             if button:
                 style = f"""
@@ -359,7 +422,6 @@ class SetupPanelController(QObject):
                     }}
                 """
                 button.setStyleSheet(style)
-
 
     def _populate_pipeline_combo(self) -> None:
         combo = self.testCombo or self.pipelineCombo
@@ -402,21 +464,29 @@ class SetupPanelController(QObject):
             self.pendantBtn: "pendant",
             self.oscillatingBtn: "oscillating",
             self.capillaryBtn: "capillary_rise",
-            self.captiveBtn: "captive_bubble"
+            self.captiveBtn: "captive_bubble",
         }
 
         for button, pipeline_name in button_map.items():
             if button:
-                button.clicked.connect(lambda checked, name=pipeline_name: self._on_pipeline_button_clicked(name))
+                button.clicked.connect(
+                    lambda checked, name=pipeline_name: self._on_pipeline_button_clicked(
+                        name
+                    )
+                )
 
         # Legacy combo box connections (for backward compatibility)
         combo = self.testCombo or self.pipelineCombo
         if combo:
             combo.currentTextChanged.connect(self.sop_ctrl.on_pipeline_changed)
         if self.imagePathEdit:
-            self.imagePathEdit.textChanged.connect(lambda _: self._refresh_source_items())
+            self.imagePathEdit.textChanged.connect(
+                lambda _: self._refresh_source_items()
+            )
         if self.batchPathEdit:
-            self.batchPathEdit.textChanged.connect(lambda _: self._refresh_source_items())
+            self.batchPathEdit.textChanged.connect(
+                lambda _: self._refresh_source_items()
+            )
         if self.sourceIdCombo:
             self.sourceIdCombo.currentTextChanged.connect(self._on_combo_text_changed)
         self._mode_group.buttonToggled.connect(self._on_mode_toggled)
@@ -509,13 +579,23 @@ class SetupPanelController(QObject):
             if "tube_diameter_mm" in required_params:
                 needle_spin.setRange(0.1, 50.0)  # Tube diameters
             elif "needle_diameter_mm" in required_params:
-                needle_spin.setRange(0.1, 5.0)   # Needle diameters
+                needle_spin.setRange(0.1, 5.0)  # Needle diameters
             else:
-                needle_spin.setRange(0.1, 100.0) # Needle lengths
+                needle_spin.setRange(0.1, 100.0)  # Needle lengths
 
     def _initial_pipeline_refresh(self) -> None:
         # Set default pipeline button (sessile) if no selection
-        if self.sessileBtn and not any(btn.isChecked() for btn in [self.sessileBtn, self.pendantBtn, self.oscillatingBtn, self.capillaryBtn, self.captiveBtn] if btn):
+        if self.sessileBtn and not any(
+            btn.isChecked()
+            for btn in [
+                self.sessileBtn,
+                self.pendantBtn,
+                self.oscillatingBtn,
+                self.capillaryBtn,
+                self.captiveBtn,
+            ]
+            if btn
+        ):
             self.sessileBtn.setChecked(True)
             self._on_pipeline_button_clicked("sessile")
 

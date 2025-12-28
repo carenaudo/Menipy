@@ -14,7 +14,9 @@ import numpy as np
 from PySide6.QtCore import QObject, QPointF, Qt
 from PySide6.QtGui import QColor
 
-from menipy.gui.controllers.preprocessing_controller import PreprocessingPipelineController
+from menipy.gui.controllers.preprocessing_controller import (
+    PreprocessingPipelineController,
+)
 from menipy.gui.panels.preview_panel import PreviewPanel
 
 
@@ -23,10 +25,10 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class _MarkerTags:
-    center: str = 'marker_center'
+    center: str = "marker_center"
     anchors: List[str] = field(default_factory=list)
     background: List[str] = field(default_factory=list)
-    contact_line: str = 'marker_contact_line'
+    contact_line: str = "marker_contact_line"
 
 
 class ImageMarkerHelper(QObject):
@@ -43,9 +45,11 @@ class ImageMarkerHelper(QObject):
         self._controller = controller
         self._tags = _MarkerTags()
 
-        self._view = getattr(preview_panel, 'image_view', None)
+        self._view = getattr(preview_panel, "image_view", None)
         if self._view is None:
-            logger.debug('ImageMarkerHelper: preview panel has no image view; helper disabled.')
+            logger.debug(
+                "ImageMarkerHelper: preview panel has no image view; helper disabled."
+            )
             return
 
         self._view.point_clicked.connect(self._on_point_clicked)
@@ -67,11 +71,11 @@ class ImageMarkerHelper(QObject):
         markers = self._controller.markers.model_copy(deep=True)
         if mods & Qt.ShiftModifier:
             markers.background_samples.append(marker_point)
-            logger.info('Background sample added at %.1f, %.1f', *marker_point)
+            logger.info("Background sample added at %.1f, %.1f", *marker_point)
         else:
             refined = self._refine_center(marker_point)
             markers.drop_center = refined
-            logger.info('Droplet center set to %.1f, %.1f', *refined)
+            logger.info("Droplet center set to %.1f, %.1f", *refined)
         self._controller.update_markers(markers)
         self._rerun_if_ready()
 
@@ -86,10 +90,10 @@ class ImageMarkerHelper(QObject):
         existing_idx = self._find_near_anchor(anchors, marker_point)
         if existing_idx is not None:
             anchors.pop(existing_idx)
-            logger.info('Removed contact-line anchor near %.1f, %.1f', *marker_point)
+            logger.info("Removed contact-line anchor near %.1f, %.1f", *marker_point)
         else:
             anchors.append(marker_point)
-            logger.info('Added contact-line anchor at %.1f, %.1f', *marker_point)
+            logger.info("Added contact-line anchor at %.1f, %.1f", *marker_point)
         markers.contact_line_anchors = anchors
         self._controller.update_markers(markers)
         self._rerun_if_ready()
@@ -111,13 +115,18 @@ class ImageMarkerHelper(QObject):
         try:
             self._controller.run()
         except Exception as exc:  # pragma: no cover - guard UI responsiveness
-            logger.debug('Preprocessing re-run failed after marker update: %s', exc)
+            logger.debug("Preprocessing re-run failed after marker update: %s", exc)
 
     def _refine_center(self, candidate: Tuple[float, float]) -> Tuple[float, float]:
         state = self._controller.current_state()
         if state is None or state.roi_bounds is None:
             return candidate
-        roi = state.normalized_roi or state.filtered_roi or state.working_roi or state.raw_roi
+        roi = (
+            state.normalized_roi
+            or state.filtered_roi
+            or state.working_roi
+            or state.raw_roi
+        )
         if roi is None:
             return candidate
         x0, y0, w, h = state.roi_bounds
@@ -175,7 +184,11 @@ class ImageMarkerHelper(QObject):
 
         markers = self._controller.markers
         if markers.drop_center:
-            view.add_marker_point(QPointF(*markers.drop_center), color=QColor(0, 255, 0), tag=self._tags.center)
+            view.add_marker_point(
+                QPointF(*markers.drop_center),
+                color=QColor(0, 255, 0),
+                tag=self._tags.center,
+            )
 
         for idx, anchor in enumerate(markers.contact_line_anchors):
             tag = f"marker_anchor_{idx}"
@@ -185,10 +198,13 @@ class ImageMarkerHelper(QObject):
         if len(markers.contact_line_anchors) >= 2:
             p1 = QPointF(*markers.contact_line_anchors[0])
             p2 = QPointF(*markers.contact_line_anchors[-1])
-            view.add_marker_line(p1, p2, color=QColor(255, 140, 0), tag=self._tags.contact_line)
+            view.add_marker_line(
+                p1, p2, color=QColor(255, 140, 0), tag=self._tags.contact_line
+            )
 
         for idx, sample in enumerate(markers.background_samples):
             tag = f"marker_bg_{idx}"
             self._tags.background.append(tag)
-            view.add_marker_point(QPointF(*sample), color=QColor(100, 149, 237), tag=tag)
-
+            view.add_marker_point(
+                QPointF(*sample), color=QColor(100, 149, 237), tag=tag
+            )

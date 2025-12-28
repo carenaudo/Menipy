@@ -4,6 +4,7 @@ Validation stage utilities for quality assurance of results.
 """
 from __future__ import annotations
 
+
 def run(ctx):
     """Basic QA gates; expand with Bond number / residual thresholds."""
     r = (ctx.fit or {}).get("residuals", {})

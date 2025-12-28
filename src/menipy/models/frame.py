@@ -1,18 +1,19 @@
 """
 Frame model for representing images with metadata, calibration, and timing information.
 """
+
 from __future__ import annotations
 
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, TypeAlias
 from datetime import datetime
 
 import numpy as np
 from pydantic import BaseModel, Field, field_validator
 from pydantic_numpy.typing import Np2DArrayUint8, Np3DArrayUint8
 
-ImageGray = Np2DArrayUint8
-ImageBGR = Np3DArrayUint8
-ImageAny = Union[ImageGray, ImageBGR]
+ImageGray: TypeAlias = Np2DArrayUint8
+ImageBGR: TypeAlias = Np3DArrayUint8
+ImageAny: TypeAlias = Union[ImageGray, ImageBGR]
 
 
 class CameraMeta(BaseModel):

@@ -1,14 +1,16 @@
 """
 View model for pipeline run management.
 """
+
 # src/menipy/gui/viewmodels/run_vm.py
 from __future__ import annotations
 from PySide6.QtCore import QObject, Signal
 from menipy.gui.services.pipeline_runner import PipelineRunner
 from menipy.gui.services.image_convert import to_pixmap
 
+
 class RunViewModel(QObject):
-    preview_ready = Signal(object)     # QPixmap
+    preview_ready = Signal(object)  # QPixmap
     results_ready = Signal(dict)
     error_occurred = Signal(str)
     status_ready = Signal(str)
@@ -40,7 +42,9 @@ class RunViewModel(QObject):
         frames: int = 1,
         **overlays,
     ) -> None:
-        self.runner.run_subset(pipeline, only=only, image=image, camera=camera, frames=frames, **overlays)
+        self.runner.run_subset(
+            pipeline, only=only, image=image, camera=camera, frames=frames, **overlays
+        )
 
     def _done(self, payload):
         if not payload["ok"]:

@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import cv2
 import numpy as np
 from numpy.linalg import lstsq
-from scipy.optimize import minimize_scalar
+from typing import Tuple
 
 
 def fit_circle(points: np.ndarray) -> Tuple[np.ndarray, float]:
@@ -26,7 +25,7 @@ def fit_circle(points: np.ndarray) -> Tuple[np.ndarray, float]:
     x = points[:, 0]
     y = points[:, 1]
     A = np.c_[2 * x, 2 * y, np.ones_like(x)]
-    b = x ** 2 + y ** 2
+    b = x**2 + y**2
     c, residuals, _, _ = lstsq(A, b, rcond=None)
     center = c[:2]
     radius = np.sqrt(c[2] + center.dot(center))
@@ -98,7 +97,9 @@ def curvature_estimates(contour: np.ndarray, window: int = 5) -> np.ndarray:
     return kappa
 
 
-def find_contact_points_from_contour(contour: np.ndarray, contact_line: tuple, tolerance: float = 20.0) -> tuple:
+def find_contact_points_from_contour(
+    contour: np.ndarray, contact_line: tuple, tolerance: float = 20.0
+) -> tuple:
     """Find left/right contact points on a droplet contour given a user-drawn contact line.
 
     Parameters
@@ -129,7 +130,7 @@ def find_contact_points_from_contour(contour: np.ndarray, contact_line: tuple, t
     candidate_idx = np.where(dists <= tolerance)[0]
     if candidate_idx.size == 0:
         # Expand tolerance heuristically
-        candidate_idx = np.argsort(dists)[:max(2, int(0.02 * len(contour)))]
+        candidate_idx = np.argsort(dists)[: max(2, int(0.02 * len(contour)))]
 
     # Estimate curvature and prefer high-curvature points near the line
     kappa = curvature_estimates(contour, window=5)
@@ -178,7 +179,9 @@ def find_contact_points_from_contour(contour: np.ndarray, contact_line: tuple, t
     return (left_pt, right_pt)
 
 
-def detect_baseline_ransac(contour: np.ndarray, threshold: float = 2.0, min_samples: int = 10) -> tuple[np.ndarray, np.ndarray, float]:
+def detect_baseline_ransac(
+    contour: np.ndarray, threshold: float = 2.0, min_samples: int = 10
+) -> tuple[np.ndarray, np.ndarray, float]:
     """Detect baseline using RANSAC for robust line fitting with edge filtering.
 
     Parameters
@@ -216,7 +219,9 @@ def detect_baseline_ransac(contour: np.ndarray, threshold: float = 2.0, min_samp
 
     for _ in range(max_iterations):
         # Random sample
-        sample_idx = np.random.choice(len(candidates), size=min(min_samples, len(candidates)), replace=False)
+        sample_idx = np.random.choice(
+            len(candidates), size=min(min_samples, len(candidates)), replace=False
+        )
         sample = candidates[sample_idx]
 
         if len(sample) < 2:
@@ -272,7 +277,9 @@ def detect_baseline_ransac(contour: np.ndarray, threshold: float = 2.0, min_samp
     return p1, p2, confidence
 
 
-def refine_apex_curvature(contour: np.ndarray, window: int = 5, subpixel_steps: int = 10) -> tuple[np.ndarray, float]:
+def refine_apex_curvature(
+    contour: np.ndarray, window: int = 5, subpixel_steps: int = 10
+) -> tuple[np.ndarray, float]:
     """Refine apex detection using curvature-based subpixel refinement.
 
     Parameters
@@ -317,7 +324,11 @@ def refine_apex_curvature(contour: np.ndarray, window: int = 5, subpixel_steps: 
         try:
             coeffs = np.polyfit(indices, local_kappa, 2)
             # Find maximum of quadratic
-            peak_idx = -coeffs[1] / (2 * coeffs[0]) if coeffs[0] != 0 else len(local_contour) // 2
+            peak_idx = (
+                -coeffs[1] / (2 * coeffs[0])
+                if coeffs[0] != 0
+                else len(local_contour) // 2
+            )
             peak_idx = np.clip(peak_idx, 0, len(local_contour) - 1)
 
             # Interpolate position
@@ -327,7 +338,10 @@ def refine_apex_curvature(contour: np.ndarray, window: int = 5, subpixel_steps: 
                 apex = local_contour[idx_floor]
             else:
                 frac = peak_idx - idx_floor
-                apex = local_contour[idx_floor] * (1 - frac) + local_contour[idx_ceil] * frac
+                apex = (
+                    local_contour[idx_floor] * (1 - frac)
+                    + local_contour[idx_ceil] * frac
+                )
 
             # Adjust back to global index
             apex += start_idx
@@ -338,7 +352,9 @@ def refine_apex_curvature(contour: np.ndarray, window: int = 5, subpixel_steps: 
         # Confidence based on curvature peak relative to mean
         mean_kappa = np.mean(kappa)
         peak_kappa = kappa[apex_idx]
-        confidence = min(1.0, peak_kappa / (mean_kappa + 1e-6)) if mean_kappa > 0 else 0.5
+        confidence = (
+            min(1.0, peak_kappa / (mean_kappa + 1e-6)) if mean_kappa > 0 else 0.5
+        )
 
     return apex, confidence
 
@@ -348,7 +364,7 @@ def estimate_contact_angle_tangent(
     contact_point: np.ndarray,
     substrate_line: tuple[tuple[float, float], tuple[float, float]],
     window_px: int = 15,
-    method: str = "poly"
+    method: str = "poly",
 ) -> tuple[float, float]:
     """Estimate contact angle using tangent method near contact point.
 
@@ -384,7 +400,9 @@ def estimate_contact_angle_tangent(
         return 90.0, 1.0  # Default to 90 degrees with high error
 
     # Transform to substrate-aligned coordinates
-    p1, p2 = np.array(substrate_line[0], dtype=float), np.array(substrate_line[1], dtype=float)
+    p1, p2 = np.array(substrate_line[0], dtype=float), np.array(
+        substrate_line[1], dtype=float
+    )
     substrate_vec = p2 - p1
     substrate_vec /= np.linalg.norm(substrate_vec)
     perp_vec = np.array([-substrate_vec[1], substrate_vec[0]])
@@ -404,7 +422,7 @@ def estimate_contact_angle_tangent(
             angle_deg = np.degrees(angle_rad)
             # RMSE
             y_pred = np.polyval(coeffs, x_local)
-            rmse = np.sqrt(np.mean((y_local - y_pred)**2))
+            rmse = np.sqrt(np.mean((y_local - y_pred) ** 2))
         except np.linalg.LinAlgError:
             angle_deg = 90.0
             rmse = 1.0
@@ -423,7 +441,9 @@ def estimate_contact_angle_tangent(
             else:
                 angle_deg = 90.0
             # RMSE approximation
-            distances_to_circle = np.abs(np.linalg.norm(local_points - center, axis=1) - radius)
+            distances_to_circle = np.abs(
+                np.linalg.norm(local_points - center, axis=1) - radius
+            )
             rmse = np.sqrt(np.mean(distances_to_circle**2))
         except:
             angle_deg = 90.0
@@ -439,7 +459,7 @@ def estimate_contact_angle_circle_fit(
     contour: np.ndarray,
     contact_point: np.ndarray,
     substrate_line: tuple[tuple[float, float], tuple[float, float]],
-    window_px: int = 30
+    window_px: int = 30,
 ) -> tuple[float, float]:
     """Estimate contact angle using circle fit method.
 
@@ -491,7 +511,9 @@ def estimate_contact_angle_circle_fit(
             angle_deg = 90.0
 
         # RMSE
-        distances_to_circle = np.abs(np.linalg.norm(local_points - center, axis=1) - radius)
+        distances_to_circle = np.abs(
+            np.linalg.norm(local_points - center, axis=1) - radius
+        )
         rmse = np.sqrt(np.mean(distances_to_circle**2))
     except:
         angle_deg = 90.0
@@ -504,7 +526,7 @@ def tangent_angle_at_point(
     contour: np.ndarray,
     contact_point: np.ndarray,
     substrate_line: tuple[tuple[float, float], tuple[float, float]],
-    window_px: int = 15
+    window_px: int = 15,
 ) -> tuple[float, float]:
     """Estimate contact angle at a point using local tangent (polynomial fit).
 
@@ -526,14 +548,16 @@ def tangent_angle_at_point(
     uncertainty : float
         Uncertainty estimate (RMSE of fit).
     """
-    return estimate_contact_angle_tangent(contour, contact_point, substrate_line, window_px, method="poly")
+    return estimate_contact_angle_tangent(
+        contour, contact_point, substrate_line, window_px, method="poly"
+    )
 
 
 def circle_fit_angle_at_point(
     contour: np.ndarray,
     contact_point: np.ndarray,
     substrate_line: tuple[tuple[float, float], tuple[float, float]],
-    window_px: int = 30
+    window_px: int = 30,
 ) -> tuple[float, float]:
     """Estimate contact angle at a point using local circle fit.
 
@@ -555,4 +579,6 @@ def circle_fit_angle_at_point(
     uncertainty : float
         Uncertainty estimate (RMSE of fit).
     """
-    return estimate_contact_angle_circle_fit(contour, contact_point, substrate_line, window_px)
+    return estimate_contact_angle_circle_fit(
+        contour, contact_point, substrate_line, window_px
+    )

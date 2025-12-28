@@ -1,12 +1,14 @@
 import pytest
 from menipy.pipelines.discover import PIPELINE_MAP
 from menipy.gui.services.pipeline_runner import _pick
-from menipy.pipelines.base import PipelineError, PipelineBase
+from menipy.pipelines.base import PipelineBase
 
 
 def test_discover_pipelines_not_empty():
     """Ensures that the central PIPELINE_MAP is populated."""
-    assert PIPELINE_MAP, "PIPELINE_MAP should not be empty. Check imports in discover.py."
+    assert (
+        PIPELINE_MAP
+    ), "PIPELINE_MAP should not be empty. Check imports in discover.py."
     for name, cls in PIPELINE_MAP.items():
         assert isinstance(name, str)
         assert issubclass(cls, PipelineBase)

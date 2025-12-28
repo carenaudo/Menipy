@@ -27,5 +27,5 @@ def test_surface_area_sphere():
     z = R * (1 - np.cos(theta))
     contour_px = np.stack([r * 10.0, z * 10.0], axis=1)  # px, assume 10 px/mm
     area = surface_area_mm2(contour_px, px_per_mm=10.0)
-    expected = 4.0 * np.pi * R ** 2
+    expected = 4.0 * np.pi * R**2
     assert np.isclose(area, expected, rtol=1e-2)

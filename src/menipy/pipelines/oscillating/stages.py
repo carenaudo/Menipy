@@ -37,8 +37,12 @@ def _area_equiv_radius(xy: np.ndarray) -> tuple[float, tuple[float, float]]:
     a = 0.5 * (np.dot(x, np.roll(y, -1)) - np.dot(y, np.roll(x, -1)))
     if abs(a) < 1e-6:
         return 0.0, (float(np.mean(x)), float(np.mean(y)))
-    cx = (1.0 / (6.0 * a)) * np.sum((x + np.roll(x, -1)) * (x * np.roll(y, -1) - np.roll(x, -1) * y))
-    cy = (1.0 / (6.0 * a)) * np.sum((y + np.roll(y, -1)) * (x * np.roll(y, -1) - np.roll(x, -1) * y))
+    cx = (1.0 / (6.0 * a)) * np.sum(
+        (x + np.roll(x, -1)) * (x * np.roll(y, -1) - np.roll(x, -1) * y)
+    )
+    cy = (1.0 / (6.0 * a)) * np.sum(
+        (y + np.roll(y, -1)) * (x * np.roll(y, -1) - np.roll(x, -1) * y)
+    )
     r_eq = np.sqrt(abs(a) / np.pi)
     return float(r_eq), (float(cx), float(cy))
 
@@ -53,16 +57,37 @@ class OscillatingPipeline(PipelineBase):
         "display_name": "Oscillating Drop",
         "icon": "oscillating.svg",
         "color": "#F5A623",
-        "stages": ["acquisition", "preprocessing", "edge_detection", "geometry", "physics"],
-        "calibration_params": ["needle_length_mm", "drop_density_kg_m3", "fluid_density_kg_m3"],
-        "primary_metrics": ["surface_tension_mN_m", "oscillation_frequency", "damping_ratio"]
+        "stages": [
+            "acquisition",
+            "preprocessing",
+            "edge_detection",
+            "geometry",
+            "physics",
+        ],
+        "calibration_params": [
+            "needle_length_mm",
+            "drop_density_kg_m3",
+            "fluid_density_kg_m3",
+        ],
+        "primary_metrics": [
+            "surface_tension_mN_m",
+            "oscillation_frequency",
+            "damping_ratio",
+        ],
     }
 
-    def do_acquisition(self, ctx: Context) -> Optional[Context]: return ctx
-    def do_preprocessing(self, ctx: Context) -> Optional[Context]: return ctx
+    def do_acquisition(self, ctx: Context) -> Optional[Context]:
+        return ctx
+
+    def do_preprocessing(self, ctx: Context) -> Optional[Context]:
+        return ctx
 
     def do_edge_detection(self, ctx: Context) -> Optional[Context]:
-        frames = ctx.frames if isinstance(ctx.frames, list) else ([ctx.frames] if ctx.frames is not None else [])
+        frames = (
+            ctx.frames
+            if isinstance(ctx.frames, list)
+            else ([ctx.frames] if ctx.frames is not None else [])
+        )
         contours: List[object] = []
         for f in frames[:]:  # safe slice
             xy = _contour_from_frame(ctx, f)
@@ -152,7 +177,7 @@ class OscillatingPipeline(PipelineBase):
                 mag[0] = 0.0
                 k = int(np.argmax(mag))
                 f0 = float(freqs[k])
-        ctx.fit = (ctx.fit or {})
+        ctx.fit = ctx.fit or {}
         if f0 is not None:
             # stash into fit dict alongside solver outputs
             ctx.fit.setdefault("param_names", []).append("f0_Hz")
@@ -173,7 +198,9 @@ class OscillatingPipeline(PipelineBase):
 
     def do_overlay(self, ctx: Context) -> Optional[Context]:
         xy = np.asarray(ctx.contour.xy, dtype=float)
-        cx, cy = ctx.geometry.get("c0_xy", (float(np.mean(xy[:,0])), float(np.mean(xy[:,1]))))
+        cx, cy = ctx.geometry.get(
+            "c0_xy", (float(np.mean(xy[:, 0])), float(np.mean(xy[:, 1])))
+        )
         r = float(ctx.geometry.get("r0_eq_px", 10.0))
         axis_x = int(round(ctx.geometry.get("axis_x", cx)))
         text = f"R0≈{ctx.results.get('R0_mm','?')} mm"
@@ -181,11 +208,41 @@ class OscillatingPipeline(PipelineBase):
         if f0 is not None:
             text += f" | f0≈{f0:.2f} Hz"
         cmds = [
-            {"type": "polyline", "points": xy.tolist(), "closed": True, "color": "yellow", "thickness": 2},
-            {"type": "circle", "center": (int(cx), int(cy)), "radius": int(r), "color": "magenta", "thickness": 1},
-            {"type": "line", "p1": (axis_x, 0), "p2": (axis_x, int(np.max(xy[:, 1]) + 10)), "color": "cyan", "thickness": 1},
-            {"type": "cross", "p": (int(cx), int(cy)), "color": "red", "size": 6, "thickness": 2},
-            {"type": "text", "p": (10, 20), "text": text, "color": "white", "scale": 0.55},
+            {
+                "type": "polyline",
+                "points": xy.tolist(),
+                "closed": True,
+                "color": "yellow",
+                "thickness": 2,
+            },
+            {
+                "type": "circle",
+                "center": (int(cx), int(cy)),
+                "radius": int(r),
+                "color": "magenta",
+                "thickness": 1,
+            },
+            {
+                "type": "line",
+                "p1": (axis_x, 0),
+                "p2": (axis_x, int(np.max(xy[:, 1]) + 10)),
+                "color": "cyan",
+                "thickness": 1,
+            },
+            {
+                "type": "cross",
+                "p": (int(cx), int(cy)),
+                "color": "red",
+                "size": 6,
+                "thickness": 2,
+            },
+            {
+                "type": "text",
+                "p": (10, 20),
+                "text": text,
+                "color": "white",
+                "scale": 0.55,
+            },
         ]
         return ovl.run(ctx, commands=cmds, alpha=0.6)
 

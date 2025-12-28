@@ -6,7 +6,6 @@ import numpy as np
 
 from menipy.common.edge_detection import extract_external_contour
 from menipy.common.metrics import find_apex_index
-from menipy.pipelines.base import PipelineBase
 from .metrics import compute_sessile_metrics
 
 

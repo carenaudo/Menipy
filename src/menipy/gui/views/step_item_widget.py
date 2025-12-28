@@ -1,12 +1,14 @@
 """
 Widget for displaying pipeline step items.
 """
+
 from __future__ import annotations
 from typing import Optional
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QIcon
 from pathlib import Path
 from PySide6.QtWidgets import QWidget, QLabel, QToolButton, QHBoxLayout, QSizePolicy
+
 
 def _load_icon(name: str) -> QIcon:
     """Try resource path first (:/icons/...), then fall back to on-disk resources/icons/*"""
@@ -23,21 +25,23 @@ def _load_icon(name: str) -> QIcon:
             return ico2
     return QIcon()
 
+
 STATUS_ICONS = {
-    "pending":  _load_icon("status_pending.svg"),
-    "running":  _load_icon("status_running.svg"),
-    "done":     _load_icon("status_done.svg"),
-    "error":    _load_icon("status_error.svg"),
+    "pending": _load_icon("status_pending.svg"),
+    "running": _load_icon("status_running.svg"),
+    "done": _load_icon("status_done.svg"),
+    "error": _load_icon("status_error.svg"),
 }
 
-PLAY_ICON   = _load_icon("play.svg")
+PLAY_ICON = _load_icon("play.svg")
 CONFIG_ICON = _load_icon("settings.svg")
+
 
 class StepItemWidget(QWidget):
     playClicked = Signal(str)
     configClicked = Signal(str)
 
-    def __init__(self, step_name: str, parent: Optional[QWidget]=None):
+    def __init__(self, step_name: str, parent: Optional[QWidget] = None):
         super().__init__(parent)
         self._name = step_name
 

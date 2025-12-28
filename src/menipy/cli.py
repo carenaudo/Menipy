@@ -1,8 +1,10 @@
 """
 Command-line interface for running Menipy pipelines.
 """
+
 from __future__ import annotations
-import argparse, json
+import argparse
+import json
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -11,10 +13,11 @@ from .common import acquisition as acq
 from .pipelines.runner import PipelineRunner
 from .models.datatypes import PreprocessingSettings, EdgeDetectionSettings
 
+
 def _parse_numbers(value: str, name: str, expected: int) -> Tuple[float, ...]:
     cleaned = value
-    for sep in (',', ';'):
-        cleaned = cleaned.replace(sep, ' ')
+    for sep in (",", ";"):
+        cleaned = cleaned.replace(sep, " ")
     parts = [p for p in cleaned.strip().split() if p]
     if len(parts) != expected:
         raise ValueError(f"{name} requires {expected} values")
@@ -37,10 +40,16 @@ def _parse_line(value: str, name: str) -> Tuple[Tuple[int, int], Tuple[int, int]
         raise ValueError(f"{name} endpoints must not coincide")
     return (int(round(x1)), int(round(y1))), (int(round(x2)), int(round(y2)))
 
+
 # OPTIONAL: if you use the SQLite-backed plugin system
 try:
     from .common.plugin_db import PluginDB
-    from .common.plugins import discover_into_db, load_active_plugins, discover_and_load_from_db
+    from .common.plugins import (
+        discover_into_db,
+        load_active_plugins,
+        discover_and_load_from_db,
+    )
+
     _PLUGINS_OK = True
 except Exception:
     _PLUGINS_OK = False
@@ -51,6 +60,7 @@ except Exception:
     cv2 = None
 try:
     from PIL import Image  # type: ignore
+
     _PIL_OK = True
 except Exception:
     _PIL_OK = False
@@ -64,7 +74,6 @@ def _save_image_bgr(path: Path, img):
         cv2.imwrite(str(path), img)
         return
     if _PIL_OK:
-        import numpy as np
         arr = img
         if arr.ndim == 2:
             Image.fromarray(arr, mode="L").save(path)
@@ -75,19 +84,24 @@ def _save_image_bgr(path: Path, img):
         return
     raise RuntimeError("Install opencv-python or Pillow to save images.")
 
+
 def _patch_acquisition(p, *, image: Optional[Path], camera: Optional[int], frames: int):
     # Replace the pipeline's acquisition hook so we can choose source via CLI.
     if image:
         img_path = str(image)
+
         def do_acq(ctx: Context):
             ctx.frames = acq.from_file([img_path])
             return ctx
+
         p.do_acquisition = do_acq  # type: ignore[attr-defined]
         return
     cam_id = 0 if camera is None else int(camera)
+
     def do_acq(ctx: Context):
         ctx.frames = acq.from_camera(device=cam_id, n_frames=frames)
         return ctx
+
     p.do_acquisition = do_acq  # type: ignore[attr-defined]
 
 
@@ -99,22 +113,49 @@ def main(argv: Optional[list[str]] = None) -> int:
             "Plugins: when available, plugins can be managed via a SQLite DB.\n"
             "If the DB has a settings key 'plugin_dirs', discovery will use it\n"
             "(separator-separated list using ':' or ';'). You can set it via\n"
-            "the subcommand: adsa plugins set-dirs \"./plugins1;./plugins2\"."
+            'the subcommand: adsa plugins set-dirs "./plugins1;./plugins2".'
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    ap.add_argument("--pipeline", default="sessile",
-                    choices=["sessile","oscillating","capillary_rise","pendant","captive_bubble"])
+    ap.add_argument(
+        "--pipeline",
+        default="sessile",
+        choices=[
+            "sessile",
+            "oscillating",
+            "capillary_rise",
+            "pendant",
+            "captive_bubble",
+        ],
+    )
     src = ap.add_mutually_exclusive_group()
     src.add_argument("--image", type=str, help="Path to input image")
     src.add_argument("--camera", type=int, help="Camera index (e.g., 0)")
-    ap.add_argument("--frames", type=int, default=1, help="Number of frames when using --camera")
+    ap.add_argument(
+        "--frames", type=int, default=1, help="Number of frames when using --camera"
+    )
     ap.add_argument("--roi", type=str, required=True, help="ROI rectangle as x,y,w,h")
-    ap.add_argument("--needle", type=str, required=True, help="Needle rectangle as x,y,w,h")
-    ap.add_argument("--contact-line", type=str, dest="contact_line", help="Optional contact line as x1,y1,x2,y2")
-    ap.add_argument("--out", type=str, default="./out", help="Output folder (preview/results)")
-    ap.add_argument("--edge-detection-method", type=str, default="canny", help="Edge detection method (e.g., canny, sobel)")
-    ap.add_argument("--preprocessing-method", type=str, help="Preprocessing method (e.g., blur)")
+    ap.add_argument(
+        "--needle", type=str, required=True, help="Needle rectangle as x,y,w,h"
+    )
+    ap.add_argument(
+        "--contact-line",
+        type=str,
+        dest="contact_line",
+        help="Optional contact line as x1,y1,x2,y2",
+    )
+    ap.add_argument(
+        "--out", type=str, default="./out", help="Output folder (preview/results)"
+    )
+    ap.add_argument(
+        "--edge-detection-method",
+        type=str,
+        default="canny",
+        help="Edge detection method (e.g., canny, sobel)",
+    )
+    ap.add_argument(
+        "--preprocessing-method", type=str, help="Preprocessing method (e.g., blur)"
+    )
 
     # Optional plugin controls (no-ops if plugin system not present)
     ap.add_argument(
@@ -127,10 +168,21 @@ def main(argv: Optional[list[str]] = None) -> int:
             "set-dirs' to store it in the DB."
         ),
     )
-    ap.add_argument("--db", type=str, default="adsa_plugins.sqlite", help="Plugin SQLite path")
-    ap.add_argument("--activate", action="append", default=[], help="Activate plugin name:kind (e.g., bezier:edge)")
-    ap.add_argument("--deactivate", action="append", default=[], help="Deactivate plugin name:kind")
-    ap.add_argument("--no-overlay", action="store_true", help="Skip overlay drawing stage")
+    ap.add_argument(
+        "--db", type=str, default="adsa_plugins.sqlite", help="Plugin SQLite path"
+    )
+    ap.add_argument(
+        "--activate",
+        action="append",
+        default=[],
+        help="Activate plugin name:kind (e.g., bezier:edge)",
+    )
+    ap.add_argument(
+        "--deactivate", action="append", default=[], help="Deactivate plugin name:kind"
+    )
+    ap.add_argument(
+        "--no-overlay", action="store_true", help="Skip overlay drawing stage"
+    )
 
     # Subcommands for convenience utilities (plugins, etc.)
     sub = ap.add_subparsers(dest="command")
@@ -162,7 +214,11 @@ def main(argv: Optional[list[str]] = None) -> int:
     try:
         roi_rect = _parse_rect(args.roi, "ROI")
         needle_rect = _parse_rect(args.needle, "needle")
-        contact_line = _parse_line(args.contact_line, "contact line") if args.contact_line else None
+        contact_line = (
+            _parse_line(args.contact_line, "contact line")
+            if args.contact_line
+            else None
+        )
     except ValueError as exc:
         ap.error(str(exc))
 
@@ -178,9 +234,7 @@ def main(argv: Optional[list[str]] = None) -> int:
             "[adsa] set DB setting 'plugin_dirs' to:",
             args.dirs,
         )
-        print(
-            "[adsa] Tip: run without --plugins to use DB-configured directories."
-        )
+        print("[adsa] Tip: run without --plugins to use DB-configured directories.")
         return 0
 
     # Optional: SQLite plugin discovery + activation
@@ -191,7 +245,9 @@ def main(argv: Optional[list[str]] = None) -> int:
         loaded = discover_and_load_from_db(db)
         if not loaded:
             # fallback to explicit CLI plugin dirs
-            dirs = [Path(p) for p in str(args.plugins).replace(";", ":").split(":") if p]
+            dirs = [
+                Path(p) for p in str(args.plugins).replace(";", ":").split(":") if p
+            ]
             discover_into_db(db, dirs)
             for spec in args.activate:
                 name, kind = spec.split(":")
@@ -203,22 +259,35 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     # Prepare settings from CLI arguments
     edge_settings = EdgeDetectionSettings(method=args.edge_detection_method)
-    prep_settings = PreprocessingSettings(method=args.preprocessing_method) if args.preprocessing_method else None
+    prep_settings = (
+        PreprocessingSettings(method=args.preprocessing_method)
+        if args.preprocessing_method
+        else None
+    )
 
     # Use the new PipelineRunner
     runner = PipelineRunner(
         pipeline_name=args.pipeline,
         edge_detection_settings=edge_settings,
-        preprocessing_settings=prep_settings
+        preprocessing_settings=prep_settings,
     )
 
     if args.no_overlay:
-        runner.pipeline.do_overlay = (lambda ctx: ctx)  # type: ignore[attr-defined]
+        runner.pipeline.do_overlay = lambda ctx: ctx  # type: ignore[attr-defined]
 
     image_path = Path(args.image).expanduser().resolve() if args.image else None
-    _patch_acquisition(runner.pipeline, image=image_path, camera=args.camera, frames=args.frames)
+    _patch_acquisition(
+        runner.pipeline, image=image_path, camera=args.camera, frames=args.frames
+    )
     try:
-        ctx = runner.run(roi=roi_rect, needle_rect=needle_rect, contact_line=contact_line, image=str(image_path) if image_path else None, camera=args.camera, frames=args.frames)
+        ctx = runner.run(
+            roi=roi_rect,
+            needle_rect=needle_rect,
+            contact_line=contact_line,
+            image=str(image_path) if image_path else None,
+            camera=args.camera,
+            frames=args.frames,
+        )
     except PipelineError as e:
         print(f"[adsa] error: {e}")
         return 2
@@ -234,13 +303,17 @@ def main(argv: Optional[list[str]] = None) -> int:
         _save_image_bgr(out_dir / "overlay.png", ctx.overlay)
 
     with open(out_dir / "results.json", "w", encoding="utf-8") as f:
-        json.dump({
-            "pipeline": runner.pipeline.name,
-            "results": ctx.results,
-            "qa": ctx.qa,
-            "timings_ms": ctx.timings_ms,
-            "log": ctx.log,
-            "error": ctx.error,
-        }, f, indent=2)
+        json.dump(
+            {
+                "pipeline": runner.pipeline.name,
+                "results": ctx.results,
+                "qa": ctx.qa,
+                "timings_ms": ctx.timings_ms,
+                "log": ctx.log,
+                "error": ctx.error,
+            },
+            f,
+            indent=2,
+        )
     print(f"[adsa] wrote {out_dir/'results.json'}")
     return 0

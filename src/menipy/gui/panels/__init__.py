@@ -1,4 +1,3 @@
 """
 GUI panels package.
 """
-

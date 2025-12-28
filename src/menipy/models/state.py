@@ -4,6 +4,7 @@ This module contains mutable/runtime models such as PreprocessingState
 and small helper constructors. These types are intended to replace the
 ones previously living in `datatypes.py`.
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Literal, Optional, Tuple
@@ -12,8 +13,6 @@ from datetime import datetime
 import numpy as np
 from pydantic import BaseModel, Field, ConfigDict
 
-from .typing import ImageAny, ContourArray, FloatVec
-from .result import CapillaryRiseFit, OscillationFit, YoungLaplaceFit
 from .frame import Frame, Calibration, CameraMeta
 from .geometry import Contour
 
@@ -64,24 +63,31 @@ class PreprocessingState(BaseModel):
 
 
 # Convenience constructors (migrated)
-def make_frame(image: np.ndarray,
-               timestamp: Optional[datetime] = None,
-               ms_from_start: Optional[float] = None,
-               camera: Optional[CameraMeta] = None,
-               calibration: Optional[Calibration] = None) -> Frame:
+def make_frame(
+    image: np.ndarray,
+    timestamp: Optional[datetime] = None,
+    ms_from_start: Optional[float] = None,
+    camera: Optional[CameraMeta] = None,
+    calibration: Optional[Calibration] = None,
+) -> Frame:
     """Helper to create a validated Frame instance."""
-    return Frame(image=image,
-                 timestamp=timestamp,
-                 ms_from_start=ms_from_start,
-                 camera=camera,
-                 calibration=calibration)
+    return Frame(
+        image=image,
+        timestamp=timestamp,
+        ms_from_start=ms_from_start,
+        camera=camera,
+        calibration=calibration,
+    )
 
 
-def make_contour(xy: np.ndarray,
-                 closed: bool = True,
-                 units: Literal["px", "mm"] = "px",
-                 smoothing: Optional[float] = None,
-                 origin_hint: Optional[Tuple[float, float]] = None) -> Contour:
+def make_contour(
+    xy: np.ndarray,
+    closed: bool = True,
+    units: Literal["px", "mm"] = "px",
+    smoothing: Optional[float] = None,
+    origin_hint: Optional[Tuple[float, float]] = None,
+) -> Contour:
     """Helper to create a validated Contour."""
-    return Contour(xy=xy, closed=closed, units=units,
-                   smoothing=smoothing, origin_hint=origin_hint)
+    return Contour(
+        xy=xy, closed=closed, units=units, smoothing=smoothing, origin_hint=origin_hint
+    )

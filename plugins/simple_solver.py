@@ -8,18 +8,21 @@ except Exception:
 
 # Minimal solver plugin: generates a parabola profile as an example solver output
 
+
 def _estimate_scale_from_image(img):
     """If cv2 is available, compute a rough scale factor based on contours.
 
     Returns a positive float scale (defaults to 1.0 on failure).
     """
-    if cv2 is None or not hasattr(img, 'shape'):
+    if cv2 is None or not hasattr(img, "shape"):
         return 1.0
     try:
         gray = img if img.ndim == 2 else cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         blur = cv2.GaussianBlur(gray, (5, 5), 0)
         edges = cv2.Canny(blur, 50, 150)
-        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv2.findContours(
+            edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+        )
         if not contours:
             return 1.0
         # use median area to infer scale
@@ -54,6 +57,7 @@ SOLVERS = {"parabola": parabola_solver}
 # Auto-register when imported
 try:
     from menipy.common.registry import register_solver
+
     register_solver("parabola", parabola_solver)
 except Exception:
     pass

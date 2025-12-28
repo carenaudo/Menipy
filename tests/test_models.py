@@ -20,7 +20,7 @@ def test_fit_circle():
 
 def test_droplet_volume():
     r = 10
-    y, x = np.ogrid[-r:r+1, -r:r+1]
+    y, x = np.ogrid[-r : r + 1, -r : r + 1]
     mask = ((x**2 + y**2) <= r**2).astype(np.uint8)
     volume = droplet_volume(mask, px_to_mm=1.0)
     expected = (4.0 / 3.0) * np.pi * r**3
@@ -29,8 +29,8 @@ def test_droplet_volume():
 
 def test_estimate_surface_tension_and_contact_angle():
     r = 10
-    y, x = np.ogrid[-r:r + 1, -r:r + 1]
-    mask = ((x ** 2 + y ** 2) <= r ** 2).astype(np.uint8)
+    y, x = np.ogrid[-r : r + 1, -r : r + 1]
+    mask = ((x**2 + y**2) <= r**2).astype(np.uint8)
     gamma = estimate_surface_tension(mask, 1.0, 1000.0, px_to_mm=1.0)
     angle = contact_angle_from_mask(mask)
     assert gamma > 0
@@ -42,4 +42,3 @@ def test_horizontal_intersections():
     xs = horizontal_intersections(contour, 0.0)
     assert xs.size == 2
     assert np.allclose(xs, [0.5, 1.5])
-

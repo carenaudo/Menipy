@@ -62,6 +62,7 @@ class CapillaryRiseFit(BaseModel):
     solver: SolverInfo
     confidence: Optional[Confidence] = None
 
+
 Result = Union[YoungLaplaceFit, OscillationFit, CapillaryRiseFit]
 
 

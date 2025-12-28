@@ -12,7 +12,9 @@ def test_find_contact_points_circle():
     y_line = cy + r - 1.0
     contact_line = ((cx - 30, y_line), (cx + 30, y_line))
 
-    left_pt, right_pt = find_contact_points_from_contour(contour, contact_line, tolerance=5.0)
+    left_pt, right_pt = find_contact_points_from_contour(
+        contour, contact_line, tolerance=5.0
+    )
 
     assert left_pt is not None and right_pt is not None
     # y should be close to the contact line y
@@ -21,7 +23,7 @@ def test_find_contact_points_circle():
     # points should lie on opposite sides of the center
     assert left_pt[0] < cx < right_pt[0]
     # distances from center should be approximately radius
-    dleft = ((left_pt[0] - cx)**2 + (left_pt[1] - cy)**2)**0.5
-    dright = ((right_pt[0] - cx)**2 + (right_pt[1] - cy)**2)**0.5
+    dleft = ((left_pt[0] - cx) ** 2 + (left_pt[1] - cy) ** 2) ** 0.5
+    dright = ((right_pt[0] - cx) ** 2 + (right_pt[1] - cy) ** 2) ** 0.5
     assert abs(dleft - r) < 4.0
     assert abs(dright - r) < 4.0

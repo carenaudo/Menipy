@@ -1,8 +1,9 @@
 """
 Edge detection utilities and pipeline stage logic.
 """
+
 from __future__ import annotations
-from typing import Callable, Optional, Dict
+from typing import Callable, Optional
 from abc import ABC, abstractmethod
 import numpy as np
 import logging
@@ -32,6 +33,7 @@ def _load_plugin(name: str) -> Optional[Callable]:
     """
     try:
         from importlib.metadata import entry_points
+
         for ep in entry_points(group="menipy.edge_detection"):
             if ep.name == name:
                 return ep.load()
@@ -48,11 +50,15 @@ def _ensure_gray(img: np.ndarray) -> np.ndarray:
         return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     if img.ndim == 3:
         # simple luminance fallback if OpenCV isn't present
-        return (0.114 * img[..., 0] + 0.587 * img[..., 1] + 0.299 * img[..., 2]).astype(np.uint8)
+        return (0.114 * img[..., 0] + 0.587 * img[..., 1] + 0.299 * img[..., 2]).astype(
+            np.uint8
+        )
     return img
 
 
-def _edges_to_xy(edges: np.ndarray, min_len: int = 0, max_len: int = 100000) -> np.ndarray:
+def _edges_to_xy(
+    edges: np.ndarray, min_len: int = 0, max_len: int = 100000
+) -> np.ndarray:
     """Convert an edges mask to an (N,2) contour (largest external contour)."""
     if edges is None:
         return np.empty((0, 2), float)
@@ -84,15 +90,22 @@ def _fallback_canny(img: np.ndarray, settings: EdgeDetectionSettings) -> np.ndar
     else:
         lower = settings.canny_threshold1
         upper = settings.canny_threshold2
-        edges = cv2.Canny(g, lower, upper, apertureSize=settings.canny_aperture_size, L2gradient=settings.canny_L2_gradient)
+        edges = cv2.Canny(
+            g,
+            lower,
+            upper,
+            apertureSize=settings.canny_aperture_size,
+            L2gradient=settings.canny_L2_gradient,
+        )
     return _edges_to_xy(edges, settings.min_contour_length, settings.max_contour_length)
 
 
 # -------- strategies --------
 
+
 class EdgeDetectorStrategy(ABC):
     """Abstract strategy for edge detection algorithms."""
-    
+
     @abstractmethod
     def detect(self, img: np.ndarray, settings: EdgeDetectionSettings) -> np.ndarray:
         """
@@ -106,9 +119,16 @@ class CannyDetector(EdgeDetectorStrategy):
     def detect(self, img: np.ndarray, settings: EdgeDetectionSettings) -> np.ndarray:
         if cv2 is None:
             return _fallback_canny(img, settings)
-        edges = cv2.Canny(img, settings.canny_threshold1, settings.canny_threshold2,
-                          apertureSize=settings.canny_aperture_size, L2gradient=settings.canny_L2_gradient)
-        return _edges_to_xy(edges, settings.min_contour_length, settings.max_contour_length)
+        edges = cv2.Canny(
+            img,
+            settings.canny_threshold1,
+            settings.canny_threshold2,
+            apertureSize=settings.canny_aperture_size,
+            L2gradient=settings.canny_L2_gradient,
+        )
+        return _edges_to_xy(
+            edges, settings.min_contour_length, settings.max_contour_length
+        )
 
 
 class ThresholdDetector(EdgeDetectorStrategy):
@@ -116,11 +136,19 @@ class ThresholdDetector(EdgeDetectorStrategy):
         if cv2 is None:
             # Simple threshold fallback
             _, edges = (img > settings.threshold_value).astype(np.uint8) * 255
-            return _edges_to_xy(edges, settings.min_contour_length, settings.max_contour_length)
-            
-        thresh_type = getattr(cv2, f"THRESH_{settings.threshold_type.upper()}", cv2.THRESH_BINARY)
-        _, edges = cv2.threshold(img, settings.threshold_value, settings.threshold_max_value, thresh_type)
-        return _edges_to_xy(edges, settings.min_contour_length, settings.max_contour_length)
+            return _edges_to_xy(
+                edges, settings.min_contour_length, settings.max_contour_length
+            )
+
+        thresh_type = getattr(
+            cv2, f"THRESH_{settings.threshold_type.upper()}", cv2.THRESH_BINARY
+        )
+        _, edges = cv2.threshold(
+            img, settings.threshold_value, settings.threshold_max_value, thresh_type
+        )
+        return _edges_to_xy(
+            edges, settings.min_contour_length, settings.max_contour_length
+        )
 
 
 class SobelDetector(EdgeDetectorStrategy):
@@ -130,9 +158,18 @@ class SobelDetector(EdgeDetectorStrategy):
         grad_x = cv2.Sobel(img, cv2.CV_64F, 1, 0, ksize=settings.sobel_kernel_size)
         grad_y = cv2.Sobel(img, cv2.CV_64F, 0, 1, ksize=settings.sobel_kernel_size)
         magnitude = cv2.magnitude(grad_x, grad_y)
-        magnitude = cv2.normalize(magnitude, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
-        _, edges = cv2.threshold(magnitude, settings.threshold_value, settings.threshold_max_value, cv2.THRESH_BINARY)
-        return _edges_to_xy(edges, settings.min_contour_length, settings.max_contour_length)
+        magnitude = cv2.normalize(magnitude, None, 0, 255, cv2.NORM_MINMAX).astype(
+            np.uint8
+        )
+        _, edges = cv2.threshold(
+            magnitude,
+            settings.threshold_value,
+            settings.threshold_max_value,
+            cv2.THRESH_BINARY,
+        )
+        return _edges_to_xy(
+            edges, settings.min_contour_length, settings.max_contour_length
+        )
 
 
 class ScharrDetector(EdgeDetectorStrategy):
@@ -142,9 +179,18 @@ class ScharrDetector(EdgeDetectorStrategy):
         grad_x = cv2.Scharr(img, cv2.CV_64F, 1, 0)
         grad_y = cv2.Scharr(img, cv2.CV_64F, 0, 1)
         magnitude = cv2.magnitude(grad_x, grad_y)
-        magnitude = cv2.normalize(magnitude, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
-        _, edges = cv2.threshold(magnitude, settings.threshold_value, settings.threshold_max_value, cv2.THRESH_BINARY)
-        return _edges_to_xy(edges, settings.min_contour_length, settings.max_contour_length)
+        magnitude = cv2.normalize(magnitude, None, 0, 255, cv2.NORM_MINMAX).astype(
+            np.uint8
+        )
+        _, edges = cv2.threshold(
+            magnitude,
+            settings.threshold_value,
+            settings.threshold_max_value,
+            cv2.THRESH_BINARY,
+        )
+        return _edges_to_xy(
+            edges, settings.min_contour_length, settings.max_contour_length
+        )
 
 
 class LaplacianDetector(EdgeDetectorStrategy):
@@ -152,15 +198,26 @@ class LaplacianDetector(EdgeDetectorStrategy):
         if cv2 is None:
             return _fallback_canny(img, settings)
         laplacian = cv2.Laplacian(img, cv2.CV_64F, ksize=settings.laplacian_kernel_size)
-        laplacian = cv2.normalize(laplacian, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
-        _, edges = cv2.threshold(laplacian, settings.threshold_value, settings.threshold_max_value, cv2.THRESH_BINARY)
-        return _edges_to_xy(edges, settings.min_contour_length, settings.max_contour_length)
+        laplacian = cv2.normalize(laplacian, None, 0, 255, cv2.NORM_MINMAX).astype(
+            np.uint8
+        )
+        _, edges = cv2.threshold(
+            laplacian,
+            settings.threshold_value,
+            settings.threshold_max_value,
+            cv2.THRESH_BINARY,
+        )
+        return _edges_to_xy(
+            edges, settings.min_contour_length, settings.max_contour_length
+        )
 
 
 class ActiveContourDetector(EdgeDetectorStrategy):
     def detect(self, img: np.ndarray, settings: EdgeDetectionSettings) -> np.ndarray:
         # Placeholder for Active Contour implementation
-        logger.warning("Active contour method is not fully implemented yet. Using Canny fallback.")
+        logger.warning(
+            "Active contour method is not fully implemented yet. Using Canny fallback."
+        )
         return _fallback_canny(img, settings)
 
 
@@ -173,7 +230,9 @@ EDGE_DETECTORS.register("laplacian", LaplacianDetector().detect)
 EDGE_DETECTORS.register("active_contour", ActiveContourDetector().detect)
 
 
-def get_contour_detector(name: str = "canny") -> Callable[[np.ndarray, EdgeDetectionSettings], np.ndarray]:
+def get_contour_detector(
+    name: str = "canny",
+) -> Callable[[np.ndarray, EdgeDetectionSettings], np.ndarray]:
     """
     Resolution order:
       1) Registry (EDGE_DETECTORS) which includes built-ins
@@ -182,11 +241,11 @@ def get_contour_detector(name: str = "canny") -> Callable[[np.ndarray, EdgeDetec
     """
     if name in EDGE_DETECTORS:
         return EDGE_DETECTORS[name]
-        
+
     plugin_fn = _load_plugin(name)
     if plugin_fn:
         return plugin_fn
-        
+
     return lambda img, settings: _fallback_canny(img, settings)
 
 
@@ -194,16 +253,16 @@ def extract_external_contour(image: np.ndarray) -> np.ndarray:
     """Extracts the largest external contour from a binary image."""
     if cv2 is None:
         raise RuntimeError("OpenCV is required for contour extraction.")
-    
+
     # Ensure image is binary
     if image.ndim > 2:
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     _, binary = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    
+
     contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     if not contours:
         return np.empty((0, 2), dtype=float)
-    
+
     largest_contour = max(contours, key=cv2.contourArea)
     return largest_contour.squeeze(1).astype(float)
 
@@ -219,16 +278,20 @@ def run(ctx, settings: EdgeDetectionSettings):
 
     # 1) pick an image from Context
     img = getattr(ctx, "preprocessed", None)
-    if img is None: img = getattr(ctx, "gray", None)
-    if img is None: img = getattr(ctx, "frame", None)
+    if img is None:
+        img = getattr(ctx, "gray", None)
+    if img is None:
+        img = getattr(ctx, "frame", None)
     if img is None:
         frames = getattr(ctx, "frames", None)
         if isinstance(frames, (list, tuple)) and frames:
             img = frames[0]
         elif frames is not None:
             img = frames
-    if img is None: img = getattr(ctx, "image", None)
-    if img is None: img = getattr(ctx, "preview", None)
+    if img is None:
+        img = getattr(ctx, "image", None)
+    if img is None:
+        img = getattr(ctx, "preview", None)
 
     # Handle Frame object
     if hasattr(img, "image"):
@@ -249,7 +312,6 @@ def run(ctx, settings: EdgeDetectionSettings):
         except Exception:
             roi_image_override = None
 
-
     # prepare a logger for visible runtime info
     logger = logging.getLogger(__name__)
 
@@ -257,6 +319,7 @@ def run(ctx, settings: EdgeDetectionSettings):
         # Try a safe acquisition fallback
         try:
             from . import acquisition as acq
+
             ip = getattr(ctx, "image_path", None) or getattr(ctx, "image", None)
             if ip:
                 logger.info("EdgeDetection fallback: loading image from path: %s", ip)
@@ -274,16 +337,22 @@ def run(ctx, settings: EdgeDetectionSettings):
                         setattr(ctx, "status_message", msg)
                     except Exception:
                         pass
-            
+
             if img is None:
                 cam = getattr(ctx, "camera_id", None)
                 n = getattr(ctx, "frames_requested", None) or 1
                 if cam is not None:
-                    logger.info("EdgeDetection fallback: capturing from camera %s (n=%s)", cam, n)
+                    logger.info(
+                        "EdgeDetection fallback: capturing from camera %s (n=%s)",
+                        cam,
+                        n,
+                    )
                     try:
                         frames = acq.from_camera(device=cam, n_frames=int(n))
                     except Exception as e:
-                        logger.warning("EdgeDetection fallback: from_camera failed: %s", e)
+                        logger.warning(
+                            "EdgeDetection fallback: from_camera failed: %s", e
+                        )
                         frames = None
                     if frames:
                         ctx.frames = frames
@@ -313,7 +382,7 @@ def run(ctx, settings: EdgeDetectionSettings):
             x0, y0 = int(roi[0]), int(roi[1])
     elif roi:
         x0, y0, w, h = [int(v) for v in roi]
-        img_roi = img[y0:y0 + h, x0:x0 + w]
+        img_roi = img[y0 : y0 + h, x0 : x0 + w]
     else:
         img_roi = img
 
@@ -328,15 +397,22 @@ def run(ctx, settings: EdgeDetectionSettings):
     # 3) select detector (Strategy Pattern) and apply
     detector = get_contour_detector(settings.method)
     xy = detector(img_roi_gray, settings)
-    
+
     if xy.size == 0:
-        logger.warning("EdgeDetection: detector returned no contour for method %s.", settings.method)
+        logger.warning(
+            "EdgeDetection: detector returned no contour for method %s.",
+            settings.method,
+        )
         # If no contour is found, try a very basic thresholding as a last resort
         if cv2 is not None:
             _, edges = cv2.threshold(img_roi_gray, 127, 255, cv2.THRESH_BINARY)
-            xy = _edges_to_xy(edges, settings.min_contour_length, settings.max_contour_length)
+            xy = _edges_to_xy(
+                edges, settings.min_contour_length, settings.max_contour_length
+            )
         if xy.size == 0:
-            raise RuntimeError("EdgeDetection: detector returned no contour even after fallback.")
+            raise RuntimeError(
+                "EdgeDetection: detector returned no contour even after fallback."
+            )
 
     # 5) offset back to full-image coords
     if roi:
@@ -357,7 +433,11 @@ def run(ctx, settings: EdgeDetectionSettings):
     else:
         ctx.fluid_interface_contour = None
 
-    if settings.detect_solid_interface and ctx.contact_line is not None and cv2 is not None:
+    if (
+        settings.detect_solid_interface
+        and ctx.contact_line is not None
+        and cv2 is not None
+    ):
         # Search for solid interface near the contact line
         p1, p2 = ctx.contact_line
         mask = np.zeros_like(img_roi_gray)
@@ -374,17 +454,21 @@ def run(ctx, settings: EdgeDetectionSettings):
 
         if min_x < max_x and min_y < max_y:
             mask[min_y:max_y, min_x:max_x] = 255
-            
+
             # Re-generate edges mask for this secondary detection
-            # Note: ideally we would get the edges image from the strategy, 
+            # Note: ideally we would get the edges image from the strategy,
             # but strategies return xy. For now, we reuse the Canny fallback or similar logic just for the mask
             # This is a limitation of the current interface that returns xy directly.
             # To fix this properly would require changing strategy to return edges image or having separate method.
             # For now, we perform a quick local Canny for solid interface
-            edges_for_solid = cv2.Canny(img_roi_gray, settings.canny_threshold1, settings.canny_threshold2)
-            
+            edges_for_solid = cv2.Canny(
+                img_roi_gray, settings.canny_threshold1, settings.canny_threshold2
+            )
+
             masked_edges = cv2.bitwise_and(edges_for_solid, edges_for_solid, mask=mask)
-            solid_interface_xy = _edges_to_xy(masked_edges, settings.min_contour_length, settings.max_contour_length)
+            solid_interface_xy = _edges_to_xy(
+                masked_edges, settings.min_contour_length, settings.max_contour_length
+            )
 
             if solid_interface_xy.size > 0:
                 if roi:

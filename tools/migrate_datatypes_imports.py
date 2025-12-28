@@ -17,6 +17,7 @@ Notes:
 - The script does not edit files unless --apply is provided. Always review the dry-run output first.
 
 """
+
 from __future__ import annotations
 
 import argparse
@@ -120,7 +121,9 @@ def parse_imports(line: str) -> Optional[List[str]]:
     return parts
 
 
-def plan_rewrites(files: List[Path], mapping: Dict[str, str]) -> Tuple[Dict[Path, List[Tuple[str, str, str]]], List[Tuple[Path, str]]]:
+def plan_rewrites(
+    files: List[Path], mapping: Dict[str, str]
+) -> Tuple[Dict[Path, List[Tuple[str, str, str]]], List[Tuple[Path, str]]]:
     """
     Scan files and plan rewrites.
     Returns a dict of file -> list of tuples(original_line, old_import_statement, new_import_statement)
@@ -164,7 +167,9 @@ def plan_rewrites(files: List[Path], mapping: Dict[str, str]) -> Tuple[Dict[Path
             except ValueError:
                 inner = block_text
             # split on commas and newlines
-            parts = [n.strip().strip(',') for n in re.split(r"[,\n]", inner) if n.strip()]
+            parts = [
+                n.strip().strip(",") for n in re.split(r"[,\n]", inner) if n.strip()
+            ]
             dests_by_module: Dict[str, List[str]] = {}
             missing = []
             for name in parts:
@@ -208,11 +213,17 @@ def apply_rewrites(planned: Dict[Path, List[Tuple[str, str, str]]]) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Migrate imports from menipy.models.datatypes to new model modules")
+    parser = argparse.ArgumentParser(
+        description="Migrate imports from menipy.models.datatypes to new model modules"
+    )
     parser.add_argument("--apply", action="store_true", help="Apply changes in-place")
-    parser.add_argument("--mapping", type=Path, help="JSON file containing name->module mapping")
+    parser.add_argument(
+        "--mapping", type=Path, help="JSON file containing name->module mapping"
+    )
     parser.add_argument("--root", type=Path, default=ROOT, help="Project root to scan")
-    parser.add_argument("--report", type=Path, help="Write JSON report of planned changes")
+    parser.add_argument(
+        "--report", type=Path, help="Write JSON report of planned changes"
+    )
     args = parser.parse_args()
 
     mapping = dict(DEFAULT_MAPPING)
@@ -237,11 +248,15 @@ def main() -> None:
         print("\nUnknown symbol usages (no mapping):")
         for f, nm in unknowns:
             print(f"  - {nm} in {f}")
-        print("\nProvide a mapping file via --mapping or extend DEFAULT_MAPPING in this script to handle these names.")
+        print(
+            "\nProvide a mapping file via --mapping or extend DEFAULT_MAPPING in this script to handle these names."
+        )
 
     if args.report:
         report = {
-            "planned": {str(k): [(a, b, c) for (a, b, c) in v] for k, v in planned.items()},
+            "planned": {
+                str(k): [(a, b, c) for (a, b, c) in v] for k, v in planned.items()
+            },
             "unknowns": [(str(p), n) for p, n in unknowns],
         }
         args.report.write_text(json.dumps(report, indent=2), encoding="utf8")
@@ -249,7 +264,9 @@ def main() -> None:
 
     if args.apply:
         if unknowns:
-            print("Refusing to apply because of unknown symbol mappings. Provide an explicit mapping first.")
+            print(
+                "Refusing to apply because of unknown symbol mappings. Provide an explicit mapping first."
+            )
             return
         print("Applying rewrites...")
         apply_rewrites(planned)

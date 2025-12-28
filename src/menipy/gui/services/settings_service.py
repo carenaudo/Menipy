@@ -1,15 +1,18 @@
 """
 Application settings persistence service.
 """
+
 from __future__ import annotations
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 import json
 from typing import Optional, List
 
+
 def _default_path() -> Path:
     # cross-platform: ~/.adsa/settings.json
     return Path.home() / ".adsa" / "settings.json"
+
 
 @dataclass
 class AppSettings:
@@ -35,9 +38,11 @@ class AppSettings:
                 selected_pipeline=data.get("selected_pipeline", "sessile"),
                 last_image_path=data.get("last_image_path"),
                 plugin_dirs=list(data.get("plugin_dirs", ["./plugins"])),
-                acquisition_requires_contact_line=data.get("acquisition_requires_contact_line", False),
+                acquisition_requires_contact_line=data.get(
+                    "acquisition_requires_contact_line", False
+                ),
                 overlay_config=data.get("overlay_config"),
-                path=p
+                path=p,
             )
         except Exception:
             # fallback to defaults

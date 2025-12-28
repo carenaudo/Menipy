@@ -4,6 +4,7 @@ Centralized pipeline discovery.
 This module provides a single source of truth for all available pipelines,
 preventing circular dependencies between the GUI and pipeline services.
 """
+
 import importlib
 from pathlib import Path
 
@@ -29,16 +30,24 @@ def _discover_pipelines_from_subdirs():
 
             try:
                 # Dynamically import the pipeline's package (e.g., menipy.pipelines.sessile)
-                module = importlib.import_module(f".{pipeline_name}", package="menipy.pipelines")
+                module = importlib.import_module(
+                    f".{pipeline_name}", package="menipy.pipelines"
+                )
 
                 # Look for a PipelineBase subclass within the imported module
                 for attr_name in dir(module):
                     attr = getattr(module, attr_name)
-                    if isinstance(attr, type) and issubclass(attr, PipelineBase) and attr is not PipelineBase:
+                    if (
+                        isinstance(attr, type)
+                        and issubclass(attr, PipelineBase)
+                        and attr is not PipelineBase
+                    ):
                         pipelines_map[pipeline_name.lower()] = attr
                         break  # Assume one pipeline class per module
             except (ImportError, AttributeError) as e:
-                print(f"[discover] Skipping pipeline '{pipeline_name}' due to error: {e}")
+                print(
+                    f"[discover] Skipping pipeline '{pipeline_name}' due to error: {e}"
+                )
 
     return pipelines_map
 

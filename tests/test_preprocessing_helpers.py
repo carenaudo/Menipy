@@ -70,7 +70,7 @@ def test_apply_filter_respects_mask(monkeypatch):
     def fake_blur(arr, kernel, sigma):  # pragma: no cover - patched in test
         return arr + 17
 
-    monkeypatch.setattr('menipy.common.preprocessing_helpers._gaussian_blur', fake_blur)
+    monkeypatch.setattr("menipy.common.preprocessing_helpers._gaussian_blur", fake_blur)
 
     apply_filter(context)
 

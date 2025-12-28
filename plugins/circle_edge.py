@@ -10,10 +10,11 @@ except Exception:
 # Simple circular contour generator plugin
 # API: define a function that accepts an image (or shape) and returns Nx2 contour points
 
+
 def _fallback_circle(h, w, points=200):
     r = min(h, w) * 0.25
-    t = np.linspace(0.0, 2*np.pi, points)
-    return np.column_stack([w/2 + r*np.cos(t), h/2 + r*np.sin(t)])
+    t = np.linspace(0.0, 2 * np.pi, points)
+    return np.column_stack([w / 2 + r * np.cos(t), h / 2 + r * np.sin(t)])
 
 
 def circle_like(img, use_canny: bool = False):
@@ -23,17 +24,19 @@ def circle_like(img, use_canny: bool = False):
     extraction and attempt to extract the largest contour. Otherwise return a
     parametric circle as fallback.
     """
-    if hasattr(img, 'shape'):
+    if hasattr(img, "shape"):
         h, w = img.shape[:2]
     else:
         h, w = img
 
-    if use_canny and cv2 is not None and hasattr(img, 'shape'):
+    if use_canny and cv2 is not None and hasattr(img, "shape"):
         try:
             gray = img if img.ndim == 2 else cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             blur = cv2.GaussianBlur(gray, (5, 5), 0)
             edges = cv2.Canny(blur, 50, 150)
-            contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+            contours, _ = cv2.findContours(
+                edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
+            )
             if contours:
                 # pick the largest contour by length/area
                 best = max(contours, key=cv2.contourArea)
@@ -51,6 +54,7 @@ EDGE_DETECTORS = {"circle": circle_like}
 # Auto-register when imported so discovery/registry can pick this up
 try:
     from menipy.common.registry import register_edge
+
     register_edge("circle", circle_like)
 except Exception:
     # registry may not be available in some contexts; fail silently
