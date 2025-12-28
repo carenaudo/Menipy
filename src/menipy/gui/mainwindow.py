@@ -1,9 +1,10 @@
 """
 Main window class for Menipy GUI.
 """
+
 # src/menipy/gui/mainwindow.py
 from __future__ import annotations
- 
+
 from pathlib import Path
 import logging
 from typing import List, Optional
@@ -24,8 +25,12 @@ from menipy.gui.panels.preview_panel import PreviewPanel
 from menipy.gui.panels.results_panel import ResultsPanel
 from menipy.gui.services.camera_service import CameraController, CameraConfig
 from menipy.gui.controllers.pipeline_controller import PipelineController
-from menipy.gui.controllers.preprocessing_controller import PreprocessingPipelineController
-from menipy.gui.controllers.edge_detection_controller import EdgeDetectionPipelineController
+from menipy.gui.controllers.preprocessing_controller import (
+    PreprocessingPipelineController,
+)
+from menipy.gui.controllers.edge_detection_controller import (
+    EdgeDetectionPipelineController,
+)
 from menipy.gui.helpers.image_marking import ImageMarkerHelper
 
 from menipy.pipelines.discover import PIPELINE_MAP
@@ -51,6 +56,7 @@ try:
     from menipy.gui.services.pipeline_runner import PipelineRunner
 except Exception:
     SopService = None  # type: ignore
+
     # tiny fallback so file still runs
     class AppSettings:  # type: ignore
         selected_pipeline: Optional[str] = None
@@ -74,8 +80,17 @@ from menipy.gui.main_controller import MainController
 
 # default stage order for SOPs / step list
 STAGE_ORDER: List[str] = [
-    "acquisition", "preprocessing", "edge_detection", "geometry", "scaling",
-    "physics", "solver", "optimization", "outputs", "overlay", "validation"
+    "acquisition",
+    "preprocessing",
+    "edge_detection",
+    "geometry",
+    "scaling",
+    "physics",
+    "solver",
+    "optimization",
+    "outputs",
+    "overlay",
+    "validation",
 ]
 
 
@@ -99,7 +114,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         def load_ui(res_path: str, fallback_filename: str) -> QWidget:
             f = QFile(res_path)
             if not f.exists():
-                f = QFile(str(Path(__file__).resolve().parent / "views" / fallback_filename))
+                f = QFile(
+                    str(Path(__file__).resolve().parent / "views" / fallback_filename)
+                )
             f.open(QFile.ReadOnly)
             w = loader.load(f, self)
             f.close()
@@ -107,8 +124,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # ---------- load panels into split hosts ----------
         self.setup_panel: QWidget = load_ui(":/views/setup_panel.ui", "setup_panel.ui")
-        self.overlay_panel: QWidget = load_ui(":/views/overlay_panel.ui", "overlay_panel.ui")
-        self.results_panel: QWidget = load_ui(":/views/results_panel.ui", "results_panel.ui")
+        self.overlay_panel: QWidget = load_ui(
+            ":/views/overlay_panel.ui", "overlay_panel.ui"
+        )
+        self.results_panel: QWidget = load_ui(
+            ":/views/results_panel.ui", "results_panel.ui"
+        )
 
         # the split UI provides these host layouts/widgets
         self._embed(self.setup_panel, self.setupHostLayout)
@@ -120,7 +141,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.preprocessing_ctrl = PreprocessingPipelineController(self)
         self.edge_detection_ctrl = EdgeDetectionPipelineController(self)
-        self.marker_helper = ImageMarkerHelper(self.preview_panel, self.preprocessing_ctrl, parent=self) if self.preview_panel.has_view() else None
+        self.marker_helper = (
+            ImageMarkerHelper(self.preview_panel, self.preprocessing_ctrl, parent=self)
+            if self.preview_panel.has_view()
+            else None
+        )
 
         self.camera_ctrl = CameraController(self)
 
@@ -133,7 +158,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         try:
             gui_logger = logging.getLogger("menipy")
             gui_logger.setLevel(logging.INFO)
-            self._qt_log_bridge, self._qt_log_handler = install_qt_logging(self.logView, logger=gui_logger)
+            self._qt_log_bridge, self._qt_log_handler = install_qt_logging(
+                self.logView, logger=gui_logger
+            )
         except Exception:
             pass
 
@@ -193,7 +220,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if MainController:
             self.main_controller = MainController(self)
         else:
-            self.main_controller = None # type: ignore
+            self.main_controller = None  # type: ignore
 
         # menubar actions from split UI
         self._wire_menu_actions()
@@ -223,17 +250,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 action = getattr(self, action_name)
             except AttributeError:
                 # Action missing from the .ui — skip wiring (we expect the UI to provide actions)
-                logger.warning(f"Action '{action_name}' not found in UI; skipping wiring.")
+                logger.warning(
+                    f"Action '{action_name}' not found in UI; skipping wiring."
+                )
                 continue
 
             # Prepare handler mapping
             if method_name == "close":
                 handler = self.close
             elif method_name == "select_camera":
-                handler = lambda: self.main_controller.select_camera(True) # type: ignore
+                handler = lambda: self.main_controller.select_camera(True)  # type: ignore
             elif method_name == "open_overlay":
                 # Always call the MainController to open the overlay config
-                handler = lambda: self.main_controller.on_config_stage_requested("overlay")
+                handler = lambda: self.main_controller.on_config_stage_requested(
+                    "overlay"
+                )
             else:
                 handler = getattr(self.main_controller, method_name)
 
@@ -258,9 +289,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         s = self.settings
         try:
             if getattr(s, "main_window_geom_b64", None):
-                self.restoreGeometry(QByteArray.fromBase64(s.main_window_geom_b64.encode("ascii")))
+                self.restoreGeometry(
+                    QByteArray.fromBase64(s.main_window_geom_b64.encode("ascii"))
+                )
             if getattr(s, "main_window_state_b64", None):
-                self.restoreState(QByteArray.fromBase64(s.main_window_state_b64.encode("ascii")))
+                self.restoreState(
+                    QByteArray.fromBase64(s.main_window_state_b64.encode("ascii"))
+                )
         except Exception:
             pass
 

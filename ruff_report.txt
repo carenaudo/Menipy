@@ -1,0 +1,2266 @@
+warning: The top-level linter settings are deprecated in favour of their counterparts in the `lint` section. Please update the following options in `pyproject.toml`:
+  - 'extend-ignore' -> 'lint.extend-ignore'
+  - 'per-file-ignores' -> 'lint.per-file-ignores'
+F401 [*] `logging` imported but unused
+ --> .tmp\.tmp_test_pipeline.py:2:8
+  |
+1 | from src.menipy.pipelines.base import PipelineBase
+2 | import logging
+  |        ^^^^^^^
+3 |
+4 | class TestPipeline(PipelineBase):
+  |
+help: Remove unused import: `logging`
+
+F401 [*] `numpy` imported but unused
+ --> plugins\preproc_blur.py:1:17
+  |
+1 | import numpy as np
+  |                 ^^
+2 | try:
+3 |     import cv2
+  |
+help: Remove unused import: `numpy`
+
+F401 [*] `os` imported but unused
+ --> scripts\add_stub_docstrings.py:4:8
+  |
+2 | Script to add TODO docstrings to stub files in pipeline directories.
+3 | """
+4 | import os
+  |        ^^
+5 | from pathlib import Path
+  |
+help: Remove unused import: `os`
+
+E741 Ambiguous variable name: `l`
+  --> scripts\add_stub_docstrings.py:42:28
+   |
+41 |     # Skip if file already has meaningful content (more than 10 lines with actual code)
+42 |     lines = [l.strip() for l in content.splitlines() if l.strip() and not l.strip().startswith('#')]
+   |                            ^
+43 |     if len(lines) > 10:
+44 |         print(f"Skipping {filepath.name} - has implementation")
+   |
+
+F401 [*] `os` imported but unused
+  --> scripts\find_unreferenced.py:10:8
+   |
+ 8 | """
+ 9 | import ast
+10 | import os
+   |        ^^
+11 | import json
+12 | from pathlib import Path
+   |
+help: Remove unused import: `os`
+
+F401 [*] `os` imported but unused
+ --> scripts\generate_legacy_map.py:2:8
+  |
+1 | import ast
+2 | import os
+  |        ^^
+3 | from pathlib import Path
+  |
+help: Remove unused import: `os`
+
+E402 Module level import not at top of file
+  --> scripts\introspect_menipy.py:35:1
+   |
+33 | out['loaded_modules'] = sorted(mods)
+34 |
+35 | import json
+   | ^^^^^^^^^^^
+36 | print(json.dumps(out, indent=2))
+   |
+
+E401 [*] Multiple imports on one line
+ --> src\menipy\cli.py:5:1
+  |
+3 | """
+4 | from __future__ import annotations
+5 | import argparse, json
+  | ^^^^^^^^^^^^^^^^^^^^^
+6 | from pathlib import Path
+7 | from typing import Optional, Tuple
+  |
+help: Split imports
+
+F401 [*] `numpy` imported but unused
+  --> src\menipy\cli.py:67:25
+   |
+65 |         return
+66 |     if _PIL_OK:
+67 |         import numpy as np
+   |                         ^^
+68 |         arr = img
+69 |         if arr.ndim == 2:
+   |
+help: Remove unused import: `numpy`
+
+F401 `numpy` imported but unused
+  --> src\menipy\cli\__init__.py:41:19
+   |
+39 |         return
+40 |     if _PIL_OK:
+41 |         import numpy as np
+   |                         ^^
+42 |
+43 |         arr = img
+   |
+help: Remove unused import: `numpy`
+
+F401 [*] `typing.Dict` imported but unused
+ --> src\menipy\common\edge_detection.py:5:40
+  |
+3 | """
+4 | from __future__ import annotations
+5 | from typing import Callable, Optional, Dict
+  |                                        ^^^^
+6 | from abc import ABC, abstractmethod
+7 | import numpy as np
+  |
+help: Remove unused import: `typing.Dict`
+
+F823 Local variable `logger` referenced before assignment
+   --> src\menipy\common\edge_detection.py:217:9
+    |
+215 |     """
+216 |     if not settings.enabled:
+217 |         logger.info("Edge detection is disabled. Skipping.")
+    |         ^^^^^^
+218 |         return
+    |
+
+E701 Multiple statements on one line (colon)
+   --> src\menipy\common\edge_detection.py:222:19
+    |
+220 |     # 1) pick an image from Context
+221 |     img = getattr(ctx, "preprocessed", None)
+222 |     if img is None: img = getattr(ctx, "gray", None)
+    |                   ^
+223 |     if img is None: img = getattr(ctx, "frame", None)
+224 |     if img is None:
+    |
+
+E701 Multiple statements on one line (colon)
+   --> src\menipy\common\edge_detection.py:223:19
+    |
+221 |     img = getattr(ctx, "preprocessed", None)
+222 |     if img is None: img = getattr(ctx, "gray", None)
+223 |     if img is None: img = getattr(ctx, "frame", None)
+    |                   ^
+224 |     if img is None:
+225 |         frames = getattr(ctx, "frames", None)
+    |
+
+E701 Multiple statements on one line (colon)
+   --> src\menipy\common\edge_detection.py:230:19
+    |
+228 |         elif frames is not None:
+229 |             img = frames
+230 |     if img is None: img = getattr(ctx, "image", None)
+    |                   ^
+231 |     if img is None: img = getattr(ctx, "preview", None)
+    |
+
+E701 Multiple statements on one line (colon)
+   --> src\menipy\common\edge_detection.py:231:19
+    |
+229 |             img = frames
+230 |     if img is None: img = getattr(ctx, "image", None)
+231 |     if img is None: img = getattr(ctx, "preview", None)
+    |                   ^
+232 |
+233 |     # Handle Frame object
+    |
+
+F401 [*] `cv2` imported but unused
+ --> src\menipy\common\geometry.py:5:8
+  |
+3 | from __future__ import annotations
+4 |
+5 | import cv2
+  |        ^^^
+6 | import numpy as np
+7 | from numpy.linalg import lstsq
+  |
+help: Remove unused import: `cv2`
+
+F401 [*] `scipy.optimize.minimize_scalar` imported but unused
+ --> src\menipy\common\geometry.py:8:28
+  |
+6 | import numpy as np
+7 | from numpy.linalg import lstsq
+8 | from scipy.optimize import minimize_scalar
+  |                            ^^^^^^^^^^^^^^^
+  |
+help: Remove unused import: `scipy.optimize.minimize_scalar`
+
+F821 Undefined name `Tuple`
+  --> src\menipy\common\geometry.py:11:39
+   |
+11 | def fit_circle(points: np.ndarray) -> Tuple[np.ndarray, float]:
+   |                                       ^^^^^
+12 |     """Fit a circle to 2D points using linear least squares.
+   |
+
+F841 Local variable `proj` is assigned to but never used
+   --> src\menipy\common\geometry.py:249:9
+    |
+247 |         vec_to_points = candidates - p1
+248 |         # Projection scalar
+249 |         proj = np.dot(vec_to_points, unit_vec)
+    |         ^^^^
+250 |         # Distance to line
+251 |         dists = np.abs(np.cross(vec_to_points, unit_vec))
+    |
+help: Remove assignment to unused variable `proj`
+
+E722 Do not use bare `except`
+   --> src\menipy\common\geometry.py:428:9
+    |
+426 |             distances_to_circle = np.abs(np.linalg.norm(local_points - center, axis=1) - radius)
+427 |             rmse = np.sqrt(np.mean(distances_to_circle**2))
+428 |         except:
+    |         ^^^^^^
+429 |             angle_deg = 90.0
+430 |             rmse = 1.0
+    |
+
+E722 Do not use bare `except`
+   --> src\menipy\common\geometry.py:496:5
+    |
+494 |         distances_to_circle = np.abs(np.linalg.norm(local_points - center, axis=1) - radius)
+495 |         rmse = np.sqrt(np.mean(distances_to_circle**2))
+496 |     except:
+    |     ^^^^^^
+497 |         angle_deg = 90.0
+498 |         rmse = 1.0
+    |
+
+F401 [*] `typing.Literal` imported but unused
+ --> src\menipy\common\overlay.py:6:30
+  |
+4 | """
+5 | from __future__ import annotations
+6 | from typing import Iterable, Literal, Tuple, Union, Dict, Any
+  |                              ^^^^^^^
+7 | import numpy as np
+  |
+help: Remove unused import: `typing.Literal`
+
+E702 Multiple statements on one line (semicolon)
+   --> src\menipy\common\overlay.py:108:42
+    |
+106 |             pts = np.asarray(cmd["points"], dtype=int).reshape(-1,2)
+107 |             color = _bgr(cmd.get("color", "white"))
+108 |             r = int(cmd.get("radius", 2)); th = int(cmd.get("thickness", -1))
+    |                                          ^
+109 |             for (x,y) in pts:
+110 |                 cv2.circle(overlay, (int(x),int(y)), r, color, th, cv2.LINE_AA)
+    |
+
+F401 [*] `typing.Iterable` imported but unused
+ --> src\menipy\common\plugin_db.py:7:20
+  |
+5 | import sqlite3
+6 | from pathlib import Path
+7 | from typing import Iterable, Optional, Tuple
+  |                    ^^^^^^^^
+8 |
+9 | # NOTE: relative imports come from your package layout; keep this file under adsa/common
+  |
+help: Remove unused import: `typing.Iterable`
+
+E402 Module level import not at top of file
+  --> src\menipy\common\plugin_loader.py:95:1
+   |
+93 | # ---------------------------------------------------------------------------
+94 |
+95 | import logging
+   | ^^^^^^^^^^^^^^
+96 | import sys
+97 | import importlib.util
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\common\plugin_loader.py:96:1
+   |
+95 | import logging
+96 | import sys
+   | ^^^^^^^^^^
+97 | import importlib.util
+98 | from pathlib import Path
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\common\plugin_loader.py:97:1
+   |
+95 | import logging
+96 | import sys
+97 | import importlib.util
+   | ^^^^^^^^^^^^^^^^^^^^^
+98 | from pathlib import Path
+99 | from typing import Optional, Any, List
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\common\plugin_loader.py:98:1
+   |
+96 | import sys
+97 | import importlib.util
+98 | from pathlib import Path
+   | ^^^^^^^^^^^^^^^^^^^^^^^^
+99 | from typing import Optional, Any, List
+   |
+
+E402 Module level import not at top of file
+   --> src\menipy\common\plugin_loader.py:99:1
+    |
+ 97 | import importlib.util
+ 98 | from pathlib import Path
+ 99 | from typing import Optional, Any, List
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+100 |
+101 | logger = logging.getLogger(__name__)
+    |
+
+E401 [*] Multiple imports on one line
+ --> src\menipy\common\plugins.py:5:1
+  |
+3 | """
+4 | from __future__ import annotations
+5 | import sys, importlib.util
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+6 | from pathlib import Path
+7 | from typing import Callable, Dict, Iterable, Optional
+  |
+help: Split imports
+
+F401 [*] `typing.Callable` imported but unused
+ --> src\menipy\common\plugins.py:7:20
+  |
+5 | import sys, importlib.util
+6 | from pathlib import Path
+7 | from typing import Callable, Dict, Iterable, Optional
+  |                    ^^^^^^^^
+8 | import logging
+  |
+help: Remove unused import
+
+F401 [*] `typing.Dict` imported but unused
+ --> src\menipy\common\plugins.py:7:30
+  |
+5 | import sys, importlib.util
+6 | from pathlib import Path
+7 | from typing import Callable, Dict, Iterable, Optional
+  |                              ^^^^
+8 | import logging
+  |
+help: Remove unused import
+
+F401 [*] `typing.Optional` imported but unused
+ --> src\menipy\common\plugins.py:7:46
+  |
+5 | import sys, importlib.util
+6 | from pathlib import Path
+7 | from typing import Callable, Dict, Iterable, Optional
+  |                                              ^^^^^^^^
+8 | import logging
+  |
+help: Remove unused import
+
+F401 [*] `.registry.EDGE_DETECTORS` imported but unused
+  --> src\menipy\common\plugins.py:10:23
+   |
+ 8 | import logging
+ 9 |
+10 | from .registry import EDGE_DETECTORS, SOLVERS, register_edge, register_solver
+   |                       ^^^^^^^^^^^^^^
+11 | from .plugin_db import PluginDB
+   |
+help: Remove unused import
+
+F401 [*] `.registry.SOLVERS` imported but unused
+  --> src\menipy\common\plugins.py:10:39
+   |
+ 8 | import logging
+ 9 |
+10 | from .registry import EDGE_DETECTORS, SOLVERS, register_edge, register_solver
+   |                                       ^^^^^^^
+11 | from .plugin_db import PluginDB
+   |
+help: Remove unused import
+
+E401 [*] Multiple imports on one line
+   --> src\menipy\common\plugins.py:150:5
+    |
+148 |     Intended to be exposed as a console script (menipy-plugins).
+149 |     """
+150 |     import argparse, json
+    |     ^^^^^^^^^^^^^^^^^^^^^
+151 |     ap = argparse.ArgumentParser(prog="menipy-plugins", description="List plugins and show load status")
+152 |     ap.add_argument("--db", type=str, default=None, help="Plugin DB path")
+    |
+help: Split imports
+
+F401 [*] `menipy.models.state.PreprocessingStageRecord` imported but unused
+  --> src\menipy\common\preprocessing.py:13:64
+   |
+11 | from menipy.models.context import Context
+12 | from menipy.models.config import PreprocessingSettings
+13 | from menipy.models.state import PreprocessingState, MarkerSet, PreprocessingStageRecord
+   |                                                                ^^^^^^^^^^^^^^^^^^^^^^^^
+14 |
+15 | from .preprocessing_helpers import ( # Assuming this file exists or will be created
+   |
+help: Remove unused import: `menipy.models.state.PreprocessingStageRecord`
+
+E402 Module level import not at top of file
+ --> src\menipy\common\preprocessing_helpers.py:5:1
+  |
+3 | """Helper utilities for Menipy preprocessing pipeline."""
+4 |
+5 | from dataclasses import dataclass, field
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+6 | from typing import Any, Dict, Optional, Tuple
+7 | import logging
+  |
+
+E402 Module level import not at top of file
+ --> src\menipy\common\preprocessing_helpers.py:6:1
+  |
+5 | from dataclasses import dataclass, field
+6 | from typing import Any, Dict, Optional, Tuple
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+7 | import logging
+  |
+
+E402 Module level import not at top of file
+ --> src\menipy\common\preprocessing_helpers.py:7:1
+  |
+5 | from dataclasses import dataclass, field
+6 | from typing import Any, Dict, Optional, Tuple
+7 | import logging
+  | ^^^^^^^^^^^^^^
+8 |
+9 | import numpy as np
+  |
+
+E402 Module level import not at top of file
+  --> src\menipy\common\preprocessing_helpers.py:9:1
+   |
+ 7 | import logging
+ 8 |
+ 9 | import numpy as np
+   | ^^^^^^^^^^^^^^^^^^
+10 |
+11 | from menipy.models.config import PreprocessingSettings
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\common\preprocessing_helpers.py:11:1
+   |
+ 9 | import numpy as np
+10 |
+11 | from menipy.models.config import PreprocessingSettings
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+12 | from menipy.models.state import PreprocessingState, PreprocessingStageRecord, MarkerSet
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\common\preprocessing_helpers.py:12:1
+   |
+11 | from menipy.models.config import PreprocessingSettings
+12 | from menipy.models.state import PreprocessingState, PreprocessingStageRecord, MarkerSet
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+13 |
+14 | logger = logging.getLogger(__name__)
+   |
+
+F401 [*] `typing.Iterable` imported but unused
+ --> src\menipy\common\solver.py:7:30
+  |
+5 | from __future__ import annotations
+6 |
+7 | from typing import Callable, Iterable, Literal, Optional, Sequence
+  |                              ^^^^^^^^
+8 | from menipy.models.fit import FitConfig
+9 | import math
+  |
+help: Remove unused import
+
+F401 [*] `typing.Literal` imported but unused
+ --> src\menipy\common\solver.py:7:40
+  |
+5 | from __future__ import annotations
+6 |
+7 | from typing import Callable, Iterable, Literal, Optional, Sequence
+  |                                        ^^^^^^^
+8 | from menipy.models.fit import FitConfig
+9 | import math
+  |
+help: Remove unused import
+
+F401 [*] `typing.Optional` imported but unused
+ --> src\menipy\common\solver.py:7:49
+  |
+5 | from __future__ import annotations
+6 |
+7 | from typing import Callable, Iterable, Literal, Optional, Sequence
+  |                                                 ^^^^^^^^
+8 | from menipy.models.fit import FitConfig
+9 | import math
+  |
+help: Remove unused import
+
+F401 [*] `typing.Sequence` imported but unused
+ --> src\menipy\common\solver.py:7:59
+  |
+5 | from __future__ import annotations
+6 |
+7 | from typing import Callable, Iterable, Literal, Optional, Sequence
+  |                                                           ^^^^^^^^
+8 | from menipy.models.fit import FitConfig
+9 | import math
+  |
+help: Remove unused import
+
+F811 [*] Redefinition of unused `Path` from line 8
+  --> src\menipy\gui\app.py:54:25
+   |
+53 |     # optional fallbacks to .rcc files
+54 |     from pathlib import Path
+   |                         ^^^^ `Path` redefined here
+55 |     base = Path(__file__).resolve().parent / "resources"
+56 |     for fname in ("app.rcc", "icons.rcc"):
+   |
+  ::: src\menipy\gui\app.py:8:21
+   |
+ 7 | import sys
+ 8 | from pathlib import Path
+   |                     ---- previous definition of `Path` here
+ 9 |
+10 | from PySide6.QtCore import QCoreApplication, Qt, QResource
+   |
+help: Remove definition: `Path`
+
+E402 Module level import not at top of file
+ --> src\menipy\gui\controllers\edge_detection_controller.py:8:1
+  |
+6 | """GUI controller for Menipy edge detection pipeline."""
+7 |
+8 | import logging
+  | ^^^^^^^^^^^^^^
+9 | from typing import Any, Dict, Optional
+  |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\controllers\edge_detection_controller.py:9:1
+   |
+ 8 | import logging
+ 9 | from typing import Any, Dict, Optional
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+10 |
+11 | import numpy as np
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\controllers\edge_detection_controller.py:11:1
+   |
+ 9 | from typing import Any, Dict, Optional
+10 |
+11 | import numpy as np
+   | ^^^^^^^^^^^^^^^^^^
+12 | from PySide6.QtCore import QObject, Signal
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\controllers\edge_detection_controller.py:12:1
+   |
+11 | import numpy as np
+12 | from PySide6.QtCore import QObject, Signal
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+13 |
+14 | from menipy.models.config import EdgeDetectionSettings
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\controllers\edge_detection_controller.py:14:1
+   |
+12 | from PySide6.QtCore import QObject, Signal
+13 |
+14 | from menipy.models.config import EdgeDetectionSettings
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+15 | from menipy.models.context import Context
+16 | from menipy.common import edge_detection
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\controllers\edge_detection_controller.py:15:1
+   |
+14 | from menipy.models.config import EdgeDetectionSettings
+15 | from menipy.models.context import Context
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+16 | from menipy.common import edge_detection
+17 | from menipy.common.geometry import find_contact_points_from_contour
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\controllers\edge_detection_controller.py:16:1
+   |
+14 | from menipy.models.config import EdgeDetectionSettings
+15 | from menipy.models.context import Context
+16 | from menipy.common import edge_detection
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17 | from menipy.common.geometry import find_contact_points_from_contour
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\controllers\edge_detection_controller.py:17:1
+   |
+15 | from menipy.models.context import Context
+16 | from menipy.common import edge_detection
+17 | from menipy.common.geometry import find_contact_points_from_contour
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+18 |
+19 | try:
+   |
+
+F541 [*] f-string without any placeholders
+   --> src\menipy\gui\controllers\pipeline_controller.py:129:51
+    |
+127 |     def _load_pipeline_modules(self, mode: str) -> dict:
+128 |         """Dynamically loads and returns the modules for the given pipeline mode."""
+129 |         geometry_module = importlib.import_module(f".geometry", package=f"menipy.pipelines.{mode}")
+    |                                                   ^^^^^^^^^^^^
+130 |         drawing_module = importlib.import_module(f".drawing", package=f"menipy.pipelines.{mode}")
+    |
+help: Remove extraneous `f` prefix
+
+F541 [*] f-string without any placeholders
+   --> src\menipy\gui\controllers\pipeline_controller.py:130:50
+    |
+128 |         """Dynamically loads and returns the modules for the given pipeline mode."""
+129 |         geometry_module = importlib.import_module(f".geometry", package=f"menipy.pipelines.{mode}")
+130 |         drawing_module = importlib.import_module(f".drawing", package=f"menipy.pipelines.{mode}")
+    |                                                  ^^^^^^^^^^^
+131 |
+132 |         # The actual 'analyze' function needs to be implemented in the pipeline files.
+    |
+help: Remove extraneous `f` prefix
+
+F841 Local variable `ctx_dict` is assigned to but never used
+   --> src\menipy\gui\controllers\pipeline_controller.py:288:13
+    |
+286 |             pipeline = pipeline_cls()
+287 |             # Prepare measurement tracking
+288 |             ctx_dict = self._prepare_measurement_tracking(**ctx.__dict__)
+    |             ^^^^^^^^
+289 |             ctx = pipeline.run(**ctx.__dict__)
+    |
+help: Remove assignment to unused variable `ctx_dict`
+
+E402 Module level import not at top of file
+ --> src\menipy\gui\controllers\preprocessing_controller.py:8:1
+  |
+6 | """GUI controller for Menipy preprocessing pipeline."""
+7 |
+8 | from typing import Any, Dict, Optional, Tuple
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+9 | import logging
+  |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\controllers\preprocessing_controller.py:9:1
+   |
+ 8 | from typing import Any, Dict, Optional, Tuple
+ 9 | import logging
+   | ^^^^^^^^^^^^^^
+10 |
+11 | import numpy as np
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\controllers\preprocessing_controller.py:11:1
+   |
+ 9 | import logging
+10 |
+11 | import numpy as np
+   | ^^^^^^^^^^^^^^^^^^
+12 | from PySide6.QtCore import QObject, Signal
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\controllers\preprocessing_controller.py:12:1
+   |
+11 | import numpy as np
+12 | from PySide6.QtCore import QObject, Signal
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+13 |
+14 | from menipy.models.context import Context
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\controllers\preprocessing_controller.py:14:1
+   |
+12 | from PySide6.QtCore import QObject, Signal
+13 |
+14 | from menipy.models.context import Context
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+15 | from menipy.models.config import PreprocessingSettings
+16 | from menipy.models.state import PreprocessingState, MarkerSet
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\controllers\preprocessing_controller.py:15:1
+   |
+14 | from menipy.models.context import Context
+15 | from menipy.models.config import PreprocessingSettings
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+16 | from menipy.models.state import PreprocessingState, MarkerSet
+17 | from menipy.common import preprocessing
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\controllers\preprocessing_controller.py:16:1
+   |
+14 | from menipy.models.context import Context
+15 | from menipy.models.config import PreprocessingSettings
+16 | from menipy.models.state import PreprocessingState, MarkerSet
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17 | from menipy.common import preprocessing
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\controllers\preprocessing_controller.py:17:1
+   |
+15 | from menipy.models.config import PreprocessingSettings
+16 | from menipy.models.state import PreprocessingState, MarkerSet
+17 | from menipy.common import preprocessing
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+18 |
+19 | logger = logging.getLogger(__name__)
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\dialogs\edge_detection_config_dialog.py:8:1
+   |
+ 6 | """Configuration dialog for edge detection pipeline settings."""
+ 7 |
+ 8 | from typing import Optional
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 9 |
+10 | from PySide6.QtCore import Qt, Signal
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\dialogs\edge_detection_config_dialog.py:10:1
+   |
+ 8 | from typing import Optional
+ 9 |
+10 | from PySide6.QtCore import Qt, Signal
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+11 | import numpy as np
+12 | from PySide6.QtWidgets import (
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\dialogs\edge_detection_config_dialog.py:11:1
+   |
+10 | from PySide6.QtCore import Qt, Signal
+11 | import numpy as np
+   | ^^^^^^^^^^^^^^^^^^
+12 | from PySide6.QtWidgets import (
+13 |     QCheckBox,
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\dialogs\edge_detection_config_dialog.py:12:1
+   |
+10 |   from PySide6.QtCore import Qt, Signal
+11 |   import numpy as np
+12 | / from PySide6.QtWidgets import (
+13 | |     QCheckBox,
+14 | |     QComboBox,
+15 | |     QDialog,
+16 | |     QDialogButtonBox,
+17 | |     QDoubleSpinBox,
+18 | |     QFormLayout,
+19 | |     QFrame,
+20 | |     QHBoxLayout,
+21 | |     QLabel,
+22 | |     QListWidget,
+23 | |     QListWidgetItem,
+24 | |     QPushButton,
+25 | |     QSpinBox,
+26 | |     QStackedWidget,
+27 | |     QVBoxLayout,
+28 | |     QWidget,
+29 | | )
+   | |_^
+30 |   from PySide6.QtGui import QImage, QPixmap
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\dialogs\edge_detection_config_dialog.py:30:1
+   |
+28 |     QWidget,
+29 | )
+30 | from PySide6.QtGui import QImage, QPixmap
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+31 |
+32 | from menipy.models.config import EdgeDetectionSettings
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\dialogs\edge_detection_config_dialog.py:32:1
+   |
+30 | from PySide6.QtGui import QImage, QPixmap
+31 |
+32 | from menipy.models.config import EdgeDetectionSettings
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+
+F841 Local variable `hl` is assigned to but never used
+   --> src\menipy\gui\dialogs\geometry_config_dialog.py:129:9
+    |
+127 |         )
+128 |         button_bar.addWidget(buttons)
+129 |         hl = QHBoxLayout()
+    |         ^^
+130 |         layout.addLayout(button_bar)
+131 |         ok_button = buttons.button(QDialogButtonBox.StandardButton.Ok)
+    |
+help: Remove assignment to unused variable `hl`
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\dialogs\overlay_config_dialog.py:14:1
+   |
+12 | """
+13 |
+14 | from typing import Dict, Any, Optional
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+15 |
+16 | from PySide6.QtCore import Qt, Signal
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\dialogs\overlay_config_dialog.py:16:1
+   |
+14 | from typing import Dict, Any, Optional
+15 |
+16 | from PySide6.QtCore import Qt, Signal
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17 | from PySide6.QtWidgets import (
+18 |     QCheckBox,
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\dialogs\overlay_config_dialog.py:17:1
+   |
+16 |   from PySide6.QtCore import Qt, Signal
+17 | / from PySide6.QtWidgets import (
+18 | |     QCheckBox,
+19 | |     QColorDialog,
+20 | |     QDialog,
+21 | |     QDialogButtonBox,
+22 | |     QDoubleSpinBox,
+23 | |     QFormLayout,
+24 | |     QHBoxLayout,
+25 | |     QLabel,
+26 | |     QPushButton,
+27 | |     QSpinBox,
+28 | |     QVBoxLayout,
+29 | |     QWidget,
+30 | | )
+   | |_^
+31 |   from PySide6.QtGui import QImage, QPixmap, QColor
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\dialogs\overlay_config_dialog.py:31:1
+   |
+29 |     QWidget,
+30 | )
+31 | from PySide6.QtGui import QImage, QPixmap, QColor
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+32 |
+33 | import numpy as np
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\dialogs\overlay_config_dialog.py:33:1
+   |
+31 | from PySide6.QtGui import QImage, QPixmap, QColor
+32 |
+33 | import numpy as np
+   | ^^^^^^^^^^^^^^^^^^
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\dialogs\preprocessing_config_dialog.py:9:1
+   |
+ 7 | """Configuration dialog for preprocessing pipeline settings."""
+ 8 |
+ 9 | from typing import Optional
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+10 |
+11 | import numpy as np
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\dialogs\preprocessing_config_dialog.py:11:1
+   |
+ 9 | from typing import Optional
+10 |
+11 | import numpy as np
+   | ^^^^^^^^^^^^^^^^^^
+12 | from PySide6.QtCore import Qt, Signal, Slot
+13 | from PySide6.QtWidgets import (
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\dialogs\preprocessing_config_dialog.py:12:1
+   |
+11 | import numpy as np
+12 | from PySide6.QtCore import Qt, Signal, Slot
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+13 | from PySide6.QtWidgets import (
+14 |     QCheckBox,
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\dialogs\preprocessing_config_dialog.py:13:1
+   |
+11 |   import numpy as np
+12 |   from PySide6.QtCore import Qt, Signal, Slot
+13 | / from PySide6.QtWidgets import (
+14 | |     QCheckBox,
+15 | |     QComboBox,
+16 | |     QDialog,
+17 | |     QDialogButtonBox,
+18 | |     QDoubleSpinBox,
+19 | |     QFormLayout,
+20 | |     QFrame,
+21 | |     QHBoxLayout,
+22 | |     QLabel,
+23 | |     QListWidget,
+24 | |     QListWidgetItem,
+25 | |     QPushButton,
+26 | |     QSpinBox,
+27 | |     QStackedWidget,
+28 | |     QVBoxLayout,
+29 | |     QWidget,
+30 | | )
+   | |_^
+31 |   from PySide6.QtGui import QImage, QPixmap
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\dialogs\preprocessing_config_dialog.py:31:1
+   |
+29 |     QWidget,
+30 | )
+31 | from PySide6.QtGui import QImage, QPixmap
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+32 |
+33 | from menipy.models.config import PreprocessingSettings
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\dialogs\preprocessing_config_dialog.py:33:1
+   |
+31 | from PySide6.QtGui import QImage, QPixmap
+32 |
+33 | from menipy.models.config import PreprocessingSettings
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\helpers\image_marking.py:9:1
+   |
+ 7 | """Interactive helpers for preprocessing markers on the preview image."""
+ 8 |
+ 9 | import logging
+   | ^^^^^^^^^^^^^^
+10 | from dataclasses import dataclass, field
+11 | from typing import List, Optional, Tuple
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\helpers\image_marking.py:10:1
+   |
+ 9 | import logging
+10 | from dataclasses import dataclass, field
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+11 | from typing import List, Optional, Tuple
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\helpers\image_marking.py:11:1
+   |
+ 9 | import logging
+10 | from dataclasses import dataclass, field
+11 | from typing import List, Optional, Tuple
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+12 |
+13 | import numpy as np
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\helpers\image_marking.py:13:1
+   |
+11 | from typing import List, Optional, Tuple
+12 |
+13 | import numpy as np
+   | ^^^^^^^^^^^^^^^^^^
+14 | from PySide6.QtCore import QObject, QPointF, Qt
+15 | from PySide6.QtGui import QColor
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\helpers\image_marking.py:14:1
+   |
+13 | import numpy as np
+14 | from PySide6.QtCore import QObject, QPointF, Qt
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+15 | from PySide6.QtGui import QColor
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\helpers\image_marking.py:15:1
+   |
+13 | import numpy as np
+14 | from PySide6.QtCore import QObject, QPointF, Qt
+15 | from PySide6.QtGui import QColor
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+16 |
+17 | from menipy.gui.controllers.preprocessing_controller import PreprocessingPipelineController
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\helpers\image_marking.py:17:1
+   |
+15 | from PySide6.QtGui import QColor
+16 |
+17 | from menipy.gui.controllers.preprocessing_controller import PreprocessingPipelineController
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+18 | from menipy.gui.panels.preview_panel import PreviewPanel
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\helpers\image_marking.py:18:1
+   |
+17 | from menipy.gui.controllers.preprocessing_controller import PreprocessingPipelineController
+18 | from menipy.gui.panels.preview_panel import PreviewPanel
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\main_controller.py:18:1
+   |
+17 | logger = logging.getLogger(__name__)
+18 | from PySide6.QtCore import QObject, Slot, QPointF
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+19 | from PySide6.QtWidgets import QFileDialog, QMessageBox
+20 | from PySide6.QtGui import QImage, QColor
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\main_controller.py:19:1
+   |
+17 | logger = logging.getLogger(__name__)
+18 | from PySide6.QtCore import QObject, Slot, QPointF
+19 | from PySide6.QtWidgets import QFileDialog, QMessageBox
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+20 | from PySide6.QtGui import QImage, QColor
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\main_controller.py:20:1
+   |
+18 | from PySide6.QtCore import QObject, Slot, QPointF
+19 | from PySide6.QtWidgets import QFileDialog, QMessageBox
+20 | from PySide6.QtGui import QImage, QColor
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+21 |
+22 | from menipy.gui.controllers.camera_manager import CameraManager
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\main_controller.py:22:1
+   |
+20 | from PySide6.QtGui import QImage, QColor
+21 |
+22 | from menipy.gui.controllers.camera_manager import CameraManager
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+23 | from menipy.gui.controllers.layout_manager import LayoutManager
+24 | from menipy.gui.controllers.dialog_coordinator import DialogCoordinator
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\main_controller.py:23:1
+   |
+22 | from menipy.gui.controllers.camera_manager import CameraManager
+23 | from menipy.gui.controllers.layout_manager import LayoutManager
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+24 | from menipy.gui.controllers.dialog_coordinator import DialogCoordinator
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\main_controller.py:24:1
+   |
+22 | from menipy.gui.controllers.camera_manager import CameraManager
+23 | from menipy.gui.controllers.layout_manager import LayoutManager
+24 | from menipy.gui.controllers.dialog_coordinator import DialogCoordinator
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+25 |
+26 | if TYPE_CHECKING:
+   |
+
+F541 [*] f-string without any placeholders
+  --> src\menipy\gui\main_window.py:63:51
+   |
+61 |     def _load_pipeline_modules(self, mode: str) -> dict:
+62 |         """Dynamically loads and returns the modules for the given pipeline mode."""
+63 |         geometry_module = importlib.import_module(f".geometry", package=f"menipy.pipelines.{mode}")
+   |                                                   ^^^^^^^^^^^^
+64 |         drawing_module = importlib.import_module(f".drawing", package=f"menipy.pipelines.{mode}")
+   |
+help: Remove extraneous `f` prefix
+
+F541 [*] f-string without any placeholders
+  --> src\menipy\gui\main_window.py:64:50
+   |
+62 |         """Dynamically loads and returns the modules for the given pipeline mode."""
+63 |         geometry_module = importlib.import_module(f".geometry", package=f"menipy.pipelines.{mode}")
+64 |         drawing_module = importlib.import_module(f".drawing", package=f"menipy.pipelines.{mode}")
+   |                                                  ^^^^^^^^^^^
+65 |
+66 |         # This part is a placeholder as the actual 'analyze' function is not defined yet
+   |
+help: Remove extraneous `f` prefix
+
+E731 Do not assign a `lambda` expression, use a `def`
+  --> src\menipy\gui\main_window.py:68:9
+   |
+66 |         # This part is a placeholder as the actual 'analyze' function is not defined yet
+67 |         # in the refactored pipeline geometry files.
+68 |         analyze_func = lambda frame, helpers: None  # Placeholder
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+69 |
+70 |         return {
+   |
+help: Rewrite `analyze_func` as a `def`
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\mainwindow.py:73:1
+   |
+71 |     PipelineRunner = None  # type: ignore
+72 |
+73 | from menipy.gui.main_controller import MainController
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+74 |
+75 | # default stage order for SOPs / step list
+   |
+
+E731 Do not assign a `lambda` expression, use a `def`
+   --> src\menipy\gui\mainwindow.py:233:17
+    |
+231 |                 handler = self.close
+232 |             elif method_name == "select_camera":
+233 |                 handler = lambda: self.main_controller.select_camera(True) # type: ignore
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+234 |             elif method_name == "open_overlay":
+235 |                 # Always call the MainController to open the overlay config
+    |
+help: Rewrite `handler` as a `def`
+
+E731 Do not assign a `lambda` expression, use a `def`
+   --> src\menipy\gui\mainwindow.py:236:17
+    |
+234 |             elif method_name == "open_overlay":
+235 |                 # Always call the MainController to open the overlay config
+236 |                 handler = lambda: self.main_controller.on_config_stage_requested("overlay")
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+237 |             else:
+238 |                 handler = getattr(self.main_controller, method_name)
+    |
+help: Rewrite `handler` as a `def`
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\panels\preview_panel.py:10:1
+   |
+ 8 | logger = logging.getLogger(__name__)
+ 9 |
+10 | from pathlib import Path
+   | ^^^^^^^^^^^^^^^^^^^^^^^^
+11 | from typing import Any, Optional, Callable
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\panels\preview_panel.py:11:1
+   |
+10 | from pathlib import Path
+11 | from typing import Any, Optional, Callable
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+12 |
+13 | from PySide6.QtCore import QRectF, QLineF, Signal
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\panels\preview_panel.py:13:1
+   |
+11 | from typing import Any, Optional, Callable
+12 |
+13 | from PySide6.QtCore import QRectF, QLineF, Signal
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+14 | from PySide6.QtWidgets import QWidget, QToolButton, QPushButton
+15 | from PySide6.QtGui import QColor
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\panels\preview_panel.py:14:1
+   |
+13 | from PySide6.QtCore import QRectF, QLineF, Signal
+14 | from PySide6.QtWidgets import QWidget, QToolButton, QPushButton
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+15 | from PySide6.QtGui import QColor
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\panels\preview_panel.py:15:1
+   |
+13 | from PySide6.QtCore import QRectF, QLineF, Signal
+14 | from PySide6.QtWidgets import QWidget, QToolButton, QPushButton
+15 | from PySide6.QtGui import QColor
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+
+F841 Local variable `display_info` is assigned to but never used
+   --> src\menipy\gui\panels\results_panel.py:239:9
+    |
+237 |         """Apply pipeline-specific styling to table cells."""
+238 |         # Get pipeline display info
+239 |         display_info = self.pipeline_ui_manager.get_display_info(pipeline_name)
+    |         ^^^^^^^^^^^^
+240 |
+241 |         # Style primary metrics differently
+    |
+help: Remove assignment to unused variable `display_info`
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\views\image_view.py:9:1
+   |
+ 8 | logger = logging.getLogger(__name__)
+ 9 | from typing import Optional, Union
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+10 | import numpy as np
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\views\image_view.py:10:1
+   |
+ 8 | logger = logging.getLogger(__name__)
+ 9 | from typing import Optional, Union
+10 | import numpy as np
+   | ^^^^^^^^^^^^^^^^^^
+11 |
+12 | from PySide6.QtCore import Qt, QRectF, QPointF, QSizeF, Signal, QLineF
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\views\image_view.py:12:1
+   |
+10 | import numpy as np
+11 |
+12 | from PySide6.QtCore import Qt, QRectF, QPointF, QSizeF, Signal, QLineF
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+13 | from PySide6.QtGui import QImage, QPixmap, QTransform, QPainter, QPen, QColor
+14 | from PySide6.QtWidgets import (
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\views\image_view.py:13:1
+   |
+12 | from PySide6.QtCore import Qt, QRectF, QPointF, QSizeF, Signal, QLineF
+13 | from PySide6.QtGui import QImage, QPixmap, QTransform, QPainter, QPen, QColor
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+14 | from PySide6.QtWidgets import (
+15 |     QGraphicsView,
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\gui\views\image_view.py:14:1
+   |
+12 |   from PySide6.QtCore import Qt, QRectF, QPointF, QSizeF, Signal, QLineF
+13 |   from PySide6.QtGui import QImage, QPixmap, QTransform, QPainter, QPen, QColor
+14 | / from PySide6.QtWidgets import (
+15 | |     QGraphicsView,
+16 | |     QGraphicsScene,
+17 | |     QGraphicsPixmapItem,
+18 | |     QGraphicsEllipseItem,
+19 | |     QGraphicsLineItem,
+20 | |     QGraphicsRectItem,
+21 | | )
+   | |_^
+22 |
+23 |   # Drawing modes for overlays
+   |
+
+F821 Undefined name `QGraphicsPathItem`
+   --> src\menipy\gui\views\image_view.py:246:20
+    |
+244 |             path.lineTo(QPointF(float(pts[0, 0]), float(pts[0, 1])))
+245 |
+246 |             item = QGraphicsPathItem(path)
+    |                    ^^^^^^^^^^^^^^^^^
+247 |             pen = QPen(color)
+248 |             pen.setWidthF(float(width))
+    |
+
+F401 [*] `typing.List` imported but unused
+ --> src\menipy\models\context.py:6:31
+  |
+4 | from __future__ import annotations
+5 |
+6 | from typing import Any, Dict, List, Optional, Tuple
+  |                               ^^^^
+7 |
+8 | from pydantic import BaseModel, Field
+  |
+help: Remove unused import: `typing.List`
+
+F401 [*] `typing.Union` imported but unused
+ --> src\menipy\models\datatypes.py:7:63
+  |
+5 | from __future__ import annotations
+6 |
+7 | from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+  |                                                               ^^^^^
+8 | from datetime import datetime
+  |
+help: Remove unused import: `typing.Union`
+
+F401 [*] `dataclasses.dataclass` imported but unused
+  --> src\menipy\models\datatypes.py:12:25
+   |
+10 | import numpy as np
+11 | from pydantic import BaseModel, Field, field_validator, ConfigDict
+12 | from dataclasses import dataclass, field
+   |                         ^^^^^^^^^
+13 |
+14 | from .typing import ImageAny, ContourArray, FloatVec
+   |
+help: Remove unused import
+
+F401 [*] `dataclasses.field` imported but unused
+  --> src\menipy\models\datatypes.py:12:36
+   |
+10 | import numpy as np
+11 | from pydantic import BaseModel, Field, field_validator, ConfigDict
+12 | from dataclasses import dataclass, field
+   |                                    ^^^^^
+13 |
+14 | from .typing import ImageAny, ContourArray, FloatVec
+   |
+help: Remove unused import
+
+F401 [*] `.typing.ImageAny` imported but unused
+  --> src\menipy\models\datatypes.py:14:21
+   |
+12 | from dataclasses import dataclass, field
+13 |
+14 | from .typing import ImageAny, ContourArray, FloatVec
+   |                     ^^^^^^^^
+15 | from .result import CapillaryRiseFit, OscillationFit, YoungLaplaceFit
+   |
+help: Remove unused import
+
+F401 [*] `.typing.ContourArray` imported but unused
+  --> src\menipy\models\datatypes.py:14:31
+   |
+12 | from dataclasses import dataclass, field
+13 |
+14 | from .typing import ImageAny, ContourArray, FloatVec
+   |                               ^^^^^^^^^^^^
+15 | from .result import CapillaryRiseFit, OscillationFit, YoungLaplaceFit
+   |
+help: Remove unused import
+
+F401 [*] `.typing.FloatVec` imported but unused
+  --> src\menipy\models\datatypes.py:14:45
+   |
+12 | from dataclasses import dataclass, field
+13 |
+14 | from .typing import ImageAny, ContourArray, FloatVec
+   |                                             ^^^^^^^^
+15 | from .result import CapillaryRiseFit, OscillationFit, YoungLaplaceFit
+   |
+help: Remove unused import
+
+F821 Undefined name `Frame`
+  --> src\menipy\models\datatypes.py:71:21
+   |
+70 |     kind: Literal["pendant", "sessile", "oscillating", "capillary_rise"]
+71 |     frame: Optional[Frame] = None             # single image or representative frame
+   |                     ^^^^^
+72 |     contour: Optional[Contour] = None
+73 |     geometry: Optional[Geometry] = None
+   |
+
+F821 Undefined name `Contour`
+  --> src\menipy\models\datatypes.py:72:23
+   |
+70 |     kind: Literal["pendant", "sessile", "oscillating", "capillary_rise"]
+71 |     frame: Optional[Frame] = None             # single image or representative frame
+72 |     contour: Optional[Contour] = None
+   |                       ^^^^^^^
+73 |     geometry: Optional[Geometry] = None
+74 |     calibration: Optional[Calibration] = None
+   |
+
+F821 Undefined name `Geometry`
+  --> src\menipy\models\datatypes.py:73:24
+   |
+71 |     frame: Optional[Frame] = None             # single image or representative frame
+72 |     contour: Optional[Contour] = None
+73 |     geometry: Optional[Geometry] = None
+   |                        ^^^^^^^^
+74 |     calibration: Optional[Calibration] = None
+75 |     physics: Optional[PhysicsParams] = None
+   |
+
+F821 Undefined name `Calibration`
+  --> src\menipy\models\datatypes.py:74:27
+   |
+72 |     contour: Optional[Contour] = None
+73 |     geometry: Optional[Geometry] = None
+74 |     calibration: Optional[Calibration] = None
+   |                           ^^^^^^^^^^^
+75 |     physics: Optional[PhysicsParams] = None
+   |
+
+F821 Undefined name `PhysicsParams`
+  --> src\menipy\models\datatypes.py:75:23
+   |
+73 |     geometry: Optional[Geometry] = None
+74 |     calibration: Optional[Calibration] = None
+75 |     physics: Optional[PhysicsParams] = None
+   |                       ^^^^^^^^^^^^^
+76 |
+77 |     fit_young_laplace: Optional[YoungLaplaceFit] = None
+   |
+
+F821 Undefined name `CameraMeta`
+  --> src\menipy\models\datatypes.py:94:33
+   |
+92 |                timestamp: Optional[datetime] = None,
+93 |                ms_from_start: Optional[float] = None,
+94 |                camera: Optional[CameraMeta] = None,
+   |                                 ^^^^^^^^^^
+95 |                calibration: Optional[Calibration] = None) -> Frame:
+96 |     """Helper to create a validated Frame."""
+   |
+
+F821 Undefined name `Calibration`
+  --> src\menipy\models\datatypes.py:95:38
+   |
+93 |                ms_from_start: Optional[float] = None,
+94 |                camera: Optional[CameraMeta] = None,
+95 |                calibration: Optional[Calibration] = None) -> Frame:
+   |                                      ^^^^^^^^^^^
+96 |     """Helper to create a validated Frame."""
+97 |     return Frame(image=image,
+   |
+
+F821 Undefined name `Frame`
+  --> src\menipy\models\datatypes.py:95:62
+   |
+93 |                ms_from_start: Optional[float] = None,
+94 |                camera: Optional[CameraMeta] = None,
+95 |                calibration: Optional[Calibration] = None) -> Frame:
+   |                                                              ^^^^^
+96 |     """Helper to create a validated Frame."""
+97 |     return Frame(image=image,
+   |
+
+F821 Undefined name `Frame`
+  --> src\menipy\models\datatypes.py:97:12
+   |
+95 |                calibration: Optional[Calibration] = None) -> Frame:
+96 |     """Helper to create a validated Frame."""
+97 |     return Frame(image=image,
+   |            ^^^^^
+98 |                  timestamp=timestamp,
+99 |                  ms_from_start=ms_from_start,
+   |
+
+F821 Undefined name `Contour`
+   --> src\menipy\models\datatypes.py:107:72
+    |
+105 |                  units: Literal["px", "mm"] = "px",
+106 |                  smoothing: Optional[float] = None,
+107 |                  origin_hint: Optional[Tuple[float, float]] = None) -> Contour:
+    |                                                                        ^^^^^^^
+108 |     """Helper to create a validated Contour."""
+109 |     return Contour(xy=xy, closed=closed, units=units,
+    |
+
+F821 Undefined name `Contour`
+   --> src\menipy\models\datatypes.py:109:12
+    |
+107 |                  origin_hint: Optional[Tuple[float, float]] = None) -> Contour:
+108 |     """Helper to create a validated Contour."""
+109 |     return Contour(xy=xy, closed=closed, units=units,
+    |            ^^^^^^^
+110 |                    smoothing=smoothing, origin_hint=origin_hint)
+    |
+
+F401 [*] `typing.Callable` imported but unused
+ --> src\menipy\models\physics.py:3:20
+  |
+1 | """Physical modeling utilities."""
+2 |
+3 | from typing import Callable
+  |                    ^^^^^^^^
+4 |
+5 | import numpy as np
+  |
+help: Remove unused import: `typing.Callable`
+
+F401 [*] `os` imported but unused
+  --> src\menipy\models\results.py:9:8
+   |
+ 7 | from pydantic import BaseModel, Field
+ 8 | import json
+ 9 | import os
+   |        ^^
+10 | from pathlib import Path
+   |
+help: Remove unused import: `os`
+
+F401 [*] `.typing.ImageAny` imported but unused
+  --> src\menipy\models\state.py:15:21
+   |
+13 | from pydantic import BaseModel, Field, ConfigDict
+14 |
+15 | from .typing import ImageAny, ContourArray, FloatVec
+   |                     ^^^^^^^^
+16 | from .result import CapillaryRiseFit, OscillationFit, YoungLaplaceFit
+17 | from .frame import Frame, Calibration, CameraMeta
+   |
+help: Remove unused import
+
+F401 [*] `.typing.ContourArray` imported but unused
+  --> src\menipy\models\state.py:15:31
+   |
+13 | from pydantic import BaseModel, Field, ConfigDict
+14 |
+15 | from .typing import ImageAny, ContourArray, FloatVec
+   |                               ^^^^^^^^^^^^
+16 | from .result import CapillaryRiseFit, OscillationFit, YoungLaplaceFit
+17 | from .frame import Frame, Calibration, CameraMeta
+   |
+help: Remove unused import
+
+F401 [*] `.typing.FloatVec` imported but unused
+  --> src\menipy\models\state.py:15:45
+   |
+13 | from pydantic import BaseModel, Field, ConfigDict
+14 |
+15 | from .typing import ImageAny, ContourArray, FloatVec
+   |                                             ^^^^^^^^
+16 | from .result import CapillaryRiseFit, OscillationFit, YoungLaplaceFit
+17 | from .frame import Frame, Calibration, CameraMeta
+   |
+help: Remove unused import
+
+F401 [*] `.result.CapillaryRiseFit` imported but unused
+  --> src\menipy\models\state.py:16:21
+   |
+15 | from .typing import ImageAny, ContourArray, FloatVec
+16 | from .result import CapillaryRiseFit, OscillationFit, YoungLaplaceFit
+   |                     ^^^^^^^^^^^^^^^^
+17 | from .frame import Frame, Calibration, CameraMeta
+18 | from .geometry import Contour
+   |
+help: Remove unused import
+
+F401 [*] `.result.OscillationFit` imported but unused
+  --> src\menipy\models\state.py:16:39
+   |
+15 | from .typing import ImageAny, ContourArray, FloatVec
+16 | from .result import CapillaryRiseFit, OscillationFit, YoungLaplaceFit
+   |                                       ^^^^^^^^^^^^^^
+17 | from .frame import Frame, Calibration, CameraMeta
+18 | from .geometry import Contour
+   |
+help: Remove unused import
+
+F401 [*] `.result.YoungLaplaceFit` imported but unused
+  --> src\menipy\models\state.py:16:55
+   |
+15 | from .typing import ImageAny, ContourArray, FloatVec
+16 | from .result import CapillaryRiseFit, OscillationFit, YoungLaplaceFit
+   |                                                       ^^^^^^^^^^^^^^^
+17 | from .frame import Frame, Calibration, CameraMeta
+18 | from .geometry import Contour
+   |
+help: Remove unused import
+
+F401 [*] `numpy.typing` imported but unused
+  --> src\menipy\models\typing.py:9:24
+   |
+ 7 | from typing import Union
+ 8 |
+ 9 | import numpy.typing as npt
+   |                        ^^^
+10 | from pydantic_numpy.typing import (
+11 |     Np2DArrayUint8,
+   |
+help: Remove unused import: `numpy.typing`
+
+F401 [*] `typing.Dict` imported but unused
+  --> src\menipy\pipelines\base.py:10:45
+   |
+ 8 | import time
+ 9 | from pathlib import Path
+10 | from typing import Any, Callable, Optional, Dict, ClassVar, Union
+   |                                             ^^^^
+11 |
+12 | import numpy as np
+   |
+help: Remove unused import
+
+F401 [*] `typing.Union` imported but unused
+  --> src\menipy\pipelines\base.py:10:61
+   |
+ 8 | import time
+ 9 | from pathlib import Path
+10 | from typing import Any, Callable, Optional, Dict, ClassVar, Union
+   |                                                             ^^^^^
+11 |
+12 | import numpy as np
+   |
+help: Remove unused import
+
+F401 [*] `menipy.models.config.EdgeDetectionSettings` imported but unused
+  --> src\menipy\pipelines\capillary_rise\stages.py:9:34
+   |
+ 7 | from menipy.models.context import Context
+ 8 | from menipy.models.fit import FitConfig
+ 9 | from menipy.models.config import EdgeDetectionSettings
+   |                                  ^^^^^^^^^^^^^^^^^^^^^
+10 | from menipy.common import edge_detection as edged
+11 | from menipy.common import overlay as ovl
+   |
+help: Remove unused import: `menipy.models.config.EdgeDetectionSettings`
+
+F401 [*] `menipy.common.edge_detection` imported but unused
+  --> src\menipy\pipelines\capillary_rise\stages.py:10:45
+   |
+ 8 | from menipy.models.fit import FitConfig
+ 9 | from menipy.models.config import EdgeDetectionSettings
+10 | from menipy.common import edge_detection as edged
+   |                                             ^^^^^
+11 | from menipy.common import overlay as ovl
+12 | from menipy.common import solver as common_solver
+   |
+help: Remove unused import: `menipy.common.edge_detection`
+
+F401 [*] `menipy.pipelines.base.EdgeDetectionSettings` imported but unused
+ --> src\menipy\pipelines\captive_bubble\stages.py:6:28
+  |
+5 | from menipy.pipelines.base import (
+6 |     PipelineBase, Context, EdgeDetectionSettings, FitConfig,
+  |                            ^^^^^^^^^^^^^^^^^^^^^
+7 |     edged, ovl, common_solver
+8 | )
+  |
+help: Remove unused import
+
+F401 [*] `menipy.pipelines.base.edged` imported but unused
+ --> src\menipy\pipelines\captive_bubble\stages.py:7:5
+  |
+5 | from menipy.pipelines.base import (
+6 |     PipelineBase, Context, EdgeDetectionSettings, FitConfig,
+7 |     edged, ovl, common_solver
+  |     ^^^^^
+8 | )
+9 | from menipy.models.geometry import CaptiveBubbleGeometry
+  |
+help: Remove unused import
+
+F401 [*] `pathlib.Path` imported but unused
+ --> src\menipy\pipelines\pendant\stages.py:5:21
+  |
+4 | from typing import Optional
+5 | from pathlib import Path
+  |                     ^^^^
+6 | import numpy as np
+  |
+help: Remove unused import: `pathlib.Path`
+
+F401 [*] `menipy.models.config.EdgeDetectionSettings` imported but unused
+  --> src\menipy\pipelines\pendant\stages.py:11:34
+   |
+ 9 | from menipy.models.context import Context
+10 | from menipy.models.fit import FitConfig
+11 | from menipy.models.config import EdgeDetectionSettings
+   |                                  ^^^^^^^^^^^^^^^^^^^^^
+12 | from menipy.models.geometry import Contour
+13 | from menipy.common import solver as common_solver
+   |
+help: Remove unused import: `menipy.models.config.EdgeDetectionSettings`
+
+F401 [*] `menipy.models.geometry.Contour` imported but unused
+  --> src\menipy\pipelines\pendant\stages.py:12:36
+   |
+10 | from menipy.models.fit import FitConfig
+11 | from menipy.models.config import EdgeDetectionSettings
+12 | from menipy.models.geometry import Contour
+   |                                    ^^^^^^^
+13 | from menipy.common import solver as common_solver
+14 | from menipy.common import edge_detection as edged
+   |
+help: Remove unused import: `menipy.models.geometry.Contour`
+
+F401 [*] `menipy.common.edge_detection` imported but unused
+  --> src\menipy\pipelines\pendant\stages.py:14:45
+   |
+12 | from menipy.models.geometry import Contour
+13 | from menipy.common import solver as common_solver
+14 | from menipy.common import edge_detection as edged
+   |                                             ^^^^^
+15 | from menipy.common import overlay as ovl 
+16 | from menipy.common.plugin_loader import get_solver
+   |
+help: Remove unused import: `menipy.common.edge_detection`
+
+F401 [*] `menipy.pipelines.base.PipelineBase` imported but unused
+  --> src\menipy\pipelines\sessile\geometry.py:9:35
+   |
+ 7 | from menipy.common.edge_detection import extract_external_contour
+ 8 | from menipy.common.metrics import find_apex_index
+ 9 | from menipy.pipelines.base import PipelineBase
+   |                                   ^^^^^^^^^^^^
+10 | from .metrics import compute_sessile_metrics
+   |
+help: Remove unused import: `menipy.pipelines.base.PipelineBase`
+
+F401 [*] `menipy.common.geometry.estimate_contact_angle_tangent` imported but unused
+  --> src\menipy\pipelines\sessile\metrics.py:10:5
+   |
+ 8 |     detect_baseline_ransac,
+ 9 |     refine_apex_curvature,
+10 |     estimate_contact_angle_tangent,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+11 |     estimate_contact_angle_circle_fit,
+12 |     tangent_angle_at_point,
+   |
+help: Remove unused import
+
+F401 [*] `menipy.common.geometry.estimate_contact_angle_circle_fit` imported but unused
+  --> src\menipy\pipelines\sessile\metrics.py:11:5
+   |
+ 9 |     refine_apex_curvature,
+10 |     estimate_contact_angle_tangent,
+11 |     estimate_contact_angle_circle_fit,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+12 |     tangent_angle_at_point,
+13 |     circle_fit_angle_at_point
+   |
+help: Remove unused import
+
+E402 Module level import not at top of file
+  --> src\menipy\pipelines\sessile\stages.py:10:1
+   |
+ 8 | logger = logging.getLogger(__name__)
+ 9 |
+10 | from menipy.pipelines.base import PipelineBase
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+11 | from menipy.models.context import Context
+12 | from menipy.models.config import EdgeDetectionSettings
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\pipelines\sessile\stages.py:11:1
+   |
+10 | from menipy.pipelines.base import PipelineBase
+11 | from menipy.models.context import Context
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+12 | from menipy.models.config import EdgeDetectionSettings
+13 | from menipy.models.fit import FitConfig
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\pipelines\sessile\stages.py:12:1
+   |
+10 | from menipy.pipelines.base import PipelineBase
+11 | from menipy.models.context import Context
+12 | from menipy.models.config import EdgeDetectionSettings
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+13 | from menipy.models.fit import FitConfig
+14 | from menipy.models.geometry import Contour
+   |
+
+F401 [*] `menipy.models.config.EdgeDetectionSettings` imported but unused
+  --> src\menipy\pipelines\sessile\stages.py:12:34
+   |
+10 | from menipy.pipelines.base import PipelineBase
+11 | from menipy.models.context import Context
+12 | from menipy.models.config import EdgeDetectionSettings
+   |                                  ^^^^^^^^^^^^^^^^^^^^^
+13 | from menipy.models.fit import FitConfig
+14 | from menipy.models.geometry import Contour
+   |
+help: Remove unused import: `menipy.models.config.EdgeDetectionSettings`
+
+E402 Module level import not at top of file
+  --> src\menipy\pipelines\sessile\stages.py:13:1
+   |
+11 | from menipy.models.context import Context
+12 | from menipy.models.config import EdgeDetectionSettings
+13 | from menipy.models.fit import FitConfig
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+14 | from menipy.models.geometry import Contour
+15 | from menipy.common import edge_detection as edged
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\pipelines\sessile\stages.py:14:1
+   |
+12 | from menipy.models.config import EdgeDetectionSettings
+13 | from menipy.models.fit import FitConfig
+14 | from menipy.models.geometry import Contour
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+15 | from menipy.common import edge_detection as edged
+16 | from menipy.common import overlay as ovl
+   |
+
+F401 [*] `menipy.models.geometry.Contour` imported but unused
+  --> src\menipy\pipelines\sessile\stages.py:14:36
+   |
+12 | from menipy.models.config import EdgeDetectionSettings
+13 | from menipy.models.fit import FitConfig
+14 | from menipy.models.geometry import Contour
+   |                                    ^^^^^^^
+15 | from menipy.common import edge_detection as edged
+16 | from menipy.common import overlay as ovl
+   |
+help: Remove unused import: `menipy.models.geometry.Contour`
+
+E402 Module level import not at top of file
+  --> src\menipy\pipelines\sessile\stages.py:15:1
+   |
+13 | from menipy.models.fit import FitConfig
+14 | from menipy.models.geometry import Contour
+15 | from menipy.common import edge_detection as edged
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+16 | from menipy.common import overlay as ovl
+17 | from menipy.common import solver as common_solver
+   |
+
+F401 [*] `menipy.common.edge_detection` imported but unused
+  --> src\menipy\pipelines\sessile\stages.py:15:45
+   |
+13 | from menipy.models.fit import FitConfig
+14 | from menipy.models.geometry import Contour
+15 | from menipy.common import edge_detection as edged
+   |                                             ^^^^^
+16 | from menipy.common import overlay as ovl
+17 | from menipy.common import solver as common_solver
+   |
+help: Remove unused import: `menipy.common.edge_detection`
+
+E402 Module level import not at top of file
+  --> src\menipy\pipelines\sessile\stages.py:16:1
+   |
+14 | from menipy.models.geometry import Contour
+15 | from menipy.common import edge_detection as edged
+16 | from menipy.common import overlay as ovl
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17 | from menipy.common import solver as common_solver
+18 | from menipy.common.plugin_loader import get_solver
+   |
+
+F401 [*] `menipy.common.overlay` imported but unused
+  --> src\menipy\pipelines\sessile\stages.py:16:38
+   |
+14 | from menipy.models.geometry import Contour
+15 | from menipy.common import edge_detection as edged
+16 | from menipy.common import overlay as ovl
+   |                                      ^^^
+17 | from menipy.common import solver as common_solver
+18 | from menipy.common.plugin_loader import get_solver
+   |
+help: Remove unused import: `menipy.common.overlay`
+
+E402 Module level import not at top of file
+  --> src\menipy\pipelines\sessile\stages.py:17:1
+   |
+15 | from menipy.common import edge_detection as edged
+16 | from menipy.common import overlay as ovl
+17 | from menipy.common import solver as common_solver
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+18 | from menipy.common.plugin_loader import get_solver
+19 | from menipy.pipelines.utils import ensure_contour
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\pipelines\sessile\stages.py:18:1
+   |
+16 | from menipy.common import overlay as ovl
+17 | from menipy.common import solver as common_solver
+18 | from menipy.common.plugin_loader import get_solver
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+19 | from menipy.pipelines.utils import ensure_contour
+   |
+
+E402 Module level import not at top of file
+  --> src\menipy\pipelines\sessile\stages.py:19:1
+   |
+17 | from menipy.common import solver as common_solver
+18 | from menipy.common.plugin_loader import get_solver
+19 | from menipy.pipelines.utils import ensure_contour
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+20 |
+21 | # Get solver from registry (loaded at startup)
+   |
+
+F401 [*] `typing.Any` imported but unused
+ --> src\menipy\pipelines\utils.py:6:30
+  |
+4 | from __future__ import annotations
+5 | import numpy as np
+6 | from typing import Optional, Any
+  |                              ^^^
+7 |
+8 | from menipy.models.context import Context
+  |
+help: Remove unused import: `typing.Any`
+
+F401 [*] `scipy.optimize.fsolve` imported but unused
+  --> synth_gen.py:10:28
+   |
+ 8 | import cv2
+ 9 | from scipy.integrate import odeint
+10 | from scipy.optimize import fsolve, brentq
+   |                            ^^^^^^
+11 | from scipy.interpolate import interp1d
+12 | from dataclasses import dataclass
+   |
+help: Remove unused import
+
+F401 [*] `scipy.optimize.brentq` imported but unused
+  --> synth_gen.py:10:36
+   |
+ 8 | import cv2
+ 9 | from scipy.integrate import odeint
+10 | from scipy.optimize import fsolve, brentq
+   |                                    ^^^^^^
+11 | from scipy.interpolate import interp1d
+12 | from dataclasses import dataclass
+   |
+help: Remove unused import
+
+F401 [*] `scipy.interpolate.interp1d` imported but unused
+  --> synth_gen.py:11:31
+   |
+ 9 | from scipy.integrate import odeint
+10 | from scipy.optimize import fsolve, brentq
+11 | from scipy.interpolate import interp1d
+   |                               ^^^^^^^^
+12 | from dataclasses import dataclass
+13 | from typing import Tuple, Dict, Optional
+   |
+help: Remove unused import: `scipy.interpolate.interp1d`
+
+F401 [*] `typing.Tuple` imported but unused
+  --> synth_gen.py:13:20
+   |
+11 | from scipy.interpolate import interp1d
+12 | from dataclasses import dataclass
+13 | from typing import Tuple, Dict, Optional
+   |                    ^^^^^
+14 | import matplotlib.pyplot as plt
+15 | from pathlib import Path
+   |
+help: Remove unused import
+
+F401 [*] `typing.Dict` imported but unused
+  --> synth_gen.py:13:27
+   |
+11 | from scipy.interpolate import interp1d
+12 | from dataclasses import dataclass
+13 | from typing import Tuple, Dict, Optional
+   |                           ^^^^
+14 | import matplotlib.pyplot as plt
+15 | from pathlib import Path
+   |
+help: Remove unused import
+
+F541 [*] f-string without any placeholders
+   --> synth_gen.py:770:11
+    |
+768 |     )
+769 |     print(f"   Generated {len(images)} frames")
+770 |     print(f"   Frequency: 1.0 Hz")
+    |           ^^^^^^^^^^^^^^^^^^^^^^^
+771 |     print(f"   Duration: 2.0 seconds")
+    |
+help: Remove extraneous `f` prefix
+
+F541 [*] f-string without any placeholders
+   --> synth_gen.py:771:11
+    |
+769 |     print(f"   Generated {len(images)} frames")
+770 |     print(f"   Frequency: 1.0 Hz")
+771 |     print(f"   Duration: 2.0 seconds")
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+772 |     
+773 |     # Visualize
+    |
+help: Remove extraneous `f` prefix
+
+F401 [*] `synth_gen.TestDatasetGenerator` imported but unused
+ --> synth_scripts.py:1:48
+  |
+1 | from synth_gen import SyntheticImageGenerator, TestDatasetGenerator
+  |                                                ^^^^^^^^^^^^^^^^^^^^
+2 | import cv2
+  |
+help: Remove unused import: `synth_gen.TestDatasetGenerator`
+
+F401 [*] `typing.Dict` imported but unused
+  --> synth_val.py:10:20
+   |
+ 8 | import matplotlib.pyplot as plt
+ 9 | from pathlib import Path
+10 | from typing import Dict, List, Tuple
+   |                    ^^^^
+11 | import json
+12 | from dataclasses import asdict
+   |
+help: Remove unused import
+
+F401 [*] `typing.List` imported but unused
+  --> synth_val.py:10:26
+   |
+ 8 | import matplotlib.pyplot as plt
+ 9 | from pathlib import Path
+10 | from typing import Dict, List, Tuple
+   |                          ^^^^
+11 | import json
+12 | from dataclasses import asdict
+   |
+help: Remove unused import
+
+F401 [*] `typing.Tuple` imported but unused
+  --> synth_val.py:10:32
+   |
+ 8 | import matplotlib.pyplot as plt
+ 9 | from pathlib import Path
+10 | from typing import Dict, List, Tuple
+   |                                ^^^^^
+11 | import json
+12 | from dataclasses import asdict
+   |
+help: Remove unused import
+
+F401 [*] `dataclasses.asdict` imported but unused
+  --> synth_val.py:12:25
+   |
+10 | from typing import Dict, List, Tuple
+11 | import json
+12 | from dataclasses import asdict
+   |                         ^^^^^^
+13 | import warnings
+   |
+help: Remove unused import: `dataclasses.asdict`
+
+F401 [*] `warnings` imported but unused
+  --> synth_val.py:13:8
+   |
+11 | import json
+12 | from dataclasses import asdict
+13 | import warnings
+   |        ^^^^^^^^
+   |
+help: Remove unused import: `warnings`
+
+F541 [*] f-string without any placeholders
+   --> synth_val.py:157:23
+    |
+156 |             if verbose:
+157 |                 print(f"Ô£ô Analysis successful")
+    |                       ^^^^^^^^^^^^^^^^^^^^^^^^
+158 |                 print(f"  Validation score: {metrics['validation_score']:.3f}")
+    |
+help: Remove extraneous `f` prefix
+
+E712 Avoid equality comparisons to `True`; use `df['success']:` for truth checks
+   --> synth_val.py:225:25
+    |
+224 |         # Filter successful tests
+225 |         df_success = df[df['success'] == True]
+    |                         ^^^^^^^^^^^^^^^^^^^^^
+226 |         
+227 |         print("\n" + "="*60)
+    |
+help: Replace with `df['success']`
+
+E712 Avoid equality comparisons to `True`; use `df['success']:` for truth checks
+   --> synth_val.py:309:25
+    |
+307 |         """Plot validation results"""
+308 |         df = pd.DataFrame([r for r in self.results if r['analysis_type'] == analysis_type])
+309 |         df_success = df[df['success'] == True]
+    |                         ^^^^^^^^^^^^^^^^^^^^^
+310 |         
+311 |         if len(df_success) == 0:
+    |
+help: Replace with `df['success']`
+
+F401 [*] `PySide6.QtCore.QLineF` imported but unused
+   --> tests\test_gui.py:250:40
+    |
+248 |     import numpy as np
+249 |     import cv2
+250 |     from PySide6.QtCore import QPoint, QLineF
+    |                                        ^^^^^^
+251 |     from menipy.gui import SubstrateLineItem
+    |
+help: Remove unused import: `PySide6.QtCore.QLineF`
+
+F401 [*] `menipy.gui.SubstrateLineItem` imported but unused
+   --> tests\test_gui.py:251:28
+    |
+249 |     import cv2
+250 |     from PySide6.QtCore import QPoint, QLineF
+251 |     from menipy.gui import SubstrateLineItem
+    |                            ^^^^^^^^^^^^^^^^^
+252 |
+253 |     img = np.zeros((20, 20, 3), dtype=np.uint8)
+    |
+help: Remove unused import: `menipy.gui.SubstrateLineItem`
+
+F401 [*] `PySide6.QtCore.QPoint` imported but unused
+   --> tests\test_gui.py:586:32
+    |
+584 |     import numpy as np
+585 |     import cv2
+586 |     from PySide6.QtCore import QPoint
+    |                                ^^^^^^
+587 |
+588 |     img = np.zeros((40, 40), dtype=np.uint8)
+    |
+help: Remove unused import: `PySide6.QtCore.QPoint`
+
+F821 Undefined name `SubstrateLineItem`
+   --> tests\test_gui.py:598:34
+    |
+596 |     window.drop_rect = (10, 20, 30, 39)
+597 |     window.px_per_mm_drop = 10.0
+598 |     window.substrate_line_item = SubstrateLineItem(QLineF(10, 38, 30, 38))
+    |                                  ^^^^^^^^^^^^^^^^^
+599 |     window.graphics_scene.addItem(window.substrate_line_item)
+600 |     window._run_analysis("contact-angle-alt")
+    |
+
+F821 Undefined name `QLineF`
+   --> tests\test_gui.py:598:52
+    |
+596 |     window.drop_rect = (10, 20, 30, 39)
+597 |     window.px_per_mm_drop = 10.0
+598 |     window.substrate_line_item = SubstrateLineItem(QLineF(10, 38, 30, 38))
+    |                                                    ^^^^^^
+599 |     window.graphics_scene.addItem(window.substrate_line_item)
+600 |     window._run_analysis("contact-angle-alt")
+    |
+
+F401 [*] `menipy.pipelines.base.PipelineError` imported but unused
+ --> tests\test_pipeline_runner.py:4:35
+  |
+2 | from menipy.pipelines.discover import PIPELINE_MAP
+3 | from menipy.gui.services.pipeline_runner import _pick
+4 | from menipy.pipelines.base import PipelineError, PipelineBase
+  |                                   ^^^^^^^^^^^^^
+  |
+help: Remove unused import: `menipy.pipelines.base.PipelineError`
+
+F401 [*] `pytest` imported but unused
+ --> tests\test_sessile_auto_detection.py:4:8
+  |
+3 | import numpy as np
+4 | import pytest
+  |        ^^^^^^
+5 | from menipy.common.geometry import detect_baseline_ransac, refine_apex_curvature
+6 | from menipy.pipelines.sessile.metrics import compute_sessile_metrics
+  |
+help: Remove unused import: `pytest`
+
+F401 [*] `pytest` imported but unused
+ --> tests\test_sessile_contact_angles.py:4:8
+  |
+3 | import numpy as np
+4 | import pytest
+  |        ^^^^^^
+5 |
+6 | from menipy.common.geometry import (
+  |
+help: Remove unused import: `pytest`
+
+F401 [*] `unittest.mock.MagicMock` imported but unused
+ --> tests\test_smoke_controller_flows.py:6:40
+  |
+4 | import numpy as np
+5 | import cv2
+6 | from unittest.mock import Mock, patch, MagicMock
+  |                                        ^^^^^^^^^
+7 |
+8 | try:
+  |
+help: Remove unused import: `unittest.mock.MagicMock`
+
+F401 `PySide6.QtWidgets.QApplication` imported but unused; consider using `importlib.util.find_spec` to test for availability
+  --> tests\test_smoke_controller_flows.py:9:35
+   |
+ 8 | try:
+ 9 |     from PySide6.QtWidgets import QApplication, QMainWindow
+   |                                   ^^^^^^^^^^^^
+10 |     from PySide6.QtCore import QPointF, QRectF
+11 |     PYSIDE_AVAILABLE = True
+   |
+help: Remove unused import: `PySide6.QtWidgets.QApplication`
+
+F841 Local variable `mock_warning` is assigned to but never used
+   --> tests\test_smoke_controller_flows.py:258:64
+    |
+256 |         controller._collect_acquisition_inputs = Mock(return_value=(False, {}))
+257 |
+258 |         with patch('PySide6.QtWidgets.QMessageBox.warning') as mock_warning:
+    |                                                                ^^^^^^^^^^^^
+259 |             controller.run_full()
+260 |             # Warning should be called by _collect_acquisition_inputs, not by run_full directly
+    |
+help: Remove assignment to unused variable `mock_warning`
+
+F401 [*] `json` imported but unused
+  --> validation_script.py:9:8
+   |
+ 7 | """
+ 8 |
+ 9 | import json
+   |        ^^^^
+10 | import sys
+11 | import os
+   |
+help: Remove unused import: `json`
+
+Found 201 errors.
+[*] 85 fixable with the `--fix` option (10 hidden fixes can be enabled with the `--unsafe-fixes` option).

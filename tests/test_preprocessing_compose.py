@@ -13,7 +13,7 @@ def test_compose_grayscale_into_color():
     assert comp is not None
     assert comp.shape == base.shape
     # Check that the inserted region has the grayscale value across all channels
-    sub = comp[10:10+20, 10:10+50]
+    sub = comp[10 : 10 + 20, 10 : 10 + 50]
     assert sub.ndim == 3
     assert (sub[..., 0] == 150).all()
     assert (sub[..., 1] == 150).all()

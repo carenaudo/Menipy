@@ -4,6 +4,7 @@ Output formatting and normalization for pipeline results.
 """
 from __future__ import annotations
 
+
 def run(ctx):
     """Normalize fit dict to a small 'results' object used by the GUI/CLI."""
     f = ctx.fit or {}

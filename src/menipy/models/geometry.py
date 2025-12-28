@@ -1,6 +1,7 @@
 """
 Geometric models for contours, geometry landmarks, and spatial features.
 """
+
 from __future__ import annotations
 
 from typing import Literal, Optional, Tuple
@@ -85,5 +86,9 @@ class Geometry(BaseModel):
 class CaptiveBubbleGeometry(Geometry):
     """Geometry landmarks for captive bubble analysis."""
 
-    ceiling_y: Optional[float] = Field(default=None, description="y-coordinate of chamber ceiling") 
-    cap_depth_px: Optional[float] = Field(default=None, description="depth of bubble cap in pixels")
+    ceiling_y: Optional[float] = Field(
+        default=None, description="y-coordinate of chamber ceiling"
+    )
+    cap_depth_px: Optional[float] = Field(
+        default=None, description="depth of bubble cap in pixels"
+    )

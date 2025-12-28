@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 import pytest
+
 try:
     from menipy.pipelines.sessile.geometry_alt import (
         filter_contours_by_size,
@@ -103,7 +104,9 @@ def test_analyze_simple_circle():
     img = np.full((100, 100), 255, np.uint8)
     cv2.circle(img, (50, 50), 10, 0, -1)
     helpers = HelperBundle(px_per_mm=10.0)
-    res = analyze(img, helpers, ((40, 60), (60, 60)), contact_points=((45, 60), (55, 60)))
+    res = analyze(
+        img, helpers, ((40, 60), (60, 60)), contact_points=((45, 60), (55, 60))
+    )
     d_px = np.linalg.norm(np.subtract(res.p1, res.p2))
     assert pytest.approx(d_px, rel=1e-2) == 20.0
 

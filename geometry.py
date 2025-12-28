@@ -1,4 +1,5 @@
 """Common, low-level geometric utilities."""
+
 from __future__ import annotations
 
 import cv2

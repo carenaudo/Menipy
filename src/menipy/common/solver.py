@@ -4,7 +4,7 @@ Solver stage utilities for fitting physical models to contours.
 """
 from __future__ import annotations
 
-from typing import Callable, Iterable, Literal, Optional, Sequence
+from typing import Callable
 from menipy.models.fit import FitConfig
 import math
 import numpy as np
@@ -20,6 +20,7 @@ def _residuals_pointwise(obs_xy: np.ndarray, model_xy: np.ndarray) -> np.ndarray
     Simple pointwise residual: pair points by normalized arc-length.
     Both curves are resampled to the same number of points.
     """
+
     def _arclen_param(xy):
         seg = np.linalg.norm(np.diff(xy, axis=0), axis=1)
         s = np.concatenate([[0.0], np.cumsum(seg)])
@@ -41,14 +42,16 @@ def _residuals_pointwise(obs_xy: np.ndarray, model_xy: np.ndarray) -> np.ndarray
     return diff.reshape(-1)
 
 
-def _residuals_normal_projection(obs_xy: np.ndarray, model_xy: np.ndarray) -> np.ndarray:
+def _residuals_normal_projection(
+    obs_xy: np.ndarray, model_xy: np.ndarray
+) -> np.ndarray:
     """
     Residual as signed distance along approximate normals of the model curve.
     More geometry-aware but slightly heavier. Uses local tangents for normals.
     """
     # estimate tangents on model
     t = np.gradient(model_xy, axis=0)
-    t /= (np.linalg.norm(t, axis=1, keepdims=True) + 1e-12)
+    t /= np.linalg.norm(t, axis=1, keepdims=True) + 1e-12
     n = np.column_stack([-t[:, 1], t[:, 0]])  # rotate tangents to get normals
 
     # simple nearest-neighbor from obs -> model indices
@@ -140,13 +143,18 @@ def run(
 
     # Collect outputs
     r_vec = res.fun
-    rmse = float(math.sqrt(np.mean(r_vec ** 2))) if r_vec.size else float("nan")
+    rmse = float(math.sqrt(np.mean(r_vec**2))) if r_vec.size else float("nan")
     max_abs = float(np.max(np.abs(r_vec))) if r_vec.size else float("nan")
 
     fit = {
         "params": res.x.tolist(),
         "param_names": list(config.param_names) if config.param_names else None,
-        "residuals": {"rmse": rmse, "max_abs": max_abs, "dof": int(r_vec.size - res.x.size), "r": r_vec.tolist()},
+        "residuals": {
+            "rmse": rmse,
+            "max_abs": max_abs,
+            "dof": int(r_vec.size - res.x.size),
+            "r": r_vec.tolist(),
+        },
         "solver": {
             "backend": "scipy.least_squares",
             "method": "trf",
@@ -163,4 +171,3 @@ def run(
 
     ctx.fit = fit
     return fit
-

@@ -181,3 +181,5 @@ cython_debug/
 .cursorindexingignore
 /plot
 /pruebas
+data/samples/gota depositada 1_labeled.png
+data/samples/tileshop.jpg

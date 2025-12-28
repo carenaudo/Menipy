@@ -1,11 +1,21 @@
 """Results panel helper for Menipy GUI."""
+
 from __future__ import annotations
 
 from typing import Any, Mapping, Optional, List
 import csv
 from pathlib import Path
 
-from PySide6.QtWidgets import QWidget, QTableWidget, QTableWidgetItem, QVBoxLayout, QHBoxLayout, QPushButton, QComboBox, QLabel
+from PySide6.QtWidgets import (
+    QWidget,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+    QHBoxLayout,
+    QPushButton,
+    QComboBox,
+    QLabel,
+)
 from PySide6.QtCore import Qt
 
 from menipy.models.results import get_results_history, MeasurementResult
@@ -38,7 +48,9 @@ class ResultsPanel:
 
     def __init__(self, panel: QWidget) -> None:
         self.panel = panel
-        self.table: Optional[QTableWidget] = panel.findChild(QTableWidget, "resultsTable")
+        self.table: Optional[QTableWidget] = panel.findChild(
+            QTableWidget, "resultsTable"
+        )
         self.history = get_results_history()
         self.current_pipeline_filter = None
         self.pipeline_ui_manager = PipelineUIManager()
@@ -57,7 +69,7 @@ class ResultsPanel:
     def _setup_controls(self) -> None:
         """Setup control buttons and filters."""
         # Find existing layout or create new one
-        if hasattr(self.panel, 'layout') and self.panel.layout():
+        if hasattr(self.panel, "layout") and self.panel.layout():
             layout = self.panel.layout()
         else:
             layout = QVBoxLayout(self.panel)
@@ -72,7 +84,9 @@ class ResultsPanel:
         self.pipeline_combo.addItem("Pendant", "pendant")
         self.pipeline_combo.addItem("Oscillating", "oscillating")
         self.pipeline_combo.addItem("Capillary Rise", "capillary_rise")
-        self.pipeline_combo.currentIndexChanged.connect(self._on_pipeline_filter_changed)
+        self.pipeline_combo.currentIndexChanged.connect(
+            self._on_pipeline_filter_changed
+        )
         controls_layout.addWidget(QLabel("Filter:"))
         controls_layout.addWidget(self.pipeline_combo)
 
@@ -111,6 +125,7 @@ class ResultsPanel:
             return
 
         from PySide6.QtWidgets import QFileDialog
+
         file_path, _ = QFileDialog.getSaveFileName(
             self.panel, "Export Results", "", "CSV Files (*.csv)"
         )
@@ -118,14 +133,16 @@ class ResultsPanel:
             return
 
         try:
-            with open(file_path, 'w', newline='') as csvfile:
+            with open(file_path, "w", newline="") as csvfile:
                 writer = csv.writer(csvfile)
 
                 # Write headers
                 headers = []
                 for col in range(self.table.columnCount()):
                     header_item = self.table.horizontalHeaderItem(col)
-                    headers.append(header_item.text() if header_item else f"Column {col}")
+                    headers.append(
+                        header_item.text() if header_item else f"Column {col}"
+                    )
                 writer.writerow(headers)
 
                 # Write data
@@ -138,7 +155,10 @@ class ResultsPanel:
 
         except Exception as e:
             from PySide6.QtWidgets import QMessageBox
-            QMessageBox.warning(self.panel, "Export Error", f"Failed to export CSV: {e}")
+
+            QMessageBox.warning(
+                self.panel, "Export Error", f"Failed to export CSV: {e}"
+            )
 
     def update(self, results: Mapping[str, Any] | None) -> None:
         """Legacy method for single measurement display - now adds to history."""
@@ -151,7 +171,7 @@ class ResultsPanel:
                 id=f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}",
                 timestamp=datetime.now(),
                 pipeline="unknown",  # Will be set by pipeline controller
-                results=dict(results)
+                results=dict(results),
             )
             self.history.add_measurement(measurement)
             self.update_history()
@@ -165,7 +185,9 @@ class ResultsPanel:
 
         # Apply pipeline-specific column prioritization if filtering by pipeline
         if self.current_pipeline_filter:
-            headers, rows = self._prioritize_columns_for_pipeline(headers, rows, self.current_pipeline_filter)
+            headers, rows = self._prioritize_columns_for_pipeline(
+                headers, rows, self.current_pipeline_filter
+            )
 
         # Update table
         self.table.setColumnCount(len(headers))
@@ -180,18 +202,26 @@ class ResultsPanel:
 
                 # Add pipeline-specific styling
                 if self.current_pipeline_filter:
-                    self._apply_pipeline_styling(item, self.current_pipeline_filter, headers[col_idx])
+                    self._apply_pipeline_styling(
+                        item, self.current_pipeline_filter, headers[col_idx]
+                    )
 
                 self.table.setItem(row_idx, col_idx, item)
 
         # Update count label
         measurement_count = len(rows)
-        filter_text = f" ({self.pipeline_combo.currentText()})" if self.current_pipeline_filter else ""
+        filter_text = (
+            f" ({self.pipeline_combo.currentText()})"
+            if self.current_pipeline_filter
+            else ""
+        )
         self.count_label.setText(f"{measurement_count} measurements{filter_text}")
 
         self.table.resizeColumnsToContents()
 
-    def _prioritize_columns_for_pipeline(self, headers: List[str], rows: List[List[Any]], pipeline_name: str) -> tuple[List[str], List[List[Any]]]:
+    def _prioritize_columns_for_pipeline(
+        self, headers: List[str], rows: List[List[Any]], pipeline_name: str
+    ) -> tuple[List[str], List[List[Any]]]:
         """Reorder columns to prioritize pipeline-specific metrics."""
         if not pipeline_name:
             return headers, rows
@@ -223,7 +253,9 @@ class ResultsPanel:
 
         # Reorder headers and data
         if priority_columns != headers:
-            header_indices = [headers.index(col) for col in priority_columns if col in headers]
+            header_indices = [
+                headers.index(col) for col in priority_columns if col in headers
+            ]
             reordered_headers = [headers[i] for i in header_indices]
             reordered_rows = []
             for row in rows:
@@ -233,7 +265,9 @@ class ResultsPanel:
 
         return headers, rows
 
-    def _apply_pipeline_styling(self, item: QTableWidgetItem, pipeline_name: str, column_name: str) -> None:
+    def _apply_pipeline_styling(
+        self, item: QTableWidgetItem, pipeline_name: str, column_name: str
+    ) -> None:
         """Apply pipeline-specific styling to table cells."""
         # Get pipeline display info
         display_info = self.pipeline_ui_manager.get_display_info(pipeline_name)
@@ -265,8 +299,14 @@ class ResultsPanel:
         # Update the pipeline filter to match the new measurement if no filter is set
         if self.current_pipeline_filter is None and measurement.pipeline != "unknown":
             # Auto-select the pipeline filter if it's the first measurement of that type
-            pipeline_measurements = [m for m in self.history.measurements if m.pipeline == measurement.pipeline]
-            if len(pipeline_measurements) == 1:  # This is the first measurement of this pipeline
+            pipeline_measurements = [
+                m
+                for m in self.history.measurements
+                if m.pipeline == measurement.pipeline
+            ]
+            if (
+                len(pipeline_measurements) == 1
+            ):  # This is the first measurement of this pipeline
                 self.current_pipeline_filter = measurement.pipeline
                 # Update the combo box selection
                 for i in range(self.pipeline_combo.count()):
@@ -275,7 +315,12 @@ class ResultsPanel:
                         break
         self.update_history()
 
-    def update_single_measurement(self, results: Mapping[str, Any], pipeline_name: str = "unknown", file_name: Optional[str] = None) -> None:
+    def update_single_measurement(
+        self,
+        results: Mapping[str, Any],
+        pipeline_name: str = "unknown",
+        file_name: Optional[str] = None,
+    ) -> None:
         """Update display for a single measurement (legacy compatibility)."""
         if results:
             # Create a measurement result and add to history
@@ -287,7 +332,7 @@ class ResultsPanel:
                 timestamp=datetime.now(),
                 pipeline=pipeline_name,
                 file_name=file_name,
-                results=dict(results)
+                results=dict(results),
             )
             self.history.add_measurement(measurement)
             self.update_history()

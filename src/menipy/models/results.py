@@ -6,7 +6,6 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 from pydantic import BaseModel, Field
 import json
-import os
 from pathlib import Path
 
 
@@ -43,7 +42,9 @@ class ResultsHistory:
         self.measurements.clear()
         self._save_history()
 
-    def get_table_data(self, pipeline_filter: Optional[str] = None) -> Tuple[List[str], List[List[Any]]]:
+    def get_table_data(
+        self, pipeline_filter: Optional[str] = None
+    ) -> Tuple[List[str], List[List[Any]]]:
         """Return (headers, rows) for table display, optionally filtered by pipeline."""
         # Filter measurements if pipeline specified
         measurements = self.measurements
@@ -61,15 +62,30 @@ class ResultsHistory:
         # Define column priority order
         priority_columns = [
             # Universal columns
-            "file_name", "timestamp", "pipeline",
+            "file_name",
+            "timestamp",
+            "pipeline",
             # Common metrics
-            "diameter_mm", "height_mm", "volume_uL", "surface_tension_mN_m", "contact_angle_deg",
+            "diameter_mm",
+            "height_mm",
+            "volume_uL",
+            "surface_tension_mN_m",
+            "contact_angle_deg",
             # Sessile-specific
-            "theta_left_deg", "theta_right_deg", "contact_surface_mm2", "drop_surface_mm2", "baseline_tilt_deg",
+            "theta_left_deg",
+            "theta_right_deg",
+            "contact_surface_mm2",
+            "drop_surface_mm2",
+            "baseline_tilt_deg",
             # Pendant-specific
-            "beta", "s1", "r0_mm", "needle_surface_mm2",
+            "beta",
+            "s1",
+            "r0_mm",
+            "needle_surface_mm2",
             # Oscillating-specific
-            "R0_mm", "f0_Hz", "r0_eq_px",
+            "R0_mm",
+            "f0_Hz",
+            "r0_eq_px",
         ]
 
         # Add any remaining keys not in priority list
@@ -95,7 +111,11 @@ class ResultsHistory:
             row = []
             for col in all_columns:
                 if col == "file_name":
-                    value = measurement.file_name or measurement.file_path or f"Measurement {measurement.id.split('_')[-1]}"
+                    value = (
+                        measurement.file_name
+                        or measurement.file_path
+                        or f"Measurement {measurement.id.split('_')[-1]}"
+                    )
                 elif col == "timestamp":
                     value = measurement.timestamp.strftime("%H:%M:%S")
                 elif col == "pipeline":
@@ -103,8 +123,10 @@ class ResultsHistory:
                 else:
                     value = measurement.results.get(col)
                     # Format numeric values
-                    if isinstance(value, (int, float)) and col.endswith(('_mm', '_uL', '_mN_m', '_deg', '_mm2', '_Hz', '_px')):
-                        if 'angle' in col.lower() or 'tilt' in col.lower():
+                    if isinstance(value, (int, float)) and col.endswith(
+                        ("_mm", "_uL", "_mN_m", "_deg", "_mm2", "_Hz", "_px")
+                    ):
+                        if "angle" in col.lower() or "tilt" in col.lower():
                             value = f"{value:.1f}"
                         else:
                             value = f"{value:.4f}"
@@ -121,11 +143,11 @@ class ResultsHistory:
         """Load measurement history from disk."""
         try:
             if self._history_file.exists():
-                with open(self._history_file, 'r') as f:
+                with open(self._history_file, "r") as f:
                     data = json.load(f)
-                    for item in data.get('measurements', []):
+                    for item in data.get("measurements", []):
                         # Convert timestamp string back to datetime
-                        item['timestamp'] = datetime.fromisoformat(item['timestamp'])
+                        item["timestamp"] = datetime.fromisoformat(item["timestamp"])
                         measurement = MeasurementResult(**item)
                         self.measurements.append(measurement)
         except Exception:
@@ -137,15 +159,12 @@ class ResultsHistory:
         try:
             self._data_dir.mkdir(exist_ok=True)
             data = {
-                'measurements': [
-                    {
-                        **m.model_dump(),
-                        'timestamp': m.timestamp.isoformat()
-                    }
+                "measurements": [
+                    {**m.model_dump(), "timestamp": m.timestamp.isoformat()}
                     for m in self.measurements
                 ]
             }
-            with open(self._history_file, 'w') as f:
+            with open(self._history_file, "w") as f:
                 json.dump(data, f, indent=2)
         except Exception:
             # If saving fails, continue without persistence
@@ -154,6 +173,7 @@ class ResultsHistory:
 
 # Global results history instance
 _results_history = None
+
 
 def get_results_history() -> ResultsHistory:
     """Get the global results history instance."""

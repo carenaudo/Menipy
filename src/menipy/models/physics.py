@@ -1,7 +1,5 @@
 """Physical modeling utilities."""
 
-from typing import Callable
-
 import numpy as np
 from scipy.integrate import solve_ivp
 
@@ -16,7 +14,7 @@ def young_laplace_ode(r, y, gamma, delta_rho, g):
 
 def solve_young_laplace(r_span, y0, gamma, delta_rho, g=9.81):
     """Integrate the Young-Laplace ODE."""
-    sol = solve_ivp(young_laplace_ode, r_span, y0, args=(gamma, delta_rho, g),
-                    dense_output=True)
+    sol = solve_ivp(
+        young_laplace_ode, r_span, y0, args=(gamma, delta_rho, g), dense_output=True
+    )
     return sol
-

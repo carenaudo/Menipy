@@ -4,15 +4,14 @@ Common data types and structures for analysis records and preprocessing state.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Tuple
 from datetime import datetime
 
 import numpy as np
 from pydantic import BaseModel, Field, field_validator, ConfigDict
-from dataclasses import dataclass, field
 
-from .typing import ImageAny, ContourArray, FloatVec
 from .result import CapillaryRiseFit, OscillationFit, YoungLaplaceFit
+
 
 class MarkerSet(BaseModel):
     """Interactive markers collected from preview interactions."""
@@ -61,14 +60,15 @@ class PreprocessingState(BaseModel):
 
 # ---- Aggregated analysis record --------------------------------------------
 
+
 class AnalysisRecord(BaseModel):
-    """ 
+    """
     One complete run of a pipeline stage sequence.
     Stores the minimal artifacts needed for reproducibility.
     """
 
     kind: Literal["pendant", "sessile", "oscillating", "capillary_rise"]
-    frame: Optional[Frame] = None             # single image or representative frame
+    frame: Optional[Frame] = None  # single image or representative frame
     contour: Optional[Contour] = None
     geometry: Optional[Geometry] = None
     calibration: Optional[Calibration] = None
@@ -86,25 +86,35 @@ class AnalysisRecord(BaseModel):
     def _validate_kind(cls, k: str) -> str:
         return k
 
+
 # ---- Convenience constructors ----------------------------------------------
 
-def make_frame(image: np.ndarray,
-               timestamp: Optional[datetime] = None,
-               ms_from_start: Optional[float] = None,
-               camera: Optional[CameraMeta] = None,
-               calibration: Optional[Calibration] = None) -> Frame:
-    """Helper to create a validated Frame."""
-    return Frame(image=image,
-                 timestamp=timestamp,
-                 ms_from_start=ms_from_start,
-                 camera=camera,
-                 calibration=calibration)
 
-def make_contour(xy: np.ndarray,
-                 closed: bool = True,
-                 units: Literal["px", "mm"] = "px",
-                 smoothing: Optional[float] = None,
-                 origin_hint: Optional[Tuple[float, float]] = None) -> Contour:
+def make_frame(
+    image: np.ndarray,
+    timestamp: Optional[datetime] = None,
+    ms_from_start: Optional[float] = None,
+    camera: Optional[CameraMeta] = None,
+    calibration: Optional[Calibration] = None,
+) -> Frame:
+    """Helper to create a validated Frame."""
+    return Frame(
+        image=image,
+        timestamp=timestamp,
+        ms_from_start=ms_from_start,
+        camera=camera,
+        calibration=calibration,
+    )
+
+
+def make_contour(
+    xy: np.ndarray,
+    closed: bool = True,
+    units: Literal["px", "mm"] = "px",
+    smoothing: Optional[float] = None,
+    origin_hint: Optional[Tuple[float, float]] = None,
+) -> Contour:
     """Helper to create a validated Contour."""
-    return Contour(xy=xy, closed=closed, units=units,
-                   smoothing=smoothing, origin_hint=origin_hint)
+    return Contour(
+        xy=xy, closed=closed, units=units, smoothing=smoothing, origin_hint=origin_hint
+    )

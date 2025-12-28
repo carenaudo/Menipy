@@ -1,4 +1,5 @@
 """Qt logging bridge utilities for streaming Python logs into Qt widgets."""
+
 from __future__ import annotations
 
 import logging
@@ -45,16 +46,19 @@ def install_qt_logging(
 
     target_logger = logger or logging.getLogger()
     if formatter is None:
-        formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(name)s | %(message)s")
+        formatter = logging.Formatter(
+            "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+        )
 
     # Reuse existing handler when present.
     for handler in target_logger.handlers:
         if isinstance(handler, QtLogHandler):
             bridge = handler.bridge
+
             # Guard the callback so we don't call methods on deleted C++ objects.
             def _safe_append(message, view=log_view):
                 try:
-                    if view is not None and hasattr(view, 'appendPlainText'):
+                    if view is not None and hasattr(view, "appendPlainText"):
                         view.appendPlainText(str(message))
                 except RuntimeError:
                     # Widget has been deleted on the C++ side; ignore.
@@ -67,7 +71,7 @@ def install_qt_logging(
 
     def _safe_append(message, view=log_view):
         try:
-            if view is not None and hasattr(view, 'appendPlainText'):
+            if view is not None and hasattr(view, "appendPlainText"):
                 view.appendPlainText(str(message))
         except RuntimeError:
             # Widget has been deleted on the C++ side; ignore.

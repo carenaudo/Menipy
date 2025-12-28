@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from typing import Union
 
-import numpy.typing as npt
 from pydantic_numpy.typing import (
     Np2DArrayUint8,
     Np3DArrayUint8,

@@ -4,6 +4,7 @@ This dialog exposes geometry/edge detector options discovered in plugins
 like `circle_edge` and `sine_edge` and provides a small API to get/set the
 configuration as a dict. It's intentionally lightweight and uses PySide6.
 """
+
 from __future__ import annotations
 
 from typing import Dict, Any
@@ -178,7 +179,10 @@ class GeometryConfigDialog(QDialog):
             "waves": int(self.wavesSpin.value()),
             "amplitude": float(self.amplitudeSpin.value()),
             "points": int(self.pointsSpin.value()),
-            "use_preprocessed": bool(getattr(self, 'usePreprocessed', None) and self.usePreprocessed.isChecked()),
+            "use_preprocessed": bool(
+                getattr(self, "usePreprocessed", None)
+                and self.usePreprocessed.isChecked()
+            ),
         }
 
     def set_config(self, cfg: Dict[str, Any]) -> None:
@@ -230,16 +234,24 @@ class GeometryConfigDialog(QDialog):
         if image.ndim == 2:  # Grayscale
             q_image = QImage(image.data, w, h, w, QImage.Format.Format_Grayscale8)
         elif image.ndim == 3 and image.shape[2] == 3:  # BGR
-            q_image = QImage(image.data, w, h, bytes_per_line, QImage.Format.Format_BGR888)
+            q_image = QImage(
+                image.data, w, h, bytes_per_line, QImage.Format.Format_BGR888
+            )
         elif image.ndim == 3 and image.shape[2] == 4:  # BGRA
-            q_image = QImage(image.data, w, h, bytes_per_line, QImage.Format.Format_ARGB32)
+            q_image = QImage(
+                image.data, w, h, bytes_per_line, QImage.Format.Format_ARGB32
+            )
         else:
             self.preview_label.setText("Unsupported image format")
             self.preview_label.clear()
             return
 
         pixmap = QPixmap.fromImage(q_image)
-        self.preview_label.setPixmap(pixmap.scaled(self.preview_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        self.preview_label.setPixmap(
+            pixmap.scaled(
+                self.preview_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation
+            )
+        )
 
 
 # Lightweight test harness when running module directly
