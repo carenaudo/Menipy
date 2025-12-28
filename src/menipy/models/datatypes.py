@@ -4,8 +4,13 @@ Common data types and structures for analysis records and preprocessing state.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, Tuple
+from typing import Any, Dict, List, Literal, Optional, Tuple, TYPE_CHECKING
 from datetime import datetime
+
+if TYPE_CHECKING:
+    from .frame import Frame, Calibration, CameraMeta
+    from .geometry import Contour, Geometry
+    from .physics import PhysicsParams
 
 import numpy as np
 from pydantic import BaseModel, Field, field_validator, ConfigDict

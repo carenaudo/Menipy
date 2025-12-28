@@ -212,15 +212,18 @@ class PluginLoader:
         return self._loaded_modules.get(name)
 
 
-def get_solver(name: str, fallback: Optional[callable] = None) -> Optional[callable]:
+from typing import Callable, Any
+
+
+def get_solver(name: str, fallback: Optional[Callable[..., Any]] = None) -> Optional[Callable[..., Any]]:
     """Get a solver by name from the registry (ensures plugins are loaded first)."""
     PluginLoader.ensure_loaded()
     return registry.SOLVERS.get(name, fallback)
 
 
 def get_edge_detector(
-    name: str, fallback: Optional[callable] = None
-) -> Optional[callable]:
+    name: str, fallback: Optional[Callable[..., Any]] = None
+) -> Optional[Callable[..., Any]]:
     """Get an edge detector by name from the registry."""
     PluginLoader.ensure_loaded()
     return registry.EDGE_DETECTORS.get(name, fallback)

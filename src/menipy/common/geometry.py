@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 from numpy.linalg import lstsq
+from typing import Tuple
 
 
 def fit_circle(points: np.ndarray) -> Tuple[np.ndarray, float]:
