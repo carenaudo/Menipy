@@ -1,0 +1,43 @@
+name: Build GUI resources
+
+on:
+  pull_request:
+    paths:
+      - 'src/menipy/gui/**'
+      - 'tools/**'
+      - '.github/workflows/**'
+  workflow_dispatch: {}
+
+jobs:
+  build-resources:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install optional deps (PySide6)
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install PySide6 || true
+      - name: Build resources (best-effort)
+        run: |
+          set -e
+          python tools/build_resources.py || echo "Resource build failed; continuing without failing CI."
+      - name: Check produced file and upload
+        id: check
+        run: |
+          if [ -f src/menipy/gui/resources/icons.rcc ]; then
+            echo "produced=true" >> $GITHUB_OUTPUT
+            mkdir -p artifacts
+            cp src/menipy/gui/resources/icons.rcc artifacts/
+          else
+            echo "produced=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Upload artifact
+        if: steps.check.outputs.produced == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: gui-resources
+          path: artifacts
