@@ -33,4 +33,16 @@ menipy-plugins = "menipy.common.plugins:cli_list_plugins"
 [project.urls]
 "Homepage" = "https://github.com/carenaudo/Menipy"
 
+[tool.ruff]
+# Basic ruff configuration
+line-length = 88
+extend-ignore = ["E203"]
+# Exclude build and data folders
+exclude = ["build", "dist", "docs/_build", "data", "plot", "*.egg-info"]
+
+# Per-file-ignores can be used for generated files or special modules
+[tool.ruff.per-file-ignores]
+"src/menipy/gui/*" = ["F401"]
+
+
 

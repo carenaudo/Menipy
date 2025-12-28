@@ -8,6 +8,7 @@ from numpy.typing import NDArray
 
 # Jennings–Pallas cubic correlation -----------------------------------------
 
+
 def jennings_pallas_beta(s1: float) -> float:
     """Return the dimensionless form factor ``beta``.
 
@@ -23,6 +24,7 @@ def jennings_pallas_beta(s1: float) -> float:
 
 # Surface tension from Young–Laplace ----------------------------------------
 
+
 def surface_tension(delta_rho: float, g: float, r0_mm: float, beta: float) -> float:
     """Return surface tension in Newton per metre."""
     r0 = r0_mm / 1000.0
@@ -31,6 +33,7 @@ def surface_tension(delta_rho: float, g: float, r0_mm: float, beta: float) -> fl
 
 # Bond number ---------------------------------------------------------------
 
+
 def bond_number(delta_rho: float, g: float, r0_mm: float, gamma: float) -> float:
     """Return dimensionless Bond number."""
     r0 = r0_mm / 1000.0
@@ -38,6 +41,7 @@ def bond_number(delta_rho: float, g: float, r0_mm: float, gamma: float) -> float
 
 
 # Volume by revolution of profile ------------------------------------------
+
 
 def volume_from_contour(contour_mm: NDArray[np.float_, np.float_]) -> float:
     """Return droplet volume in microlitres from a 2-D contour.

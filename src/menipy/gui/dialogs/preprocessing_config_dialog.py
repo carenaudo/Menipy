@@ -38,7 +38,9 @@ class PreprocessingConfigDialog(QDialog):
 
     previewRequested = Signal(object)
 
-    def __init__(self, settings: PreprocessingSettings, parent: Optional[QDialog] = None) -> None:
+    def __init__(
+        self, settings: PreprocessingSettings, parent: Optional[QDialog] = None
+    ) -> None:
         super().__init__(parent)
         self.setWindowTitle("Preprocessing Configuration")
         self._settings = settings.model_copy(deep=True)
@@ -70,7 +72,15 @@ class PreprocessingConfigDialog(QDialog):
         nav_layout.setSpacing(4)
 
         self.stage_list = QListWidget(nav_frame)
-        for label in ("Crop", "Resize", "Filter", "Background", "Normalize", "Contact Line", "Fill Holes"):
+        for label in (
+            "Crop",
+            "Resize",
+            "Filter",
+            "Background",
+            "Normalize",
+            "Contact Line",
+            "Fill Holes",
+        ):
             QListWidgetItem(label, self.stage_list)
         self.stage_list.setCurrentRow(0)
         self.stage_list.setFixedWidth(180)
@@ -148,12 +158,13 @@ class PreprocessingConfigDialog(QDialog):
         button_bar.addWidget(self._reset_btn)
         button_bar.addStretch(1)
 
-        self._button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, self)
+        self._button_box = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel, self
+        )
         button_bar.addWidget(self._button_box)
         ok_button = self._button_box.button(QDialogButtonBox.Ok)
         if ok_button is not None:
             ok_button.setDefault(True)
-
 
     def _build_crop_page(self) -> None:
         widget = QWidget(self)
@@ -233,7 +244,9 @@ class PreprocessingConfigDialog(QDialog):
         self.filter_sigma_space.setValue(75.0)
         form.addRow("Sigma space", self.filter_sigma_space)
 
-        info = QLabel("Gaussian uses kernel/sigma. Median ignores sigma. Bilateral uses all parameters.")
+        info = QLabel(
+            "Gaussian uses kernel/sigma. Median ignores sigma. Bilateral uses all parameters."
+        )
         info.setWordWrap(True)
         form.addRow(info)
         self.pages.addWidget(widget)
@@ -308,7 +321,9 @@ class PreprocessingConfigDialog(QDialog):
         self.contact_dilation.setValue(3)
         form.addRow("Dilation (px)", self.contact_dilation)
 
-        info = QLabel("Double-click anchors define the contact line. Strategy controls how pixels are treated.")
+        info = QLabel(
+            "Double-click anchors define the contact line. Strategy controls how pixels are treated."
+        )
         info.setWordWrap(True)
         form.addRow(info)
 
@@ -326,7 +341,9 @@ class PreprocessingConfigDialog(QDialog):
         self.fill_max_area.setValue(500)
         form.addRow("Max hole area (px)", self.fill_max_area)
 
-        self.fill_remove_spurious = QCheckBox("Remove small objects near contact line", widget)
+        self.fill_remove_spurious = QCheckBox(
+            "Remove small objects near contact line", widget
+        )
         form.addRow(self.fill_remove_spurious)
 
         self.fill_proximity = QSpinBox(widget)
@@ -334,7 +351,9 @@ class PreprocessingConfigDialog(QDialog):
         self.fill_proximity.setValue(5)
         form.addRow("Proximity to contact (px)", self.fill_proximity)
 
-        info = QLabel("Fills small interior holes and optionally removes small spurious objects near the contact line.")
+        info = QLabel(
+            "Fills small interior holes and optionally removes small spurious objects near the contact line."
+        )
         info.setWordWrap(True)
         form.addRow(info)
 
@@ -404,7 +423,9 @@ class PreprocessingConfigDialog(QDialog):
             try:
                 self.fill_enable.setChecked(getattr(fill, "enabled", False))
                 self.fill_max_area.setValue(getattr(fill, "max_hole_area", 500) or 0)
-                self.fill_remove_spurious.setChecked(getattr(fill, "remove_spurious_near_contact", True))
+                self.fill_remove_spurious.setChecked(
+                    getattr(fill, "remove_spurious_near_contact", True)
+                )
                 self.fill_proximity.setValue(getattr(fill, "proximity_px", 5) or 0)
             except Exception:
                 # defensively restore defaults
@@ -426,8 +447,12 @@ class PreprocessingConfigDialog(QDialog):
 
         resize = s.resize
         resize.enabled = self.resize_enable.isChecked()
-        resize.target_width = self.resize_width.value() if self.resize_width.value() > 0 else None
-        resize.target_height = self.resize_height.value() if self.resize_height.value() > 0 else None
+        resize.target_width = (
+            self.resize_width.value() if self.resize_width.value() > 0 else None
+        )
+        resize.target_height = (
+            self.resize_height.value() if self.resize_height.value() > 0 else None
+        )
         resize.preserve_aspect = self.resize_preserve.isChecked()
         resize.interpolation = self.resize_mode.currentText()
 
@@ -487,7 +512,12 @@ class PreprocessingConfigDialog(QDialog):
     # ------------------------------------------------------------------
     def _update_resize_controls(self) -> None:
         enabled = self.resize_enable.isChecked()
-        for widget in (self.resize_width, self.resize_height, self.resize_preserve, self.resize_mode):
+        for widget in (
+            self.resize_width,
+            self.resize_height,
+            self.resize_preserve,
+            self.resize_mode,
+        ):
             widget.setEnabled(enabled)
 
     def _update_filter_controls(self) -> None:
@@ -505,7 +535,9 @@ class PreprocessingConfigDialog(QDialog):
         enabled = self.bg_enable.isChecked()
         self.bg_mode.setEnabled(enabled)
         self.bg_strength.setEnabled(enabled)
-        self.bg_radius.setEnabled(enabled and self.bg_mode.currentText() == "rolling_ball")
+        self.bg_radius.setEnabled(
+            enabled and self.bg_mode.currentText() == "rolling_ball"
+        )
 
     def _update_norm_controls(self) -> None:
         enabled = self.norm_enable.isChecked()
@@ -516,7 +548,11 @@ class PreprocessingConfigDialog(QDialog):
 
     def _update_fill_controls(self) -> None:
         enabled = getattr(self, "fill_enable", None) and self.fill_enable.isChecked()
-        for widget in (self.fill_max_area, self.fill_remove_spurious, self.fill_proximity):
+        for widget in (
+            self.fill_max_area,
+            self.fill_remove_spurious,
+            self.fill_proximity,
+        ):
             widget.setEnabled(enabled)
 
     # ------------------------------------------------------------------
@@ -539,13 +575,21 @@ class PreprocessingConfigDialog(QDialog):
         if image.ndim == 2:  # Grayscale
             q_image = QImage(image.data, w, h, w, QImage.Format.Format_Grayscale8)
         elif image.ndim == 3 and image.shape[2] == 3:  # BGR
-            q_image = QImage(image.data, w, h, bytes_per_line, QImage.Format.Format_BGR888)
+            q_image = QImage(
+                image.data, w, h, bytes_per_line, QImage.Format.Format_BGR888
+            )
         elif image.ndim == 3 and image.shape[2] == 4:  # BGRA
-            q_image = QImage(image.data, w, h, bytes_per_line, QImage.Format.Format_ARGB32) # Assuming BGRA is ARGB32
+            q_image = QImage(
+                image.data, w, h, bytes_per_line, QImage.Format.Format_ARGB32
+            )  # Assuming BGRA is ARGB32
         else:
             self.preview_label.setText("Unsupported image format")
             self.preview_label.clear()
             return
 
         pixmap = QPixmap.fromImage(q_image)
-        self.preview_label.setPixmap(pixmap.scaled(self.preview_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        self.preview_label.setPixmap(
+            pixmap.scaled(
+                self.preview_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation
+            )
+        )

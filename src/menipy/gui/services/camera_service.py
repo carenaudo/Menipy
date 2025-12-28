@@ -1,4 +1,5 @@
 """Qt-friendly camera capture service for Menipy GUI."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -118,8 +119,12 @@ class CameraController(QObject):
         self._worker.stopped.connect(self.stopped)
         self._worker.error.connect(self.error)
 
-        self._start_requested.connect(self._worker.start, Qt.ConnectionType.QueuedConnection)
-        self._stop_requested.connect(self._worker.stop, Qt.ConnectionType.QueuedConnection)
+        self._start_requested.connect(
+            self._worker.start, Qt.ConnectionType.QueuedConnection
+        )
+        self._stop_requested.connect(
+            self._worker.stop, Qt.ConnectionType.QueuedConnection
+        )
 
     def start(self, config: CameraConfig) -> None:
         self._start_requested.emit(config)
@@ -137,4 +142,3 @@ class CameraController(QObject):
             self.shutdown()
         except Exception:
             pass
-

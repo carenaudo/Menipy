@@ -1,6 +1,7 @@
 """
 Custom image viewer widget.
 """
+
 from __future__ import annotations
 
 import logging
@@ -27,10 +28,9 @@ DRAW_LINE = "line"
 DRAW_RECT = "rect"
 
 
-
 def _enum_to_int(value: object) -> int:
     """Convert Qt enum/flag objects to plain ints for signal payloads."""
-    if hasattr(value, 'value'):
+    if hasattr(value, "value"):
         try:
             return int(value.value)
         except (TypeError, ValueError):
@@ -39,6 +39,7 @@ def _enum_to_int(value: object) -> int:
         return int(value)  # type: ignore[arg-type]
     except (TypeError, ValueError):
         return 0
+
 
 class ImageView(QGraphicsView):
     """QGraphicsView helper with pan/zoom and interactive overlays."""
@@ -91,7 +92,12 @@ class ImageView(QGraphicsView):
     def set_wheel_zoom_requires_ctrl(self, required: bool) -> None:
         self._wheel_zoom_requires_ctrl = bool(required)
 
-    def set_draw_mode(self, mode: str | None, color: QColor = QColor(255, 0, 0), tag: str | None = None) -> None:
+    def set_draw_mode(
+        self,
+        mode: str | None,
+        color: QColor = QColor(255, 0, 0),
+        tag: str | None = None,
+    ) -> None:
         """Update active drawing mode and overlay color."""
 
         self._draw_mode = mode
@@ -135,11 +141,23 @@ class ImageView(QGraphicsView):
     ) -> None:
         # Create shape-specific QGraphicsItem
         if shape == "square":
-            item = QGraphicsRectItem(QRectF(point.x() - radius, point.y() - radius, 2 * radius, 2 * radius))
+            item = QGraphicsRectItem(
+                QRectF(point.x() - radius, point.y() - radius, 2 * radius, 2 * radius)
+            )
         elif shape == "cross":
             # use a small group: two lines
-            l1 = QGraphicsLineItem(point.x() - radius, point.y() - radius, point.x() + radius, point.y() + radius)
-            l2 = QGraphicsLineItem(point.x() - radius, point.y() + radius, point.x() + radius, point.y() - radius)
+            l1 = QGraphicsLineItem(
+                point.x() - radius,
+                point.y() - radius,
+                point.x() + radius,
+                point.y() + radius,
+            )
+            l2 = QGraphicsLineItem(
+                point.x() - radius,
+                point.y() + radius,
+                point.x() + radius,
+                point.y() - radius,
+            )
             pen = QPen(color)
             pen.setWidthF(float(stroke_width))
             if dash_pattern is not None:
@@ -186,6 +204,7 @@ class ImageView(QGraphicsView):
         if drop_shadow:
             try:
                 from PySide6.QtWidgets import QGraphicsDropShadowEffect
+
                 eff = QGraphicsDropShadowEffect()
                 eff.setBlurRadius(8)
                 eff.setOffset(2, 2)
@@ -236,6 +255,7 @@ class ImageView(QGraphicsView):
             if pts.ndim != 2 or pts.shape[1] < 2:
                 return
             from PySide6.QtGui import QPainterPath
+
             path = QPainterPath()
             path.moveTo(QPointF(float(pts[0, 0]), float(pts[0, 1])))
             for p in pts[1:]:
@@ -267,9 +287,13 @@ class ImageView(QGraphicsView):
             self._overlays.append(item)
             self._register_overlay_item(item, tag)
         except Exception:
-            logger.debug('Failed to add contour overlay', exc_info=True)
+            logger.debug("Failed to add contour overlay", exc_info=True)
 
-    def set_image(self, img: Union[QPixmap, QImage, np.ndarray, None], preserve_overlays: bool = False) -> None:
+    def set_image(
+        self,
+        img: Union[QPixmap, QImage, np.ndarray, None],
+        preserve_overlays: bool = False,
+    ) -> None:
         if img is None:
             self._scene.clear()
             self._pix_item = None
@@ -349,7 +373,9 @@ class ImageView(QGraphicsView):
     # --------------------- events & helpers ---------------------
     def wheelEvent(self, event):
         # Require Ctrl only if configured
-        if self._wheel_zoom_requires_ctrl and not (event.modifiers() & Qt.KeyboardModifier.ControlModifier):
+        if self._wheel_zoom_requires_ctrl and not (
+            event.modifiers() & Qt.KeyboardModifier.ControlModifier
+        ):
             return super().wheelEvent(event)
         # Otherwise zoom w/o modifier
         if event.angleDelta().y() > 0:
@@ -445,12 +471,20 @@ class ImageView(QGraphicsView):
                 padded = rect.adjusted(-1e-6, -1e-6, 1e-6, 1e-6)
                 if padded.contains(candidate):
                     scene_pos = self._clamp_to_scene(candidate)
-                    self.point_clicked.emit(scene_pos, _enum_to_int(event.button()), _enum_to_int(event.modifiers()))
+                    self.point_clicked.emit(
+                        scene_pos,
+                        _enum_to_int(event.button()),
+                        _enum_to_int(event.modifiers()),
+                    )
                 else:
                     scene_pos = None
             else:
                 scene_pos = self._clamp_to_scene(candidate)
-                self.point_clicked.emit(scene_pos, _enum_to_int(event.button()), _enum_to_int(event.modifiers()))
+                self.point_clicked.emit(
+                    scene_pos,
+                    _enum_to_int(event.button()),
+                    _enum_to_int(event.modifiers()),
+                )
 
         if self._draw_mode and event.button() == Qt.LeftButton and self.scene():
             if scene_pos is None:
@@ -465,7 +499,12 @@ class ImageView(QGraphicsView):
             if self._draw_mode == DRAW_POINT:
                 radius = 4.0
                 item = QGraphicsEllipseItem(
-                    QRectF(scene_pos.x() - radius, scene_pos.y() - radius, 2 * radius, 2 * radius)
+                    QRectF(
+                        scene_pos.x() - radius,
+                        scene_pos.y() - radius,
+                        2 * radius,
+                        2 * radius,
+                    )
                 )
                 item.setPen(self._overlay_pen)
                 item.setZValue(10_000)
@@ -473,7 +512,9 @@ class ImageView(QGraphicsView):
                 self._overlays.append(item)
                 self._press_pos_scene = None
             elif self._draw_mode == DRAW_LINE:
-                item = QGraphicsLineItem(scene_pos.x(), scene_pos.y(), scene_pos.x(), scene_pos.y())
+                item = QGraphicsLineItem(
+                    scene_pos.x(), scene_pos.y(), scene_pos.x(), scene_pos.y()
+                )
                 item.setPen(self._overlay_pen)
                 item.setZValue(10_000)
                 self.scene().addItem(item)
@@ -497,11 +538,18 @@ class ImageView(QGraphicsView):
                 if not padded.contains(candidate):
                     return super().mouseDoubleClickEvent(event)
             scene_pos = self._clamp_to_scene(candidate)
-            self.double_clicked.emit(scene_pos, _enum_to_int(event.button()), _enum_to_int(event.modifiers()))
+            self.double_clicked.emit(
+                scene_pos, _enum_to_int(event.button()), _enum_to_int(event.modifiers())
+            )
         super().mouseDoubleClickEvent(event)
 
     def mouseMoveEvent(self, event):
-        if self._draw_mode and self._tmp_item and self._press_pos_scene and self.scene():
+        if (
+            self._draw_mode
+            and self._tmp_item
+            and self._press_pos_scene
+            and self.scene()
+        ):
             current_pos = self._clamp_to_scene(self.mapToScene(event.pos()))
             if isinstance(self._tmp_item, QGraphicsLineItem):
                 self._tmp_item.setLine(
@@ -519,21 +567,43 @@ class ImageView(QGraphicsView):
     def mouseReleaseEvent(self, event):
         if self._draw_mode and event.button() == Qt.LeftButton and self.scene():
             if self._tmp_item:
-                if self._draw_mode == DRAW_RECT and isinstance(self._tmp_item, QGraphicsRectItem):
+                if self._draw_mode == DRAW_RECT and isinstance(
+                    self._tmp_item, QGraphicsRectItem
+                ):
                     rect = self._tmp_item.rect().normalized()
                     top_left = self._tmp_item.mapToScene(rect.topLeft())
                     bottom_right = self._tmp_item.mapToScene(rect.bottomRight())
-                    tag = (self._draw_tag or 'region').lower()
-                    label = 'ROI region' if tag == 'roi' else ('needle region' if tag == 'needle' else 'region')
-                    logger.info("Preview %s drawn: top_left=(%.2f, %.2f), bottom_right=(%.2f, %.2f)", label, top_left.x(), top_left.y(), bottom_right.x(), bottom_right.y())
+                    tag = (self._draw_tag or "region").lower()
+                    label = (
+                        "ROI region"
+                        if tag == "roi"
+                        else ("needle region" if tag == "needle" else "region")
+                    )
+                    logger.info(
+                        "Preview %s drawn: top_left=(%.2f, %.2f), bottom_right=(%.2f, %.2f)",
+                        label,
+                        top_left.x(),
+                        top_left.y(),
+                        bottom_right.x(),
+                        bottom_right.y(),
+                    )
                     self.roi_selected.emit(self._tmp_item.rect())
-                elif self._draw_mode == DRAW_LINE and isinstance(self._tmp_item, QGraphicsLineItem):
+                elif self._draw_mode == DRAW_LINE and isinstance(
+                    self._tmp_item, QGraphicsLineItem
+                ):
                     line = self._tmp_item.line()
                     p1 = self._tmp_item.mapToScene(line.p1())
                     p2 = self._tmp_item.mapToScene(line.p2())
-                    tag = (self._draw_tag or 'contact_line').lower()
-                    label = 'needle line' if tag == 'needle' else 'contact line'
-                    logger.info("Preview %s drawn: p1=(%.2f, %.2f), p2=(%.2f, %.2f)", label, p1.x(), p1.y(), p2.x(), p2.y())
+                    tag = (self._draw_tag or "contact_line").lower()
+                    label = "needle line" if tag == "needle" else "contact line"
+                    logger.info(
+                        "Preview %s drawn: p1=(%.2f, %.2f), p2=(%.2f, %.2f)",
+                        label,
+                        p1.x(),
+                        p1.y(),
+                        p2.x(),
+                        p2.y(),
+                    )
                     self.line_drawn.emit(self._tmp_item.line())
 
                 # finalize
@@ -544,11 +614,3 @@ class ImageView(QGraphicsView):
                 self._press_pos_scene = None
             return
         super().mouseReleaseEvent(event)
-
-
-
-
-
-
-
-

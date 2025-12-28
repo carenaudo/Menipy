@@ -4,6 +4,7 @@ Optimization stage utilities for refining solver results.
 """
 from __future__ import annotations
 
+
 def run(ctx):
     """
     Placeholder for post-solver parameter refinement.

@@ -21,13 +21,19 @@ class AcquisitionConfigDialog(QDialog):
         self.setWindowTitle("Acquisition Configuration")
         layout = QVBoxLayout(self)
 
-        layout.addWidget(QLabel("ROI definition is required for the acquisition stage."))
-        layout.addWidget(QLabel("Needle region definition is required for the acquisition stage."))
+        layout.addWidget(
+            QLabel("ROI definition is required for the acquisition stage.")
+        )
+        layout.addWidget(
+            QLabel("Needle region definition is required for the acquisition stage.")
+        )
 
         self._contact_line_checkbox = QCheckBox("Require contact line")
         self._contact_line_checkbox.setChecked(contact_line_required)
         layout.addWidget(self._contact_line_checkbox)
-        layout.addWidget(QLabel("Select to require the contact line before running acquisition."))
+        layout.addWidget(
+            QLabel("Select to require the contact line before running acquisition.")
+        )
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.accepted.connect(self.accept)

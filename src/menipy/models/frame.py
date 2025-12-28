@@ -1,6 +1,7 @@
 """
 Frame model for representing images with metadata, calibration, and timing information.
 """
+
 from __future__ import annotations
 
 from typing import Optional, Tuple, Union

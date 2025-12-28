@@ -7,13 +7,12 @@ from menipy.common.geometry import (
     find_contact_points_from_contour,
     detect_baseline_ransac,
     refine_apex_curvature,
-    estimate_contact_angle_tangent,
-    estimate_contact_angle_circle_fit,
     tangent_angle_at_point,
-    circle_fit_angle_at_point
+    circle_fit_angle_at_point,
 )
 from menipy.models.drop_extras import surface_area_mm2
 from menipy.models.surface_tension import volume_from_contour
+
 
 def compute_sessile_metrics(
     contour: np.ndarray,
@@ -181,15 +180,25 @@ def compute_sessile_metrics(
             uncertainty_left = uncertainty_right = 2.0
 
     # Determine method tags
-    baseline_method = "auto_ransac" if auto_detect_baseline and substrate_line is not None else "manual"
-    apex_method = "auto_curvature" if auto_detect_apex and apex is not None else "manual"
+    baseline_method = (
+        "auto_ransac"
+        if auto_detect_baseline and substrate_line is not None
+        else "manual"
+    )
+    apex_method = (
+        "auto_curvature" if auto_detect_apex and apex is not None else "manual"
+    )
 
     return {
         "apex": apex or (0, 0),
         "diameter_mm": diameter_mm,
         "height_mm": height_mm,
         "volume_uL": volume_uL,
-        "contact_angle_deg": (theta_left_deg + theta_right_deg) / 2 if theta_left_deg > 0 and theta_right_deg > 0 else contact_angle_deg,  # Legacy compatibility
+        "contact_angle_deg": (
+            (theta_left_deg + theta_right_deg) / 2
+            if theta_left_deg > 0 and theta_right_deg > 0
+            else contact_angle_deg
+        ),  # Legacy compatibility
         "theta_left_deg": theta_left_deg,
         "theta_right_deg": theta_right_deg,
         "contact_surface_mm2": contact_surface_mm2,
@@ -201,8 +210,5 @@ def compute_sessile_metrics(
         "baseline_method": baseline_method,
         "apex_method": apex_method,
         "method": contact_angle_method,
-        "uncertainty_deg": {
-            "left": uncertainty_left,
-            "right": uncertainty_right
-        },
+        "uncertainty_deg": {"left": uncertainty_left, "right": uncertainty_right},
     }

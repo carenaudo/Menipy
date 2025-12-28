@@ -57,7 +57,10 @@ def compute_pendant_metrics(
             points_at_max_diam = x_coords[y_coords == y_of_max_diam]
             x_min = points_at_max_diam.min()
             x_max = points_at_max_diam.max()
-            diameter_line = ((int(x_min), int(y_of_max_diam)), (int(x_max), int(y_of_max_diam)))
+            diameter_line = (
+                (int(x_min), int(y_of_max_diam)),
+                (int(x_max), int(y_of_max_diam)),
+            )
 
         # Calculate surface tension using the shape factor (s1) method.
         if apex is not None and px_per_mm > 0 and diameter_px > 0:

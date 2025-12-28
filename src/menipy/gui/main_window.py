@@ -1,6 +1,7 @@
 """
 Main window implementation (legacy - check if still used).
 """
+
 import importlib
 import logging
 
@@ -27,7 +28,9 @@ class MainWindow(BaseMainWindow):
 
         try:
             modules = self._load_pipeline_modules(mode)
-            helpers = self._prepare_helper_bundle(mode, modules["helper_bundle_class"], roi_rect)
+            helpers = self._prepare_helper_bundle(
+                mode, modules["helper_bundle_class"], roi_rect
+            )
             if helpers is None:
                 return
 
@@ -35,9 +38,13 @@ class MainWindow(BaseMainWindow):
                 mode, modules["analyze_func"], modules["draw_func"], image, helpers
             )
         except (ImportError, AttributeError) as e:
-            QMessageBox.critical(self, "Error", f"Could not load pipeline for mode '{mode}': {e}")
+            QMessageBox.critical(
+                self, "Error", f"Could not load pipeline for mode '{mode}': {e}"
+            )
         except Exception as e:
-            QMessageBox.critical(self, "Analysis Error", f"An error occurred during analysis: {e}")
+            QMessageBox.critical(
+                self, "Analysis Error", f"An error occurred during analysis: {e}"
+            )
             logger.exception("Analysis failed.")
 
     def _get_analysis_image(self):
@@ -60,8 +67,12 @@ class MainWindow(BaseMainWindow):
 
     def _load_pipeline_modules(self, mode: str) -> dict:
         """Dynamically loads and returns the modules for the given pipeline mode."""
-        geometry_module = importlib.import_module(f".geometry", package=f"menipy.pipelines.{mode}")
-        drawing_module = importlib.import_module(f".drawing", package=f"menipy.pipelines.{mode}")
+        geometry_module = importlib.import_module(
+            ".geometry", package=f"menipy.pipelines.{mode}"
+        )
+        drawing_module = importlib.import_module(
+            ".drawing", package=f"menipy.pipelines.{mode}"
+        )
 
         # This part is a placeholder as the actual 'analyze' function is not defined yet
         # in the refactored pipeline geometry files.
@@ -78,10 +89,16 @@ class MainWindow(BaseMainWindow):
         px_per_mm = self.calibration_tab.get_scale()
         if mode == "pendant":
             needle_diam_mm = self.calibration_tab.get_needle_diameter()
-            return helper_bundle_class(px_per_mm=px_per_mm, needle_diam_mm=needle_diam_mm)
+            return helper_bundle_class(
+                px_per_mm=px_per_mm, needle_diam_mm=needle_diam_mm
+            )
 
         if mode == "sessile":
-            substrate_line = self.substrate_line_item.get_line_in_scene() if self.substrate_line_item else None
+            substrate_line = (
+                self.substrate_line_item.get_line_in_scene()
+                if self.substrate_line_item
+                else None
+            )
             if substrate_line:
                 p1 = substrate_line.p1() - roi_rect.topLeft()
                 p2 = substrate_line.p2() - roi_rect.topLeft()
@@ -94,13 +111,17 @@ class MainWindow(BaseMainWindow):
                 contact_points=contact_points,
             )
 
-        QMessageBox.warning(self, "Unsupported Mode", f"Analysis mode '{mode}' is not supported.")
+        QMessageBox.warning(
+            self, "Unsupported Mode", f"Analysis mode '{mode}' is not supported."
+        )
         return None
 
-    def _run_analysis_and_update_ui(self, mode, analyze_func, draw_func, image, helpers):
+    def _run_analysis_and_update_ui(
+        self, mode, analyze_func, draw_func, image, helpers
+    ):
         """Runs the analysis, draws overlays, and updates the GUI."""
         metrics = analyze_func(image, helpers)
-        if metrics is None: # Placeholder logic
+        if metrics is None:  # Placeholder logic
             self.statusBar().showMessage("Analysis function not yet implemented.", 3000)
             return
 

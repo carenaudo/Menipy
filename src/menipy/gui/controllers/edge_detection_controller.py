@@ -1,6 +1,7 @@
 """
 Controller for edge detection configuration and execution.
 """
+
 from __future__ import annotations
 
 """GUI controller for Menipy edge detection pipeline."""
@@ -79,8 +80,8 @@ class EdgeDetectionPipelineController(QObject):
             return
 
         # Safely access contour and its xy attribute (avoid attribute access on None)
-        contour = getattr(ctx, 'contour', None)
-        contour_xy = getattr(contour, 'xy', None) if contour is not None else None
+        contour = getattr(ctx, "contour", None)
+        contour_xy = getattr(contour, "xy", None) if contour is not None else None
         # Prepare a preview image (do not bake overlay markers into it)
         preview_image = self._source_image.copy()
         if preview_image.ndim == 2:
@@ -97,7 +98,7 @@ class EdgeDetectionPipelineController(QObject):
 
         # If a contact line was provided, attempt to detect contact points using curvature
         try:
-            contact_line = getattr(ctx, 'contact_line', None)
+            contact_line = getattr(ctx, "contact_line", None)
             if contact_line is not None:
                 xy = np.asarray(contour_xy, dtype=float)
                 left_pt, right_pt = find_contact_points_from_contour(xy, contact_line)
@@ -117,4 +118,3 @@ class EdgeDetectionPipelineController(QObject):
         self._settings = EdgeDetectionSettings()
         self.settingsChanged.emit(self._settings)
         self.run()
-

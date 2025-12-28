@@ -1,9 +1,11 @@
 """
 Overlay rendering and display utilities.
 """
+
 import numpy as np
 from PySide6.QtGui import QImage, QPixmap, QPainter, QPen, QColor, QBrush
 from PySide6.QtCore import QPointF, Qt
+
 
 def draw_analysis_overlay(image, metrics):
     """Return a ``QPixmap`` with analysis overlays.
@@ -38,6 +40,7 @@ def draw_analysis_overlay(image, metrics):
         center_contact_line=center_contact_line,
     )
 
+
 def draw_drop_overlay(
     image: np.ndarray,
     contour: np.ndarray | None = None,
@@ -54,11 +57,15 @@ def draw_drop_overlay(
         if image.ndim == 2:  # Grayscale
             height, width = image.shape
             bytes_per_line = width
-            q_image = QImage(image.data, width, height, bytes_per_line, QImage.Format_Grayscale8)
+            q_image = QImage(
+                image.data, width, height, bytes_per_line, QImage.Format_Grayscale8
+            )
         else:  # Color
             height, width, channel = image.shape
             bytes_per_line = 3 * width
-            q_image = QImage(image.data, width, height, bytes_per_line, QImage.Format_RGB888)
+            q_image = QImage(
+                image.data, width, height, bytes_per_line, QImage.Format_RGB888
+            )
         pixmap = QPixmap.fromImage(q_image)
     else:
         pixmap = image.copy()

@@ -1,6 +1,7 @@
 """
 Controller for preprocessing stage configuration.
 """
+
 from __future__ import annotations
 
 """GUI controller for Menipy preprocessing pipeline."""
@@ -121,7 +122,7 @@ class PreprocessingPipelineController(QObject):
             self.errorOccurred.emit("No source image available for preprocessing")
             return None
         ctx = Context()
-        ctx.current_frame  = self._image
+        ctx.current_frame = self._image
         if self._roi:
             ctx.roi = self._roi
         if self._roi_mask is not None:
@@ -148,7 +149,9 @@ class PreprocessingPipelineController(QObject):
         if ctx.preprocessed is not None:
             metadata = {"roi": self._state.roi_bounds, "scale": self._state.scale}
             if fresh_state.metadata.get("roi_resized"):
-                metadata["roi_resized_shape"] = fresh_state.metadata.get("roi_resized_shape")
+                metadata["roi_resized_shape"] = fresh_state.metadata.get(
+                    "roi_resized_shape"
+                )
             self.previewReady.emit(ctx.preprocessed, metadata)
         return self._state
 
@@ -185,7 +188,12 @@ class PreprocessingPipelineController(QObject):
         if roi is None:
             return
         x, y, w, h = roi
-        roi_image = self._state.normalized_roi or self._state.filtered_roi or self._state.working_roi or self._state.raw_roi
+        roi_image = (
+            self._state.normalized_roi
+            or self._state.filtered_roi
+            or self._state.working_roi
+            or self._state.raw_roi
+        )
         if roi_image is None:
             return
         payload: np.ndarray
@@ -198,6 +206,3 @@ class PreprocessingPipelineController(QObject):
             metadata["roi_resized_shape"] = (roi_image.shape[1], roi_image.shape[0])
             payload = roi_image
         self.previewReady.emit(payload, metadata)
-
-
-

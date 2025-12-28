@@ -6,7 +6,12 @@ from __future__ import annotations
 from typing import Optional
 
 from PySide6.QtWidgets import (
-    QDialog, QDialogButtonBox, QFormLayout, QLineEdit, QMessageBox, QVBoxLayout
+    QDialog,
+    QDialogButtonBox,
+    QFormLayout,
+    QLineEdit,
+    QMessageBox,
+    QVBoxLayout,
 )
 
 from menipy.models.config import PhysicsParams
@@ -31,7 +36,9 @@ class PhysicsConfigDialog(QDialog):
         if self.params.delta_rho:
             self.delta_rho_edit.setText(str(self.params.delta_rho))
         if self.params.surface_tension_guess:
-            self.surface_tension_guess_edit.setText(str(self.params.surface_tension_guess))
+            self.surface_tension_guess_edit.setText(
+                str(self.params.surface_tension_guess)
+            )
         if self.params.needle_radius:
             self.needle_radius_edit.setText(str(self.params.needle_radius))
         if self.params.tube_radius:
@@ -45,7 +52,9 @@ class PhysicsConfigDialog(QDialog):
         form_layout.addRow("Tube Radius (for Capillary Rise):", self.tube_radius_edit)
 
         # Dialog buttons
-        self.button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        self.button_box = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        )
         self.button_box.accepted.connect(self.accept)
         self.button_box.rejected.connect(self.reject)
 
@@ -71,7 +80,9 @@ class PhysicsConfigDialog(QDialog):
             self.params = PhysicsParams(**new_data)
             super().accept()
         except Exception as e:
-            QMessageBox.critical(self, "Invalid Input", f"Error parsing parameters:\n{e}")
+            QMessageBox.critical(
+                self, "Invalid Input", f"Error parsing parameters:\n{e}"
+            )
 
     def get_params(self) -> PhysicsParams:
         """Returns the updated parameters after the dialog is accepted."""

@@ -3,6 +3,7 @@ Generated Qt resource file for icons (auto-generated).
 
 Note: This file may be auto-generated. Avoid manual modifications.
 """
+
 # Resource object code (Python 3)
 # Created by: object code
 # Created by: The Resource Compiler for Qt version 6.9.1
@@ -178,10 +179,17 @@ qt_resource_struct = b"\
 \x00\x00\x01\x99\x14\xdc(\x81\
 "
 
+
 def qInitResources():
-    QtCore.qRegisterResourceData(0x03, qt_resource_struct, qt_resource_name, qt_resource_data)
+    QtCore.qRegisterResourceData(
+        0x03, qt_resource_struct, qt_resource_name, qt_resource_data
+    )
+
 
 def qCleanupResources():
-    QtCore.qUnregisterResourceData(0x03, qt_resource_struct, qt_resource_name, qt_resource_data)
+    QtCore.qUnregisterResourceData(
+        0x03, qt_resource_struct, qt_resource_name, qt_resource_data
+    )
+
 
 qInitResources()
