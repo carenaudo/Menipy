@@ -1,13 +1,16 @@
 """
-STUB: Sessile Pipeline - Physics Stage
-
-This file is a placeholder stub for the physical parameter setup and calculations.
-
-TODO: Implement physics stage for sessile pipeline
-      - Define stage-specific logic
-      - Add proper error handling
-      - Write unit tests
-      - Update documentation
-
-See sessile_plan_pipeline.md for implementation details.
+Minimal physics stage for the sessile pipeline.
+Sets default physics parameters (densities and gravity) if absent.
 """
+from __future__ import annotations
+
+from typing import Optional
+from menipy.models.context import Context
+
+
+def run(ctx: Context) -> Optional[Context]:
+    ctx.physics = ctx.physics or {}
+    ctx.physics.setdefault("rho1", 1000.0)  # liquid density kg/m3
+    ctx.physics.setdefault("rho2", 1.2)  # ambient gas density kg/m3
+    ctx.physics.setdefault("g", 9.80665)
+    return ctx
