@@ -65,8 +65,12 @@ def draw_overlay(
     """
     _require_cv2()
     img = _ensure_bgr(base_img)
+    # Ensure we have a 3-channel image for the overlay
+    if img.ndim != 3 or img.shape[2] != 3:
+        raise ValueError("overlay: expected 3-channel BGR image")
     H, W = img.shape[:2]
-    overlay = np.zeros_like(img)
+    # Ensure overlay has same shape as the 3-channel BGR image
+    overlay: np.ndarray = np.zeros((H, W, 3), dtype=img.dtype)  # type: ignore[assignment]
 
     for cmd in commands:
         typ = cmd.get("type")
@@ -78,11 +82,11 @@ def draw_overlay(
             cv2.line(overlay, p1, p2, color, th, lineType=cv2.LINE_AA)
 
         elif typ == "polyline":
-            pts = np.asarray(cmd["points"], dtype=np.int32).reshape(-1, 1, 2)
+            pts_poly: np.ndarray = np.asarray(cmd["points"], dtype=np.int32).reshape(-1, 1, 2)
             color = _bgr(cmd.get("color", "yellow"))
             th = int(cmd.get("thickness", 2))
             closed = bool(cmd.get("closed", True))
-            cv2.polylines(overlay, [pts], closed, color, th, lineType=cv2.LINE_AA)
+            cv2.polylines(overlay, [pts_poly], closed, color, th, lineType=cv2.LINE_AA)
 
         elif typ == "cross":
             cx, cy = map(int, cmd["p"])
@@ -117,18 +121,20 @@ def draw_overlay(
             cv2.circle(overlay, c, r, color, th, cv2.LINE_AA)
 
         elif typ == "scatter":
-            pts = np.asarray(cmd["points"], dtype=int).reshape(-1, 2)
+            pts_scatter: np.ndarray = np.asarray(cmd["points"], dtype=int).reshape(-1, 2)
             color = _bgr(cmd.get("color", "white"))
             r = int(cmd.get("radius", 2))
             th = int(cmd.get("thickness", -1))
-            for x, y in pts:
+            for x, y in pts_scatter:
                 cv2.circle(overlay, (int(x), int(y)), r, color, th, cv2.LINE_AA)
 
         else:
             raise ValueError(f"overlay: unknown command type '{typ}'")
 
     # composite
-    comp = cv2.addWeighted(overlay, float(alpha), img, float(1.0 - alpha), 0.0)
+    comp_raw = cv2.addWeighted(overlay, float(alpha), img, float(1.0 - alpha), 0.0)
+    comp = _ensure_bgr(comp_raw)
+    comp = np.asarray(comp)
     return overlay, comp
 
 

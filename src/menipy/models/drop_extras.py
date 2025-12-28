@@ -37,16 +37,18 @@ def projected_area_mm2(De_mm: float) -> float:
 # ---------- 4. True surface area by revolution --------------------
 def surface_area_mm2(contour_px: np.ndarray, px_per_mm: float) -> float:
     """Surface area of a revolved contour (mm²)."""
+    contour_px = np.asarray(contour_px, dtype=float)
     r_mm = contour_px[:, 0] / px_per_mm
     z_mm = contour_px[:, 1] / px_per_mm
     order = np.argsort(z_mm)
     r_mm, z_mm = r_mm[order], z_mm[order]
     z_mm, unique_idx = np.unique(z_mm, return_index=True)
-    r_mm = r_mm[unique_idx]
-    dr_dz = np.gradient(r_mm, z_mm, edge_order=2)
-    integrand = r_mm * np.sqrt(1.0 + dr_dz**2)
-    A_mm2 = 2.0 * math.pi * np.trapz(integrand, z_mm)
-    return A_mm2
+    r_mm = r_mm[unique_idx].astype(float)
+    dr_dz: np.ndarray = np.gradient(r_mm, z_mm, edge_order=2)
+    integrand: np.ndarray = np.asarray(r_mm * np.sqrt(1.0 + dr_dz**2), dtype=float)
+    trapz_val = float(np.trapz(integrand, z_mm))
+    A_mm2 = 2.0 * math.pi * trapz_val
+    return float(A_mm2)
 
 
 # ---------- 5. Apparent weight ------------------------------------

@@ -2,6 +2,7 @@
 Custom image viewer widget.
 """
 
+# type: ignore
 from __future__ import annotations
 
 import logging

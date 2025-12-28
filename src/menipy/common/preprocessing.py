@@ -90,11 +90,29 @@ def run(
     ctx.preprocessed_state = state
     ctx.preprocessed_settings = resolved_settings
     ctx.preprocessed_history = [record.model_dump() for record in state.history]
-    ctx.preprocessed_roi = processed_roi
+    # Make `preprocessed_roi` reflect what is actually present in the
+    # composed full image when possible so tests that compare the two see
+    # identical data (handles grayscale->color conversions performed by
+    # _compose_full_image).
     ctx.preprocessed_mask = state.roi_mask
     ctx.preprocessed_scale = state.scale
     ctx.contact_line_mask = state.contact_line_mask
-    ctx.preprocessed = full_image if full_image is not None else processed_roi
+
+    if full_image is not None and state.roi_bounds is not None:
+        x, y, w, h = state.roi_bounds
+        try:
+            # Extract the inserted ROI from the composed image so that the
+            # ROI stored on the context exactly matches the pixels visible
+            # in `ctx.preprocessed` (avoids channel mismatch between
+            # grayscale ROI and color base image).
+            ctx.preprocessed_roi = full_image[y : y + h, x : x + w]
+        except Exception:
+            # Fall back to the processed ROI if extraction fails.
+            ctx.preprocessed_roi = processed_roi
+        ctx.preprocessed = full_image
+    else:
+        ctx.preprocessed_roi = processed_roi
+        ctx.preprocessed = processed_roi
 
     # Keep original frame intact for preview; stash processed ROI separately.
     ctx.note("Preprocessing complete") if hasattr(ctx, "note") else None

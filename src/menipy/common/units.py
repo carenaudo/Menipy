@@ -5,7 +5,7 @@ Unit registry configuration using Pint.
 from pint import UnitRegistry
 from pydantic_pint import set_registry
 
-ureg = UnitRegistry(auto_reduce_dimensions=True)
+ureg: UnitRegistry = UnitRegistry(auto_reduce_dimensions=True)
 # Optional aliases
 # ureg.define("mN = millinewton")
 

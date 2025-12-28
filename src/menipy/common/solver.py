@@ -117,7 +117,8 @@ def run(
         if weights is None:
             return r
         if np.isscalar(weights):
-            return r * float(weights)
+            # weights may be numpy scalar or Python number; accept runtime conversion
+            return r * float(weights)  # type: ignore[arg-type]
         # broadcast per-element weights (clip/expand to match length)
         m = min(len(r), len(weights))
         rr = r.copy()
