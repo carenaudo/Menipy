@@ -55,7 +55,7 @@ class ResultsHistory:
             return ["File", "Time", "Pipeline"], []
 
         # Collect all unique result keys across measurements
-        all_keys = set()
+        all_keys: set[str] = set()
         for measurement in measurements:
             all_keys.update(measurement.results.keys())
 

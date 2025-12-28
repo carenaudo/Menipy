@@ -214,7 +214,7 @@ def detect_baseline_ransac(
 
     # RANSAC implementation
     best_model = None
-    best_inliers = []
+    best_inliers: list[bool] = []
     max_iterations = 100
 
     for _ in range(max_iterations):
@@ -303,11 +303,11 @@ def refine_apex_curvature(
 
     kappa = curvature_estimates(contour, window=window)
 
-    # Find initial apex candidate (highest curvature point)
-    apex_idx = np.argmax(kappa)
+# Find initial apex candidate (highest curvature point)
+    apex_idx = int(np.argmax(kappa))
     if kappa[apex_idx] == 0:
         # Fallback to lowest y
-        apex_idx = np.argmin(contour[:, 1])
+        apex_idx = int(np.argmin(contour[:, 1]))
 
     # Subpixel refinement around apex
     start_idx = max(0, apex_idx - window)

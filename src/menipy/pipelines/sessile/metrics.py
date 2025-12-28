@@ -18,7 +18,7 @@ def compute_sessile_metrics(
     contour: np.ndarray,
     px_per_mm: float,
     substrate_line: tuple[tuple[float, float], tuple[float, float]] | None = None,
-    apex: tuple[int, int] | None = None,
+    apex: tuple[float, float] | None = None,
     delta_rho: float = 998.8,
     g: float = 9.80665,
     contact_point_tolerance_px: float = 20.0,
