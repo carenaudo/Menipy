@@ -221,9 +221,7 @@ def get_solver(name: str, fallback: Optional[Callable[..., Any]] = None) -> Opti
     return registry.SOLVERS.get(name, fallback)
 
 
-def get_edge_detector(
-    name: str, fallback: Optional[Callable[..., Any]] = None
-) -> Optional[Callable[..., Any]]:
-    """Get an edge detector by name from the registry."""
+def get_edge_detector(name: str, fallback: Optional[Callable[..., Any]] = None) -> Optional[Callable[..., Any]]:
+    """Get an edge detector by name from the registry (ensures plugins are loaded first)."""
     PluginLoader.ensure_loaded()
     return registry.EDGE_DETECTORS.get(name, fallback)
