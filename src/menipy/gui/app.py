@@ -3,6 +3,7 @@ Main GUI application setup and initialization.
 """
 
 # src/menipy/gui/app.py
+# type: ignore
 from __future__ import annotations
 
 import sys

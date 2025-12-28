@@ -10,7 +10,8 @@ from datetime import datetime
 if TYPE_CHECKING:
     from .frame import Frame, Calibration, CameraMeta
     from .geometry import Contour, Geometry
-    from .physics import PhysicsParams
+    # PhysicsParams is not exported from models.physics; use a loose alias for typing
+    from typing import Any as PhysicsParams
 
 import numpy as np
 from pydantic import BaseModel, Field, field_validator, ConfigDict

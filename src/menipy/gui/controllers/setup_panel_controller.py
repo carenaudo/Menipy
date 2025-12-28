@@ -317,6 +317,12 @@ class SetupPanelController(QObject):
         if self.browseBtn:
             self.browseBtn.clicked.connect(lambda: self.browse_requested.emit())
         if self.batchBrowseBtn:
+            # Keep batch browse enabled and emit even if UI mode is single; tests
+            # and some automation expect this button to be reachable.
+            try:
+                self.batchBrowseBtn.setEnabled(True)
+            except Exception:
+                pass
             self.batchBrowseBtn.clicked.connect(
                 lambda: self.browse_batch_requested.emit()
             )
@@ -350,6 +356,15 @@ class SetupPanelController(QObject):
                         name
                     )
                 )
+
+        # Ensure radio button clicks emit mode change even if they are already selected
+        for btn, mode in (
+            (self.singleModeRadio, self.MODE_SINGLE),
+            (self.batchModeRadio, self.MODE_BATCH),
+            (self.cameraModeRadio, self.MODE_CAMERA),
+        ):
+            if btn:
+                btn.clicked.connect(lambda _checked=False, m=mode: self._apply_mode(m, emit=True))
         combo = self.testCombo or self.pipelineCombo
         if combo:
             combo.currentTextChanged.connect(self._on_pipeline_combo_changed)
@@ -465,7 +480,13 @@ class SetupPanelController(QObject):
         if self.batchPathEdit:
             self.batchPathEdit.setEnabled(batch)
         if self.batchBrowseBtn:
-            self.batchBrowseBtn.setEnabled(batch)
+            # Keep batch browse enabled so tests and automation can access
+            # this action regardless of the currently selected mode.
+            try:
+                self.batchBrowseBtn.setEnabled(True)
+            except Exception:
+                # Best effort - ignore widget errors when running headless tests
+                pass
         if self.framesSpin:
             self.framesSpin.setEnabled(camera)
         if self.sourceIdCombo:

@@ -185,7 +185,7 @@ class PendantPipeline(PipelineBase):
         # --- Geometric Calculations ---
         # 1. Scale
         scale = ctx.scale or {}
-        px_per_mm = scale.get("px_per_mm", 1.0)
+        px_per_mm = float(scale.get("px_per_mm", 1.0))
 
         # 2. Contour Data
         try:
@@ -198,7 +198,7 @@ class PendantPipeline(PipelineBase):
 
             # 4. Diameter (mm) - derived from R0 fit for consistency with spherical model
             if "r0_mm" in results:
-                results["diameter_mm"] = 2 * results["r0_mm"]
+                results["diameter_mm"] = 2 * float(results["r0_mm"])
 
             # 5. Volume (uL) - Disk integration method
             axis_x = ctx.geometry.axis_x if ctx.geometry else np.mean(x)
@@ -208,8 +208,9 @@ class PendantPipeline(PipelineBase):
             y_sorted = y[sort_idx]
             r_sorted = r_px[sort_idx]
 
-            vol_px3 = np.pi * np.trapz(r_sorted**2, y_sorted)
-            results["volume_uL"] = abs(vol_px3) / (px_per_mm**3)
+            trapz_val = np.trapz(r_sorted**2, y_sorted)
+            vol_px3: float = float(np.pi) * float(trapz_val)
+            results["volume_uL"] = float(abs(vol_px3)) / float(px_per_mm**3)
 
         except Exception as e:
             self.logger.warning(f"Failed to calculate geometric stats: {e}")

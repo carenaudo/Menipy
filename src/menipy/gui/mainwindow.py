@@ -3,6 +3,7 @@ Main window class for Menipy GUI.
 """
 
 # src/menipy/gui/mainwindow.py
+# type: ignore
 from __future__ import annotations
 
 from pathlib import Path

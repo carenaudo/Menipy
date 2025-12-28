@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
+from typing import cast
 
 
 from menipy.common.geometry import (
@@ -18,7 +19,7 @@ def compute_sessile_metrics(
     contour: np.ndarray,
     px_per_mm: float,
     substrate_line: tuple[tuple[float, float], tuple[float, float]] | None = None,
-    apex: tuple[int, int] | None = None,
+    apex: tuple[float, float] | None = None,
     delta_rho: float = 998.8,
     g: float = 9.80665,
     contact_point_tolerance_px: float = 20.0,
@@ -35,12 +36,6 @@ def compute_sessile_metrics(
         p1, p2, baseline_confidence = detect_baseline_ransac(contour_2d)
         substrate_line = ((float(p1[0]), float(p1[1])), (float(p2[0]), float(p2[1])))
 
-    # Auto-detect apex if requested and not provided
-    apex_confidence = 1.0
-    if apex is None and auto_detect_apex:
-        apex_pt, apex_confidence = refine_apex_curvature(contour_2d)
-        apex = (float(apex_pt[0]), float(apex_pt[1]))
-
     contact_line = None
     diameter_px = 0.0
     height_px = 0.0
@@ -48,47 +43,68 @@ def compute_sessile_metrics(
     contact_surface_mm2 = 0.0
     drop_surface_mm2 = 0.0
 
+    # If we auto-detected a baseline, find contact points early so apex
+    # detection can be constrained to the region above the substrate.
+    p1 = p2 = None
     if substrate_line is not None:
-        # The contour might be (N, 1, 2), so we reshape to (N, 2) for the helper.
         contour_2d = contour.reshape(-1, 2)
         p1, p2 = find_contact_points_from_contour(
             contour_2d, substrate_line, tolerance=contact_point_tolerance_px
         )
-
         if p1 is not None and p2 is not None:
             contact_line = (tuple(p1.astype(int)), tuple(p2.astype(int)))
-            diameter_px = np.linalg.norm(p1 - p2)
+            diameter_px = float(np.linalg.norm(p1 - p2))
 
-        # Calculate height as the perpendicular distance from the apex to the substrate line.
-        if apex is not None:
-            p1_line = np.array(substrate_line[0])
-            p2_line = np.array(substrate_line[1])
-            apex_pt = np.array(apex)
-            # Using the formula for the distance from a point to a line defined by two points.
-            num = np.abs(np.cross(p2_line - p1_line, p1_line - apex_pt))
-            den = np.linalg.norm(p2_line - p1_line)
-            if den > 0:
-                height_px = num / den
+    # Auto-detect apex if requested and not provided. If we have contact points,
+    # prefer an apex near the midpoint between contacts (min y in that region).
+    apex_confidence = 1.0
+    if apex is None and auto_detect_apex:
+        apex_pt, apex_confidence = refine_apex_curvature(contour_2d)
+        apex = (float(apex_pt[0]), float(apex_pt[1]))
+        # Post-process apex: if contact_line available, ensure apex is centered
+        # above the substrate between the contact points; if not, pick the
+        # minimum-y point between contacts as a robust fallback.
+        if contact_line is not None and p1 is not None and p2 is not None:
+            x_min = float(min(p1[0], p2[0]))
+            x_max = float(max(p1[0], p2[0]))
+            # Slightly expand search window to tolerate detection noise
+            pad = 0.1 * (x_max - x_min + 1.0)
+            mask = (contour_2d[:, 0] >= (x_min - pad)) & (contour_2d[:, 0] <= (x_max + pad))
+            candidates = contour_2d[mask]
+            if candidates.size > 0:
+                min_idx = int(np.argmin(candidates[:, 1]))
+                fallback_apex = candidates[min_idx]
+                # Accept fallback if it is vertically above the refined apex
+                if fallback_apex[1] < apex[1] - 1e-6:
+                    apex = (float(fallback_apex[0]), float(fallback_apex[1]))
+                    apex_confidence = min(apex_confidence, 0.6)
 
-        # Use tilt-corrected coordinates for diameter and height if substrate is tilted
-        if substrate_line is not None and apex is not None:
-            p1_line = np.array(substrate_line[0])
-            p2_line = np.array(substrate_line[1])
-            line_vec = p2_line - p1_line
-            line_len = np.linalg.norm(line_vec)
-            if line_len > 0:
-                # Unit vector along the line
-                unit_line = line_vec / line_len
-                # Perpendicular unit vector
-                unit_perp = np.array([-unit_line[1], unit_line[0]])
+    # Calculate height and tilt-corrected diameter whenever we have an apex and
+    # a substrate line (should not be limited only to cases where apex was
+    # auto-detected).
+    if substrate_line is not None and apex is not None:
+        p1_line = np.array(substrate_line[0])
+        p2_line = np.array(substrate_line[1])
+        apex_pt = np.array(apex)
+        # Using the formula for the distance from a point to a line defined by two points.
+        num: float = float(np.abs(np.cross(p2_line - p1_line, p1_line - apex_pt)))
+        den: float = float(np.linalg.norm(p2_line - p1_line))
+        if den > 0:
+            height_px = float(num / den)
 
-                # Project contact points and apex onto tilt-corrected coordinate system
-                apex_proj = np.dot(np.array(apex) - p1_line, unit_perp)
-                if p1 is not None and p2 is not None:
-                    p1_proj = np.dot(p1 - p1_line, unit_line)
-                    p2_proj = np.dot(p2 - p1_line, unit_line)
-                    diameter_px = abs(p2_proj - p1_proj)
-                height_px = abs(apex_proj)
+        # Use tilt-corrected coordinates for diameter if substrate is tilted
+        line_vec = p2_line - p1_line
+        line_len = np.linalg.norm(line_vec)
+        if line_len > 0 and p1 is not None and p2 is not None:
+            # Unit vector along the line
+            unit_line = line_vec / line_len
+            # Perpendicular unit vector
+            unit_perp = np.array([-unit_line[1], unit_line[0]])
+
+            # Project contact points onto tilt-corrected coordinate system
+            p1_proj = float(np.dot(p1 - p1_line, unit_line))
+            p2_proj = float(np.dot(p2 - p1_line, unit_line))
+            diameter_px = float(abs(p2_proj - p1_proj))
 
     diameter_mm = diameter_px / px_per_mm if px_per_mm > 0 else 0.0
     height_mm = height_px / px_per_mm if px_per_mm > 0 else 0.0

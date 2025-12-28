@@ -71,21 +71,21 @@ def _patch_acquisition(
     if image:
         img_path = str(image)
 
-        def do_acq(ctx: Context):
+        def do_acq_from_file(ctx: Context):
             ctx.frames = acq.from_file([img_path])
 
             return ctx
 
-        p.do_acquisition = do_acq  # type: ignore[attr-defined]
+        p.do_acquisition = do_acq_from_file  # type: ignore[attr-defined]
         return
     cam_id = 0 if camera is None else int(camera)
 
-    def do_acq(ctx: Context):
+    def do_acq_from_camera(ctx: Context):
         ctx.frames = acq.from_camera(device=cam_id, n_frames=frames)
 
         return ctx
 
-    p.do_acquisition = do_acq  # type: ignore[attr-defined]
+    p.do_acquisition = do_acq_from_camera  # type: ignore[attr-defined]
 
 
 def main(argv: Optional[list[str]] = None) -> int:

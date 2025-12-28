@@ -83,10 +83,11 @@ def _edges_to_xy(
 def _fallback_canny(img: np.ndarray, settings: EdgeDetectionSettings) -> np.ndarray:
     """Default detector: auto-thresholded Canny → largest contour (Nx2)."""
     g = _ensure_gray(img)
+    edges: np.ndarray
     if cv2 is None:
         # No OpenCV: threshold around median as a crude edge map
         v = float(np.median(g))
-        edges = (g > v).astype(np.uint8) * 255
+        edges = np.asarray((g > v).astype(np.uint8) * 255, dtype=np.uint8)
     else:
         lower = settings.canny_threshold1
         upper = settings.canny_threshold2
@@ -97,6 +98,7 @@ def _fallback_canny(img: np.ndarray, settings: EdgeDetectionSettings) -> np.ndar
             apertureSize=settings.canny_aperture_size,
             L2gradient=settings.canny_L2_gradient,
         )
+        edges = np.asarray(edges, dtype=np.uint8)
     return _edges_to_xy(edges, settings.min_contour_length, settings.max_contour_length)
 
 
@@ -135,7 +137,7 @@ class ThresholdDetector(EdgeDetectorStrategy):
     def detect(self, img: np.ndarray, settings: EdgeDetectionSettings) -> np.ndarray:
         if cv2 is None:
             # Simple threshold fallback
-            _, edges = (img > settings.threshold_value).astype(np.uint8) * 255
+            edges = (img > settings.threshold_value).astype(np.uint8) * 255
             return _edges_to_xy(
                 edges, settings.min_contour_length, settings.max_contour_length
             )
@@ -312,8 +314,7 @@ def run(ctx, settings: EdgeDetectionSettings):
         except Exception:
             roi_image_override = None
 
-    # prepare a logger for visible runtime info
-    logger = logging.getLogger(__name__)
+    # use module-level logger
 
     if img is None and roi_image_override is None:
         # Try a safe acquisition fallback
@@ -376,12 +377,48 @@ def run(ctx, settings: EdgeDetectionSettings):
     # 2) crop ROI if present
     roi = roi_bounds
     x0 = y0 = 0
+    img_roi = None
+
+    def _parse_roi(candidate) -> tuple[int, int, int, int] | None:
+        if candidate is None:
+            return None
+        # Mapping-like (dict, SimpleNamespace) with keys
+        try:
+            if hasattr(candidate, "get"):
+                x = candidate.get("x") or candidate.get("left")
+                y = candidate.get("y") or candidate.get("top")
+                w = candidate.get("w") or candidate.get("width")
+                h = candidate.get("h") or candidate.get("height")
+                if x is not None and y is not None and w is not None and h is not None:
+                    return (int(x), int(y), int(w), int(h))
+        except Exception:
+            pass
+        # Object with attributes
+        try:
+            x = getattr(candidate, "x", None) or getattr(candidate, "left", None)
+            y = getattr(candidate, "y", None) or getattr(candidate, "top", None)
+            w = getattr(candidate, "w", None) or getattr(candidate, "width", None)
+            h = getattr(candidate, "h", None) or getattr(candidate, "height", None)
+            if x is not None and y is not None and w is not None and h is not None:
+                return (int(x), int(y), int(w), int(h))
+        except Exception:
+            pass
+        # Sequence-like
+        try:
+            seq = list(candidate)
+            if len(seq) >= 4:
+                return (int(seq[0]), int(seq[1]), int(seq[2]), int(seq[3]))
+        except Exception:
+            pass
+        return None
+
+    parsed = _parse_roi(roi)
     if roi_image_override is not None:
         img_roi = roi_image_override
-        if roi:
-            x0, y0 = int(roi[0]), int(roi[1])
-    elif roi:
-        x0, y0, w, h = [int(v) for v in roi]
+        if parsed:
+            x0, y0 = parsed[0], parsed[1]
+    elif parsed:
+        x0, y0, w, h = parsed
         img_roi = img[y0 : y0 + h, x0 : x0 + w]
     else:
         img_roi = img
@@ -410,12 +447,23 @@ def run(ctx, settings: EdgeDetectionSettings):
                 edges, settings.min_contour_length, settings.max_contour_length
             )
         if xy.size == 0:
-            raise RuntimeError(
-                "EdgeDetection: detector returned no contour even after fallback."
+            # If no contour can be found, don't raise — instead set an empty
+            # contour so downstream stages can handle this gracefully.
+            logger.warning(
+                "EdgeDetection: detector returned no contour even after fallback; setting empty contour."
             )
+            xy = np.empty((0, 2), float)
+            # write into Context and return early so callers get an empty contour
+            if getattr(ctx, "contour", None) is None:
+                ctx.contour = Contour(xy=xy)
+            else:
+                ctx.contour.xy = xy
+            ctx.fluid_interface_contour = None
+            ctx.solid_interface_contour = None
+            return ctx
 
-    # 5) offset back to full-image coords
-    if roi:
+    # 5) offset back to full-image coords (only if we parsed a valid ROI)
+    if parsed:
         xy = xy.copy()
         xy[:, 0] += x0
         xy[:, 1] += y0
