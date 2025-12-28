@@ -90,16 +90,15 @@ Logs: the application forwards Python logging to the in-app Log tab. Look there 
 
 ## Developer Documentation
 
-For developers looking to extend Menipy's functionality, we provide guides on common tasks.
-- 
-- [**Adding a New Analysis Pipeline**](docs/guides/developer_guide_pipelines.md): A step-by-step guide on how to create and integrate a new analysis workflow into the application.
-- [**Adding a New Image Filter Plugin**](docs/guides/developer_guide_plugins.md): A guide on creating and integrating custom image filters using the plugin system.
-
-## Developer Documentation
-
-For developers looking to extend Menipy's functionality, we provide guides on common tasks.
+For developers looking to extend Menipy's functionality, we provide guides on common tasks:
 
 - [**Adding a New Analysis Pipeline**](docs/guides/developer_guide_pipelines.md): A step-by-step guide on how to create and integrate a new analysis workflow into the application.
 - [**Adding a New Image Filter Plugin**](docs/guides/developer_guide_plugins.md): A guide on creating and integrating custom image filters using the plugin system.
 
-```
+## Contributing
+
+We welcome contributions! Please see our [**Contributing Guide**](CONTRIBUTING.md) for:
+- Setting up your development environment
+- Running tests and linting
+- Code style guidelines
+- How to submit pull requests

@@ -1,33 +1,19 @@
-# Image processing
-scikit-image
-opencv-python
+# Menipy Dependencies
+# ===================
+# For development: pip install -e .[dev,test]
+# For production:  pip install .
+#
+# This file provides a quick-install option for basic dependencies.
+# Full dependency management is in pyproject.toml.
 
-# Core numerical and data libraries
-numpy
-scipy
-pandas
-
-#datatypes
-pydantic
-pydantic_numpy
-
-# Plotting
-matplotlib
-
-# GUI framework
-PySide6
-
-# Packaging and testing
-setuptools
-wheel
-pytest
-pytest-cov
-pytest-qt
-flake8
-
-# Documentation
-sphinx
-
-# Units
+# Core dependencies (also specified in pyproject.toml)
+numpy>=1.24.0
+scipy>=1.10.0
+pandas>=1.5.3
+scikit-image>=0.19.3
+opencv-python>=4.7.0.72
+matplotlib>=3.5.0
+PySide6>=6.5.1
 pint
+pydantic
 pydantic-pint

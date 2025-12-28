@@ -369,11 +369,19 @@
       "src/menipy/models/surface_tension.py"
     ],
     "src/menipy/pipelines/pendant/optimization.py": [],
-    "src/menipy/pipelines/pendant/outputs.py": [],
+    "src/menipy/pipelines/pendant/outputs.py": [
+      "src/menipy/models/context.py"
+    ],
     "src/menipy/pipelines/pendant/overlay.py": [],
-    "src/menipy/pipelines/pendant/physics.py": [],
-    "src/menipy/pipelines/pendant/preprocessing.py": [],
-    "src/menipy/pipelines/pendant/scaling.py": [],
+    "src/menipy/pipelines/pendant/physics.py": [
+      "src/menipy/models/context.py"
+    ],
+    "src/menipy/pipelines/pendant/preprocessing.py": [
+      "src/menipy/models/context.py"
+    ],
+    "src/menipy/pipelines/pendant/scaling.py": [
+      "src/menipy/models/context.py"
+    ],
     "src/menipy/pipelines/pendant/solver.py": [],
     "src/menipy/pipelines/pendant/stages.py": [
       "src/menipy/common/__init__.py",
@@ -385,7 +393,9 @@
       "src/menipy/pipelines/base.py",
       "src/menipy/pipelines/utils.py"
     ],
-    "src/menipy/pipelines/pendant/validation.py": [],
+    "src/menipy/pipelines/pendant/validation.py": [
+      "src/menipy/models/context.py"
+    ],
     "src/menipy/pipelines/runner.py": [
       "src/menipy/models/config.py",
       "src/menipy/models/context.py",
@@ -557,7 +567,12 @@
       "src/menipy/pipelines/base.py",
       "src/menipy/pipelines/capillary_rise/stages.py",
       "src/menipy/pipelines/oscillating/stages.py",
+      "src/menipy/pipelines/pendant/outputs.py",
+      "src/menipy/pipelines/pendant/physics.py",
+      "src/menipy/pipelines/pendant/preprocessing.py",
+      "src/menipy/pipelines/pendant/scaling.py",
       "src/menipy/pipelines/pendant/stages.py",
+      "src/menipy/pipelines/pendant/validation.py",
       "src/menipy/pipelines/runner.py",
       "src/menipy/pipelines/sessile/outputs.py",
       "src/menipy/pipelines/sessile/physics.py",
