@@ -1,13 +1,14 @@
 """
-STUB: Pendant Pipeline - Scaling Stage
-
-This file is a placeholder stub for the pixel-to-metric calibration.
-
-TODO: Implement scaling stage for pendant pipeline
-      - Define stage-specific logic
-      - Add proper error handling
-      - Write unit tests
-      - Update documentation
-
-See pendant_plan_pipeline.md for implementation details.
+Minimal scaling stage for the pendant pipeline.
+Sets a conservative default `px_per_mm` if none is present.
 """
+from __future__ import annotations
+
+from menipy.models.context import Context
+from typing import Optional
+
+
+def run(ctx: Context) -> Optional[Context]:
+    ctx.scale = ctx.scale or {}
+    ctx.scale.setdefault("px_per_mm", 1.0)
+    return ctx
