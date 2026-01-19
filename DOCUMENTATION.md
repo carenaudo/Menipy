@@ -108,3 +108,136 @@ Troubleshooting
 
 These changes improve UX (faster overlay updates) and make it straightforward to export the raw image separately from drawn overlays.
 
+---
+
+## Auto-Calibration Wizard
+
+Menipy includes a **1-click auto-calibration wizard** for automatic detection of ROI, needle, substrate, and drop regions.
+
+### Accessing the Wizard
+
+1. Load an image using the Browse button
+2. Click **Preview** to display the image
+3. Click the **🎯 Auto-Calibrate** button in the Calibration section of the Setup Panel
+
+### Wizard Controls
+
+| Control | Description |
+|---------|-------------|
+| **Detect** | Runs automatic detection on the current image |
+| **Region Checkboxes** | Enable/disable specific regions (ROI, Needle, Substrate, Drop) |
+| **Confidence Score** | Shows overall detection confidence (0-100%) |
+| **Apply All** | Accepts results and draws overlays on preview |
+| **Cancel** | Closes wizard without applying changes |
+
+### Pipeline-Specific Detection
+
+The wizard automatically selects the appropriate detection strategy based on the selected pipeline:
+
+#### Sessile Drop Detection
+- **Segmentation**: CLAHE contrast enhancement + adaptive thresholding
+- **Substrate**: Gradient-based detection in left/right image margins
+- **Needle**: Contour touching top border of image
+- **Drop**: Largest centered contour with convex hull smoothing
+- **Contact Points**: Where drop meets substrate baseline
+- **ROI**: Bounding box around drop + substrate
+
+#### Pendant Drop Detection
+- **Segmentation**: Otsu thresholding (optimal for high-contrast silhouettes)
+- **Needle**: Shaft line analysis at top of contour, walks down to find deviation
+- **Drop**: Largest centered contour (min 5% of image area)
+- **Contact Points**: Where drop contour deviates from needle shaft
+- **Apex**: Bottom of drop (maximum Y coordinate)
+- **ROI**: Bounding box from needle to apex
+
+### Overlay Colors
+
+When calibration is applied, detected regions are drawn as overlays:
+
+| Region | Color |
+|--------|-------|
+| ROI | Yellow |
+| Needle | Blue |
+| Substrate | Magenta |
+| Drop Contour | Green |
+| Contact Points | Red |
+| Apex | Red (cross marker) |
+
+### Technical Details
+
+The auto-calibration module is located at `src/menipy/common/auto_calibrator.py` and provides:
+
+- `AutoCalibrator` class - Main detection engine
+- `CalibrationResult` dataclass - Container for detection results
+- `run_auto_calibration()` - Convenience function for one-shot detection
+
+Unit tests are available in `tests/test_auto_calibrator.py` (25 tests covering sessile and pendant detection).
+
+---
+
+## Detection Plugins
+
+The detection algorithms are also available as modular plugins for use in pipelines or custom scripts.
+
+### Available Plugins
+
+| Plugin | File | Registered Names |
+|--------|------|------------------|
+| Needle | `plugins/detect_needle.py` | `sessile`, `pendant` |
+| ROI | `plugins/detect_roi.py` | `sessile`, `pendant`, `auto` |
+| Substrate | `plugins/detect_substrate.py` | `gradient`, `hough` |
+| Drop | `plugins/detect_drop.py` | `sessile`, `pendant` |
+| Apex | `plugins/detect_apex.py` | `sessile`, `pendant`, `auto` |
+
+### Quick Usage
+
+```python
+import sys
+sys.path.insert(0, 'plugins')
+import detect_needle
+
+from menipy.common.registry import NEEDLE_DETECTORS
+
+# Detect needle
+needle_rect = NEEDLE_DETECTORS['sessile'](image)
+# Returns: (x, y, width, height)
+```
+
+### High-Level Helper
+
+For convenience, use `auto_detect_features()` to run all detections at once:
+
+```python
+from menipy.common.detection_helpers import auto_detect_features
+
+# Detect all features for sessile drop
+features = auto_detect_features(image, pipeline="sessile")
+
+# features dict contains:
+# - substrate_line: ((x1, y1), (x2, y2))
+# - needle_rect: (x, y, w, h)
+# - drop_contour: Nx2 array
+# - contact_points: ((left), (right))
+# - apex_point: (x, y)
+# - roi_rect: (x, y, w, h)
+```
+
+### Pipeline Integration
+
+Detection plugins are automatically invoked during the preprocessing stage of sessile and pendant pipelines. Detected features are stored in the pipeline context:
+
+- `ctx.substrate_line` - Detected substrate baseline
+- `ctx.needle_rect` - Detected needle bounding box
+- `ctx.detected_contour` - Detected drop contour
+- `ctx.contact_points` - Detected contact points
+- `ctx.apex_point` - Detected apex
+- `ctx.detected_roi` - Detected ROI
+
+To disable auto-detection, set `ctx.auto_detect_features = False` before running the pipeline.
+
+### Example Script
+
+See `examples/detection_plugins_example.py` for a complete working example demonstrating:
+- Using individual detector plugins
+- Using the `auto_detect_features()` helper
+- Visualizing detection results

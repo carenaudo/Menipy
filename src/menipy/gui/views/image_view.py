@@ -215,6 +215,35 @@ class ImageView(QGraphicsView):
         self._overlays.append(item)
         self._register_overlay_item(item, tag)
 
+    def add_marker_rect(
+        self,
+        rect: QRectF,
+        *,
+        color: QColor = QColor(255, 255, 0),
+        width: float = 2.0,
+        tag: str | None = None,
+    ) -> None:
+        """Add a rectangle overlay.
+        
+        Args:
+            rect: Rectangle in scene coordinates (can be QRectF or tuple of x,y,w,h)
+            color: Outline color
+            width: Line width
+            tag: Optional tag for later retrieval/removal
+        """
+        if isinstance(rect, tuple):
+            x, y, w, h = rect
+            rect = QRectF(x, y, w, h)
+        
+        item = QGraphicsRectItem(rect)
+        pen = QPen(color)
+        pen.setWidthF(float(width))
+        item.setPen(pen)
+        item.setZValue(11_000)
+        self.scene().addItem(item)
+        self._overlays.append(item)
+        self._register_overlay_item(item, tag)
+
     def add_marker_contour(
         self,
         pts: np.ndarray,

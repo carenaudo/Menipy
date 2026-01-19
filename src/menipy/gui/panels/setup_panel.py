@@ -49,6 +49,7 @@ class SetupPanelController(QObject):
     config_stage_requested = Signal(str)
     pipeline_changed = Signal(str)
     source_mode_changed = Signal(str)
+    auto_calibrate_requested = Signal()
 
     def __init__(
         self,
@@ -93,6 +94,7 @@ class SetupPanelController(QObject):
         self.browseBtn: Optional[QToolButton] = panel.findChild(QToolButton, "browseBtn")
         self.batchBrowseBtn: Optional[QToolButton] = panel.findChild(QToolButton, "batchBrowseBtn")
         self.previewBtn: Optional[QToolButton] = panel.findChild(QToolButton, "previewBtn")
+        self.autoCalibrateBtn: Optional[QPushButton] = panel.findChild(QPushButton, "autoCalibrateBtn")
 
         # Calibration input widgets
         self.needleLengthSpin: Optional[QDoubleSpinBox] = panel.findChild(QDoubleSpinBox, "needleLengthSpin")
@@ -389,6 +391,8 @@ class SetupPanelController(QObject):
             self.batchBrowseBtn.clicked.connect(self.browse_batch_requested.emit)
         if self.previewBtn:
             self.previewBtn.clicked.connect(self.preview_requested.emit)
+        if self.autoCalibrateBtn:
+            self.autoCalibrateBtn.clicked.connect(self.auto_calibrate_requested.emit)
         # Note: Drawing tools removed in simplified calibration interface
         # The "Run All" button will now trigger the simple analysis.
         if self.runAllBtn:

@@ -1,0 +1,15 @@
+[discover.py] Discovered pipelines: {'capillary_rise': <class 'menipy.pipelines.capillary_rise.stages.CapillaryRisePipeline'>, 'captive_bubble': <class 'menipy.pipelines.captive_bubble.stages.CaptiveBubblePipeline'>, 'oscillating': <class 'menipy.pipelines.oscillating.stages.OscillatingPipeline'>, 'pendant': <class 'menipy.pipelines.pendant.stages.PendantPipeline'>, 'sessile': <class 'menipy.pipelines.sessile.stages.SessilePipeline'>}
+Traceback (most recent call last):
+  File "<string>", line 9, in <module>
+    w = MainWindow()
+  File "D:\programacion\Menipy\src\menipy\gui\mainwindow.py", line 194, in __init__
+    self.main_controller = MainController(self)
+                           ~~~~~~~~~~~~~~^^^^^^
+  File "D:\programacion\Menipy\src\menipy\gui\main_controller.py", line 75, in __init__
+    self._wire_signals()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\programacion\Menipy\src\menipy\gui\main_controller.py", line 101, in _wire_signals
+    self.setup_ctrl.auto_calibrate_requested.connect(self.on_auto_calibrate_requested)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'SetupPanelController' object has no attribute 'auto_calibrate_requested'
+QThread: Destroyed while thread '' is still running

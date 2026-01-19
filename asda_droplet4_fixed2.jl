@@ -462,13 +462,14 @@ function order_contour_points(points::Vector{Tuple{Int,Int}})
 
     return ordered
 end
+# ============================================================================
+# PASTE THIS FUNCTION TO REPLACE find_substrate_line_robust IN YOUR CODE
+# ============================================================================
 
 """
     find_substrate_line_robust(contour::Vector{Tuple{Int,Int}}, img_size::Tuple{Int,Int})
 
-Encuentra la línea de sustrato de manera robusta.
-Estrategia: encontrar los puntos donde el contorno cambia de descender a ascender
-(estos son los puntos de contacto con el sustrato).
+Versión corregida: Encuentra los puntos de contacto REALES entre gota y sustrato
 """
 function find_substrate_line_robust(contour::Vector{Tuple{Int,Int}}, img_size::Tuple{Int,Int})
     if isempty(contour) || length(contour) < 10
@@ -478,65 +479,207 @@ function find_substrate_line_robust(contour::Vector{Tuple{Int,Int}}, img_size::T
     x_coords = [p[1] for p in contour]
     y_coords = [p[2] for p in contour]
 
-    # Apex: punto más alto (menor Y en imagen)
+    # 1. Encontrar apex (punto más alto = MENOR Y en coordenadas de imagen)
     apex_idx = argmin(y_coords)
     apex_point = contour[apex_idx]
     apex_x = apex_point[1]
     apex_y = apex_point[2]
 
-    n = length(contour)
+    println("\n   🔍 DIAGNÓSTICO:")
+    println("   📍 Apex: $apex_point (punto más ALTO de la gota)")
 
-    # 🔧 Estrategia: El contorno está ordenado. Buscamos los puntos con MAYOR Y (más abajo)
-    # en cada lado del apex.
+    # 2. Estadísticas del contorno
+    y_min = minimum(y_coords)  # Parte superior (más alto en pantalla)
+    y_max = maximum(y_coords)  # Parte inferior (más bajo en pantalla)
+    x_min = minimum(x_coords)
+    x_max = maximum(x_coords)
 
-    # Separar contorno en lado izquierdo (antes del apex en el ordenamiento) y derecho (después)
-    # Pero el contorno puede empezar en cualquier punto, así que mejor usamos coordenada X
+    println("   📊 Rango X: $x_min → $x_max")
+    println("   📊 Rango Y: $y_min → $y_max")
+    println("   📊 Total puntos contorno: $(length(contour))")
 
-    # Puntos a la izquierda del apex (x < apex_x)
-    left_points = [(i, contour[i]) for i in 1:n if contour[i][1] < apex_x]
-    # Puntos a la derecha del apex (x > apex_x)  
-    right_points = [(i, contour[i]) for i in 1:n if contour[i][1] > apex_x]
+    # 3. ESTRATEGIA CORRECTA:
+    #    Los puntos de contacto están en la PARTE MÁS BAJA (mayor Y)
+    #    Buscamos en el 10% inferior del contorno
 
-    # Para cada lado, encontrar el punto con MAYOR Y (más abajo en la imagen)
-    if !isempty(left_points)
-        # Encontrar el punto más bajo del lado izquierdo
-        _, left_contact = left_points[argmax([p[2][2] for p in left_points])]
+    y_bottom_threshold = y_max - 0.1 * (y_max - y_min)
+
+    println("   🎯 Buscando contactos con Y ≥ $(round(y_bottom_threshold, digits=1))")
+
+    # 4. Filtrar puntos de la parte baja
+    bottom_region = [p for p in contour if p[2] >= y_bottom_threshold]
+
+    if isempty(bottom_region)
+        println("   ⚠️  Región baja vacía, usando umbral más permisivo...")
+        y_bottom_threshold = y_max - 0.3 * (y_max - y_min)
+        bottom_region = [p for p in contour if p[2] >= y_bottom_threshold]
+    end
+
+    println("   📊 Puntos en región baja: $(length(bottom_region))")
+
+    if isempty(bottom_region)
+        println("   ❌ ERROR: No hay puntos en la región baja del contorno!")
+        return Tuple{Int,Int}[], 0.0, (0, 0), (0, 0), 0.0, apex_point
+    end
+
+    # 5. CLAVE: Dividir la región baja en lado izquierdo y derecho del apex
+    left_region = [p for p in bottom_region if p[1] < apex_x]
+    right_region = [p for p in bottom_region if p[1] > apex_x]
+
+    println("   📊 Puntos región baja izquierda: $(length(left_region))")
+    println("   📊 Puntos región baja derecha: $(length(right_region))")
+
+    # 6. Encontrar el punto de contacto en cada lado
+    #    Contacto = punto más BAJO (mayor Y) + más EXTREMO (menor/mayor X)
+
+    if !isempty(left_region)
+        # Lado izquierdo: buscar los puntos con Y máximo
+        max_y_left = maximum([p[2] for p in left_region])
+
+        # Entre los puntos más bajos, tomar el más a la IZQUIERDA
+        bottom_left = [p for p in left_region if p[2] >= max_y_left - 3]
+        left_contact = bottom_left[argmin([p[1] for p in bottom_left])]
     else
-        # Fallback: usar el punto con menor X de todo el contorno
+        # Fallback: tomar el punto más a la izquierda de toda la región baja
+        left_contact = bottom_region[argmin([p[1] for p in bottom_region])]
+        println("   ⚠️  Usando fallback para contacto izquierdo")
+    end
+
+    if !isempty(right_region)
+        # Lado derecho: buscar los puntos con Y máximo
+        max_y_right = maximum([p[2] for p in right_region])
+
+        # Entre los puntos más bajos, tomar el más a la DERECHA
+        bottom_right = [p for p in right_region if p[2] >= max_y_right - 3]
+        right_contact = bottom_right[argmax([p[1] for p in bottom_right])]
+    else
+        # Fallback: tomar el punto más a la derecha de toda la región baja
+        right_contact = bottom_region[argmax([p[1] for p in bottom_region])]
+        println("   ⚠️  Usando fallback para contacto derecho")
+    end
+
+    println("\n   ✅ PUNTOS DE CONTACTO DETECTADOS:")
+    println("   📍 Contacto izquierdo: $left_contact")
+    println("   📍 Contacto derecho:   $right_contact")
+
+    # 7. VALIDACIONES
+    dx = right_contact[1] - left_contact[1]
+    dy = right_contact[2] - left_contact[2]
+
+    println("\n   🔍 VALIDACIONES:")
+    println("   ↔️  Separación horizontal (dx): $dx px")
+    println("   ↕️  Diferencia vertical (dy):   $dy px")
+
+    # Validar que los contactos estén bien separados
+    if dx < 30
+        println("   ❌ ERROR: Contactos muy cercanos (dx=$dx < 30)")
+        println("   🔧 Usando estrategia de extremos...")
+
+        # Estrategia de emergencia: usar los extremos X y Y
         left_contact = contour[argmin(x_coords)]
-    end
-
-    if !isempty(right_points)
-        # Encontrar el punto más bajo del lado derecho
-        _, right_contact = right_points[argmax([p[2][2] for p in right_points])]
-    else
-        # Fallback: usar el punto con mayor X de todo el contorno
         right_contact = contour[argmax(x_coords)]
+
+        # Ajustar a la parte baja
+        left_y_candidates = [p for p in contour if p[1] == left_contact[1]]
+        if !isempty(left_y_candidates)
+            left_contact = left_y_candidates[argmax([p[2] for p in left_y_candidates])]
+        end
+
+        right_y_candidates = [p for p in contour if p[1] == right_contact[1]]
+        if !isempty(right_y_candidates)
+            right_contact = right_y_candidates[argmax([p[2] for p in right_y_candidates])]
+        end
+
+        println("   🔧 Nuevos contactos: $left_contact, $right_contact")
+        dx = right_contact[1] - left_contact[1]
+        dy = right_contact[2] - left_contact[2]
     end
 
-    # 🔧 Refinamiento: si los puntos de contacto están muy separados en Y, 
-    # probablemente hay ruido. Buscar puntos más cercanos al baseline estimado.
-    baseline_estimate = max(left_contact[2], right_contact[2])
-
-    # Re-buscar en una banda cerca del baseline
-    tolerance = 10  # píxeles
-
-    left_near_base = [(i, p) for (i, p) in left_points if abs(p[2] - baseline_estimate) <= tolerance]
-    if !isempty(left_near_base)
-        # De los puntos cerca del baseline, tomar el de menor X (más a la izquierda)
-        _, left_contact = left_near_base[argmin([p[2][1] for p in left_near_base])]
+    # Validar que los contactos estén por debajo del apex
+    if left_contact[2] < apex_y || right_contact[2] < apex_y
+        println("   ⚠️  ADVERTENCIA: Algún contacto está por encima del apex!")
     end
 
-    right_near_base = [(i, p) for (i, p) in right_points if abs(p[2] - baseline_estimate) <= tolerance]
-    if !isempty(right_near_base)
-        # De los puntos cerca del baseline, tomar el de mayor X (más a la derecha)
-        _, right_contact = right_near_base[argmax([p[2][1] for p in right_near_base])]
-    end
-
-    # Baseline: promedio de Y de los puntos de contacto
+    # 8. Calcular baseline y línea de sustrato
     baseline_y = (left_contact[2] + right_contact[2]) / 2.0
 
-    # 🔧 Calcular inclinación del sustrato usando los puntos de contacto
+    if abs(dx) > 10
+        slope = dy / dx
+        intercept = left_contact[2] - slope * left_contact[1]
+    else
+        slope = 0.0
+        intercept = baseline_y
+    end
+
+    substrate_tilt = atand(slope)
+
+    # Generar línea de sustrato (extender más allá de los contactos)
+    x_min_line = left_contact[1] - 50
+    x_max_line = right_contact[1] + 50
+    substrate_line = [(Int(round(x)), Int(round(slope * x + intercept)))
+                      for x in range(x_min_line, x_max_line, length=150)]
+
+    println("\n   📏 RESULTADOS FINALES:")
+    println("   📏 Baseline Y: $(round(baseline_y, digits=1)) px")
+    println("   📏 Diámetro base: $dx px")
+    println("   📏 Inclinación sustrato: $(round(substrate_tilt, digits=2))°")
+    println("   📏 Altura gota (apex a baseline): $(round(baseline_y - apex_y, digits=1)) px")
+
+    return substrate_line, substrate_tilt, left_contact, right_contact, baseline_y, apex_point
+end
+
+
+# 🔧 FUNCIÓN ALTERNATIVA SI LA ANTERIOR NO FUNCIONA:
+# Esta usa un enfoque diferente basado en la curvatura del contorno
+
+"""
+    find_substrate_line_curvature(contour::Vector{Tuple{Int,Int}}, img_size::Tuple{Int,Int})
+
+Método alternativo: detecta puntos de contacto buscando cambios en la dirección vertical
+"""
+function find_substrate_line_curvature(contour::Vector{Tuple{Int,Int}}, img_size::Tuple{Int,Int})
+    if isempty(contour) || length(contour) < 10
+        return Tuple{Int,Int}[], 0.0, (0, 0), (0, 0), 0.0, (0, 0)
+    end
+
+    x_coords = [p[1] for p in contour]
+    y_coords = [p[2] for p in contour]
+
+    # Apex
+    apex_idx = argmin(y_coords)
+    apex_point = contour[apex_idx]
+    apex_x = apex_point[1]
+
+    # Detectar puntos donde Y deja de aumentar (puntos de contacto)
+    # Estos son los puntos donde la gota "toca" el sustrato
+
+    # Calcular derivada discreta de Y
+    dy = diff(y_coords)
+
+    # Encontrar dónde la derivada cambia de positiva a plana/negativa (lado izquierdo)
+    # y de negativa a plana/positiva (lado derecho)
+
+    # Para el lado izquierdo: buscar el último máximo local de Y antes del apex
+    left_candidates = [(i, contour[i]) for i in 1:apex_idx if contour[i][1] < apex_x]
+    if !isempty(left_candidates)
+        # Punto más bajo del lado izquierdo
+        left_contact = left_candidates[argmax([p[2][2] for p in left_candidates])]
+    else
+        left_contact = contour[1]
+    end
+
+    # Para el lado derecho: buscar el último máximo local de Y después del apex
+    right_candidates = [(i, contour[i]) for i in apex_idx:length(contour) if contour[i][1] > apex_x]
+    if !isempty(right_candidates)
+        # Punto más bajo del lado derecho
+        right_contact = right_candidates[argmax([p[2][2] for p in right_candidates])]
+    else
+        right_contact = contour[end]
+    end
+
+    baseline_y = (left_contact[2] + right_contact[2]) / 2.0
+
+    # Calcular línea de sustrato
     dx = right_contact[1] - left_contact[1]
     if abs(dx) > 10
         slope = (right_contact[2] - left_contact[2]) / dx
@@ -548,16 +691,14 @@ function find_substrate_line_robust(contour::Vector{Tuple{Int,Int}}, img_size::T
 
     substrate_tilt = atand(slope)
 
-    # Generar línea de sustrato (extender un poco más allá de los contactos)
     x_min = left_contact[1] - 30
     x_max = right_contact[1] + 30
-    substrate_line = [(Int(round(x)), Int(round(slope * x + intercept))) for x in range(x_min, x_max, length=100)]
+    substrate_line = [(Int(round(x)), Int(round(slope * x + intercept)))
+                      for x in range(x_min, x_max, length=100)]
 
-    println("   📍 Apex: $(apex_point)")
-    println("   📏 Baseline Y: $(round(baseline_y, digits=1))")
-    println("   📍 Contacto Izq: $(left_contact)")
-    println("   📍 Contacto Der: $(right_contact)")
-    println("   📏 Diámetro base: $(abs(right_contact[1] - left_contact[1])) px")
+    println("   [ALT] Contacto Izq: $(left_contact)")
+    println("   [ALT] Contacto Der: $(right_contact)")
+    println("   [ALT] Baseline Y: $(round(baseline_y, digits=1))")
 
     return substrate_line, substrate_tilt, left_contact, right_contact, baseline_y, apex_point
 end
@@ -928,14 +1069,44 @@ EJEMPLO COMPLETO:
   - Si ángulos están raros → ajusta fit_range
 
 """)
+println("""
+╔════════════════════════════════════════════════════════════════════╗
+║              FIX COMPLETO - Contact Point Detection               ║
+╚════════════════════════════════════════════════════════════════════╝
 
+INSTRUCCIONES:
+  1. Copia esta función completa
+  2. Reemplaza find_substrate_line_robust en tu archivo original
+  3. Ejecuta el análisis nuevamente
+
+CAMBIOS CLAVE:
+  ✅ Busca contactos en el 10% INFERIOR de la gota (mayor Y)
+  ✅ Divide en lado izquierdo/derecho basado en el apex
+  ✅ En cada lado toma: punto MÁS BAJO + MÁS EXTREMO
+  ✅ Validaciones múltiples con mensajes claros
+  ✅ Estrategias fallback para casos problemáticos
+  ✅ Diagnóstico completo con emojis para fácil lectura
+
+DIAGNÓSTICO:
+  Los mensajes mostrarán:
+  - 📍 Ubicación del apex y contactos
+  - 📊 Estadísticas del contorno
+  - 🎯 Región de búsqueda
+  - ↔️ Separación entre contactos
+  - ⚠️ Advertencias si algo está mal
+
+Si aún falla:
+  - Verifica que la imagen binarizada sea correcta (debug=true)
+  - Ajusta threshold (prueba 0.3, 0.4, 0.5, 0.6)
+  - Verifica que invert esté correcto
+""")
 
 # Descomentar y modificar con tu ruta de imagen:
 filename = "prueba sesil 2.png"
 image_path = joinpath(@__DIR__, "data", "samples", filename)
 results, img, img_cleaned = analyze_droplet(image_path,
-    blur_sigma=2,
-    threshold=0.3,
+    blur_sigma=1,
+    threshold=0.1,
     fit_range=25,
     invert=false,       # Gota oscura, fondo claro
     pixel_size=1.0,

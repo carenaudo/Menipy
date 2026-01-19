@@ -66,7 +66,11 @@ class SessilePipeline(PipelineBase):
         else:
             logger.warning("No image or image path provided in context for acquisition stage.")
         return ctx
-    def do_preprocessing(self, ctx: Context) -> Optional[Context]: return ctx
+
+    def do_preprocessing(self, ctx: Context) -> Optional[Context]:
+        """Run preprocessing with automatic feature detection."""
+        from menipy.pipelines.sessile.preprocessing import do_preprocessing
+        return do_preprocessing(ctx)
 
     def do_geometry(self, ctx: Context) -> Optional[Context]:
         xy = ensure_contour(ctx)

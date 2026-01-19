@@ -48,6 +48,7 @@ class SetupPanelController(QObject):
     config_stage_requested = Signal(str)
     pipeline_changed = Signal(str)
     source_mode_changed = Signal(str)
+    auto_calibrate_requested = Signal()
 
     def __init__(
         self,
@@ -97,6 +98,7 @@ class SetupPanelController(QObject):
         self.browseBtn: Optional[QToolButton] = panel.findChild(QToolButton, "browseBtn")
         self.batchBrowseBtn: Optional[QToolButton] = panel.findChild(QToolButton, "batchBrowseBtn")
         self.previewBtn: Optional[QToolButton] = panel.findChild(QToolButton, "previewBtn")
+        self.autoCalibrateBtn: Optional[QPushButton] = panel.findChild(QPushButton, "autoCalibrateBtn")
 
         self.drawPointBtn: Optional[QPushButton] = panel.findChild(QPushButton, "drawPointBtn")
         self.drawLineBtn: Optional[QPushButton] = panel.findChild(QPushButton, "drawLineBtn")
@@ -271,6 +273,8 @@ class SetupPanelController(QObject):
             self.batchBrowseBtn.clicked.connect(lambda: self.browse_batch_requested.emit())
         if self.previewBtn:
             self.previewBtn.clicked.connect(lambda: self.preview_requested.emit())
+        if self.autoCalibrateBtn:
+            self.autoCalibrateBtn.clicked.connect(lambda: self.auto_calibrate_requested.emit())
         if self.drawPointBtn:
             self.drawPointBtn.clicked.connect(lambda: self.draw_mode_requested.emit(DRAW_POINT))
         if self.drawLineBtn:

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Tuple
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 from .config import EdgeDetectionSettings, PreprocessingSettings
 from .frame import Frame
@@ -20,6 +20,7 @@ class Context(BaseModel):
     Mutable bag of state shared across pipeline stages.
     Pipelines freely attach fields here. Commonly used keys are predeclared.
     """
+    model_config = ConfigDict(extra='allow')
 
     # Acquisition / images
     frames: Any | None = None  # np.ndarray or list[np.ndarray]

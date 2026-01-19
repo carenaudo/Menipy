@@ -9,6 +9,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Auto-Calibration Wizard**
+  - New 1-click auto-calibration wizard for automatic detection of ROI, needle, substrate, and drop regions.
+  - Accessible via the **🎯 Auto-Calibrate** button in the Setup Panel's Calibration section.
+  - Pipeline-specific detection strategies:
+    - **Sessile**: CLAHE + adaptive thresholding, gradient-based substrate detection, contact points at substrate
+    - **Pendant**: Otsu thresholding, needle shaft line analysis, apex detection at drop bottom
+  - Modal wizard dialog with live preview, region checkboxes, and confidence scores.
+  - Detected regions drawn as colored overlays (ROI=yellow, Needle=blue, Substrate=magenta, Drop=green, Contact=red).
+  - Files added:
+    - `src/menipy/common/auto_calibrator.py` (detection engine)
+    - `src/menipy/gui/dialogs/calibration_wizard_dialog.py` (wizard UI)
+    - `tests/test_auto_calibrator.py` (25 unit tests)
+  - Files modified:
+    - `src/menipy/gui/views/setup_panel.ui` (added button)
+    - `src/menipy/gui/controllers/setup_panel_controller.py` (signal wiring)
+    - `src/menipy/gui/main_controller.py` (wizard launch + result handling)
+
+- **Detection Plugins**
+  - New plugin architecture for modular detection algorithms.
+  - **Function-based plugins** (return values directly):
+    - `detect_needle.py` - Sessile (top-border contour) and pendant (shaft line analysis)
+    - `detect_roi.py` - Sessile (drop+substrate box) and pendant (needle-to-apex box)
+    - `detect_substrate.py` - Gradient-based and Hough line detection
+    - `detect_drop.py` - Sessile (adaptive threshold) and pendant (Otsu threshold)
+    - `detect_apex.py` - Top of dome (sessile) or bottom of drop (pendant)
+  - **Stage-based preprocessor plugins** (operate on ctx, follow pipeline pattern):
+    - `preproc_detect_substrate.py` - Detects substrate line, stores in ctx
+    - `preproc_detect_needle.py` - Detects needle region, stores in ctx
+    - `preproc_detect_drop.py` - Detects drop contour, stores in ctx
+    - `preproc_detect_roi.py` - Computes ROI from detected features
+    - `preproc_auto_detect.py` - Chains all detection steps in correct order
+  - Added 5 detector registries: `needle_detectors`, `roi_detectors`, `substrate_detectors`, `drop_detectors`, `apex_detectors`
+  - Unit tests: 51 total (25 calibrator + 14 function plugins + 13 stage plugins)
+  - Files modified:
+    - `src/menipy/common/registry.py` (new registries and register functions)
+    - `src/menipy/pipelines/sessile/preprocessing.py` (uses auto_detect plugin)
+    - `src/menipy/pipelines/pendant/preprocessing.py` (uses auto_detect plugin)
+
+
 - **Preprocessing: "Fill Holes" option**
   - Adds a preprocessing option to fill interior holes in the region of interest (ROI) mask and remove spurious contour points close to the contact line. This helps produce cleaner droplet contours for downstream geometry and fitting stages.
   - GUI: available in the Preprocessing Configuration dialog under the new "Fill Holes" page (checkbox + numeric parameters).

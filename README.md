@@ -59,6 +59,39 @@ iterations of the tool.
    Automatic mode detects the two vertical edges of the needle using Canny edge
    detection and a Hough transform to measure their separation.
 
+## Auto-Calibration Wizard
+
+Menipy includes a **1-click auto-calibration wizard** for automatic detection of ROI, needle, and drop regions.
+
+### How to Use
+
+1. Load an image using the Browse button
+2. Click **Preview** to display the image
+3. Click the **🎯 Auto-Calibrate** button in the Calibration section
+4. In the wizard dialog:
+   - Click **Detect** to run automatic detection
+   - Review detected regions (shown with colored overlays)
+   - Toggle region checkboxes to enable/disable specific detections
+   - Click **Apply All** to accept results
+
+### Automatic Detection Features
+
+| Region | Sessile Drop | Pendant Drop |
+|--------|-------------|--------------|
+| **ROI** | Bounding box around drop + substrate | Bounding box from needle to apex |
+| **Needle** | Contour touching top border | Shaft lines at top of contour |
+| **Substrate** | Gradient-based detection in margins | N/A |
+| **Drop Contour** | Largest centered contour with convex hull | Largest centered contour |
+| **Contact Points** | Where drop meets substrate | Where drop deviates from needle shaft |
+| **Apex** | N/A | Bottom of drop (max Y) |
+
+### Detection Algorithms
+
+- **Sessile Pipeline**: Uses CLAHE contrast enhancement + adaptive thresholding for robust detection across varied lighting conditions
+- **Pendant Pipeline**: Uses Otsu thresholding (optimal for high-contrast silhouettes) + shaft line analysis for needle detection
+
+The wizard automatically selects the appropriate detection strategy based on the selected pipeline.
+
 ## Image Processing
 
 Segmented masks are cleaned with morphological operations and reduced to the largest external contour. This ensures internal artifacts do not affect volume or fitting calculations.

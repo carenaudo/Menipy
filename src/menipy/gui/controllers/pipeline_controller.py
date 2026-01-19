@@ -260,9 +260,23 @@ class PipelineController:
                     p2 = substrate_line.p2() - roi_rect.topLeft()
                     ctx.substrate_line = ((p1.x(), p1.y()), (p2.x(), p2.y()))
 
-            # Set scale and physics from calibration UI
-            calibration_params = self.setup_ctrl.get_calibration_params()
-            px_per_mm = calibration_params["needle_length_mm"] / 100.0  # Assume 100px needle for now
+            # Set scale using actual detected needle diameter (width)
+            # Get calibration params from the setup panel (not controller)
+            setup_panel = getattr(self.window, 'setupPanel', None)
+            if setup_panel and hasattr(setup_panel, 'get_calibration_params'):
+                calibration_params = setup_panel.get_calibration_params()
+            else:
+                calibration_params = {"needle_length_mm": 0.54, "drop_density_kg_m3": 1000.0, "fluid_density_kg_m3": 1.2}
+            needle_diameter_mm = calibration_params.get("needle_length_mm", 0.54)
+            
+            # Get actual needle width from detected needle_rect overlay
+            needle_rect = self.preview_panel.needle_rect() if hasattr(self.preview_panel, 'needle_rect') else None
+            if needle_rect and needle_diameter_mm > 0:
+                needle_diameter_px = needle_rect[2]  # (x, y, w, h) -> w (width = diameter)
+                px_per_mm = needle_diameter_px / needle_diameter_mm
+            else:
+                # Fallback: use approximate estimate
+                px_per_mm = 100.0 / max(needle_diameter_mm, 0.1)
             ctx.scale = {"px_per_mm": px_per_mm}
 
             # Set edge detection settings
@@ -270,10 +284,9 @@ class PipelineController:
                 ctx.edge_detection_settings = self.edge_detection_ctrl.settings
 
             # Set physics parameters from calibration
-            calibration_params = self.setup_ctrl.get_calibration_params()
             ctx.physics = {
-                "rho1": calibration_params["drop_density_kg_m3"],  # Drop density
-                "rho2": calibration_params["fluid_density_kg_m3"],  # Fluid density
+                "rho1": calibration_params.get("drop_density_kg_m3", 1000.0),  # Drop density
+                "rho2": calibration_params.get("fluid_density_kg_m3", 1.2),  # Fluid density
                 "g": 9.80665,  # Gravity
             }
 
@@ -319,10 +332,35 @@ class PipelineController:
         image = params.get("image")
         cam_id = params.get("cam_id")
         frames = params.get("frames")
+        
+        # Calculate scale from detected needle diameter (width)
+        # Get calibration params from the setup panel (not controller)
+        setup_panel = getattr(self.window, 'setupPanel', None)
+        if setup_panel and hasattr(setup_panel, 'get_calibration_params'):
+            calibration_params = setup_panel.get_calibration_params()
+        else:
+            # Fallback default values
+            calibration_params = {"needle_length_mm": 0.54}
+        needle_diameter_mm = calibration_params.get("needle_length_mm", 0.54)
+        needle_rect = overlays.get('needle_rect')
+        if needle_rect and needle_diameter_mm > 0:
+            needle_diameter_px = needle_rect[2]  # (x, y, w, h) -> w (width = diameter)
+            px_per_mm = needle_diameter_px / needle_diameter_mm
+        else:
+            px_per_mm = 100.0 / max(needle_diameter_mm, 0.1)
 
         self.window.statusBar().showMessage(f"Running {name}.")
 
         run_kwargs = dict(overlays)
+        # Pass structured context data
+        run_kwargs['calibration_params'] = calibration_params
+        run_kwargs['scale'] = {"px_per_mm": px_per_mm}
+        run_kwargs['physics'] = {
+            "rho1": calibration_params.get("drop_density_kg_m3", 1000.0),
+            "rho2": calibration_params.get("fluid_density_kg_m3", 1.2),
+            "g": 9.80665,
+        }
+        
         if image is not None:
             run_kwargs['image'] = image
         if cam_id is not None:

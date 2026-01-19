@@ -78,7 +78,11 @@ class PendantPipeline(PipelineBase):
             ctx.image = frames[0]
             self.logger.info(f"[do_acquisition] Loaded {len(frames)} frames from disk")
         return ctx
-    def do_preprocessing(self, ctx: Context) -> Optional[Context]: return ctx
+
+    def do_preprocessing(self, ctx: Context) -> Optional[Context]:
+        """Run preprocessing with automatic feature detection."""
+        from menipy.pipelines.pendant.preprocessing import do_preprocessing
+        return do_preprocessing(ctx)
 
     def do_geometry(self, ctx: Context) -> Optional[Context]:
         xy = ensure_contour(ctx)

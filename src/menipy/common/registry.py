@@ -61,6 +61,13 @@ OUTPUTS = Registry("outputs")
 OVERLAYERS = Registry("overlayers")
 VALIDATORS = Registry("validators")
 
+# Detection registries for auto-calibration plugins
+NEEDLE_DETECTORS = Registry("needle_detectors")
+ROI_DETECTORS = Registry("roi_detectors")
+SUBSTRATE_DETECTORS = Registry("substrate_detectors")
+DROP_DETECTORS = Registry("drop_detectors")
+APEX_DETECTORS = Registry("apex_detectors")
+
 
 # Legacy wrapper functions for backward compatibility
 def register_edge(name: str, fn: Callable[..., Any]) -> None:
@@ -96,6 +103,22 @@ def register_overlayer(name: str, fn: Callable[..., Any]) -> None:
 def register_validator(name: str, fn: Callable[..., Any]) -> None:
     VALIDATORS.register(name, fn)
 
+# Detector registration functions
+def register_needle_detector(name: str, fn: Callable[..., Any]) -> None:
+    NEEDLE_DETECTORS.register(name, fn)
+
+def register_roi_detector(name: str, fn: Callable[..., Any]) -> None:
+    ROI_DETECTORS.register(name, fn)
+
+def register_substrate_detector(name: str, fn: Callable[..., Any]) -> None:
+    SUBSTRATE_DETECTORS.register(name, fn)
+
+def register_drop_detector(name: str, fn: Callable[..., Any]) -> None:
+    DROP_DETECTORS.register(name, fn)
+
+def register_apex_detector(name: str, fn: Callable[..., Any]) -> None:
+    APEX_DETECTORS.register(name, fn)
+
 
 def get_registry_snapshot() -> Dict[str, Dict[str, Callable[..., Any]]]:
     """Return a snapshot of all registries (useful for plugin discovery/debug).
@@ -116,4 +139,9 @@ def get_registry_snapshot() -> Dict[str, Dict[str, Callable[..., Any]]]:
         "outputs": dict(OUTPUTS),
         "overlayers": dict(OVERLAYERS),
         "validators": dict(VALIDATORS),
+        "needle_detectors": dict(NEEDLE_DETECTORS),
+        "roi_detectors": dict(ROI_DETECTORS),
+        "substrate_detectors": dict(SUBSTRATE_DETECTORS),
+        "drop_detectors": dict(DROP_DETECTORS),
+        "apex_detectors": dict(APEX_DETECTORS),
     }

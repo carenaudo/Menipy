@@ -1,0 +1,57 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.8, pytest-9.0.1, pluggy-1.6.0
+PySide6 6.10.1 -- Qt runtime 6.10.1 -- Qt compiled 6.10.1
+rootdir: D:\programacion\Menipy
+configfile: pyproject.toml
+plugins: cov-7.0.0, qt-4.5.0
+collected 11 items
+
+tests\test_setup_panel.py F.F........                                    [100%]
+
+================================== FAILURES ===================================
+_______________________ test_radio_button_toggles_mode ________________________
+tests\test_setup_panel.py:26: in test_radio_button_toggles_mode
+    mock_signal.assert_called_with(setup_panel_controller.MODE_SINGLE)
+D:\Usuarios\crenaudo\AppData\Local\Python\pythoncore-3.13-64\Lib\unittest\mock.py:970: in assert_called_with
+    raise AssertionError(error_message)
+E   AssertionError: expected call not found.
+E   Expected: mock('single')
+E     Actual: not called.
+---------------------------- Captured Qt messages -----------------------------
+QtWarningMsg: Cannot open file ':/icons/overlay.svg', because: No such file or directory
+QtWarningMsg: Cannot open file ':/icons/sessile.svg', because: No such file or directory
+QtWarningMsg: Cannot open file ':/icons/pendant.svg', because: No such file or directory
+QtWarningMsg: Cannot open file ':/icons/oscillating.svg', because: No such file or directory
+QtWarningMsg: Cannot open file ':/icons/capillary_rise.svg', because: No such file or directory
+QtWarningMsg: Cannot open file ':/icons/captive_bubble.svg', because: No such file or directory
+----------------------------- Captured log setup ------------------------------
+INFO     menipy.gui.controllers.camera_manager:camera_manager.py:91 Camera preview stopped
+INFO     menipy.gui.main_controller:main_controller.py:88 MainController initialized and signals wired.
+INFO     menipy.gui.mainwindow:mainwindow.py:205 Wiring main window menu actions...
+---------------------------- Captured log teardown ----------------------------
+INFO     menipy.gui.main_controller:main_controller.py:493 MainController shutting down...
+INFO     menipy.gui.controllers.layout_manager:layout_manager.py:41 Window state and settings saved.
+____________________ test_batch_browse_button_emits_signal ____________________
+tests\test_setup_panel.py:55: in test_batch_browse_button_emits_signal
+    mock_signal.assert_called_once()
+D:\Usuarios\crenaudo\AppData\Local\Python\pythoncore-3.13-64\Lib\unittest\mock.py:958: in assert_called_once
+    raise AssertionError(msg)
+E   AssertionError: Expected 'mock' to have been called once. Called 0 times.
+---------------------------- Captured Qt messages -----------------------------
+QtWarningMsg: Cannot open file ':/icons/overlay.svg', because: No such file or directory
+QtWarningMsg: Cannot open file ':/icons/sessile.svg', because: No such file or directory
+QtWarningMsg: Cannot open file ':/icons/pendant.svg', because: No such file or directory
+QtWarningMsg: Cannot open file ':/icons/oscillating.svg', because: No such file or directory
+QtWarningMsg: Cannot open file ':/icons/capillary_rise.svg', because: No such file or directory
+QtWarningMsg: Cannot open file ':/icons/captive_bubble.svg', because: No such file or directory
+----------------------------- Captured log setup ------------------------------
+INFO     menipy.gui.controllers.camera_manager:camera_manager.py:91 Camera preview stopped
+INFO     menipy.gui.main_controller:main_controller.py:88 MainController initialized and signals wired.
+INFO     menipy.gui.mainwindow:mainwindow.py:205 Wiring main window menu actions...
+---------------------------- Captured log teardown ----------------------------
+INFO     menipy.gui.main_controller:main_controller.py:493 MainController shutting down...
+INFO     menipy.gui.controllers.layout_manager:layout_manager.py:41 Window state and settings saved.
+=========================== short test summary info ===========================
+FAILED tests/test_setup_panel.py::test_radio_button_toggles_mode - AssertionE...
+FAILED tests/test_setup_panel.py::test_batch_browse_button_emits_signal - Ass...
+=================== 2 failed, 9 passed in 70.51s (0:01:10) ====================

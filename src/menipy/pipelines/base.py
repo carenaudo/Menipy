@@ -165,11 +165,16 @@ class PipelineBase:
         ctx.edge_detection_settings = kwargs["edge_detection_settings"]
 
 
-        # Measurement tracking (for results history overlay display)
         if "measurement_id" in kwargs:
             ctx.measurement_id = kwargs["measurement_id"]
         if "measurement_sequence" in kwargs:
             ctx.measurement_sequence = kwargs["measurement_sequence"]
+
+        # Explicitly set scale and physics if provided
+        if "scale" in kwargs:
+            ctx.scale = kwargs["scale"]
+        if "physics" in kwargs:
+            ctx.physics = kwargs["physics"]
 
         return ctx
 

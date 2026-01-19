@@ -31,6 +31,9 @@ class _Job(QRunnable):
         preprocessing_settings=None,
         preprocessing_markers=None,
         edge_detection_settings=None,
+        calibration_params=None,
+        scale=None,
+        physics=None,
         stages: Optional[list[str]] = None,
     ) -> None:
         super().__init__()
@@ -45,6 +48,9 @@ class _Job(QRunnable):
         self.preprocessing_settings = preprocessing_settings
         self.preprocessing_markers = preprocessing_markers
         self.edge_detection_settings = edge_detection_settings
+        self.calibration_params = calibration_params
+        self.scale = scale
+        self.physics = physics
         self.stages = stages
 
     def run(self):
@@ -65,6 +71,9 @@ class _Job(QRunnable):
                 'needle_rect': self.needle_rect,
                 'contact_line': self.contact_line,
                 'preprocessing_markers': self.preprocessing_markers,
+                'calibration_params': self.calibration_params,
+                'scale': self.scale,
+                'physics': self.physics,
                 'image': self.image,
                 'camera': self.camera,
                 'frames': self.frames,

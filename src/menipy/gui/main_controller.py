@@ -98,6 +98,7 @@ class MainController(QObject):
         self.setup_ctrl.analyze_requested.connect(self.analyze_current_view)
         self.setup_ctrl.config_stage_requested.connect(self.dialog_coordinator.show_dialog_for_stage)
         self.setup_ctrl.pipeline_changed.connect(self.on_pipeline_changed)
+        self.setup_ctrl.auto_calibrate_requested.connect(self.on_auto_calibrate_requested)
 
         # Preview Panel
         self.setup_ctrl.draw_mode_requested.connect(self.preview_panel.set_draw_mode)
@@ -196,6 +197,134 @@ class MainController(QObject):
                 return
 
         self.window.statusBar().showMessage('No preview source available', 2000)
+
+    @Slot()
+    def on_auto_calibrate_requested(self) -> None:
+        """Launch auto-calibration wizard."""
+        image = self._load_preprocessing_image()
+        if image is None:
+            self.window.statusBar().showMessage('No image loaded for calibration', 2000)
+            QMessageBox.warning(
+                self.window,
+                'Auto-Calibrate',
+                'Please load an image before running auto-calibration.'
+            )
+            return
+        
+        pipeline_name = self.setup_ctrl.current_pipeline_name() or 'sessile'
+        
+        try:
+            from menipy.gui.dialogs.calibration_wizard_dialog import CalibrationWizardDialog
+            
+            wizard = CalibrationWizardDialog(image, pipeline_name, self.window)
+            wizard.calibration_complete.connect(self._on_calibration_complete)
+            wizard.exec()
+        except Exception as exc:
+            logger.exception('Failed to open calibration wizard')
+            QMessageBox.critical(
+                self.window,
+                'Auto-Calibrate Error',
+                f'Failed to open calibration wizard:\n{exc}'
+            )
+    
+    @Slot(object)
+    def _on_calibration_complete(self, result) -> None:
+        """Apply calibration results to preview and settings."""
+        try:
+            from menipy.common.auto_calibrator import CalibrationResult
+            if not isinstance(result, CalibrationResult):
+                return
+            
+            iv = getattr(self.preview_panel, 'image_view', None)
+            if not iv:
+                return
+            
+            from PySide6.QtCore import QRectF, QPointF
+            from PySide6.QtGui import QColor
+            import numpy as np
+            
+            # Clear existing calibration overlays (use both old and new tag names)
+            for tag in ('roi', 'needle', 'contact_line', 'cal_roi', 'cal_needle', 'cal_substrate', 'cal_drop', 'cal_contact_left', 'cal_contact_right'):
+                try:
+                    iv.remove_overlay(tag)
+                except Exception:
+                    pass
+            
+            # Draw ROI rectangle (yellow) - use 'roi' tag for preview_panel compatibility
+            if result.roi_rect:
+                x, y, w, h = result.roi_rect
+                iv.add_marker_rect(
+                    QRectF(x, y, w, h),
+                    color=QColor(255, 255, 0),
+                    width=2.0,
+                    tag='roi'
+                )
+                # Store ROI for pipeline use
+                if self.preprocessing_ctrl:
+                    self.preprocessing_ctrl.update_geometry(roi=result.roi_rect)
+                logger.info(f'Calibration: ROI set to {result.roi_rect}')
+            
+            # Draw needle rectangle (blue) - use 'needle' tag for preview_panel compatibility
+            if result.needle_rect:
+                x, y, w, h = result.needle_rect
+                iv.add_marker_rect(
+                    QRectF(x, y, w, h),
+                    color=QColor(0, 0, 255),
+                    width=2.0,
+                    tag='needle'
+                )
+                logger.info(f'Calibration: needle region set to {result.needle_rect}')
+            
+            # Draw substrate line (magenta) - use 'contact_line' tag
+            if result.substrate_line:
+                p1, p2 = result.substrate_line
+                iv.add_marker_line(
+                    QPointF(p1[0], p1[1]),
+                    QPointF(p2[0], p2[1]),
+                    color=QColor(255, 0, 255),
+                    tag='contact_line'
+                )
+                # Store contact line for pipeline use
+                if self.preprocessing_ctrl:
+                    self.preprocessing_ctrl.update_geometry(contact_line=result.substrate_line)
+            
+            # Draw contact points (red)
+            if result.contact_points:
+                left, right = result.contact_points
+                iv.add_marker_point(
+                    QPointF(left[0], left[1]),
+                    color=QColor(255, 0, 0),
+                    radius=5.0,
+                    tag='cal_contact_left'
+                )
+                iv.add_marker_point(
+                    QPointF(right[0], right[1]),
+                    color=QColor(255, 0, 0),
+                    radius=5.0,
+                    tag='cal_contact_right'
+                )
+            
+            # Draw drop contour (green)
+            if result.drop_contour is not None:
+                contour = np.asarray(result.drop_contour)
+                if contour.size > 0:
+                    iv.add_marker_contour(
+                        contour,
+                        color=QColor(0, 255, 0),
+                        width=2.0,
+                        tag='cal_drop'
+                    )
+            
+            # Report success
+            conf = result.confidence_scores.get('overall', 0.0)
+            self.window.statusBar().showMessage(
+                f'Calibration complete (confidence: {conf*100:.0f}%)', 3000
+            )
+            logger.info(f'Calibration applied: ROI={result.roi_rect}, needle={result.needle_rect}, substrate={result.substrate_line is not None}')
+            
+        except Exception as exc:
+            logger.exception('Failed to apply calibration results')
+            self.window.statusBar().showMessage('Failed to apply calibration', 2000)
 
     @Slot()
     def stop_pipeline(self):

@@ -174,14 +174,33 @@ QPushButton:checked { background-color: #50E3C2; color: white; font-weight: bold
        </widget>
       </item>
       <item row="0" column="1">
-       <widget class="QToolButton" name="previewBtn">
-        <property name="toolTip">
-         <string>Preview selected image</string>
-        </property>
-        <property name="text">
-         <string>▶</string>
-        </property>
-       </widget>
+       <layout class="QHBoxLayout" name="previewRow">
+        <item>
+         <widget class="QToolButton" name="previewBtn">
+          <property name="toolTip">
+           <string>Preview selected image</string>
+          </property>
+          <property name="text">
+           <string>▶</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="autoCalibrateBtn">
+          <property name="toolTip">
+           <string>Automatically detect ROI, needle, and substrate regions</string>
+          </property>
+          <property name="text">
+           <string>🎯 Auto-Calibrate</string>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton { background-color: #E67E22; color: white; border-radius: 4px; padding: 4px 8px; font-weight: bold; }
+QPushButton:hover { background-color: #D35400; }
+QPushButton:disabled { background-color: #bdc3c7; }</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
       <item row="1" column="0">
        <widget class="QLabel" name="needleLengthLabel">
