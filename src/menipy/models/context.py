@@ -1,9 +1,10 @@
 """
 Context model for sharing state between pipeline stages.
 """
+
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from pydantic import BaseModel, Field, ConfigDict
 
@@ -59,7 +60,9 @@ class Context(BaseModel):
     error: Optional[str] = None
 
     # Measurement tracking (for results history)
-    measurement_id: Optional[str] = None  # Unique identifier (e.g., "20251204_150000_001")
+    measurement_id: Optional[str] = (
+        None  # Unique identifier (e.g., "20251204_150000_001")
+    )
     measurement_sequence: Optional[int] = None  # Sequential number (e.g., 42)
 
     # Settings for pipeline stages
@@ -72,8 +75,12 @@ class Context(BaseModel):
     # Geometric regions and overlays
     roi: Optional[Tuple[int, int, int, int]] = None  # (x, y, width, height)
     needle_rect: Optional[Tuple[int, int, int, int]] = None  # (x, y, width, height)
-    contact_line: Optional[Tuple[Tuple[int, int], Tuple[int, int]]] = None  # ((x1,y1), (x2,y2))
-    substrate_line: Optional[Tuple[Tuple[float, float], Tuple[float, float]]] = None  # ((x1,y1), (x2,y2))
+    contact_line: Optional[Tuple[Tuple[int, int], Tuple[int, int]]] = (
+        None  # ((x1,y1), (x2,y2))
+    )
+    substrate_line: Optional[Tuple[Tuple[float, float], Tuple[float, float]]] = (
+        None  # ((x1,y1), (x2,y2))
+    )
     roi_mask: Any | None = None  # Binary mask for ROI
     # Fields populated by preprocessing.run (compatibility)
     preprocessed_state: Any | None = None

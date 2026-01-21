@@ -1,12 +1,14 @@
 """
 Plugin management service for GUI.
 """
+
 # src/adsa/gui/services/plugin_service.py
 from __future__ import annotations
 from pathlib import Path
 from typing import Sequence
 from menipy.common.plugin_db import PluginDB
 from menipy.common.plugins import discover_into_db, load_active_plugins
+
 
 class PluginService:
     def __init__(self, db: PluginDB):

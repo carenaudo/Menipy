@@ -1,9 +1,17 @@
 """SOP management helper for Menipy GUI."""
+
 from __future__ import annotations
 
 from typing import Any, Callable, Optional, Sequence
 
-from PySide6.QtWidgets import QListWidget, QListWidgetItem, QComboBox, QMessageBox, QInputDialog, QWidget
+from PySide6.QtWidgets import (
+    QListWidget,
+    QListWidgetItem,
+    QComboBox,
+    QMessageBox,
+    QInputDialog,
+    QWidget,
+)
 
 try:
     from menipy.gui.services.sop_service import Sop
@@ -92,7 +100,11 @@ class SopController:
                 sop_obj = Sop(name=name, include_stages=include, params={})
                 self.sops.upsert(pipeline_key, sop_obj)
             else:
-                sop_like = type("SopLike", (), {"name": name, "include_stages": include, "params": {}})
+                sop_like = type(
+                    "SopLike",
+                    (),
+                    {"name": name, "include_stages": include, "params": {}},
+                )
                 self.sops.upsert(pipeline_key, sop_like)
         except Exception as exc:
             QMessageBox.critical(self.window, "SOP", f"Could not save SOP:\n{exc}")
@@ -125,8 +137,12 @@ class SopController:
             self.steps_list.setItemWidget(item, widget)
             try:
                 widget.set_status("pending")
-                widget.playClicked.connect(lambda _=None, s=stage: self.play_callback(s))
-                widget.configClicked.connect(lambda _=None, s=stage: self.config_callback(s))
+                widget.playClicked.connect(
+                    lambda _=None, s=stage: self.play_callback(s)
+                )
+                widget.configClicked.connect(
+                    lambda _=None, s=stage: self.config_callback(s)
+                )
             except Exception:
                 pass
             self._step_widgets.append(widget)

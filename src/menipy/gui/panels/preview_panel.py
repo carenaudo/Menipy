@@ -1,6 +1,7 @@
 """
 Live preview panel for image display and interaction.
 """
+
 from __future__ import annotations
 
 import logging
@@ -96,7 +97,9 @@ class PreviewPanel:
         if handled:
             self._set_overlay_buttons_enabled(True)
 
-    def set_draw_mode(self, mode: Any, color: QColor = QColor(255, 0, 0), *, tag: Optional[str] = None) -> None:
+    def set_draw_mode(
+        self, mode: Any, color: QColor = QColor(255, 0, 0), *, tag: Optional[str] = None
+    ) -> None:
         if self.image_view and hasattr(self.image_view, "set_draw_mode"):
             try:
                 self.image_view.set_draw_mode(mode, color, tag=tag)
@@ -125,7 +128,6 @@ class PreviewPanel:
         if self._on_line_drawn:
             self._on_line_drawn(line)
 
-
     def has_roi(self) -> bool:
         return self.roi_rect() is not None
 
@@ -136,7 +138,7 @@ class PreviewPanel:
         return self.contact_line_segment() is not None
 
     def roi_rect(self) -> tuple[int, int, int, int] | None:
-        rect = self._overlay_rect('roi')
+        rect = self._overlay_rect("roi")
         if rect is None:
             return None
         rect = rect.normalized()
@@ -152,7 +154,7 @@ class PreviewPanel:
         )
 
     def needle_rect(self) -> tuple[int, int, int, int] | None:
-        rect = self._overlay_rect('needle')
+        rect = self._overlay_rect("needle")
         if rect is None:
             return None
         rect = rect.normalized()
@@ -168,7 +170,7 @@ class PreviewPanel:
         )
 
     def contact_line_segment(self) -> tuple[tuple[int, int], tuple[int, int]] | None:
-        line = self._overlay_line('contact_line')
+        line = self._overlay_line("contact_line")
         if line is None:
             return None
         p1 = line.p1()
@@ -181,12 +183,12 @@ class PreviewPanel:
         )
 
     def _overlay_rect(self, tag: str) -> QRectF | None:
-        if not self.image_view or not hasattr(self.image_view, 'overlay_rect_scene'):
+        if not self.image_view or not hasattr(self.image_view, "overlay_rect_scene"):
             return None
         return self.image_view.overlay_rect_scene(tag)
 
     def _overlay_line(self, tag: str) -> QLineF | None:
-        if not self.image_view or not hasattr(self.image_view, 'overlay_line_scene'):
+        if not self.image_view or not hasattr(self.image_view, "overlay_line_scene"):
             return None
         return self.image_view.overlay_line_scene(tag)
 
@@ -220,9 +222,15 @@ class PreviewPanel:
             return
 
         actions = {
-            "roiBtn": lambda: self.set_draw_mode(DRAW_RECT, QColor(255, 255, 0), tag="roi"),  # Yellow
-            "needleBtn": lambda: self.set_draw_mode(DRAW_RECT, QColor(0, 0, 255), tag="needle"),  # Blue
-            "contactLineBtn": lambda: self.set_draw_mode(DRAW_LINE, QColor(173, 216, 230), tag="contact_line"),  # Light Blue
+            "roiBtn": lambda: self.set_draw_mode(
+                DRAW_RECT, QColor(255, 255, 0), tag="roi"
+            ),  # Yellow
+            "needleBtn": lambda: self.set_draw_mode(
+                DRAW_RECT, QColor(0, 0, 255), tag="needle"
+            ),  # Blue
+            "contactLineBtn": lambda: self.set_draw_mode(
+                DRAW_LINE, QColor(173, 216, 230), tag="contact_line"
+            ),  # Light Blue
             "clearBtn": self.clear_overlays,
             "actualBtn": getattr(self.image_view, "actual_size", None),
             "fitBtn": getattr(self.image_view, "fit_to_window", None),

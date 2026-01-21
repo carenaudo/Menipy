@@ -11,6 +11,7 @@ This is intentionally small and conservative: it does not attempt to import
 plugins automatically (discovery should be done elsewhere), it simply looks up
 registered utilities and wires them onto a PipelineBase instance.
 """
+
 from __future__ import annotations
 from typing import Callable
 
@@ -25,11 +26,13 @@ def _wrap_chain(first: Callable, second: Callable) -> Callable:
     second. The wrapper returns the context from the second (or first if second
     returns None).
     """
+
     def wrapped(ctx):
         c = first(ctx)
         if c is None:
             c = ctx
         return second(c) or c
+
     return wrapped
 
 
@@ -117,29 +120,29 @@ def _load_module_from_path(path: Path, module_name: str):
 
 class PluginLoader:
     """Central plugin loader that scans directories and populates registries."""
-    
+
     _instance: Optional["PluginLoader"] = None
     _loaded: bool = False
-    
+
     def __init__(self, plugin_dirs: Optional[List[Path]] = None):
         """Initialize the plugin loader."""
         self.plugin_dirs = plugin_dirs or [_DEFAULT_PLUGIN_DIR]
         self._loaded_modules: dict[str, Any] = {}
-    
+
     @classmethod
     def instance(cls) -> "PluginLoader":
         """Get or create the singleton instance."""
         if cls._instance is None:
             cls._instance = cls()
         return cls._instance
-    
+
     @classmethod
     def ensure_loaded(cls) -> int:
         """Ensure plugins are loaded (idempotent). Returns count of loaded plugins."""
         if cls._loaded:
             return len(cls.instance()._loaded_modules)
         return cls.instance().load_all()
-    
+
     def load_all(self) -> int:
         """Scan all plugin directories and register discovered plugins."""
         count = 0
@@ -147,25 +150,27 @@ class PluginLoader:
             if not plugin_dir.is_dir():
                 logger.debug("Plugin directory does not exist: %s", plugin_dir)
                 continue
-            
+
             for plugin_file in plugin_dir.glob("*.py"):
                 if plugin_file.name.startswith("_"):
                     continue
-                    
+
                 try:
                     count += self._load_plugin_file(plugin_file)
                 except Exception as exc:
                     logger.warning("Failed to load plugin %s: %s", plugin_file, exc)
-        
+
         PluginLoader._loaded = True
-        logger.info("Loaded %d plugins from %d directories", count, len(self.plugin_dirs))
+        logger.info(
+            "Loaded %d plugins from %d directories", count, len(self.plugin_dirs)
+        )
         return count
-    
+
     def _load_plugin_file(self, path: Path) -> int:
         """Load a single plugin file and register its components."""
         if path.stem in self._loaded_modules:
             return 0
-        
+
         mod_name = f"menipy_plugins.{path.stem}"
         try:
             mod = _load_module_from_path(path, mod_name)
@@ -176,7 +181,7 @@ class PluginLoader:
         except Exception as exc:
             logger.warning("Error loading plugin %s: %s", path, exc)
             return 0
-    
+
     def _register_module_exports(self, mod, name: str) -> None:
         """Register individual exported functions from a module."""
         for attr_name in dir(mod):
@@ -185,9 +190,13 @@ class PluginLoader:
             attr = getattr(mod, attr_name, None)
             if not callable(attr):
                 continue
-            
+
             # Register solvers (match laplace, solver in name)
-            if "solver" in name.lower() or "laplace" in attr_name.lower() or "solver" in attr_name.lower():
+            if (
+                "solver" in name.lower()
+                or "laplace" in attr_name.lower()
+                or "solver" in attr_name.lower()
+            ):
                 if attr_name not in registry.SOLVERS:
                     registry.SOLVERS.register(attr_name, attr)
                     logger.debug("Registered solver: %s", attr_name)
@@ -196,21 +205,25 @@ class PluginLoader:
                 if attr_name not in registry.EDGE_DETECTORS:
                     registry.EDGE_DETECTORS.register(attr_name, attr)
                     logger.debug("Registered edge detector: %s", attr_name)
-    
+
     def get_module(self, name: str) -> Optional[Any]:
         """Get a loaded module by name."""
         self.ensure_loaded()
         return self._loaded_modules.get(name)
 
 
-def get_solver(name: str, fallback: Optional[callable] = None) -> Optional[callable]:
+from typing import Callable, Any
+
+
+def get_solver(name: str, fallback: Optional[Callable[..., Any]] = None) -> Optional[Callable[..., Any]]:
     """Get a solver by name from the registry (ensures plugins are loaded first)."""
     PluginLoader.ensure_loaded()
     return registry.SOLVERS.get(name, fallback)
 
 
-def get_edge_detector(name: str, fallback: Optional[callable] = None) -> Optional[callable]:
-    """Get an edge detector by name from the registry."""
+def get_edge_detector(name: str, fallback: Optional[Callable[..., Any]] = None) -> Optional[Callable[..., Any]]:
+    """Get an edge detector by name from the registry (ensures plugins are loaded first)."""
     PluginLoader.ensure_loaded()
     return registry.EDGE_DETECTORS.get(name, fallback)
-
+    PluginLoader.ensure_loaded()
+    return registry.EDGE_DETECTORS.get(name, fallback)

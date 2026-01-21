@@ -13,7 +13,9 @@ from menipy.common.geometry import fit_circle
 GRAVITY = 9.81  # m s⁻²
 
 
-def droplet_volume(mask: np.ndarray, px_to_mm: float, centred: bool = True) -> Optional[float]:
+def droplet_volume(
+    mask: np.ndarray, px_to_mm: float, centred: bool = True
+) -> Optional[float]:
     """Return the droplet volume in mm³.
 
     The mask is treated as the silhouette of an axisymmetric drop. Each row is
@@ -77,7 +79,9 @@ def estimate_surface_tension(
     if delta_rho <= 0:
         raise ValueError("liquid density must exceed air density")
 
-    contours, _ = cv2.findContours(mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(
+        mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+    )
     if not contours:
         return None
     contour = max(contours, key=cv2.contourArea).astype(float)
@@ -120,5 +124,3 @@ def contact_angle_from_mask(mask: np.ndarray) -> float:
 
     angle_rad = np.arctan2(height_px, radius_px)
     return float(np.degrees(angle_rad))
-
-

@@ -247,8 +247,7 @@ def test_calibration_box(tmp_path):
 
     import numpy as np
     import cv2
-    from PySide6.QtCore import QPoint, QLineF
-    from menipy.gui import SubstrateLineItem
+    from PySide6.QtCore import QPoint
 
     img = np.zeros((20, 20, 3), dtype=np.uint8)
     path = tmp_path / "img.png"
@@ -583,7 +582,6 @@ def test_substrate_line_updates_metrics(tmp_path):
         pytest.skip("PySide6 not available")
     import numpy as np
     import cv2
-    from PySide6.QtCore import QPoint
 
     img = np.zeros((40, 40), dtype=np.uint8)
     cv2.circle(img, (20, 30), 8, 255, -1)

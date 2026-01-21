@@ -1,11 +1,13 @@
 """
 Standard Operating Procedure (SOP) management service.
 """
+
 from __future__ import annotations
 from dataclasses import dataclass, asdict
 from pathlib import Path
 import json
 from typing import Dict, List, Optional
+
 
 # Where to store sops.json (same place as your settings.json). Adjust if you already have a helper.
 def _app_data_dir() -> Path:
@@ -14,11 +16,13 @@ def _app_data_dir() -> Path:
     root.mkdir(parents=True, exist_ok=True)
     return root
 
+
 @dataclass
 class Sop:
     name: str
     include_stages: List[str]  # e.g., ["acquisition","preprocessing",..., "validation"]
-    params: Dict[str, dict] | None = None      # per-stage params (optional)
+    params: Dict[str, dict] | None = None  # per-stage params (optional)
+
 
 class SopService:
     def __init__(self, filename: str = "sops.json") -> None:
@@ -47,10 +51,17 @@ class SopService:
         d = (self._data.get(pipeline) or {}).get(name)
         if not d:
             return None
-        return Sop(name=name, include_stages=list(d.get("include_stages") or []), params=d.get("params") or {})
+        return Sop(
+            name=name,
+            include_stages=list(d.get("include_stages") or []),
+            params=d.get("params") or {},
+        )
 
     def upsert(self, pipeline: str, sop: Sop) -> None:
-        self._data.setdefault(pipeline, {})[sop.name] = {"include_stages": sop.include_stages, "params": sop.params or {}}
+        self._data.setdefault(pipeline, {})[sop.name] = {
+            "include_stages": sop.include_stages,
+            "params": sop.params or {},
+        }
         self.save()
 
     def delete(self, pipeline: str, name: str) -> None:
@@ -63,7 +74,10 @@ class SopService:
     def ensure_default(self, pipeline: str, default_stages: List[str]) -> None:
         # Create/refresh a sentinel default if missing
         if not self.get(pipeline, "__default__"):
-            self.upsert(pipeline, Sop(name="__default__", include_stages=list(default_stages), params={}))
+            self.upsert(
+                pipeline,
+                Sop(name="__default__", include_stages=list(default_stages), params={}),
+            )
 
     def default_name(self) -> str:
         return "__default__"

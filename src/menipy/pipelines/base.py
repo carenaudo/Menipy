@@ -7,7 +7,7 @@ from __future__ import annotations
 import logging
 import time
 from pathlib import Path
-from typing import Any, Callable, Optional, Dict, ClassVar, Union
+from typing import Any, Callable, Optional, ClassVar
 
 import numpy as np
 
@@ -25,11 +25,19 @@ from menipy.common.plugins import _load_module_from_path
 
 # Make common utilities available to subclasses
 __all__ = [
-    'Context', 'PreprocessingSettings', 'EdgeDetectionSettings', 'FitConfig',
-    'Contour', 'Geometry', 'edged', 'ovl', 'common_solver'
+    "Context",
+    "PreprocessingSettings",
+    "EdgeDetectionSettings",
+    "FitConfig",
+    "Contour",
+    "Geometry",
+    "edged",
+    "ovl",
+    "common_solver",
 ]
 
 # ------------------------------- Base Class ----------------------------------
+
 
 class PipelineError(RuntimeError):
     """Raised when a pipeline stage fails fatally."""
@@ -45,58 +53,87 @@ class PipelineBase:
     """
 
     name: str = "base"
-    
+
     # Common plugin setup
     _repo_root: ClassVar[Path] = Path(__file__).resolve().parents[3]
     _toy_path: ClassVar[Path] = _repo_root / "plugins" / "toy_young_laplace.py"
     _toy_mod = _load_module_from_path(_toy_path, "adsa_plugins.toy_young_laplace")
     young_laplace_sphere = getattr(_toy_mod, "toy_young_laplace")
     DEFAULT_SEQ = [
-            ("acquisition",  None),
-            ("preprocessing", None),
-            ("edge_detection", None),
-            ("geometry", None),
-            ("scaling", None),
-            ("physics", None),
-            ("solver", None),
-            ("optimization", None),
-            ("outputs", None),
-            ("overlay", None),
-            ("validation", None),
-        ]
+        ("acquisition", None),
+        ("preprocessing", None),
+        ("edge_detection", None),
+        ("geometry", None),
+        ("scaling", None),
+        ("physics", None),
+        ("solver", None),
+        ("optimization", None),
+        ("outputs", None),
+        ("overlay", None),
+        ("validation", None),
+    ]
+
     # ---- Stage hooks (override in subclasses as needed) ----
-    def do_acquisition(self, ctx: Context) -> Optional[Context]: return ctx
+    def do_acquisition(self, ctx: Context) -> Optional[Context]:
+        return ctx
+
     def do_preprocessing(self, ctx: Context) -> Optional[Context]:
         from menipy.common import preprocessing
+
         if self.preprocessing_settings:
             return preprocessing.run(ctx, self.preprocessing_settings)
         return ctx
+
     def do_edge_detection(self, ctx: Context) -> Optional[Context]:
         from menipy.common import edge_detection
+
         if self.edge_detection_settings:
             return edge_detection.run(ctx, self.edge_detection_settings)
         return ctx
-    def do_geometry(self, ctx: Context) -> Optional[Context]: return ctx
-    def do_scaling(self, ctx: Context) -> Optional[Context]: return ctx
-    def do_physics(self, ctx: Context) -> Optional[Context]: return ctx
-    def do_solver(self, ctx: Context) -> Optional[Context]: return ctx
-    def do_optimization(self, ctx: Context) -> Optional[Context]: return ctx
-    def do_outputs(self, ctx: Context) -> Optional[Context]: return ctx
-    def do_overlay(self, ctx: Context) -> Optional[Context]: return ctx
-    def do_validation(self, ctx: Context) -> Optional[Context]: return ctx
+
+    def do_geometry(self, ctx: Context) -> Optional[Context]:
+        return ctx
+
+    def do_scaling(self, ctx: Context) -> Optional[Context]:
+        return ctx
+
+    def do_physics(self, ctx: Context) -> Optional[Context]:
+        return ctx
+
+    def do_solver(self, ctx: Context) -> Optional[Context]:
+        return ctx
+
+    def do_optimization(self, ctx: Context) -> Optional[Context]:
+        return ctx
+
+    def do_outputs(self, ctx: Context) -> Optional[Context]:
+        return ctx
+
+    def do_overlay(self, ctx: Context) -> Optional[Context]:
+        return ctx
+
+    def do_validation(self, ctx: Context) -> Optional[Context]:
+        return ctx
 
     # ---- Orchestration -------------------------------------------------------
 
-    def __init__(self, *,
-                 logger: Optional[logging.Logger] = None,
-                 preprocessing_settings: Optional[PreprocessingSettings] = None,
-                 edge_detection_settings: Optional[EdgeDetectionSettings] = None) -> None:
+    def __init__(
+        self,
+        *,
+        logger: Optional[logging.Logger] = None,
+        preprocessing_settings: Optional[PreprocessingSettings] = None,
+        edge_detection_settings: Optional[EdgeDetectionSettings] = None,
+    ) -> None:
         self.logger = logger or logging.getLogger(f"menipy.pipelines.{self.name}")
         self.preprocessing_settings = preprocessing_settings
         self.edge_detection_settings = edge_detection_settings
         if not self.logger.handlers:
             handler = logging.StreamHandler()
-            handler.setFormatter(logging.Formatter("%(asctime)s | %(levelname)s | %(name)s | %(message)s"))
+            handler.setFormatter(
+                logging.Formatter(
+                    "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+                )
+            )
             self.logger.addHandler(handler)
             self.logger.setLevel(logging.INFO)
             self.logger.propagate = False
@@ -126,8 +163,13 @@ class PipelineBase:
             ctx.image_path = image_path
 
         # For single-image processing, also populate current_frame
-        if image is not None and not kwargs.get("camera") and isinstance(image, np.ndarray):
+        if (
+            image is not None
+            and not kwargs.get("camera")
+            and isinstance(image, np.ndarray)
+        ):
             from menipy.models.frame import Frame
+
             ctx.current_frame = Frame(image=image)
             ctx.frames = [ctx.current_frame]  # Also set frames for compatibility
         cam = kwargs.get("camera")
@@ -148,7 +190,7 @@ class PipelineBase:
             ctx.needle_rect = kwargs["needle_rect"]
         if "contact_line" in kwargs and kwargs["contact_line"] is not None:
             ctx.contact_line = kwargs["contact_line"]
-        
+
         # Calibration parameters
         if "needle_diameter_mm" in kwargs and kwargs["needle_diameter_mm"] is not None:
             ctx.needle_diameter_mm = kwargs["needle_diameter_mm"]
@@ -164,7 +206,6 @@ class PipelineBase:
             kwargs["edge_detection_settings"] = self.edge_detection_settings
         ctx.edge_detection_settings = kwargs["edge_detection_settings"]
 
-
         if "measurement_id" in kwargs:
             ctx.measurement_id = kwargs["measurement_id"]
         if "measurement_sequence" in kwargs:
@@ -178,7 +219,9 @@ class PipelineBase:
 
         return ctx
 
-    def _call_stage(self, ctx: Context, stage_name: str, fn: Callable[[Context], Optional[Context]]) -> Context:
+    def _call_stage(
+        self, ctx: Context, stage_name: str, fn: Callable[[Context], Optional[Context]]
+    ) -> Context:
         start = time.perf_counter()
 
         def _ctx_summary(c: Context) -> str:
@@ -202,7 +245,9 @@ class PipelineBase:
                 except Exception:
                     contour = True
                 results = getattr(c, "results", None)
-                results_k = len(results) if isinstance(results, dict) else (1 if results else 0)
+                results_k = (
+                    len(results) if isinstance(results, dict) else (1 if results else 0)
+                )
                 return f"frames={nfr} preview={int(preview)} contour={int(bool(contour))} results_keys={results_k}"
             except Exception:
                 return "summary_error"
@@ -265,14 +310,14 @@ class PipelineBase:
                 pass
             try:
                 root = logging.getLogger()
-                if any(h.__class__.__name__ == 'QtLogHandler' for h in root.handlers):
+                if any(h.__class__.__name__ == "QtLogHandler" for h in root.handlers):
                     root.setLevel(logging.INFO)
                     root.info(msg)
             except Exception:
                 pass
 
         return ctx
-    
+
     def build_plan(self, only: list[str] | None = None, include_prereqs: bool = True):
         seq = [(n, getattr(self, f"do_{n}", None)) for (n, _fn) in self.DEFAULT_SEQ]
         seq = [(n, fn) for (n, fn) in seq if callable(fn)]
@@ -288,14 +333,20 @@ class PipelineBase:
             wanted = set(only)
         return [(n, fn) for (n, fn) in seq if n in wanted]
 
-    def run_with_plan(self, *, only: list[str] | None = None, include_prereqs: bool = True, **kwargs: Any) -> Context:
+    def run_with_plan(
+        self,
+        *,
+        only: list[str] | None = None,
+        include_prereqs: bool = True,
+        **kwargs: Any,
+    ) -> Context:
         ctx = Context()
         ctx = self._prime_ctx(ctx, **kwargs)
         for name, fn in self.build_plan(only=only, include_prereqs=include_prereqs):
             ctx = self._call_stage(ctx, name, fn)
         self._ctx = ctx
         return ctx
-    
+
     def run(self, **kwargs: Any) -> Context:
         """
         Execute the full stage sequence and return the populated Context.

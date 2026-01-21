@@ -1,13 +1,12 @@
 """Tests for sessile drop contact angle estimation methods."""
 
 import numpy as np
-import pytest
 
 from menipy.common.geometry import (
     estimate_contact_angle_tangent,
     estimate_contact_angle_circle_fit,
     tangent_angle_at_point,
-    circle_fit_angle_at_point
+    circle_fit_angle_at_point,
 )
 from menipy.pipelines.sessile.metrics import compute_sessile_metrics
 
@@ -45,7 +44,9 @@ def test_estimate_contact_angle_circle_fit():
     substrate_line = ((50, 100), (150, 100))
     contact_point = np.array([100, 100])  # Bottom point
 
-    angle, rmse = estimate_contact_angle_circle_fit(contour, contact_point, substrate_line)
+    angle, rmse = estimate_contact_angle_circle_fit(
+        contour, contact_point, substrate_line
+    )
 
     # For a circle, contact angle should be 90 degrees
     assert 85 < angle < 95, f"Expected ~90°, got {angle}°"
@@ -67,7 +68,7 @@ def test_compute_sessile_metrics_tangent_method():
         contour,
         px_per_mm=1.0,
         substrate_line=substrate_line,
-        contact_angle_method="tangent"
+        contact_angle_method="tangent",
     )
 
     assert "theta_left_deg" in metrics
@@ -96,7 +97,7 @@ def test_compute_sessile_metrics_circle_fit_method():
         contour,
         px_per_mm=1.0,
         substrate_line=substrate_line,
-        contact_angle_method="circle_fit"
+        contact_angle_method="circle_fit",
     )
 
     assert "theta_left_deg" in metrics
@@ -129,7 +130,7 @@ def test_compute_sessile_metrics_spherical_cap_method():
         px_per_mm=1.0,
         substrate_line=substrate_line,
         apex=apex,
-        contact_angle_method="spherical_cap"
+        contact_angle_method="spherical_cap",
     )
 
     assert "theta_left_deg" in metrics
@@ -159,7 +160,7 @@ def test_contact_angle_uncertainty_estimation():
         contour,
         px_per_mm=1.0,
         substrate_line=substrate_line,
-        contact_angle_method="tangent"
+        contact_angle_method="tangent",
     )
 
     uncertainty = metrics["uncertainty_deg"]
@@ -202,7 +203,9 @@ def test_circle_fit_angle_at_point():
     substrate_line = ((50, 100), (150, 100))
     contact_point = np.array([100, 100])  # Bottom point
 
-    angle, uncertainty = circle_fit_angle_at_point(contour, contact_point, substrate_line)
+    angle, uncertainty = circle_fit_angle_at_point(
+        contour, contact_point, substrate_line
+    )
 
     # For a circle, contact angle should be 90 degrees
     assert 85 < angle < 95, f"Expected ~90°, got {angle}°"

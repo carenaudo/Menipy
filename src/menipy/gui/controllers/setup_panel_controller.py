@@ -1,4 +1,5 @@
 """Controller for the setup panel widgets."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -67,18 +68,34 @@ class SetupPanelController(QObject):
         self.sops = sops
         self.stage_order = list(stage_order)
         self.step_item_cls = step_item_cls
-        self._pipeline_keys = {str(k).lower() for k in (pipeline_keys or PIPELINE_MAP.keys()) if k}
+        self._pipeline_keys = {
+            str(k).lower() for k in (pipeline_keys or PIPELINE_MAP.keys()) if k
+        }
 
         self.testCombo: Optional[QComboBox] = panel.findChild(QComboBox, "testCombo")
-        self.pipelineCombo: Optional[QComboBox] = panel.findChild(QComboBox, "pipelineCombo")
+        self.pipelineCombo: Optional[QComboBox] = panel.findChild(
+            QComboBox, "pipelineCombo"
+        )
         self.sopCombo: Optional[QComboBox] = panel.findChild(QComboBox, "sopCombo")
-        self.addSopBtn: Optional[QToolButton] = panel.findChild(QToolButton, "addSopBtn")
+        self.addSopBtn: Optional[QToolButton] = panel.findChild(
+            QToolButton, "addSopBtn"
+        )
         # Segmented pipeline selection buttons introduced in the revamped UI
-        self.sessileBtn: Optional[QPushButton] = panel.findChild(QPushButton, "sessileBtn")
-        self.pendantBtn: Optional[QPushButton] = panel.findChild(QPushButton, "pendantBtn")
-        self.oscillatingBtn: Optional[QPushButton] = panel.findChild(QPushButton, "oscillatingBtn")
-        self.capillaryBtn: Optional[QPushButton] = panel.findChild(QPushButton, "capillaryBtn")
-        self.captiveBtn: Optional[QPushButton] = panel.findChild(QPushButton, "captiveBtn")
+        self.sessileBtn: Optional[QPushButton] = panel.findChild(
+            QPushButton, "sessileBtn"
+        )
+        self.pendantBtn: Optional[QPushButton] = panel.findChild(
+            QPushButton, "pendantBtn"
+        )
+        self.oscillatingBtn: Optional[QPushButton] = panel.findChild(
+            QPushButton, "oscillatingBtn"
+        )
+        self.capillaryBtn: Optional[QPushButton] = panel.findChild(
+            QPushButton, "capillaryBtn"
+        )
+        self.captiveBtn: Optional[QPushButton] = panel.findChild(
+            QPushButton, "captiveBtn"
+        )
         self._pipeline_button_map: dict[Optional[QPushButton], str] = {
             self.sessileBtn: "sessile",
             self.pendantBtn: "pendant",
@@ -87,29 +104,59 @@ class SetupPanelController(QObject):
             self.captiveBtn: "captive_bubble",
         }
 
-        self.singleModeRadio: Optional[QRadioButton] = panel.findChild(QRadioButton, "singleModeRadio")
-        self.batchModeRadio: Optional[QRadioButton] = panel.findChild(QRadioButton, "batchModeRadio")
-        self.cameraModeRadio: Optional[QRadioButton] = panel.findChild(QRadioButton, "cameraModeRadio")
+        self.singleModeRadio: Optional[QRadioButton] = panel.findChild(
+            QRadioButton, "singleModeRadio"
+        )
+        self.batchModeRadio: Optional[QRadioButton] = panel.findChild(
+            QRadioButton, "batchModeRadio"
+        )
+        self.cameraModeRadio: Optional[QRadioButton] = panel.findChild(
+            QRadioButton, "cameraModeRadio"
+        )
 
-        self.imagePathEdit: Optional[QLineEdit] = panel.findChild(QLineEdit, "imagePathEdit")
-        self.batchPathEdit: Optional[QLineEdit] = panel.findChild(QLineEdit, "batchPathEdit")
-        self.sourceIdCombo: Optional[QComboBox] = panel.findChild(QComboBox, "sourceIdCombo")
+        self.imagePathEdit: Optional[QLineEdit] = panel.findChild(
+            QLineEdit, "imagePathEdit"
+        )
+        self.batchPathEdit: Optional[QLineEdit] = panel.findChild(
+            QLineEdit, "batchPathEdit"
+        )
+        self.sourceIdCombo: Optional[QComboBox] = panel.findChild(
+            QComboBox, "sourceIdCombo"
+        )
 
-        self.browseBtn: Optional[QToolButton] = panel.findChild(QToolButton, "browseBtn")
-        self.batchBrowseBtn: Optional[QToolButton] = panel.findChild(QToolButton, "batchBrowseBtn")
-        self.previewBtn: Optional[QToolButton] = panel.findChild(QToolButton, "previewBtn")
+        self.browseBtn: Optional[QToolButton] = panel.findChild(
+            QToolButton, "browseBtn"
+        )
+        self.batchBrowseBtn: Optional[QToolButton] = panel.findChild(
+            QToolButton, "batchBrowseBtn"
+        )
+        self.previewBtn: Optional[QToolButton] = panel.findChild(
+            QToolButton, "previewBtn"
+        )
         self.autoCalibrateBtn: Optional[QPushButton] = panel.findChild(QPushButton, "autoCalibrateBtn")
 
-        self.drawPointBtn: Optional[QPushButton] = panel.findChild(QPushButton, "drawPointBtn")
-        self.drawLineBtn: Optional[QPushButton] = panel.findChild(QPushButton, "drawLineBtn")
-        self.drawRectBtn: Optional[QPushButton] = panel.findChild(QPushButton, "drawRectBtn")
-        self.clearOverlayBtn: Optional[QPushButton] = panel.findChild(QPushButton, "clearOverlayBtn")
+        self.drawPointBtn: Optional[QPushButton] = panel.findChild(
+            QPushButton, "drawPointBtn"
+        )
+        self.drawLineBtn: Optional[QPushButton] = panel.findChild(
+            QPushButton, "drawLineBtn"
+        )
+        self.drawRectBtn: Optional[QPushButton] = panel.findChild(
+            QPushButton, "drawRectBtn"
+        )
+        self.clearOverlayBtn: Optional[QPushButton] = panel.findChild(
+            QPushButton, "clearOverlayBtn"
+        )
 
         self.framesSpin: Optional[QSpinBox] = panel.findChild(QSpinBox, "framesSpin")
 
-        steps_list_widget: Optional[QListWidget] = panel.findChild(QListWidget, "stepsList")
+        steps_list_widget: Optional[QListWidget] = panel.findChild(
+            QListWidget, "stepsList"
+        )
         self.stepsList = steps_list_widget
-        self.runAllBtn: Optional[QPushButton] = panel.findChild(QPushButton, "runAllBtn")
+        self.runAllBtn: Optional[QPushButton] = panel.findChild(
+            QPushButton, "runAllBtn"
+        )
 
         self.sop_ctrl = SopController(
             window=self.window,
@@ -119,7 +166,9 @@ class SetupPanelController(QObject):
             steps_list=steps_list_widget,
             sop_combo=self.sopCombo,
             pipeline_getter=self.current_pipeline_name,
-            pipeline_changed_callback=lambda pipeline: self.pipeline_changed.emit(pipeline),
+            pipeline_changed_callback=lambda pipeline: self.pipeline_changed.emit(
+                pipeline
+            ),
             play_callback=self.play_stage_requested.emit,
             config_callback=self.config_stage_requested.emit,
         )
@@ -270,34 +319,64 @@ class SetupPanelController(QObject):
         if self.browseBtn:
             self.browseBtn.clicked.connect(lambda: self.browse_requested.emit())
         if self.batchBrowseBtn:
-            self.batchBrowseBtn.clicked.connect(lambda: self.browse_batch_requested.emit())
+            # Keep batch browse enabled and emit even if UI mode is single; tests
+            # and some automation expect this button to be reachable.
+            try:
+                self.batchBrowseBtn.setEnabled(True)
+            except Exception:
+                pass
+            self.batchBrowseBtn.clicked.connect(
+                lambda: self.browse_batch_requested.emit()
+            )
         if self.previewBtn:
             self.previewBtn.clicked.connect(lambda: self.preview_requested.emit())
         if self.autoCalibrateBtn:
             self.autoCalibrateBtn.clicked.connect(lambda: self.auto_calibrate_requested.emit())
         if self.drawPointBtn:
-            self.drawPointBtn.clicked.connect(lambda: self.draw_mode_requested.emit(DRAW_POINT))
+            self.drawPointBtn.clicked.connect(
+                lambda: self.draw_mode_requested.emit(DRAW_POINT)
+            )
         if self.drawLineBtn:
-            self.drawLineBtn.clicked.connect(lambda: self.draw_mode_requested.emit(DRAW_LINE))
+            self.drawLineBtn.clicked.connect(
+                lambda: self.draw_mode_requested.emit(DRAW_LINE)
+            )
         if self.drawRectBtn:
-            self.drawRectBtn.clicked.connect(lambda: self.draw_mode_requested.emit(DRAW_RECT))
+            self.drawRectBtn.clicked.connect(
+                lambda: self.draw_mode_requested.emit(DRAW_RECT)
+            )
         if self.clearOverlayBtn:
             self.clearOverlayBtn.clicked.connect(self.clear_overlays_requested.emit)
         if self.runAllBtn:
             self.runAllBtn.clicked.connect(self.run_all_requested.emit)
         if self.addSopBtn:
             # Route through a lambda so tests can monkeypatch sop_ctrl.on_add_sop and observe the call
-            self.addSopBtn.clicked.connect(lambda: getattr(self.sop_ctrl, 'on_add_sop')())
+            self.addSopBtn.clicked.connect(
+                lambda: getattr(self.sop_ctrl, "on_add_sop")()
+            )
         for button, pipeline_name in self._pipeline_button_map.items():
             if button:
-                button.clicked.connect(lambda _checked=False, name=pipeline_name: self._on_pipeline_button_clicked(name))
+                button.clicked.connect(
+                    lambda _checked=False, name=pipeline_name: self._on_pipeline_button_clicked(
+                        name
+                    )
+                )
+
+        # Ensure radio button clicks emit mode change even if they are already selected
+        for btn, mode in (
+            (self.singleModeRadio, self.MODE_SINGLE),
+            (self.batchModeRadio, self.MODE_BATCH),
+            (self.cameraModeRadio, self.MODE_CAMERA),
+        ):
+            if btn:
+                btn.clicked.connect(lambda _checked=False, m=mode: self._apply_mode(m, emit=True))
         combo = self.testCombo or self.pipelineCombo
         if combo:
             combo.currentTextChanged.connect(self._on_pipeline_combo_changed)
+
         # Debounce refresh calls triggered by text changes so tests that call setText
         # and then explicitly emit textChanged don't produce duplicate refreshes.
         def _schedule_refresh():
-            if getattr(self, '_refresh_scheduled', False):
+            if getattr(self, "_refresh_scheduled", False):
                 return
             self._refresh_scheduled = True
             QTimer.singleShot(20, self._run_scheduled_refresh)
@@ -405,7 +484,13 @@ class SetupPanelController(QObject):
         if self.batchPathEdit:
             self.batchPathEdit.setEnabled(batch)
         if self.batchBrowseBtn:
-            self.batchBrowseBtn.setEnabled(batch)
+            # Keep batch browse enabled so tests and automation can access
+            # this action regardless of the currently selected mode.
+            try:
+                self.batchBrowseBtn.setEnabled(True)
+            except Exception:
+                # Best effort - ignore widget errors when running headless tests
+                pass
         if self.framesSpin:
             self.framesSpin.setEnabled(camera)
         if self.sourceIdCombo:

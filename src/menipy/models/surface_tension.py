@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import numpy as np
+from typing import Any
 from numpy.typing import NDArray
 
 
 # Jennings–Pallas cubic correlation -----------------------------------------
+
 
 def jennings_pallas_beta(s1: float) -> float:
     """Return the dimensionless form factor ``beta``.
@@ -23,6 +25,7 @@ def jennings_pallas_beta(s1: float) -> float:
 
 # Surface tension from Young–Laplace ----------------------------------------
 
+
 def surface_tension(delta_rho: float, g: float, r0_mm: float, beta: float) -> float:
     """Return surface tension in Newton per metre."""
     r0 = r0_mm / 1000.0
@@ -30,6 +33,7 @@ def surface_tension(delta_rho: float, g: float, r0_mm: float, beta: float) -> fl
 
 
 # Bond number ---------------------------------------------------------------
+
 
 def bond_number(delta_rho: float, g: float, r0_mm: float, gamma: float) -> float:
     """Return dimensionless Bond number."""
@@ -39,7 +43,8 @@ def bond_number(delta_rho: float, g: float, r0_mm: float, gamma: float) -> float
 
 # Volume by revolution of profile ------------------------------------------
 
-def volume_from_contour(contour_mm: NDArray[np.float_, np.float_]) -> float:
+
+def volume_from_contour(contour_mm: NDArray[Any]) -> float:
     """Return droplet volume in microlitres from a 2-D contour.
 
     Parameters
@@ -49,10 +54,11 @@ def volume_from_contour(contour_mm: NDArray[np.float_, np.float_]) -> float:
         the radial distance from the symmetry axis and ``y`` is the vertical
         coordinate.
     """
-    r = contour_mm[:, 0] / 1000.0
-    y = contour_mm[:, 1] / 1000.0
+    r: np.ndarray = contour_mm[:, 0].astype(float) / 1000.0
+    y: np.ndarray = contour_mm[:, 1].astype(float) / 1000.0
     idx = np.argsort(y)
     y_sorted = y[idx]
     r_sorted = r[idx]
-    vol = np.pi * np.trapz(r_sorted**2, y_sorted)  # m^3
-    return vol * 1e9
+    trapz_val = np.trapz(r_sorted**2, y_sorted)
+    vol = float(np.pi) * float(trapz_val)  # m^3
+    return float(vol * 1e9)

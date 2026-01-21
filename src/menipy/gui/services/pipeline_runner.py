@@ -1,6 +1,7 @@
 """
 Service for running pipelines in the GUI context.
 """
+
 # src/adsa/gui/services/pipeline_runner.py
 from __future__ import annotations
 from typing import Optional
@@ -67,20 +68,22 @@ class _Job(QRunnable):
             # else:
             #     p.do_acquisition = (lambda ctx: setattr(ctx, "frames", acq.from_camera(device=self.camera or 0, n_frames=self.frames)) or ctx)  # type: ignore
             run_kwargs = {
-                'roi': self.roi,
-                'needle_rect': self.needle_rect,
-                'contact_line': self.contact_line,
-                'preprocessing_markers': self.preprocessing_markers,
+                "roi": self.roi,
+                "needle_rect": self.needle_rect,
+                "contact_line": self.contact_line,
+                "preprocessing_markers": self.preprocessing_markers,
                 'calibration_params': self.calibration_params,
                 'scale': self.scale,
                 'physics': self.physics,
-                'image': self.image,
-                'camera': self.camera,
-                'frames': self.frames,
+                "image": self.image,
+                "camera": self.camera,
+                "frames": self.frames,
             }
             run_kwargs = {k: v for k, v in run_kwargs.items() if v is not None}
             if self.stages:
-                ctx = p.run_with_plan(only=self.stages, include_prereqs=True, **run_kwargs)
+                ctx = p.run_with_plan(
+                    only=self.stages, include_prereqs=True, **run_kwargs
+                )
             else:
                 ctx = p.run(**run_kwargs)
             self.callback(success=True, ctx=ctx, err=None)
@@ -95,6 +98,7 @@ def _pick(name: str):
         raise PipelineError(f"Unknown pipeline '{name}'")
     return p_cls
 
+
 class PipelineRunner(QObject):
     finished = Signal(object)  # ctx or error dict
 
@@ -102,14 +106,38 @@ class PipelineRunner(QObject):
         super().__init__()
         self.pool = QThreadPool.globalInstance()
 
-    def run(self, pipeline: str, image: Optional[str], camera: Optional[int], frames: int = 1, **overlays):
+    def run(
+        self,
+        pipeline: str,
+        image: Optional[str],
+        camera: Optional[int],
+        frames: int = 1,
+        **overlays,
+    ):
         pipeline_cls = _pick(pipeline)
         job = _Job(pipeline_cls, image, camera, frames, callback=self._emit, **overlays)
         self.pool.start(job)
 
-    def run_subset(self, pipeline: str, *, only: list[str], image: Optional[str], camera: Optional[int], frames: int = 1, **overlays) -> None:
+    def run_subset(
+        self,
+        pipeline: str,
+        *,
+        only: list[str],
+        image: Optional[str],
+        camera: Optional[int],
+        frames: int = 1,
+        **overlays,
+    ) -> None:
         pipeline_cls = _pick(pipeline)
-        job = _Job(pipeline_cls, image, camera, frames, callback=self._emit, stages=only, **overlays)
+        job = _Job(
+            pipeline_cls,
+            image,
+            camera,
+            frames,
+            callback=self._emit,
+            stages=only,
+            **overlays,
+        )
         self.pool.start(job)
 
     def _emit(self, success: bool, ctx, err: Optional[str]):

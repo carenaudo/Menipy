@@ -1,6 +1,7 @@
 """
 Dialog for edge detection method configuration.
 """
+
 from __future__ import annotations
 
 """Configuration dialog for edge detection pipeline settings."""
@@ -37,7 +38,9 @@ class EdgeDetectionConfigDialog(QDialog):
 
     previewRequested = Signal(object)
 
-    def __init__(self, settings: EdgeDetectionSettings, parent: Optional[QDialog] = None) -> None:
+    def __init__(
+        self, settings: EdgeDetectionSettings, parent: Optional[QDialog] = None
+    ) -> None:
         super().__init__(parent)
         self.setWindowTitle("Edge Detection Configuration")
         self._settings = settings.model_copy(deep=True)
@@ -69,7 +72,15 @@ class EdgeDetectionConfigDialog(QDialog):
         nav_layout.setSpacing(4)
 
         self.stage_list = QListWidget(nav_frame)
-        for label in ("General Settings", "Canny", "Threshold", "Sobel/Scharr/Laplacian", "Active Contour", "Refinement", "Interface Specific"):
+        for label in (
+            "General Settings",
+            "Canny",
+            "Threshold",
+            "Sobel/Scharr/Laplacian",
+            "Active Contour",
+            "Refinement",
+            "Interface Specific",
+        ):
             QListWidgetItem(label, self.stage_list)
         self.stage_list.setCurrentRow(0)
         self.stage_list.setFixedWidth(180)
@@ -149,7 +160,9 @@ class EdgeDetectionConfigDialog(QDialog):
         button_bar.addWidget(self._reset_btn)
         button_bar.addStretch(1)
 
-        self._button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, self)
+        self._button_box = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel, self
+        )
         button_bar.addWidget(self._button_box)
         ok_button = self._button_box.button(QDialogButtonBox.Ok)
         if ok_button is not None:
@@ -163,7 +176,14 @@ class EdgeDetectionConfigDialog(QDialog):
         form.addRow(self.enabled_checkbox)
 
         self.method_combo = QComboBox(widget)
-        for label in ("canny", "sobel", "scharr", "laplacian", "threshold", "active_contour"):
+        for label in (
+            "canny",
+            "sobel",
+            "scharr",
+            "laplacian",
+            "threshold",
+            "active_contour",
+        ):
             self.method_combo.addItem(label)
         form.addRow("Method", self.method_combo)
 
@@ -290,18 +310,26 @@ class EdgeDetectionConfigDialog(QDialog):
         widget = QWidget(self)
         form = QFormLayout(widget)
 
-        self.detect_fluid_interface_checkbox = QCheckBox("Detect Fluid-Droplet Interface", widget)
+        self.detect_fluid_interface_checkbox = QCheckBox(
+            "Detect Fluid-Droplet Interface", widget
+        )
         form.addRow(self.detect_fluid_interface_checkbox)
 
-        self.detect_solid_interface_checkbox = QCheckBox("Detect Solid-Droplet Interface", widget)
+        self.detect_solid_interface_checkbox = QCheckBox(
+            "Detect Solid-Droplet Interface", widget
+        )
         form.addRow(self.detect_solid_interface_checkbox)
 
         self.solid_interface_proximity_spin = QSpinBox(widget)
         self.solid_interface_proximity_spin.setRange(0, 100)
         self.solid_interface_proximity_spin.setValue(10)
-        form.addRow("Solid Interface Proximity (px)", self.solid_interface_proximity_spin)
+        form.addRow(
+            "Solid Interface Proximity (px)", self.solid_interface_proximity_spin
+        )
 
-        info = QLabel("Proximity defines search area around contact line for solid interface.")
+        info = QLabel(
+            "Proximity defines search area around contact line for solid interface."
+        )
         info.setWordWrap(True)
         form.addRow(info)
 
@@ -316,7 +344,7 @@ class EdgeDetectionConfigDialog(QDialog):
         self._button_box.rejected.connect(self.reject)
         self._preview_btn.clicked.connect(self._on_preview)
         self._reset_btn.clicked.connect(self._on_reset)
-    # Dialog can receive preview images via a slot with signature (image, metadata)
+        # Dialog can receive preview images via a slot with signature (image, metadata)
 
         self.enabled_checkbox.toggled.connect(self._update_controls_enablement)
         self.method_combo.currentTextChanged.connect(self._update_controls_enablement)
@@ -416,16 +444,24 @@ class EdgeDetectionConfigDialog(QDialog):
         if image.ndim == 2:  # Grayscale
             q_image = QImage(image.data, w, h, w, QImage.Format.Format_Grayscale8)
         elif image.ndim == 3 and image.shape[2] == 3:  # BGR
-            q_image = QImage(image.data, w, h, bytes_per_line, QImage.Format.Format_BGR888)
+            q_image = QImage(
+                image.data, w, h, bytes_per_line, QImage.Format.Format_BGR888
+            )
         elif image.ndim == 3 and image.shape[2] == 4:  # BGRA
-            q_image = QImage(image.data, w, h, bytes_per_line, QImage.Format.Format_ARGB32)
+            q_image = QImage(
+                image.data, w, h, bytes_per_line, QImage.Format.Format_ARGB32
+            )
         else:
             self.preview_label.setText("Unsupported image format")
             self.preview_label.clear()
             return
 
         pixmap = QPixmap.fromImage(q_image)
-        self.preview_label.setPixmap(pixmap.scaled(self.preview_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        self.preview_label.setPixmap(
+            pixmap.scaled(
+                self.preview_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation
+            )
+        )
 
     # ------------------------------------------------------------------
     # Control enablement helpers
@@ -437,8 +473,12 @@ class EdgeDetectionConfigDialog(QDialog):
         # General settings controls
         self.method_combo.setEnabled(enabled)
         self.gaussian_blur_checkbox.setEnabled(enabled)
-        self.gaussian_kernel_size_spin.setEnabled(enabled and self.gaussian_blur_checkbox.isChecked())
-        self.gaussian_sigma_x_spin.setEnabled(enabled and self.gaussian_blur_checkbox.isChecked())
+        self.gaussian_kernel_size_spin.setEnabled(
+            enabled and self.gaussian_blur_checkbox.isChecked()
+        )
+        self.gaussian_sigma_x_spin.setEnabled(
+            enabled and self.gaussian_blur_checkbox.isChecked()
+        )
 
         # Canny controls
         canny_enabled = enabled and method == "canny"
@@ -455,8 +495,12 @@ class EdgeDetectionConfigDialog(QDialog):
 
         # Sobel/Scharr/Laplacian controls
         sobel_laplacian_enabled = enabled and method in {"sobel", "scharr", "laplacian"}
-        self.sobel_kernel_size_spin.setEnabled(sobel_laplacian_enabled and method in {"sobel", "scharr"})
-        self.laplacian_kernel_size_spin.setEnabled(sobel_laplacian_enabled and method == "laplacian")
+        self.sobel_kernel_size_spin.setEnabled(
+            sobel_laplacian_enabled and method in {"sobel", "scharr"}
+        )
+        self.laplacian_kernel_size_spin.setEnabled(
+            sobel_laplacian_enabled and method == "laplacian"
+        )
 
         # Active Contour controls
         active_contour_enabled = enabled and method == "active_contour"
@@ -471,7 +515,9 @@ class EdgeDetectionConfigDialog(QDialog):
         # Interface specific controls
         self.detect_fluid_interface_checkbox.setEnabled(enabled)
         self.detect_solid_interface_checkbox.setEnabled(enabled)
-        self.solid_interface_proximity_spin.setEnabled(enabled and self.detect_solid_interface_checkbox.isChecked())
+        self.solid_interface_proximity_spin.setEnabled(
+            enabled and self.detect_solid_interface_checkbox.isChecked()
+        )
 
     # ------------------------------------------------------------------
     # Public accessors

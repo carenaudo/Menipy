@@ -12,6 +12,7 @@ try:
 except Exception:  # pragma: no cover - optional dependency
     cv2 = None  # type: ignore
 
+
 def _load_image(path: str) -> np.ndarray:
     """
     Attempt to load an image from disk using OpenCV when available, falling back
@@ -39,10 +40,12 @@ def from_file(paths: Sequence[str]) -> Sequence[np.ndarray]:
         frames.append(_load_image(str(p)))
     return frames
 
+
 def from_camera(device: int = 0, n_frames: int = 1) -> Sequence[np.ndarray]:
     """Grab frames from a camera (placeholder)."""
     # TODO: implement cv2.VideoCapture(device)
     return [np.zeros((480, 640), dtype=np.uint8) for _ in range(n_frames)]
+
 
 def from_camera_or_file(expected: str = "silhouette", **kwargs):
     """Convenience entry used by pipelines."""

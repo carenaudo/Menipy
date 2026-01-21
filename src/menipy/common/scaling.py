@@ -4,6 +4,7 @@ Scaling stage utilities for pixel-to-mm conversion.
 """
 from __future__ import annotations
 
+
 def run(ctx):
     """Attach a simple pixel↔mm scale; pipelines should set real calibration."""
     # Defaults: 1 px = 0.01 mm for demo purposes.

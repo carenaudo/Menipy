@@ -1,9 +1,10 @@
 """Plugin dock and menu controller for the main window."""
+
 from __future__ import annotations
 
 from pathlib import Path
 from typing import Any, Optional, Sequence
-from PySide6.QtGui  import QAction
+from PySide6.QtGui import QAction
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QFileDialog,
@@ -26,6 +27,7 @@ except Exception:
 
     def load_active_plugins(*_args, **_kwargs):  # type: ignore[unused-argument]
         return None
+
 
 try:
     from menipy.gui.dialogs.plugin_manager_dialog import PluginManagerDialog
@@ -135,7 +137,11 @@ class PluginsController:
                 accepted = getattr(QDialog.DialogCode, "Accepted", 1)
             if code == accepted:
                 text = getattr(dlg.ui.dirsEdit, "text", lambda: "")()
-                dirs = [p.strip() for p in str(text).replace(";", ":").split(":") if p.strip()]
+                dirs = [
+                    p.strip()
+                    for p in str(text).replace(";", ":").split(":")
+                    if p.strip()
+                ]
                 if not dirs:
                     dirs = ["./plugins"]
                 self.settings.plugin_dirs = dirs
@@ -163,7 +169,9 @@ class PluginsController:
                 "Plugin features are unavailable in this build.",
             )
             return
-        path = QFileDialog.getExistingDirectory(self.window, "Select Plugin Folder", str(Path.cwd()))
+        path = QFileDialog.getExistingDirectory(
+            self.window, "Select Plugin Folder", str(Path.cwd())
+        )
         if not path:
             return
         dirs = list(self.settings.plugin_dirs or [])

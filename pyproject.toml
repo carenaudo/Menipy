@@ -7,22 +7,48 @@ name = "menipy"
 version = "0.1.0"
 description = "Menipy droplet analysis tools"
 readme = "README.md"
-authors = [ { name = "carenaudo" } ]
+authors = [{ name = "carenaudo" }]
 license = { file = "LICENSE" }
+requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Image Processing",
+]
 dependencies = [
-  "numpy>=1.24.0",
-  "scipy>=1.10.0",
-  "pandas>=1.5.3",
-  "scikit-image>=0.19.3",
-  "opencv-python>=4.7.0.72",
-  "matplotlib>=3.5.0",
-  "PySide6>=6.5.1",
-  "pint",
-  "pydantic-pint",
+    "numpy>=1.24.0",
+    "scipy>=1.10.0",
+    "pandas>=1.5.3",
+    "scikit-image>=0.19.3",
+    "opencv-python>=4.7.0.72",
+    "matplotlib>=3.5.0",
+    "PySide6>=6.5.1",
+    "pint",
+    "pydantic",
+    "pydantic-pint",
 ]
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[project.optional-dependencies]
+dev = [
+    "black>=24.1.0",
+    "ruff>=0.8.0",
+    "isort>=5.13.0",
+    "mypy>=1.8.0",
+    "pre-commit>=3.6.0",
+]
+test = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-qt>=4.2.0",
+]
+docs = [
+    "sphinx>=7.2.0",
+]
 
 [project.scripts]
 menipy = "menipy.gui:main"
@@ -31,6 +57,135 @@ menipy-cli = "menipy.cli:main"
 menipy-plugins = "menipy.common.plugins:cli_list_plugins"
 
 [project.urls]
-"Homepage" = "https://github.com/carenaudo/Menipy"
+Homepage = "https://github.com/carenaudo/Menipy"
+Repository = "https://github.com/carenaudo/Menipy"
+Documentation = "https://github.com/carenaudo/Menipy#readme"
+Issues = "https://github.com/carenaudo/Menipy/issues"
 
+[tool.setuptools.packages.find]
+where = ["src"]
 
+# =============================================================================
+# Black - Code Formatter
+# =============================================================================
+[tool.black]
+line-length = 88
+target-version = ["py310", "py311", "py312"]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+    | \.venv
+    | \.mypy_cache
+    | \.ruff_cache
+    | build
+    | dist
+    | docs/_build
+    | data
+    | plot
+    | \.egg-info
+)/
+'''
+
+# =============================================================================
+# isort - Import Sorter
+# =============================================================================
+[tool.isort]
+profile = "black"
+line_length = 88
+known_first_party = ["menipy"]
+skip = [".venv", "build", "dist", ".git"]
+skip_gitignore = true
+
+# =============================================================================
+# Ruff - Fast Python Linter
+# =============================================================================
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+exclude = [
+    ".git",
+    ".venv",
+    ".mypy_cache",
+    ".ruff_cache",
+    "build",
+    "dist",
+    "docs/_build",
+    "data",
+    "plot",
+    "*.egg-info",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # Pyflakes
+    "I",      # isort
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "UP",     # pyupgrade
+]
+ignore = [
+    "E203",   # Whitespace before ':' (conflicts with black)
+    "E501",   # Line too long (handled by black)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"src/menipy/gui/*" = ["F401"]  # Unused imports in GUI modules
+"__init__.py" = ["F401"]        # Unused imports in __init__ files
+
+[tool.ruff.lint.isort]
+known-first-party = ["menipy"]
+
+# =============================================================================
+# Mypy - Static Type Checker
+# =============================================================================
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+follow_imports = "silent"
+strict_optional = false
+files = ["src"]
+exclude = [
+    "^src/menipy/gui/.*$",
+    "^tests/.*$",
+]
+
+[[tool.mypy.overrides]]
+module = "menipy.*"
+ignore_errors = false
+
+[[tool.mypy.overrides]]
+module = "menipy.gui.*"
+ignore_errors = true
+
+# =============================================================================
+# Pytest - Testing Framework
+# =============================================================================
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+# =============================================================================
+# Coverage - Code Coverage
+# =============================================================================
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "src/menipy/gui/*",
+    "tests/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+]

@@ -1,6 +1,7 @@
 """
 Dialog for managing and configuring plugins.
 """
+
 from __future__ import annotations
 from typing import Sequence
 from pathlib import Path
@@ -15,6 +16,7 @@ from menipy.gui.services.settings_service import AppSettings
 
 _COL_ACTIVE, _COL_NAME, _COL_KIND, _COL_PATH, _COL_DESC, _COL_VER = range(6)
 
+
 class PluginManagerDialog(QDialog):
     def __init__(self, vm: PluginsViewModel, settings: AppSettings, parent=None):
         super().__init__(parent)
@@ -26,14 +28,22 @@ class PluginManagerDialog(QDialog):
         loader = QUiLoader()
         ui_file = QFile(":/views/plugin_manager.ui")
         if not ui_file.exists():
-            ui_file = QFile(str(Path(__file__).resolve().parent.parent / "views" / "plugin_manager.ui"))
+            ui_file = QFile(
+                str(
+                    Path(__file__).resolve().parent.parent
+                    / "views"
+                    / "plugin_manager.ui"
+                )
+            )
         ui_file.open(QFile.ReadOnly)
         self.ui = loader.load(ui_file, self)
         self.setLayout(self.ui.layout())
 
         # Wire controls
         try:
-            self.ui.closeButton.clicked.connect(self.accept)  # optional if present in UI
+            self.ui.closeButton.clicked.connect(
+                self.accept
+            )  # optional if present in UI
         except Exception:
             pass
         self.ui.rescanButton.clicked.connect(self._on_rescan)
@@ -46,7 +56,9 @@ class PluginManagerDialog(QDialog):
         # Table setup
         t = self.ui.pluginsTable
         t.setColumnCount(6)
-        t.setHorizontalHeaderLabels(["Active", "Name", "Kind", "Path", "Description", "Version"])
+        t.setHorizontalHeaderLabels(
+            ["Active", "Name", "Kind", "Path", "Description", "Version"]
+        )
         # Use enums from QAbstractItemView for selection/edit behavior
         try:
             t.setSelectionBehavior(QAbstractItemView.SelectRows)  # older-style enum

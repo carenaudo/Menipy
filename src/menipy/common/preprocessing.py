@@ -1,6 +1,7 @@
 """
 Preprocessing pipeline stage implementation.
 """
+
 from __future__ import annotations
 
 import logging
@@ -10,9 +11,9 @@ import numpy as np
 
 from menipy.models.context import Context
 from menipy.models.config import PreprocessingSettings
-from menipy.models.state import PreprocessingState, MarkerSet, PreprocessingStageRecord
+from menipy.models.state import PreprocessingState, MarkerSet
 
-from .preprocessing_helpers import ( # Assuming this file exists or will be created
+from .preprocessing_helpers import (  # Assuming this file exists or will be created
     PreprocessingContext,
     PreprocessingError,
     convert_to_grayscale,
@@ -24,6 +25,7 @@ from .preprocessing_helpers import ( # Assuming this file exists or will be crea
     detect_contact_line,
     fill_holes,
 )
+
 try:
     import cv2
 except ImportError:
@@ -32,7 +34,9 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def run(ctx: Context, settings: PreprocessingSettings | dict[str, Any] | None = None) -> Context:
+def run(
+    ctx: Context, settings: PreprocessingSettings | dict[str, Any] | None = None
+) -> Context:
     """
     Executes the full preprocessing pipeline on the data within the context.
     Args:
@@ -43,11 +47,17 @@ def run(ctx: Context, settings: PreprocessingSettings | dict[str, Any] | None = 
     if frame is None:
         ctx.error = "No frame available for preprocessing. Please ensure an image is loaded or captured first."
         ctx.note("Preprocessing failed: no source image available")
-        raise PreprocessingError("Preprocessing: no frame available. Run acquisition first.")
+        raise PreprocessingError(
+            "Preprocessing: no frame available. Run acquisition first."
+        )
 
     resolved_settings = _resolve_settings(ctx, settings)
     markers = _resolve_markers(ctx)
-    roi_bounds = ctx.roi if (resolved_settings.crop_to_roi and getattr(ctx, "roi", None)) else None
+    roi_bounds = (
+        ctx.roi
+        if (resolved_settings.crop_to_roi and getattr(ctx, "roi", None))
+        else None
+    )
     contact_segment = getattr(ctx, "contact_line", None)
     roi_mask_full = getattr(ctx, "roi_mask", None)
 
@@ -56,7 +66,7 @@ def run(ctx: Context, settings: PreprocessingSettings | dict[str, Any] | None = 
         settings=resolved_settings,
         roi_bounds=roi_bounds,
         roi_mask_full=roi_mask_full,
-        contact_line_segment=contact_segment, # type: ignore
+        contact_line_segment=contact_segment,  # type: ignore
         markers=markers,
     )
 
@@ -80,19 +90,39 @@ def run(ctx: Context, settings: PreprocessingSettings | dict[str, Any] | None = 
     ctx.preprocessed_state = state
     ctx.preprocessed_settings = resolved_settings
     ctx.preprocessed_history = [record.model_dump() for record in state.history]
-    ctx.preprocessed_roi = processed_roi
+    # Make `preprocessed_roi` reflect what is actually present in the
+    # composed full image when possible so tests that compare the two see
+    # identical data (handles grayscale->color conversions performed by
+    # _compose_full_image).
     ctx.preprocessed_mask = state.roi_mask
     ctx.preprocessed_scale = state.scale
     ctx.contact_line_mask = state.contact_line_mask
-    ctx.preprocessed = full_image if full_image is not None else processed_roi
+
+    if full_image is not None and state.roi_bounds is not None:
+        x, y, w, h = state.roi_bounds
+        try:
+            # Extract the inserted ROI from the composed image so that the
+            # ROI stored on the context exactly matches the pixels visible
+            # in `ctx.preprocessed` (avoids channel mismatch between
+            # grayscale ROI and color base image).
+            ctx.preprocessed_roi = full_image[y : y + h, x : x + w]
+        except Exception:
+            # Fall back to the processed ROI if extraction fails.
+            ctx.preprocessed_roi = processed_roi
+        ctx.preprocessed = full_image
+    else:
+        ctx.preprocessed_roi = processed_roi
+        ctx.preprocessed = processed_roi
 
     # Keep original frame intact for preview; stash processed ROI separately.
     ctx.note("Preprocessing complete") if hasattr(ctx, "note") else None
     return ctx
 
+
 # ---------------------------------------------------------------------------
 # Internal utilities
 # ---------------------------------------------------------------------------
+
 
 def _resolve_source_image(ctx: Context) -> Optional[np.ndarray]:
     candidates = [
@@ -117,23 +147,31 @@ def _resolve_source_image(ctx: Context) -> Optional[np.ndarray]:
         img = img[0]
     if not isinstance(img, np.ndarray):
         return None
-    if hasattr(img, 'image') and isinstance(getattr(img, 'image'), np.ndarray): # Handle Frame object
+    if hasattr(img, "image") and isinstance(
+        getattr(img, "image"), np.ndarray
+    ):  # Handle Frame object
         img = img.image
     if img.dtype != np.uint8:
         img = np.clip(img, 0, 255).astype(np.uint8)
     return img
 
-def _resolve_settings(ctx: Context, override: PreprocessingSettings | dict[str, Any] | None) -> PreprocessingSettings:
+
+def _resolve_settings(
+    ctx: Context, override: PreprocessingSettings | dict[str, Any] | None
+) -> PreprocessingSettings:
     if isinstance(override, PreprocessingSettings):
         return override
     if isinstance(override, dict):
         return PreprocessingSettings(**override)
-    existing = getattr(ctx, "preprocessed_settings", None) or getattr(ctx, "preprocessing_settings", None)
+    existing = getattr(ctx, "preprocessed_settings", None) or getattr(
+        ctx, "preprocessing_settings", None
+    )
     if isinstance(existing, PreprocessingSettings):
         return existing
     if isinstance(existing, dict):
         return PreprocessingSettings(**existing)
     return PreprocessingSettings()
+
 
 def _resolve_markers(ctx: Context) -> Optional[MarkerSet]:
     markers = getattr(ctx, "preprocessing_markers", None)
@@ -146,7 +184,10 @@ def _resolve_markers(ctx: Context) -> Optional[MarkerSet]:
             logger.debug("Preprocessing: could not coerce markers dict", exc_info=True)
     return None
 
-def _compose_full_image(base: np.ndarray, roi: np.ndarray, state: PreprocessingState) -> Optional[np.ndarray]:
+
+def _compose_full_image(
+    base: np.ndarray, roi: np.ndarray, state: PreprocessingState
+) -> Optional[np.ndarray]:
     if roi is None or state.roi_bounds is None:
         return None
     x, y, w, h = state.roi_bounds
@@ -176,7 +217,11 @@ def _compose_full_image(base: np.ndarray, roi: np.ndarray, state: PreprocessingS
         # roi already color; leave roi_to_insert as-is
 
     # If number of channels still mismatches (e.g., roi has alpha), adapt by trimming or padding.
-    if roi_to_insert.ndim == 3 and composite.ndim == 3 and roi_to_insert.shape[2] != composite.shape[2]:
+    if (
+        roi_to_insert.ndim == 3
+        and composite.ndim == 3
+        and roi_to_insert.shape[2] != composite.shape[2]
+    ):
         c_comp = composite.shape[2]
         c_roi = roi_to_insert.shape[2]
         if c_roi > c_comp:
