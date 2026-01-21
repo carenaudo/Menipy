@@ -23,9 +23,10 @@ from PySide6.QtGui import QImage, QColor
 from menipy.gui.controllers.camera_manager import CameraManager
 from menipy.gui.controllers.layout_manager import LayoutManager
 from menipy.gui.controllers.dialog_coordinator import DialogCoordinator
+from menipy.gui.controllers.overlay_manager import OverlayManager
 
 if TYPE_CHECKING:
-    from menipy.gui.mainwindow import MainWindow
+    from menipy.gui.main_window import MainWindow
     from menipy.gui.controllers.pipeline_controller import PipelineController
     from menipy.gui.controllers.setup_panel_controller import SetupPanelController
     from menipy.gui.panels.preview_panel import PreviewPanel
@@ -70,6 +71,11 @@ class MainController(QObject):
             edge_detection_ctrl=self.edge_detection_ctrl,
             image_loader=self._load_preprocessing_image,
             parent=self,
+        )
+
+        self.overlay_manager = OverlayManager(
+            image_view=getattr(self.preview_panel, 'image_view', None),
+            settings=self.settings
         )
 
         self._wire_signals()
@@ -257,85 +263,16 @@ class MainController(QObject):
             if not isinstance(result, CalibrationResult):
                 return
             
-            iv = getattr(self.preview_panel, 'image_view', None)
-            if not iv:
-                return
+            # Delegate drawing to OverlayManager
+            self.overlay_manager.draw_calibration_result(result)
             
-            from PySide6.QtCore import QRectF, QPointF
-            from PySide6.QtGui import QColor
-            import numpy as np
-            
-            # Clear existing calibration overlays (use both old and new tag names)
-            for tag in ('roi', 'needle', 'contact_line', 'cal_roi', 'cal_needle', 'cal_substrate', 'cal_drop', 'cal_contact_left', 'cal_contact_right'):
-                try:
-                    iv.remove_overlay(tag)
-                except Exception:
-                    pass
-            
-            # Draw ROI rectangle (yellow) - use 'roi' tag for preview_panel compatibility
-            if result.roi_rect:
-                x, y, w, h = result.roi_rect
-                iv.add_marker_rect(
-                    QRectF(x, y, w, h),
-                    color=QColor(255, 255, 0),
-                    width=2.0,
-                    tag='roi'
-                )
-                # Store ROI for pipeline use
-                if self.preprocessing_ctrl:
-                    self.preprocessing_ctrl.update_geometry(roi=result.roi_rect)
+            # Update controllers with calibration data
+            if result.roi_rect and self.preprocessing_ctrl:
+                self.preprocessing_ctrl.update_geometry(roi=result.roi_rect)
                 logger.info(f'Calibration: ROI set to {result.roi_rect}')
             
-            # Draw needle rectangle (blue) - use 'needle' tag for preview_panel compatibility
-            if result.needle_rect:
-                x, y, w, h = result.needle_rect
-                iv.add_marker_rect(
-                    QRectF(x, y, w, h),
-                    color=QColor(0, 0, 255),
-                    width=2.0,
-                    tag='needle'
-                )
-                logger.info(f'Calibration: needle region set to {result.needle_rect}')
-            
-            # Draw substrate line (magenta) - use 'contact_line' tag
-            if result.substrate_line:
-                p1, p2 = result.substrate_line
-                iv.add_marker_line(
-                    QPointF(p1[0], p1[1]),
-                    QPointF(p2[0], p2[1]),
-                    color=QColor(255, 0, 255),
-                    tag='contact_line'
-                )
-                # Store contact line for pipeline use
-                if self.preprocessing_ctrl:
-                    self.preprocessing_ctrl.update_geometry(contact_line=result.substrate_line)
-            
-            # Draw contact points (red)
-            if result.contact_points:
-                left, right = result.contact_points
-                iv.add_marker_point(
-                    QPointF(left[0], left[1]),
-                    color=QColor(255, 0, 0),
-                    radius=5.0,
-                    tag='cal_contact_left'
-                )
-                iv.add_marker_point(
-                    QPointF(right[0], right[1]),
-                    color=QColor(255, 0, 0),
-                    radius=5.0,
-                    tag='cal_contact_right'
-                )
-            
-            # Draw drop contour (green)
-            if result.drop_contour is not None:
-                contour = np.asarray(result.drop_contour)
-                if contour.size > 0:
-                    iv.add_marker_contour(
-                        contour,
-                        color=QColor(0, 255, 0),
-                        width=2.0,
-                        tag='cal_drop'
-                    )
+            if result.substrate_line and self.preprocessing_ctrl:
+                self.preprocessing_ctrl.update_geometry(contact_line=result.substrate_line)
             
             # Report success
             conf = result.confidence_scores.get('overall', 0.0)
@@ -446,89 +383,9 @@ class MainController(QObject):
                 and self.preview_panel
                 and getattr(self.preview_panel, "image_view", None)
             ):
-                iv = getattr(self.preview_panel, "image_view")
-                try:
-                    for tag in ("detected_left", "detected_right", "detected_contour"):
-                        try:
-                            iv.remove_overlay(tag)
-                        except Exception:
-                            pass
-
-                    contour_xy = metadata.get("contour_xy")
-                    if contour_xy is not None:
-                        try:
-                            overlay_cfg = (
-                                getattr(self.settings, "overlay_config", None) or {}
-                            )
-                            c_visible = bool(overlay_cfg.get("contour_visible", True))
-                            if c_visible:
-                                c_color = QColor(
-                                    overlay_cfg.get("contour_color", "#ff0000")
-                                )
-                                c_width = float(
-                                    overlay_cfg.get("contour_thickness", 2.0)
-                                )
-                                c_dashed = bool(
-                                    overlay_cfg.get("contour_dashed", False)
-                                )
-                                dash_len = float(
-                                    overlay_cfg.get("contour_dash_length", 6.0)
-                                )
-                                dash_space = float(
-                                    overlay_cfg.get("contour_dash_space", 6.0)
-                                )
-                                c_alpha = float(overlay_cfg.get("contour_alpha", 1.0))
-                                c_color.setAlphaF(max(0.0, min(1.0, c_alpha)))
-                                dash = (dash_len, dash_space) if c_dashed else None
-                                iv.add_marker_contour(
-                                    contour_xy,
-                                    color=c_color,
-                                    width=c_width,
-                                    dash_pattern=dash,
-                                    alpha=c_alpha,
-                                    tag="detected_contour",
-                                )
-                        except Exception:
-                            logger.debug(
-                                "Failed to add contour overlay via ImageView helper",
-                                exc_info=True,
-                            )
-
-                    contact_points = metadata.get("contact_points")
-                    if contact_points is not None:
-                        try:
-                            left_pt, right_pt = contact_points
-                            p_cfg = getattr(self.settings, "overlay_config", None) or {}
-                            p_visible = bool(p_cfg.get("points_visible", True))
-                            if left_pt is not None and p_visible:
-                                p_color = QColor(p_cfg.get("point_color", "#00ff00"))
-                                p_alpha = float(p_cfg.get("point_alpha", 1.0))
-                                p_color.setAlphaF(max(0.0, min(1.0, p_alpha)))
-                                p_radius = float(p_cfg.get("point_radius", 4.0))
-                                iv.add_marker_point(
-                                    QPointF(left_pt[0], left_pt[1]),
-                                    color=p_color,
-                                    radius=p_radius,
-                                    tag="detected_left",
-                                )
-                            if right_pt is not None and p_visible:
-                                p_color = QColor(p_cfg.get("point_color", "#ff0000"))
-                                p_alpha = float(p_cfg.get("point_alpha", 1.0))
-                                p_color.setAlphaF(max(0.0, min(1.0, p_alpha)))
-                                p_radius = float(p_cfg.get("point_radius", 4.0))
-                                iv.add_marker_point(
-                                    QPointF(right_pt[0], right_pt[1]),
-                                    color=p_color,
-                                    radius=p_radius,
-                                    tag="detected_right",
-                                )
-                        except Exception:
-                            logger.debug(
-                                "Failed to add contact point overlays to preview",
-                                exc_info=True,
-                            )
-                except Exception:
-                    logger.debug("Failed to update overlays on preview", exc_info=True)
+                # Delegate overlay drawing to OverlayManager
+                self.overlay_manager.draw_edge_detection_preview(metadata)
+            
         except Exception:
             logger.debug(
                 "Error while handling edge detection preview image", exc_info=True
