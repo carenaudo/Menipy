@@ -249,15 +249,22 @@ function sessile_drop_adaptive(image_path::String; capture_debug=false)
     capture_debug && (debug_imgs["1_grayscale"] = img_gray)
     h, w = size(img_gray)
 
-    # CLAHE enhancement
-    img_enhanced = adjust_histogram(img_gray,
-        AdaptiveEqualization(nbins=256, rblocks=8, cblocks=8, clip=0.02))
-    capture_debug && (debug_imgs["2_clahe"] = img_enhanced)
+    # 2. Advanced Preprocessing: Background Normalization
+    # Estimate large-scale background illumination using heavy Gaussian blur
+    # This helps "level" the banding noise.
+    img_bg = imfilter(img_gray, Kernel.gaussian(50))
+    img_sub = img_gray .- img_bg
 
-    # Substrate detection
+    # Normalize back to [0, 1] range
+    img_min, img_max = extrema(img_sub)
+    img_norm = (img_sub .- img_min) ./ (img_max - img_min)
+    capture_debug && (debug_imgs["2_normalized"] = img_norm)
+
+    # Substrate detection (on normalized image for better consistency)
     margin_px = min(50, w ÷ 10)
-    y_left = find_horizon_median(img_enhanced[:, 1:margin_px])
-    y_right = find_horizon_median(img_enhanced[:, (w-margin_px+1):w])
+    y_left = find_horizon_median(img_norm[:, 1:margin_px])
+    y_right = find_horizon_median(img_norm[:, (w-margin_px+1):w])
+
 
     substrate_y = if isnothing(y_left) || isnothing(y_right)
         Float64(h * 0.8)
@@ -266,56 +273,57 @@ function sessile_drop_adaptive(image_path::String; capture_debug=false)
     end
     substrate_y < h * 0.2 && (substrate_y = Float64(h * 0.8))
 
-    # Adaptive thresholding
-    # Python uses C=2 (subtract 2). Julia uses percentage (multiplicative).
-    # To match Python's sensitivity (T ~ mean - 2), we need a small percentage.
-    # 2/255 approx 0.8%. So percentage=1 is safer to capture lighter edges.
-    img_blur = imfilter(img_enhanced, Kernel.gaussian(2))
-    img_binary = binarize(img_blur, AdaptiveThreshold(window_size=21, percentage=1)) .> 0.5
+    # 3. Thresholding: Use Otsu on normalized image
+    # Denoise before thresholding
+    img_denoised = mapwindow(median, img_norm, (3, 3))
+    img_blur = imfilter(img_denoised, Kernel.gaussian(1))
+
+    # Switch to Otsu thresholding
+    img_binary = binarize(img_blur, Otsu()) .> 0.5
     capture_debug && (debug_imgs["3_threshold"] = copy(img_binary))
+
+
+
 
     # Invert if background is white
     mean(img_binary[1:min(10, h), 1:min(10, w)]) > 0.5 && (img_binary = .!img_binary)
 
-    # Mask below substrate
+    # Mask below substrate and ABOVE top (to remove needle)
     sub_y_int = round(Int, substrate_y)
-    sub_y_int > 0 && sub_y_int <= h && (img_binary[max(1, sub_y_int - 2):end, :] .= false)
+    sub_y_int > 0 && sub_y_int <= h && (img_binary[max(1, sub_y_int - 5):end, :] .= false)
+    # Remove needle area (top 15% usually safe unless drop is huge)
+    img_binary[1:round(Int, h * 0.15), :] .= false
+
+
 
     # Morphological cleanup
-    # Python: Open(2) then Close(2).
-    # If the drop is fragmented, Opening (erosion) hurts. We should Close (dilation) first?
-    # Or just stick to Python flow but rely on better threshold.
-    # Let's reduce Opening kernel or put Closing first to bridge gaps.
-    img_clean = opening(closing(img_binary))
+    # Use a VERTICAL closing kernel to bridge horizontal banding gaps 
+    # while avoiding merging things horizontally.
+    img_closed = closing(img_binary, trues(31, 3))
+    img_clean = opening(img_closed, trues(3, 3))
     capture_debug && (debug_imgs["4_morph"] = copy(img_clean))
 
-    # Fill holes: Label background components and keep only the largest one (true background)
-    # This removes internal holes in the drop which cause jagged detection.
+
+    # Robust hole filling: label inverted background, keep only those that don't touch edges
     bg_labels = label_components(.!img_clean)
-    bg_areas = component_lengths(bg_labels)
-    # bg_areas includes background (0) which is foreground in original. 
-    # component_lengths returns count for label i at index i.
-    # Label 0 is ignored by component_lengths usually? No, check docs or behavior.
-    # label_components returns integer array. 0 is background (false in input).
-    # Since we passed .!img_clean, the true background (dark) is now true (foreground for labeling).
-    # So we look for the largest component in bg_labels.
-
-    # We want to keep the largest component of the INVERTED image (the background)
-    # and set everything else to foreground (drop).
-
-    if length(bg_areas) > 1
-        # Find largest component index (excluding 0 if it exists)
-        # component_lengths returns vector counting pixels for label 1, 2, ...
-        largest_bg_idx = argmax(bg_areas)
-
-        # Create new filled mask: True where background is NOT the largest component
-        # i.e., Drop = (Original Drop) OR (Small Holes)
-        # = NOT (Largest Background Component)
-        img_filled = bg_labels .!= largest_bg_idx
-    else
-        img_filled = img_clean
+    h_mask, w_mask = size(img_clean)
+    # Identify labels on the edges
+    edge_labels = Set{Int}()
+    for r in 1:h_mask
+        push!(edge_labels, bg_labels[r, 1], bg_labels[r, w_mask])
     end
+    for c in 1:w_mask
+        push!(edge_labels, bg_labels[1, c], bg_labels[h_mask, c])
+    end
+
+    # img_filled is img_clean OR anything that is NOT an edge-connected background component
+    img_filled = [img_clean[i, j] || !(bg_labels[i, j] in edge_labels) for i in 1:h_mask, j in 1:w_mask]
     capture_debug && (debug_imgs["5_filled"] = copy(img_filled))
+
+
+    # Note: We already filled holes above.
+
+
 
     # Find components on filled image
     labels = label_components(img_filled)
@@ -338,65 +346,75 @@ function sessile_drop_adaptive(image_path::String; capture_debug=false)
         # Skip needle (touches top)
         min_r < 5 && continue
 
-        # Validate drop
-        if area > (w * h) * 0.005 && min_c > 5 && max_c < (w - 5)
+        # Validate drop - lower threshold to handle fragmented/hollow drops
+        if area > (w * h) * 0.001 && min_c > 5 && max_c < (w - 5)
             push!(valid_contours, (idx=i, area=area, mask=component_mask))
         end
+
     end
 
     isempty(valid_contours) && return nothing
 
-    # Select largest
-    sort!(valid_contours, by=x -> x.area, rev=true)
-    drop_mask = valid_contours[1].mask
+    # Select best component - now we have filled holes, the drop should be solid.
+    # We prefer components that are "centered" and have reasonable aspect ratio.
+    sort!(valid_contours, by=c -> c.area, rev=true)
+    drop_info = valid_contours[1]
 
-    # Get contour and hull
-    contour_points = trace_boundary(drop_mask)
-    size(contour_points, 1) < 3 && return nothing
+
+    # Extract boundary of the solid filled component
+    contour_points = trace_boundary(BitMatrix(drop_info.mask))
     hull_points = convex_hull_gift_wrap(contour_points)
+    capture_debug && (debug_imgs["5_selected"] = copy(drop_info.mask))
+
+
+    # Extract only the upper boundary of the hull to avoid spikes
+    # For each X, keep the minimum Y (topmost point). Use rounding for Float64 keys.
+    unique_xs = sort(unique(round.(hull_points[:, 1], digits=1)))
+    upper_pts = []
+    for ux in unique_xs
+        mask = abs.(hull_points[:, 1] .- ux) .< 0.1
+        y_vals = hull_points[mask, 2]
+        !isempty(y_vals) && push!(upper_pts, [ux, minimum(y_vals)])
+    end
+    dome_points_array = reduce(vcat, [p' for p in upper_pts])
 
     # Filter dome points (above substrate)
-    dome_mask = hull_points[:, 2] .< (substrate_y - 5)
-    dome_points = hull_points[dome_mask, :]
-    size(dome_points, 1) < 3 && return nothing
+    # Use a dynamic threshold based on height to be more robust
+    h_drop = substrate_y - minimum(dome_points_array[:, 2])
+    dome_mask = dome_points_array[:, 2] .< (substrate_y - max(5, 0.05 * h_drop))
+    dome_points_array = dome_points_array[dome_mask, :]
 
-    # Sort by x
-    dome_points = dome_points[sortperm(dome_points[:, 1]), :]
+    size(dome_points_array, 1) < 3 && return nothing
+
+
 
     # Extract geometry
-    x_left, x_right = dome_points[1, 1], dome_points[end, 1]
+    x_left, x_right = dome_points_array[1, 1], dome_points_array[end, 1]
     cp_left, cp_right = (x_left, substrate_y), (x_right, substrate_y)
 
-    min_y_val = minimum(dome_points[:, 2])
-    apex_candidates = dome_points[abs.(dome_points[:, 2] .- min_y_val).<1.0, :]
+    min_y_val = minimum(dome_points_array[:, 2])
+    apex_candidates = dome_points_array[abs.(dome_points_array[:, 2] .- min_y_val).<2.0, :]
     apex = (mean(apex_candidates[:, 1]), min_y_val)
 
     height_px = substrate_y - min_y_val
     base_width_px = x_right - x_left
 
-    # Build final contour
-    final_contour = vcat([cp_left[1] cp_left[2]], dome_points, [cp_right[1] cp_right[2]])
+    # Build final contour for results - strictly Left Contact -> Dome -> Right Contact
+    final_contour = vcat([cp_left[1] cp_left[2]], dome_points_array, [cp_right[1] cp_right[2]])
+
+
 
     # ROI
     pad = 20
     roi = (max(1, round(Int, x_left - pad)), max(1, round(Int, min_y_val - pad)),
         min(w, round(Int, x_right + pad)), min(h, round(Int, substrate_y + pad)))
 
-    # Save contour
-    contour_filename = "julia_contour_$(basename(image_path)).txt"
-    try
-        open(contour_filename, "w") do f
-            for i in 1:size(final_contour, 1)
-                @printf(f, "%.2f,%.2f\n", final_contour[i, 1], final_contour[i, 2])
-            end
-        end
-        println("Saved contour to $contour_filename")
-    catch
-    end
-
     return DropDetectionResult(substrate_y, cp_left, cp_right, apex,
-        height_px, base_width_px, dome_points, final_contour, roi, debug_imgs)
+        height_px, base_width_px, dome_points_array, final_contour, roi, debug_imgs)
 end
+
+
+
 
 # ==============================================================================
 # 4. CONTACT ANGLE METHODS
@@ -1131,16 +1149,15 @@ function plot_debug_stages(det::DropDetectionResult; savepath=nothing)
         push!(plots, plot(Gray.(img_morph), title="4. Morph Clean", axis=false, ticks=false))
     end
     if !isnothing(img_filled)
-        push!(plots, plot(Gray.(img_filled), title="5. Hole Filled", axis=false, ticks=false))
+        push!(plots, plot(Gray.(img_filled), title="5. Selected Mask", axis=false, ticks=false))
     end
 
-    # Add final result logic for comparison (overlay logic)
-    # We can reuse plot_detection for the final frame but we need the original image for overlay
-    # Since we don't have the original image purely inside 'det' (unless we store it),
-    # let's just plot the contour
-    p_final = plot(aspect_ratio=:equal, yflip=true, title="6. Final Contour")
-    plot!(p_final, det.full_contour[:, 1], det.full_contour[:, 2], linewidth=2, label="Contour")
+    # Final result (hull + apex)
+    p_final = plot(aspect_ratio=:equal, yflip=true, title="6. Final Hull")
+    plot!(p_final, det.full_contour[:, 1], det.full_contour[:, 2], linewidth=2, label="Hull")
+    scatter!(p_final, [det.apex[1]], [det.apex[2]], markersize=5, color=:blue, label="Apex")
     push!(plots, p_final)
+
 
     # Layout logic
     n = length(plots)
