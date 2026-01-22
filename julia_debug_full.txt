@@ -1,0 +1,135 @@
+Loading image: ./data/samples/prueba sesil 2.png
+Initial substrate_y: 49.5
+WARNING: Substrate detected too high (< 20% height). Defaulting to 0.8*h.
+Rejected 2: Area=24 (Thresh=772.2)
+Rejected 3: Area=324 (Thresh=772.2)
+Rejected 4: Area=300 (Thresh=772.2)
+Rejected 5: Area=131 (Thresh=772.2)
+Candidate 6: Area=1977, Center=(162.0, 233.5)
+Rejected 7: Area=64 (Thresh=772.2)
+Rejected 8: Area=9 (Thresh=772.2)
+Rejected 9: Area=202 (Thresh=772.2)
+Rejected 10: Area=12 (Thresh=772.2)
+Rejected 11: Area=168 (Thresh=772.2)
+Rejected 12: Area=9 (Thresh=772.2)
+Rejected 14: Area=68 (Thresh=772.2)
+Rejected 15: Area=9 (Thresh=772.2)
+Rejected 16: Area=50 (Thresh=772.2)
+Candidate 17: Area=2279, Center=(264.0, 234.5)
+Rejected 18: Area=9 (Thresh=772.2)
+Rejected 19: Area=9 (Thresh=772.2)
+Rejected 20: Area=94 (Thresh=772.2)
+Rejected 21: Area=12 (Thresh=772.2)
+Rejected 22: Area=19 (Thresh=772.2)
+Rejected 23: Area=459 (Thresh=772.2)
+Rejected 24: Area=9 (Thresh=772.2)
+Rejected 25: Area=12 (Thresh=772.2)
+Rejected 26: Area=148 (Thresh=772.2)
+Rejected 27: Area=9 (Thresh=772.2)
+Rejected 28: Area=12 (Thresh=772.2)
+Rejected 29: Area=98 (Thresh=772.2)
+Rejected 30: Area=38 (Thresh=772.2)
+Rejected 31: Area=34 (Thresh=772.2)
+Rejected 32: Area=34 (Thresh=772.2)
+Rejected 33: Area=142 (Thresh=772.2)
+Rejected 34: Area=35 (Thresh=772.2)
+Rejected 35: Area=12 (Thresh=772.2)
+Rejected 36: Area=60 (Thresh=772.2)
+Rejected 37: Area=9 (Thresh=772.2)
+Rejected 38: Area=18 (Thresh=772.2)
+Rejected 39: Area=9 (Thresh=772.2)
+Rejected 40: Area=46 (Thresh=772.2)
+Rejected 41: Area=97 (Thresh=772.2)
+Rejected 42: Area=9 (Thresh=772.2)
+Rejected 43: Area=6 (Thresh=772.2)
+Saved contour to julia_contour_prueba sesil 2.png.txt
+
+--- JULIA DETECTION OUTPUT ---
+substrate_y: 280.8
+cp_left: (232.0, 280.8)
+cp_right: (234.0, 280.8)
+apex: (233.0, 64.0)
+height_px: 216.8
+base_width_px: 2.0
+roi_coords: (211, 43, 254, 300)
+dome_points_count: 4
+contour_points_count: 9
+-------------------------------
+
+
+Computing all metrics...
+
+--- DETAILED REPORT ---
+
+Apex-based spherical cap:
+Dict{String, Float64} with 3 entries:
+  "radius_px" => 108.402
+  "volume_px3" => 5.33586e6
+  "theta_deg" => 179.471
+
+Tangent method (left/right):
+Dict{String, Nothing} with 2 entries:
+  "left_deg" => nothing
+  "right_deg" => nothing
+
+Spherical-cap fit:
+Dict{String, Float64} with 3 entries:
+  "radius_px" => 108.402
+  "volume_px3" => 5.33586e6
+  "theta_deg" => 179.471
+
+Young-Laplace fit (Fixed Sigma):
+Dict{String, Float64} with 2 entries:
+  "bond_number" => NaN
+  "mean_deg" => NaN
+
+Displaying results plot...
+
+
+Running Detailed Y-L Comparison:
+============================================================
+Method 1: Known surface tension (σ = 72 mN/m)
+============================================================
+Contact angle: NaN°
+Bond number:   NaN
+
+============================================================
+Method 2: Unknown surface tension (fitted)
+============================================================
+Contact angle: NaN°
+Fitted σ:      NaN mN/m
+Bond number:   NaN
+
+============================================================
+Comparison
+============================================================
+Angle difference:      NaN°
+Surface tension error: NaN mN/m
+
+
+Processing Second Image: ./data/samples/gota depositada 1.png
+Initial substrate_y: 228.5
+Candidate 2: Area=4386, Center=(241.0, 201.5)
+Computing metrics for second image...
+Fit failed: UndefVarError(:u_vals, 0x0000000000009992, Main.SessileDrop)
+============================================================
+Method 1: Known surface tension (σ = 72 mN/m)
+============================================================
+Fit failed: UndefVarError(:u_vals, 0x0000000000009992, Main.SessileDrop)
+Contact angle: NaN°
+Bond number:   NaN
+
+============================================================
+Method 2: Unknown surface tension (fitted)
+============================================================
+Fit failed: UndefVarError(:u_vals, 0x0000000000009992, Main.SessileDrop)
+Contact angle: NaN°
+Fitted σ:      NaN mN/m
+Bond number:   NaN
+
+============================================================
+Comparison
+============================================================
+Angle difference:      NaN°
+Surface tension error: NaN mN/m
+Displaying second result plot...

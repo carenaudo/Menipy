@@ -23,7 +23,9 @@ from PySide6.QtGui import QImage, QColor
 from menipy.gui.controllers.camera_manager import CameraManager
 from menipy.gui.controllers.layout_manager import LayoutManager
 from menipy.gui.controllers.dialog_coordinator import DialogCoordinator
+from menipy.gui.controllers.dialog_coordinator import DialogCoordinator
 from menipy.gui.controllers.overlay_manager import OverlayManager
+from menipy.gui.controllers.image_manager import ImageManager
 
 if TYPE_CHECKING:
     from menipy.gui.main_window import MainWindow
@@ -50,8 +52,9 @@ class MainController(QObject):
         self.results_panel: ResultsPanel | None = getattr(
             window, "results_panel_ctrl", None
         )
-        self._cached_image_path: Optional[str] = None
-        self._cached_image_data: Optional[np.ndarray] = None
+        self.results_panel: ResultsPanel | None = getattr(
+            window, "results_panel_ctrl", None
+        )
 
         # Initialize managers
         self.camera_manager = CameraManager(
@@ -62,6 +65,14 @@ class MainController(QObject):
             parent=self,
         )
 
+        self.image_manager = ImageManager(
+            window=self.window,
+            setup_ctrl=self.setup_ctrl,
+            preview_panel=self.preview_panel,
+            preprocessing_ctrl=self.preprocessing_ctrl,
+            parent=self
+        )
+
         self.layout_manager = LayoutManager(window=self.window, settings=self.settings)
 
         self.dialog_coordinator = DialogCoordinator(
@@ -69,7 +80,7 @@ class MainController(QObject):
             settings=self.settings,
             preprocessing_ctrl=self.preprocessing_ctrl,
             edge_detection_ctrl=self.edge_detection_ctrl,
-            image_loader=self._load_preprocessing_image,
+            image_loader=self.image_manager.load_preprocessing_image,
             parent=self,
         )
 
@@ -103,8 +114,8 @@ class MainController(QObject):
     def _wire_signals(self):
         """Connect signals from child controllers to main controller slots."""
         # Setup Panel
-        self.setup_ctrl.browse_requested.connect(self.browse_image)
-        self.setup_ctrl.browse_batch_requested.connect(self.browse_batch_folder)
+        self.setup_ctrl.browse_requested.connect(self.image_manager.browse_image)
+        self.setup_ctrl.browse_batch_requested.connect(self.image_manager.browse_batch_folder)
         self.setup_ctrl.preview_requested.connect(self.on_preview_requested)
         self.setup_ctrl.run_all_requested.connect(self.run_full_pipeline)
         self.setup_ctrl.play_stage_requested.connect(self.pipeline_ctrl.run_stage)
@@ -145,36 +156,8 @@ class MainController(QObject):
 
     @Slot()
     def browse_image(self):
-        """Opens a file dialog to select a single image."""
-        start_dir = str(Path(self.settings.last_image_path or Path.home()).parent)
-        path, _ = QFileDialog.getOpenFileName(
-            self.window,
-            "Open Image",
-            start_dir,
-            "Images (*.png *.jpg *.jpeg *.bmp *.tif *.tiff)",
-        )
-        if path:
-            self.settings.last_image_path = path
-            self.setup_ctrl.set_image_path(path)
-            self.preview_panel.load_path(path)
-            if self.preprocessing_ctrl is not None:
-                image = self._load_preprocessing_image(path_override=path)
-                if image is not None:
-                    self.preprocessing_ctrl.set_source(image)
-                    try:
-                        self.preprocessing_ctrl.run()
-                    except Exception as exc:  # pragma: no cover - guard runtime
-                        logger.debug("Initial preprocessing run failed: %s", exc)
-
-    @Slot()
-    def browse_batch_folder(self):
-        """Opens a file dialog to select a batch processing folder."""
-        start_dir = self.setup_ctrl.batch_path() or str(Path.home())
-        path = QFileDialog.getExistingDirectory(
-            self.window, "Select Batch Folder", start_dir
-        )
-        if path:
-            self.setup_ctrl.set_batch_path(path)
+        """Delegates image browsing to the ImageManager."""
+        self.image_manager.browse_image()
 
     @Slot(bool)
     def select_camera(self, on: bool):
@@ -229,7 +212,7 @@ class MainController(QObject):
     @Slot()
     def on_auto_calibrate_requested(self) -> None:
         """Launch auto-calibration wizard."""
-        image = self._load_preprocessing_image()
+        image = self.image_manager.load_preprocessing_image()
         if image is None:
             self.window.statusBar().showMessage('No image loaded for calibration', 2000)
             QMessageBox.warning(
@@ -323,7 +306,7 @@ class MainController(QObject):
         if width <= 0 or height <= 0:
             return
         roi = (left, top, width, height)
-        image = self._load_preprocessing_image()
+        image = self.image_manager.load_preprocessing_image()
         if image is None:
             logger.debug("Preprocessing: could not load source image for ROI update.")
             return
@@ -390,44 +373,6 @@ class MainController(QObject):
             logger.debug(
                 "Error while handling edge detection preview image", exc_info=True
             )
-
-    def _load_preprocessing_image(
-        self, path_override: Optional[str] = None
-    ) -> Optional[np.ndarray]:
-        if self.preprocessing_ctrl is None:
-            return None
-        path = path_override or self.setup_ctrl.image_path()
-        if path:
-            if path == self._cached_image_path and self._cached_image_data is not None:
-                return self._cached_image_data.copy()
-            img = None
-            if cv2 is not None:
-                try:
-                    img = cv2.imread(path, cv2.IMREAD_COLOR)
-                except Exception as exc:  # pragma: no cover - guard optional dependency
-                    logger.debug("cv2.imread failed for %s: %s", path, exc)
-                    img = None
-            if img is None:
-                qimg = QImage(path)
-                if qimg.isNull():
-                    logger.warning("Unable to load image for preprocessing: %s", path)
-                    return None
-                img = self._qimage_to_bgr(qimg)
-            self._cached_image_path = path
-            self._cached_image_data = img
-            return img.copy()
-        if self._cached_image_data is not None:
-            return self._cached_image_data.copy()
-        return None
-
-    def _qimage_to_bgr(self, qimg: QImage) -> np.ndarray:
-        converted = qimg.convertToFormat(QImage.Format.Format_RGB888)
-        width = converted.width()
-        height = converted.height()
-        ptr = converted.constBits()
-        ptr.setsize(converted.byteCount())
-        arr = np.frombuffer(ptr, np.uint8).reshape((height, width, 3))
-        return arr[..., ::-1].copy()
 
     def shutdown(self):
         """Saves settings and performs cleanup before the application closes."""

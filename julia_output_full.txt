@@ -1,0 +1,90 @@
+Loading image: ./data/samples/prueba sesil 2.png
+Initial substrate_y: 49.5
+WARNING: Substrate detected too high (< 20% height). Defaulting to 0.8*h.
+Saved contour to julia_contour_prueba sesil 2.png.txt
+
+--- JULIA DETECTION OUTPUT ---
+substrate_y: 280.8
+cp_left: (232.0, 280.8)
+cp_right: (234.0, 280.8)
+apex: (233.0, 64.0)
+height_px: 216.8
+base_width_px: 2.0
+roi_coords: (211, 43, 254, 300)
+dome_points_count: 4
+contour_points_count: 9
+-------------------------------
+
+
+Computing all metrics...
+
+--- DETAILED REPORT ---
+
+Apex-based spherical cap:
+Dict{String, Float64} with 3 entries:
+  "radius_px" => 108.402
+  "volume_px3" => 5.33586e6
+  "theta_deg" => 179.471
+
+Tangent method (left/right):
+Dict{String, Nothing} with 2 entries:
+  "left_deg" => nothing
+  "right_deg" => nothing
+
+Spherical-cap fit:
+Dict{String, Float64} with 3 entries:
+  "radius_px" => 108.402
+  "volume_px3" => 5.33586e6
+  "theta_deg" => 179.471
+
+Young-Laplace fit (Fixed Sigma):
+Dict{String, Float64} with 2 entries:
+  "bond_number" => 1.328
+  "mean_deg" => NaN
+
+Displaying results plot...
+
+
+Running Detailed Y-L Comparison:
+============================================================
+Method 1: Known surface tension (σ = 72 mN/m)
+============================================================
+Contact angle: NaN°
+Bond number:   1.328
+
+============================================================
+Method 2: Unknown surface tension (fitted)
+============================================================
+Contact angle: NaN°
+Fitted σ:      72.00 mN/m
+Bond number:   1.328
+
+============================================================
+Comparison
+============================================================
+Angle difference:      NaN°
+Surface tension error: 0.00 mN/m
+
+
+Processing Second Image: ./data/samples/gota depositada 1.png
+Initial substrate_y: 228.5
+Computing metrics for second image...
+============================================================
+Method 1: Known surface tension (σ = 72 mN/m)
+============================================================
+Contact angle: NaN°
+Bond number:   0.244
+
+============================================================
+Method 2: Unknown surface tension (fitted)
+============================================================
+Contact angle: NaN°
+Fitted σ:      72.00 mN/m
+Bond number:   0.244
+
+============================================================
+Comparison
+============================================================
+Angle difference:      NaN°
+Surface tension error: 0.00 mN/m
+Displaying second result plot...

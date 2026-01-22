@@ -1,0 +1,86 @@
+Error: No valid drop contours found (check filtering).
+Saved contour to python_contour_prueba sesil 2.png.txt
+
+--- PYTHON DETECTION OUTPUT ---
+substrate_y: 272
+cp_left: (np.int32(122), 272)
+cp_right: (np.int32(324), 272)
+apex: (222, 186)
+height_px: 86.0
+base_width_px: 202.0
+roi_coords: (np.int32(102), np.int32(166), np.int32(344), 292)
+dome_points_count: 32
+contour_points_count: 34
+-------------------------------
+
+============================================================
+Method 1: Known surface tension (sigma = 72 mN/m)
+============================================================
+Left angle:  61.36°
+Right angle: 61.36°
+Bond number: 1.183
+
+============================================================
+Method 2: Unknown surface tension (fitted)
+============================================================
+Left angle:  61.36°
+Right angle: 61.36°
+Fitted sigma:    72.00 mN/m
+Bond number: 1.183
+
+============================================================
+Comparison
+============================================================
+Angle difference: 0.00° (left), 0.00° (right)
+Surface tension error: 0.00 mN/m (0.0%)
+
+Apex-based spherical cap:
+{'theta_deg': 80.82780220765828, 'height_px': 86.0, 'base_width_px': 202.0, 'radius_px': 102.30813953488372, 'volume_px3': 1711075.7691605391}
+
+Tangent method (left/right):
+{'left_deg': 73.32900647726005, 'right_deg': 73.8854439029368}
+
+Spherical-cap fit:
+{'theta_deg': 80.8278022076583, 'radius_px': 102.30813953488372, 'volume_px3': 1711075.7691605391}
+
+Elliptical fit:
+{'left_deg': 82.05633289822107, 'right_deg': 82.07850324361624, 'mean_deg': 82.06741807091865, 'a_px': 103.76736450195312, 'b_px': 99.64945220947266, 'volume_px3': 4494538.4299528785}
+
+Young-Laplace fit:
+{'left_deg': 61.36404728534454, 'right_deg': 61.36404728534454, 'mean_deg': 61.36404728534454, 'capillary_length': 0.0027091418459143854, 'bond_number': 1.1828831918057328}
+Saved contour to python_contour_gota depositada 1.png.txt
+============================================================
+Method 1: Known surface tension (sigma = 72 mN/m)
+============================================================
+Left angle:  58.18°
+Right angle: 56.56°
+Bond number: 0.895
+
+============================================================
+Method 2: Unknown surface tension (fitted)
+============================================================
+Left angle:  51.84°
+Right angle: 51.60°
+Fitted sigma:    46.34 mN/m
+Bond number: 1.490
+
+============================================================
+Comparison
+============================================================
+Angle difference: 6.35° (left), 4.96° (right)
+Surface tension error: 25.66 mN/m (35.6%)
+
+Apex-based spherical cap:
+{'theta_deg': 63.44720591536805, 'height_px': 51.0, 'base_width_px': 165.0, 'radius_px': 92.2279411764706, 'volume_px3': 614708.758643526}
+
+Tangent method (left/right):
+{'left_deg': 61.2800831781526, 'right_deg': 61.738935749815745}
+
+Spherical-cap fit:
+{'theta_deg': 63.44720591536805, 'radius_px': 92.2279411764706, 'volume_px3': 614708.758643526}
+
+Elliptical fit:
+{'left_deg': 89.24539924592482, 'right_deg': 89.24639777056832, 'mean_deg': 89.24589850824657, 'a_px': 83.20587158203125, 'b_px': 52.1449089050293, 'volume_px3': 1512197.3434971198}
+
+Young-Laplace fit:
+{'left_deg': 58.18283074216522, 'right_deg': 56.56374269593592, 'mean_deg': 57.37328671905057, 'capillary_length': 0.0027091418459143854, 'bond_number': 0.8949719290443806}

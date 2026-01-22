@@ -58,7 +58,26 @@ class TestSessileControllerFlows:
         results_panel = Mock()
         results_panel.update = Mock()
 
+        # Mock needle_rect to return a valid tuple (x, y, w, h)
+        preview_panel.needle_rect = Mock(return_value=(100, 100, 10, 50))
+
         return preview_panel, results_panel
+
+    @pytest.fixture(autouse=True)
+    def mock_dialogs(self, mock_window):
+        """Mock QMessageBox and configure setupPanel to prevent crashes."""
+        # Configure setupPanel mock on the window
+        mock_window.setupPanel = Mock()
+        mock_window.setupPanel.get_calibration_params.return_value = {
+            "needle_length_mm": 0.5,
+            "drop_density_kg_m3": 1000.0,
+            "fluid_density_kg_m3": 1.2
+        }
+
+        # Patch QMessageBox globally for all tests in this class
+        with patch("PySide6.QtWidgets.QMessageBox.critical") as mock_critical, \
+             patch("PySide6.QtWidgets.QMessageBox.warning") as mock_warning:
+            yield mock_critical, mock_warning
 
     @pytest.fixture
     def controller(self, mock_window, mock_panels):
@@ -95,9 +114,11 @@ class TestSessileControllerFlows:
             10, 10, 100, 100
         )
 
+
         with patch("menipy.pipelines.discover.PIPELINE_MAP", PIPELINE_MAP):
             try:
                 controller.run_simple_analysis()
+                
                 # Verify pipeline was called and results were updated
                 controller.results_panel.update.assert_called_once()
                 controller.preview_panel.display.assert_called_once()
@@ -296,8 +317,10 @@ class TestSessileControllerFlows:
                 # Verify that the critical dialog was shown
                 mock_critical.assert_called_once()
 
-    def test_context_population_for_staged_run(self, controller, tmp_path):
+    def test_context_population_for_staged_run(self, controller, tmp_path, mock_dialogs):
         """Test that context is properly populated for staged sessile runs."""
+        mock_critical, mock_warning = mock_dialogs
+        
         # Create test image
         img = np.zeros((120, 120, 3), dtype=np.uint8)
         cv2.circle(img, (60, 60), 30, (255, 255, 255), -1)
@@ -326,6 +349,13 @@ class TestSessileControllerFlows:
 
             try:
                 controller.run_simple_analysis()
+                
+                # Check for errors swallowed by mock_dialogs
+                if mock_critical.called:
+                    print(f"\nCRITICAL ERROR CAPTURED: {mock_critical.call_args}")
+                if mock_warning.called:
+                    print(f"\nWARNING CAPTURED: {mock_warning.call_args}")
+
                 # Verify pipeline was instantiated and run
                 mock_pipeline_cls.assert_called_once()
                 mock_pipeline.run.assert_called_once()
@@ -334,6 +364,9 @@ class TestSessileControllerFlows:
                 assert "diameter_mm" in mock_ctx.results
                 assert "height_mm" in mock_ctx.results
             except Exception as e:
+                # Still fail, but print error if available
+                if mock_critical.called:
+                    print(f"\nCRITICAL ERROR CAPTURED: {mock_critical.call_args}")
                 pytest.fail(f"Context population test failed: {e}")
 
     def test_results_panel_update_on_success(self, controller):
