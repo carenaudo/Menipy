@@ -225,6 +225,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # menubar actions from split UI
         self._wire_menu_actions()
+        self._wire_layout_controls()
+        self._wire_action_bar()
 
     # -------------------------- helpers & wiring --------------------------
 
@@ -244,6 +246,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             "actionStop": "stop_pipeline",
             "actionOverlay": "open_overlay",
             "actionAbout": "show_about_dialog",
+            "actionPreview": "on_preview_requested",
+            "actionExportCsv": "export_results_csv",
         }
 
         for action_name, method_name in actions.items():
@@ -276,6 +280,157 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 logger.error(f"Failed to connect action '{action_name}': {e}")
 
             # No runtime icon/tooltip setting here; the .ui defines action properties.
+
+    def _wire_action_bar(self) -> None:
+        if not hasattr(self, "main_controller") or not self.main_controller:
+            return
+
+        button_action_pairs = [
+            ("actionOpenImageBtn", "actionOpenImage"),
+            ("actionPreviewBtn", "actionPreview"),
+            ("actionRunBtn", "actionRunFull"),
+            ("actionStopBtn", "actionStop"),
+            ("actionExportCsvBtn", "actionExportCsv"),
+        ]
+        for button_name, action_name in button_action_pairs:
+            button = getattr(self, button_name, None)
+            action = getattr(self, action_name, None)
+            if not button or not action:
+                continue
+            try:
+                button.clicked.connect(action.trigger)
+            except Exception:
+                pass
+
+    def _wire_layout_controls(self) -> None:
+        self._splitter_sizes_full: Optional[list[int]] = None
+        layout_buttons = {
+            "layoutAnalysisBtn": "analysis",
+            "layoutSetupBtn": "setup",
+            "layoutReviewBtn": "review",
+        }
+        for button_name, mode in layout_buttons.items():
+            button = getattr(self, button_name, None)
+            if not button:
+                continue
+            try:
+                button.clicked.connect(
+                    lambda _checked=False, m=mode: self._apply_layout_mode(m)
+                )
+            except Exception:
+                pass
+
+        setup_toggle = getattr(self, "toggleSetupBtn", None)
+        inspect_toggle = getattr(self, "toggleInspectBtn", None)
+        if setup_toggle:
+            try:
+                setup_toggle.toggled.connect(
+                    lambda checked=False: self._set_panel_visibility(
+                        checked, getattr(inspect_toggle, "isChecked", lambda: True)()
+                    )
+                )
+            except Exception:
+                pass
+        if inspect_toggle:
+            try:
+                inspect_toggle.toggled.connect(
+                    lambda checked=False: self._set_panel_visibility(
+                        getattr(setup_toggle, "isChecked", lambda: True)(), checked
+                    )
+                )
+            except Exception:
+                pass
+
+    def _cache_splitter_sizes(self) -> None:
+        if not hasattr(self, "rootSplitter"):
+            return
+        setup_visible = bool(getattr(self, "setupHost", None)) and self.setupHost.isVisible()  # type: ignore[attr-defined]
+        inspect_visible = bool(getattr(self, "inspectTabs", None)) and self.inspectTabs.isVisible()  # type: ignore[attr-defined]
+        if setup_visible and inspect_visible:
+            try:
+                self._splitter_sizes_full = list(self.rootSplitter.sizes())  # type: ignore[attr-defined]
+            except Exception:
+                pass
+
+    def _apply_layout_mode(self, mode: str) -> None:
+        if not hasattr(self, "rootSplitter"):
+            return
+        self._cache_splitter_sizes()
+        if mode == "analysis":
+            self._set_panel_visibility(False, False)
+        elif mode == "setup":
+            self._set_panel_visibility(True, False)
+        else:
+            self._set_panel_visibility(True, True)
+
+    def _set_panel_visibility(self, show_setup: bool, show_inspector: bool) -> None:
+        if not hasattr(self, "rootSplitter"):
+            return
+        setup_host = getattr(self, "setupHost", None)
+        inspect_tabs = getattr(self, "inspectTabs", None)
+        if setup_host is not None:
+            setup_host.setVisible(show_setup)
+        if inspect_tabs is not None:
+            inspect_tabs.setVisible(show_inspector)
+
+        try:
+            sizes = self.rootSplitter.sizes()  # type: ignore[attr-defined]
+        except Exception:
+            sizes = [240, 600, 280]
+
+        if show_setup and show_inspector:
+            target_sizes = self._splitter_sizes_full or sizes
+        elif show_setup and not show_inspector:
+            total = sizes[0] + sizes[1] + sizes[2]
+            target_sizes = [max(200, sizes[0]), max(1, total - sizes[0]), 0]
+        elif not show_setup and show_inspector:
+            total = sizes[0] + sizes[1] + sizes[2]
+            target_sizes = [0, max(1, total - sizes[2]), max(200, sizes[2])]
+        else:
+            total = max(1, sum(sizes))
+            target_sizes = [0, total, 0]
+
+        try:
+            self.rootSplitter.setSizes(target_sizes)  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
+        toggle_setup = getattr(self, "toggleSetupBtn", None)
+        toggle_inspect = getattr(self, "toggleInspectBtn", None)
+        if toggle_setup:
+            toggle_setup.blockSignals(True)
+            toggle_setup.setChecked(show_setup)
+            toggle_setup.blockSignals(False)
+        if toggle_inspect:
+            toggle_inspect.blockSignals(True)
+            toggle_inspect.setChecked(show_inspector)
+            toggle_inspect.blockSignals(False)
+
+        self._sync_layout_buttons(show_setup, show_inspector)
+
+    def _sync_layout_buttons(self, show_setup: bool, show_inspector: bool) -> None:
+        layout_analysis = getattr(self, "layoutAnalysisBtn", None)
+        layout_setup = getattr(self, "layoutSetupBtn", None)
+        layout_review = getattr(self, "layoutReviewBtn", None)
+        if not (layout_analysis and layout_setup and layout_review):
+            return
+
+        target = None
+        if show_setup and show_inspector:
+            target = layout_review
+        elif show_setup and not show_inspector:
+            target = layout_setup
+        elif not show_setup and not show_inspector:
+            target = layout_analysis
+
+        if target is None:
+            return
+        for button in (layout_analysis, layout_setup, layout_review):
+            try:
+                button.blockSignals(True)
+                button.setChecked(button is target)
+            finally:
+                button.blockSignals(False)
 
     def _embed(self, child: QWidget, host_or_layout):
         """Add child into a QWidget host or directly into a QLayout."""

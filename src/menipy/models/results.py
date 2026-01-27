@@ -52,7 +52,7 @@ class ResultsHistory:
             measurements = [m for m in measurements if m.pipeline == pipeline_filter]
 
         if not measurements:
-            return ["File", "Time", "Pipeline"], []
+            return ["file_name", "timestamp", "pipeline"], []
 
         # Collect all unique result keys across measurements
         all_keys: set[str] = set()
@@ -92,18 +92,7 @@ class ResultsHistory:
         remaining_keys = all_keys - set(priority_columns)
         all_columns = priority_columns + sorted(remaining_keys)
 
-        # Build headers
-        headers = []
-        for col in all_columns:
-            if col == "file_name":
-                headers.append("File")
-            elif col == "timestamp":
-                headers.append("Time")
-            elif col == "pipeline":
-                headers.append("Pipeline")
-            else:
-                # Format metric names nicely
-                headers.append(col.replace("_", " ").title())
+        headers = list(all_columns)
 
         # Build rows
         rows = []
@@ -122,14 +111,11 @@ class ResultsHistory:
                     value = measurement.pipeline.title()
                 else:
                     value = measurement.results.get(col)
-                    # Format numeric values
-                    if isinstance(value, (int, float)) and col.endswith(
-                        ("_mm", "_uL", "_mN_m", "_deg", "_mm2", "_Hz", "_px")
-                    ):
-                        if "angle" in col.lower() or "tilt" in col.lower():
+                    if isinstance(value, (int, float)):
+                        if col.endswith("_deg") or "angle" in col.lower():
                             value = f"{value:.1f}"
                         else:
-                            value = f"{value:.4f}"
+                            value = f"{value:.3g}"
                     elif value is None:
                         value = ""
                     else:

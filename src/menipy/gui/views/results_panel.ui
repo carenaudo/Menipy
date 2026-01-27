@@ -5,9 +5,19 @@
    <property name="windowTitle"><string>Results</string></property>
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
+     <widget class="QLabel" name="summaryLabel">
+      <property name="text"><string>0 measurements | Avg CA: n/a | Last run: n/a</string></property>
+     </widget>
+    </item>
+    <item>
      <widget class="QTableWidget" name="resultsTable">
       <property name="columnCount"><number>0</number></property>
       <property name="rowCount"><number>0</number></property>
+      <property name="alternatingRowColors"><bool>true</bool></property>
+      <property name="sortingEnabled"><bool>true</bool></property>
+      <property name="selectionBehavior">
+       <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+      </property>
       <attribute name="horizontalHeaderVisible">
        <bool>true</bool>
       </attribute>

@@ -51,6 +51,7 @@ class ResultsPanel:
         self.table: Optional[QTableWidget] = panel.findChild(
             QTableWidget, "resultsTable"
         )
+        self.summary_label: Optional[QLabel] = panel.findChild(QLabel, "summaryLabel")
         self.history = get_results_history()
         self.current_pipeline_filter = None
         self.pipeline_ui_manager = PipelineUIManager()
@@ -105,8 +106,11 @@ class ResultsPanel:
         self.export_button.clicked.connect(self._export_csv)
         controls_layout.addWidget(self.export_button)
 
-        # Add controls to main layout
-        layout.insertLayout(0, controls_layout)
+        # Add controls to main layout (keep summary label above controls if present)
+        insert_index = 0
+        if self.summary_label and layout.indexOf(self.summary_label) != -1:
+            insert_index = 1
+        layout.insertLayout(insert_index, controls_layout)
 
     def _on_pipeline_filter_changed(self) -> None:
         """Handle pipeline filter change."""
@@ -160,6 +164,10 @@ class ResultsPanel:
                 self.panel, "Export Error", f"Failed to export CSV: {e}"
             )
 
+    def export_csv(self) -> None:
+        """Public wrapper for exporting the current table view."""
+        self._export_csv()
+
     def update(self, results: Mapping[str, Any] | None) -> None:
         """Legacy method for single measurement display - now adds to history."""
         if results:
@@ -182,17 +190,20 @@ class ResultsPanel:
             return
 
         headers, rows = self.history.get_table_data(self.current_pipeline_filter)
+        raw_headers = list(headers)
 
         # Apply pipeline-specific column prioritization if filtering by pipeline
         if self.current_pipeline_filter:
             headers, rows = self._prioritize_columns_for_pipeline(
                 headers, rows, self.current_pipeline_filter
             )
+            raw_headers = list(headers)
 
         # Update table
-        self.table.setColumnCount(len(headers))
+        display_headers = [self._display_header(h) for h in headers]
+        self.table.setColumnCount(len(display_headers))
         self.table.setRowCount(len(rows))
-        self.table.setHorizontalHeaderLabels(headers)
+        self.table.setHorizontalHeaderLabels(display_headers)
 
         # Populate data with pipeline-aware styling
         for row_idx, row_data in enumerate(rows):
@@ -203,7 +214,7 @@ class ResultsPanel:
                 # Add pipeline-specific styling
                 if self.current_pipeline_filter:
                     self._apply_pipeline_styling(
-                        item, self.current_pipeline_filter, headers[col_idx]
+                        item, self.current_pipeline_filter, raw_headers[col_idx]
                     )
 
                 self.table.setItem(row_idx, col_idx, item)
@@ -217,6 +228,7 @@ class ResultsPanel:
         )
         self.count_label.setText(f"{measurement_count} measurements{filter_text}")
 
+        self._update_summary()
         self.table.resizeColumnsToContents()
 
     def _prioritize_columns_for_pipeline(
@@ -233,18 +245,14 @@ class ResultsPanel:
         priority_columns = []
 
         # Always include timestamp and file info first
-        if "Timestamp" in headers:
-            priority_columns.append("Timestamp")
-        if "File" in headers:
-            priority_columns.append("File")
-        if "Pipeline" in headers:
-            priority_columns.append("Pipeline")
+        for base in ("file_name", "timestamp", "pipeline"):
+            if base in headers:
+                priority_columns.append(base)
 
         # Add primary metrics for this pipeline
         for metric in primary_metrics:
-            label = LABEL_MAP.get(metric, metric.replace("_", " ").title())
-            if label in headers:
-                priority_columns.append(label)
+            if metric in headers:
+                priority_columns.append(metric)
 
         # Add remaining columns
         for header in headers:
@@ -269,19 +277,50 @@ class ResultsPanel:
         self, item: QTableWidgetItem, pipeline_name: str, column_name: str
     ) -> None:
         """Apply pipeline-specific styling to table cells."""
-        # Get pipeline display info
-        display_info = self.pipeline_ui_manager.get_display_info(pipeline_name)
-
         # Style primary metrics differently
         primary_metrics = self.pipeline_ui_manager.get_primary_metrics(pipeline_name)
         for metric in primary_metrics:
-            label = LABEL_MAP.get(metric, metric.replace("_", " ").title())
-            if column_name == label:
+            if column_name == metric:
                 # Make primary metrics bold
                 font = item.font()
                 font.setBold(True)
                 item.setFont(font)
                 break
+
+    def _display_header(self, header: str) -> str:
+        if header == "file_name":
+            return "File"
+        if header == "timestamp":
+            return "Time"
+        if header == "pipeline":
+            return "Pipeline"
+        return LABEL_MAP.get(header, header.replace("_", " ").title())
+
+    def _update_summary(self) -> None:
+        if not self.summary_label:
+            return
+        measurements = self.history.measurements
+        if self.current_pipeline_filter:
+            measurements = [
+                m for m in measurements if m.pipeline == self.current_pipeline_filter
+            ]
+        count = len(measurements)
+        last_run = (
+            measurements[0].timestamp.strftime("%H:%M:%S") if measurements else "n/a"
+        )
+        angles = []
+        for measurement in measurements:
+            value = measurement.results.get("contact_angle_deg")
+            if value is None:
+                continue
+            try:
+                angles.append(float(value))
+            except (TypeError, ValueError):
+                continue
+        avg_ca = f"{sum(angles) / len(angles):.1f}°" if angles else "n/a"
+        self.summary_label.setText(
+            f"{count} measurements | Avg CA: {avg_ca} | Last run: {last_run}"
+        )
 
     def set_pipeline_filter(self, pipeline_name: str) -> None:
         """Set the pipeline filter programmatically."""

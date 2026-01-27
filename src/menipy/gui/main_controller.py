@@ -276,6 +276,18 @@ class MainController(QObject):
             logger.info("Cleared pending tasks in the thread pool.")
             self.window.statusBar().showMessage("Stop request sent.", 2000)
 
+    @Slot()
+    def export_results_csv(self) -> None:
+        """Export the current results table to CSV."""
+        if not self.results_panel:
+            return
+        try:
+            self.results_panel.export_csv()
+        except Exception as exc:
+            QMessageBox.warning(
+                self.window, "Export Results", f"Failed to export results:\n{exc}"
+            )
+
     @Slot(str)
     def on_pipeline_changed(self, pipeline_name: str):
         """Saves the selected pipeline to settings."""

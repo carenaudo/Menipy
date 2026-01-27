@@ -8,11 +8,12 @@
   <widget class="QMenuBar" name="menubar">
    <property name="nativeMenuBar"><bool>false</bool></property>
    <widget class="QMenu" name="menuFile">
-    <property name="title"><string>&amp;File</string></property>
-    <addaction name="actionOpenImage"/>
-    <addaction name="actionOpenCamera"/>
-    <addaction name="separator"/>
-    <addaction name="actionQuit"/>
+   <property name="title"><string>&amp;File</string></property>
+   <addaction name="actionOpenImage"/>
+   <addaction name="actionOpenCamera"/>
+    <addaction name="actionExportCsv"/>
+   <addaction name="separator"/>
+   <addaction name="actionQuit"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title"><string>&amp;View</string></property>
@@ -20,9 +21,10 @@
     <addaction name="actionOverlay"/>
    </widget>
    <widget class="QMenu" name="menuRun">
-    <property name="title"><string>&amp;Run</string></property>
-    <addaction name="actionRunFull"/>
-    <addaction name="actionRunSelected"/>
+   <property name="title"><string>&amp;Run</string></property>
+    <addaction name="actionPreview"/>
+   <addaction name="actionRunFull"/>
+   <addaction name="actionRunSelected"/>
     <addaction name="separator"/>
     <addaction name="actionStop"/>
    </widget>
@@ -39,6 +41,74 @@
   <!-- Central area: 3-way splitter -->
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="centralLayout">
+    <item>
+     <widget class="QWidget" name="layoutBar">
+      <layout class="QHBoxLayout" name="layoutBarLayout">
+       <property name="leftMargin"><number>8</number></property>
+       <property name="topMargin"><number>8</number></property>
+       <property name="rightMargin"><number>8</number></property>
+       <property name="bottomMargin"><number>0</number></property>
+       <property name="spacing"><number>8</number></property>
+       <item>
+        <widget class="QLabel" name="layoutLabel">
+         <property name="text"><string>Layout</string></property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="layoutAnalysisBtn">
+         <property name="text"><string>Analysis</string></property>
+         <property name="checkable"><bool>true</bool></property>
+         <property name="autoExclusive"><bool>true</bool></property>
+         <property name="toolTip"><string>Focus on the image canvas</string></property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="layoutSetupBtn">
+         <property name="text"><string>Setup</string></property>
+         <property name="checkable"><bool>true</bool></property>
+         <property name="autoExclusive"><bool>true</bool></property>
+         <property name="toolTip"><string>Show setup and preview panels</string></property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="layoutReviewBtn">
+         <property name="text"><string>Review</string></property>
+         <property name="checkable"><bool>true</bool></property>
+         <property name="checked"><bool>true</bool></property>
+         <property name="autoExclusive"><bool>true</bool></property>
+         <property name="toolTip"><string>Show setup, preview, and inspector panels</string></property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="layoutSpacer">
+         <property name="orientation"><enum>Qt::Horizontal</enum></property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QToolButton" name="toggleSetupBtn">
+         <property name="text"><string>Setup Panel</string></property>
+         <property name="checkable"><bool>true</bool></property>
+         <property name="checked"><bool>true</bool></property>
+         <property name="toolTip"><string>Show or hide the setup panel</string></property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="toggleInspectBtn">
+         <property name="text"><string>Inspector</string></property>
+         <property name="checkable"><bool>true</bool></property>
+         <property name="checked"><bool>true</bool></property>
+         <property name="toolTip"><string>Show or hide the results inspector</string></property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
     <item>
      <widget class="QSplitter" name="rootSplitter">
       <property name="orientation"><enum>Qt::Horizontal</enum></property>
@@ -75,6 +145,87 @@
       </widget>
      </widget>
     </item>
+    <item>
+     <widget class="QFrame" name="actionBar">
+      <property name="frameShape"><enum>QFrame::StyledPanel</enum></property>
+      <property name="frameShadow"><enum>QFrame::Plain</enum></property>
+      <layout class="QHBoxLayout" name="actionBarLayout">
+       <property name="leftMargin"><number>8</number></property>
+       <property name="topMargin"><number>6</number></property>
+       <property name="rightMargin"><number>8</number></property>
+       <property name="bottomMargin"><number>8</number></property>
+       <property name="spacing"><number>10</number></property>
+       <item>
+        <widget class="QLabel" name="sessionLabel">
+         <property name="text"><string>Session</string></property>
+        </widget>
+       </item>
+       <item>
+       <widget class="QToolButton" name="actionOpenImageBtn">
+         <property name="text"><string>Load Image</string></property>
+         <property name="autoRaise"><bool>true</bool></property>
+        </widget>
+      </item>
+       <item>
+        <widget class="QFrame" name="sessionSeparator">
+         <property name="frameShape"><enum>QFrame::VLine</enum></property>
+         <property name="frameShadow"><enum>QFrame::Sunken</enum></property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="processingLabel">
+         <property name="text"><string>Processing</string></property>
+        </widget>
+       </item>
+       <item>
+       <widget class="QToolButton" name="actionPreviewBtn">
+         <property name="text"><string>Preview</string></property>
+         <property name="autoRaise"><bool>true</bool></property>
+        </widget>
+      </item>
+      <item>
+       <widget class="QToolButton" name="actionRunBtn">
+         <property name="text"><string>Run</string></property>
+         <property name="autoRaise"><bool>true</bool></property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QToolButton" name="actionStopBtn">
+         <property name="text"><string>Stop</string></property>
+         <property name="autoRaise"><bool>true</bool></property>
+       </widget>
+      </item>
+       <item>
+        <widget class="QFrame" name="processingSeparator">
+         <property name="frameShape"><enum>QFrame::VLine</enum></property>
+         <property name="frameShadow"><enum>QFrame::Sunken</enum></property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="exportLabel">
+         <property name="text"><string>Export</string></property>
+        </widget>
+       </item>
+       <item>
+       <widget class="QToolButton" name="actionExportCsvBtn">
+         <property name="text"><string>Export CSV</string></property>
+         <property name="autoRaise"><bool>true</bool></property>
+       </widget>
+      </item>
+       <item>
+        <spacer name="actionSpacer">
+         <property name="orientation"><enum>Qt::Horizontal</enum></property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+    </item>
    </layout>
   </widget>
 
@@ -85,6 +236,13 @@
   <action name="actionOpenImage">
    <property name="text"><string>Open &amp;Image…</string></property>
    <property name="shortcut"><string>Ctrl+O</string></property>
+  </action>
+  <action name="actionPreview">
+   <property name="text"><string>&amp;Preview</string></property>
+   <property name="shortcut"><string>Ctrl+P</string></property>
+  </action>
+  <action name="actionExportCsv">
+   <property name="text"><string>Export &amp;CSV…</string></property>
   </action>
   <action name="actionOpenCamera">
    <property name="text"><string>Open &amp;Camera</string></property>
@@ -117,7 +275,7 @@
     </property>
     <property name="toolTip"><string>Open overlay configuration and preview overlay styling</string></property>
     <property name="statusTip"><string>Configure overlay appearance</string></property>
-    </action>
+  </action>
  </widget>
  <resources/>
  <connections/>

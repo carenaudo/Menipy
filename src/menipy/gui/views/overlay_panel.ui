@@ -75,19 +75,19 @@
       </widget>
      </item>
      <item>
-      <widget class="QToolButton" name="contactLineBtn">
-       <property name="text">
-        <string>Contact</string>
-       </property>
-      </widget>
-     </item>
+     <widget class="QToolButton" name="contactLineBtn">
+      <property name="text">
+        <string>Contact Line</string>
+      </property>
+     </widget>
+    </item>
      <item>
-      <widget class="QToolButton" name="clearBtn">
-       <property name="text">
-        <string>Clear</string>
-       </property>
-      </widget>
-     </item>
+     <widget class="QToolButton" name="clearBtn">
+      <property name="text">
+        <string>Clear Overlays</string>
+      </property>
+     </widget>
+    </item>
      <item>
       <spacer name="horizontalSpacer">
        <property name="orientation">
@@ -102,19 +102,19 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="actualBtn">
-       <property name="text">
-        <string>Actual</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="fitBtn">
-       <property name="text">
-        <string>Ajustar</string>
-       </property>
-      </widget>
-     </item>
+     <widget class="QPushButton" name="actualBtn">
+      <property name="text">
+        <string>Actual Size</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="fitBtn">
+      <property name="text">
+        <string>Fit</string>
+      </property>
+     </widget>
+    </item>
     </layout>
    </item>
   </layout>
