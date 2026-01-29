@@ -418,7 +418,7 @@ def estimate_contact_angle_tangent(
             # Derivative at contact point (x=0)
             dy_dx = 2 * coeffs[0] * 0 + coeffs[1]
             angle_rad = np.arctan(dy_dx)
-            angle_deg = np.degrees(angle_rad)
+            angle_deg = abs(np.degrees(angle_rad))
             # RMSE
             y_pred = np.polyval(coeffs, x_local)
             rmse = np.sqrt(np.mean((y_local - y_pred) ** 2))

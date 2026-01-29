@@ -86,8 +86,8 @@ def do_preprocessing(ctx: Context) -> Optional[Context]:
     preproc_settings = getattr(ctx, "preprocessing_settings", None)
     if preproc_settings:
         try:
-            from menipy.common.preprocessing import apply_preprocessing
-            ctx = apply_preprocessing(ctx, preproc_settings)
+            from menipy.common.preprocessing import run as run_preprocessing
+            ctx = run_preprocessing(ctx, preproc_settings)
         except Exception as e:
             logger.warning(f"Preprocessing settings failed: {e}")
     

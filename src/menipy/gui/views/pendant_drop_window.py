@@ -7,18 +7,103 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame,
-    QScrollArea, QTabWidget, QToolBar, QPushButton
+    QScrollArea, QTabWidget, QToolBar, QPushButton,
+    QTableWidget, QTableWidgetItem, QHeaderView
 )
 from PySide6.QtGui import QAction
 
 from menipy.gui import theme
 from menipy.gui.views.base_experiment_window import BaseExperimentWindow
-from menipy.gui.panels import ImageSourcePanel, ActionPanel
-from menipy.gui.panels.needle_calibration_panel import NeedleCalibrationPanel
+from menipy.gui.panels import (
+    ImageSourcePanel,
+    CalibrationPanel,
+    ParametersPanel,
+    ActionPanel
+)
+from menipy.gui.dialogs.calibration_wizard_dialog import CalibrationWizardDialog
 from menipy.gui.widgets.pendant_results_widget import PendantResultsWidget
+from menipy.pipelines.pendant import PendantPipeline
+from menipy.models.context import Context
 
 
-class PendantImageViewer(QWidget):
+class PendantHistoryTableWidget(QWidget):
+    """Table showing measurement history."""
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._count = 0
+        self._setup_ui()
+    
+    def _setup_ui(self):
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        
+        self.table = QTableWidget()
+        self.table.setColumnCount(6)
+        self.table.setHorizontalHeaderLabels([
+            "ID", "γ (mN/m)", "Vol (μL)", "Beta", "R0 (mm)", "Conf (%)"
+        ])
+        
+        header = self.table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        
+        # Basic styling
+        self.table.setStyleSheet(f"""
+            QTableWidget {{
+                background-color: {theme.BG_SECONDARY};
+                color: {theme.TEXT_PRIMARY};
+                border: none;
+                gridline-color: {theme.BORDER_DEFAULT};
+            }}
+            QHeaderView::section {{
+                background-color: {theme.BG_TERTIARY};
+                color: {theme.TEXT_SECONDARY};
+                padding: 4px;
+                border: none;
+                border-right: 1px solid {theme.BORDER_DEFAULT};
+                border-bottom: 1px solid {theme.BORDER_DEFAULT};
+            }}
+            QTableCornerButton::section {{
+                background-color: {theme.BG_TERTIARY};
+                border: none;
+            }}
+        """)
+        self.table.verticalHeader().setVisible(False)
+        self.table.setAlternatingRowColors(True)
+        
+        layout.addWidget(self.table)
+        
+    def add_result(self, results: dict):
+        """Add a result row to the table."""
+        self._count += 1
+        row = self.table.rowCount()
+        self.table.insertRow(row)
+        
+        def item(text):
+            it = QTableWidgetItem(text)
+            it.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            return it
+            
+        def fmt(key, fstr="{:.1f}"):
+            val = results.get(key)
+            if val is None:
+                return "-"
+            return fstr.format(val)
+            
+        self.table.setItem(row, 0, item(str(self._count)))
+        self.table.setItem(row, 1, item(fmt("surface_tension", "{:.2f}")))
+        self.table.setItem(row, 2, item(fmt("volume", "{:.3f}")))
+        self.table.setItem(row, 3, item(fmt("bond_number", "{:.3f}")))
+        self.table.setItem(row, 4, item(fmt("r0_mm", "{:.3f}"))) # Pipeline uses r0_mm
+        
+        # Confidence
+        conf = results.get("confidence")
+        self.table.setItem(row, 5, item(f"{conf:.0f}" if conf is not None else "-"))
+        
+        self.table.scrollToBottom()
+
+
+
     """
     Central image viewer for pendant drop with zoom and pan.
     Displays the loaded image with analysis overlays.
@@ -233,9 +318,9 @@ class PendantDropWindow(BaseExperimentWindow):
         self._image_source_panel = ImageSourcePanel()
         scroll_layout.addWidget(self._image_source_panel)
         
-        # Needle Calibration panel
-        self._needle_panel = NeedleCalibrationPanel()
-        scroll_layout.addWidget(self._needle_panel)
+        # Calibration panel
+        self._calibration_panel = CalibrationPanel()
+        scroll_layout.addWidget(self._calibration_panel)
         
         # Parameters panel
         self._parameters_panel = PendantParametersPanel()
@@ -305,13 +390,8 @@ class PendantDropWindow(BaseExperimentWindow):
         tabs.addTab(profile_placeholder, "Profile")
         
         # History tab
-        history_placeholder = QWidget()
-        history_layout = QVBoxLayout(history_placeholder)
-        history_label = QLabel("📋 Measurement history")
-        history_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        history_label.setStyleSheet(f"color: {theme.TEXT_SECONDARY};")
-        history_layout.addWidget(history_label)
-        tabs.addTab(history_placeholder, "History")
+        self._history_widget = PendantHistoryTableWidget()
+        tabs.addTab(self._history_widget, "History")
         
         layout.addWidget(tabs, stretch=1)
         
@@ -371,10 +451,15 @@ class PendantDropWindow(BaseExperimentWindow):
         self._image_source_panel.image_loaded.connect(self._on_image_loaded)
         self._action_panel.analyze_requested.connect(self._on_analyze_requested)
         self._action_panel.cancel_requested.connect(self._on_cancel_requested)
-        self._needle_panel.auto_detect_requested.connect(self._on_auto_detect_needle)
         
-        # Database connections
-        self._needle_panel.database_requested.connect(self._on_needle_db_requested)
+        # Calibration signals
+        self._calibration_panel.calibration_requested.connect(self._on_calibration_requested)
+        
+        # Database connections (removed needle_panel generic call)
+        # self._calibration_panel might have needle DB logic? 
+        # Actually CalibrationPanel handles logical connection via signals usually.
+        # But here we used wizard.
+        
         self._parameters_panel.material_db_requested.connect(self._on_material_db_requested)
     
     # -------------------------------------------------------------------------

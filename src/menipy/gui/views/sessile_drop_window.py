@@ -8,7 +8,8 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame,
-    QScrollArea, QSplitter, QTabWidget, QToolBar, QPushButton
+    QScrollArea, QSplitter, QTabWidget, QToolBar, QPushButton,
+    QTableWidget, QTableWidgetItem, QHeaderView
 )
 from PySide6.QtGui import QAction
 
@@ -29,20 +30,82 @@ from menipy.gui.dialogs.preprocessing_config_dialog import PreprocessingConfigDi
 
 
 class HistoryTableWidget(QWidget):
-    """Table showing measurement history for batch processing."""
+    """Table showing measurement history."""
     
     def __init__(self, parent=None):
         super().__init__(parent)
+        self._count = 0
         self._setup_ui()
     
     def _setup_ui(self):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         
-        placeholder = QLabel("Measurement history will appear here\nafter running batch analysis")
-        placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        placeholder.setStyleSheet(f"color: {theme.TEXT_SECONDARY};")
-        layout.addWidget(placeholder)
+        self.table = QTableWidget()
+        self.table.setColumnCount(6)
+        self.table.setHorizontalHeaderLabels([
+            "ID", "θ_L (°)", "θ_R (°)", "θ_M (°)", "Vol (μL)", "Area (mm²)"
+        ])
+        
+        header = self.table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        
+        # Basic styling to match theme
+        self.table.setStyleSheet(f"""
+            QTableWidget {{
+                background-color: {theme.BG_SECONDARY};
+                color: {theme.TEXT_PRIMARY};
+                border: none;
+                gridline-color: {theme.BORDER_DEFAULT};
+            }}
+            QHeaderView::section {{
+                background-color: {theme.BG_TERTIARY};
+                color: {theme.TEXT_SECONDARY};
+                padding: 4px;
+                border: none;
+                border-right: 1px solid {theme.BORDER_DEFAULT};
+                border-bottom: 1px solid {theme.BORDER_DEFAULT};
+            }}
+            QTableCornerButton::section {{
+                background-color: {theme.BG_TERTIARY};
+                border: none;
+            }}
+        """)
+        self.table.verticalHeader().setVisible(False)
+        self.table.setAlternatingRowColors(True)
+        
+        layout.addWidget(self.table)
+        
+    def add_result(self, results: dict):
+        """Add a result row to the table."""
+        self._count += 1
+        row = self.table.rowCount()
+        self.table.insertRow(row)
+        
+        def item(text):
+            it = QTableWidgetItem(text)
+            it.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            return it
+            
+        def fmt(key, fstr="{:.1f}"):
+            val = results.get(key)
+            if val is None:
+                return "-"
+            return fstr.format(val)
+            
+        # Use cleaned keys from ui_results
+        al = results.get("angle_left")
+        ar = results.get("angle_right")
+        am = results.get("angle_mean")
+             
+        self.table.setItem(row, 0, item(str(self._count)))
+        self.table.setItem(row, 1, item(f"{al:.1f}" if al is not None else "-"))
+        self.table.setItem(row, 2, item(f"{ar:.1f}" if ar is not None else "-"))
+        self.table.setItem(row, 3, item(f"{am:.1f}" if am is not None else "-"))
+        self.table.setItem(row, 4, item(fmt("volume", "{:.3f}")))
+        self.table.setItem(row, 5, item(fmt("area", "{:.2f}")))
+        
+        self.table.scrollToBottom()
 
 
 class SessileDropWindow(BaseExperimentWindow):
@@ -377,17 +440,13 @@ class SessileDropWindow(BaseExperimentWindow):
         
     def _on_calibration_result(self, result):
         """Handle calibration result from CalibrationWizardDialog."""
-        # CalibrationResult contains needle_rect, substrate_line, roi_rect, etc.
-        # For now, we use needle width if available to estimate scale factor
-        # (User must still provide physical dimension separately)
-        
         if result is None:
             return
             
-        # Store detected regions in context for later use
+        # Store detected regions for later use in analysis
         self._last_calibration_result = result
         
-        # Update status
+        # Update status with what was detected
         conf = result.confidence_scores.get("overall", 0.0)
         parts = []
         if result.needle_rect:
@@ -400,12 +459,34 @@ class SessileDropWindow(BaseExperimentWindow):
         detected_str = ", ".join(parts) if parts else "nothing"
         self.set_status(f"Detected: {detected_str} (confidence: {conf*100:.0f}%)")
         
-        # If needle was detected, we can use its width for calibration
-        # but we need the physical dimension from user to compute px/mm
+        # If needle was detected, prompt user for physical dimension to compute scale
         if result.needle_rect:
             _, _, width_px, _ = result.needle_rect
-            # Store for later use when user provides physical dimension
             self._detected_needle_width_px = width_px
+            
+            # Ask user for physical needle diameter
+            from PySide6.QtWidgets import QInputDialog
+            # getDouble(parent, title, label, value, min, max, decimals)
+            diameter_mm, ok = QInputDialog.getDouble(
+                self,
+                "Enter Needle Diameter",
+                f"Detected needle width: {width_px:.1f} px\n\n"
+                "Enter the physical needle outer diameter (mm):",
+                0.72,   # default value (21 gauge)
+                0.1,    # minimum
+                5.0,    # maximum
+                3       # decimals
+            )
+            
+            if ok and diameter_mm > 0:
+                # Compute scale factor: px_per_mm = width_px / diameter_mm
+                scale_factor = width_px / diameter_mm
+                self._calibration_panel.set_calibration(
+                    scale_factor,
+                    reference_file="needle",
+                    date=None
+                )
+                self.set_status(f"Calibration set: {scale_factor:.2f} px/mm")
     
     def _on_calibration_completed(self, scale_factor: float):
         """Handle successful calibration (legacy signal)."""
@@ -448,16 +529,21 @@ class SessileDropWindow(BaseExperimentWindow):
                     pipeline_kwargs["drop_contour"] = calib.drop_contour
                 if calib.contact_points:
                     pipeline_kwargs["contact_points"] = calib.contact_points
+                    # Derive contact_line from contact_points (left, right)
+                    # contact_line is the baseline where drop meets substrate
+                    left_pt, right_pt = calib.contact_points
+                    pipeline_kwargs["contact_line"] = (left_pt, right_pt)
                 # With pre-detected features, we can skip auto-detection
                 pipeline_kwargs["auto_detect_features"] = False
             else:
                 # No calibration - run auto-detection
                 pipeline_kwargs["auto_detect_features"] = True
             
-            # Get needle diameter from parameters panel for scale calculation
-            needle_diameter_mm = self._parameters_panel.get_needle_diameter()
-            if needle_diameter_mm and needle_diameter_mm > 0:
-                pipeline_kwargs["needle_diameter_mm"] = needle_diameter_mm
+            # Get scale factor from calibration panel (px/mm)
+            if self._calibration_panel.is_calibrated():
+                scale_factor = self._calibration_panel.get_scale_factor()
+                if scale_factor > 0:
+                    pipeline_kwargs["px_per_mm"] = scale_factor
             
             ctx = pipeline.run(**pipeline_kwargs)
             
@@ -470,9 +556,33 @@ class SessileDropWindow(BaseExperimentWindow):
             self._last_ctx = ctx
             results = ctx.results or {}
             
+            # Map pipeline results to UI widget expected format
+            raw_ui_results = {
+                "angle_left": results.get("theta_left_deg"),
+                "angle_right": results.get("theta_right_deg"),
+                "angle_mean": (
+                    (results.get("theta_left_deg", 0) + results.get("theta_right_deg", 0)) / 2 
+                    if results.get("theta_left_deg") is not None else None
+                ),
+                "angle_uncertainty": max(
+                    results.get("uncertainty_deg", {}).get("left", 0.5),
+                    results.get("uncertainty_deg", {}).get("right", 0.5)
+                ),
+                "volume": results.get("volume_uL"),
+                "diameter": results.get("diameter_mm"),
+                "height": results.get("height_mm"),
+                "base_width": results.get("diameter_mm"), # Base width ~= diameter for sessile
+                "surface_tension": results.get("surface_tension"), # If computed
+                "area": results.get("contact_surface_mm2"),
+                "confidence": results.get("baseline_confidence", 1.0) * 100
+            }
+            
+            # Filter out None values to avoid formatting errors in widget
+            ui_results = {k: v for k, v in raw_ui_results.items() if v is not None}
+            
             # 4. update UI
-            self._quick_stats.set_results(results)
-            self._history_widget.add_result(results)
+            self._quick_stats.set_results(ui_results)
+            self._history_widget.add_result(ui_results) # Update valid history table
             
             self._action_panel.set_state(ActionPanel.STATE_COMPLETE)
             self.set_status("Analysis complete")
@@ -495,13 +605,6 @@ class SessileDropWindow(BaseExperimentWindow):
         from PySide6.QtCore import QPointF, QRectF
         
         ctx = self._last_ctx
-        
-        # Helper scaling (Context coordinates are in pixels, usually matching image)
-        # InteractiveImageViewer handles the view transform, so we draw in Image Coordinates?
-        # WAIT: InteractiveImageViewer emits (painter, target_rect, zoom).
-        # Painter is likely set to draw on the widget, possibly with transform?
-        # No, InteractiveImageViewer paints pixmap to target_rect.
-        # So we must map Image Coords -> Widget Coords (target_rect).
         
         # Map function
         img_w = self._image_viewer._pixmap.width()

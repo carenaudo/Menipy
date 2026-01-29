@@ -186,10 +186,23 @@ class PipelineBase:
 
         if "roi" in kwargs and kwargs["roi"] is not None:
             ctx.roi = kwargs["roi"]
+        # Also accept roi_rect as alias for roi
+        if "roi_rect" in kwargs and kwargs["roi_rect"] is not None:
+            ctx.roi = kwargs["roi_rect"]
         if "needle_rect" in kwargs and kwargs["needle_rect"] is not None:
             ctx.needle_rect = kwargs["needle_rect"]
         if "contact_line" in kwargs and kwargs["contact_line"] is not None:
             ctx.contact_line = kwargs["contact_line"]
+        # Additional calibration results from CalibrationWizardDialog
+        if "substrate_line" in kwargs and kwargs["substrate_line"] is not None:
+            ctx.substrate_line = kwargs["substrate_line"]
+        if "drop_contour" in kwargs and kwargs["drop_contour"] is not None:
+            ctx.drop_contour = kwargs["drop_contour"]
+        if "contact_points" in kwargs and kwargs["contact_points"] is not None:
+            ctx.contact_points = kwargs["contact_points"]
+        # Scale factor (pixels per mm)
+        if "px_per_mm" in kwargs and kwargs["px_per_mm"] is not None:
+            ctx.px_per_mm = kwargs["px_per_mm"]
 
         # Calibration parameters
         if "needle_diameter_mm" in kwargs and kwargs["needle_diameter_mm"] is not None:

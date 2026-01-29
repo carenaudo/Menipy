@@ -96,11 +96,21 @@ class SessilePipeline(PipelineBase):
         apex_xy = (float(x[apex_i]), float(y[apex_i]))
 
         # Compute diameter, height, contact points using metrics logic with auto-detection
-        px_per_mm = ctx.scale.get("px_per_mm", 1.0) if ctx.scale else 1.0
+        # First check ctx.scale dict, then fallback to ctx.px_per_mm set by calibration
+        if ctx.scale and ctx.scale.get("px_per_mm"):
+            px_per_mm = ctx.scale.get("px_per_mm", 1.0)
+        elif hasattr(ctx, "px_per_mm") and ctx.px_per_mm:
+            px_per_mm = ctx.px_per_mm
+        else:
+            px_per_mm = 1.0
         # Get contact angle method from context or default to tangent
         contact_angle_method = getattr(ctx, "contact_angle_method", "tangent")
         if contact_angle_method not in ["tangent", "circle_fit", "spherical_cap"]:
             contact_angle_method = "tangent"  # Default fallback
+        
+        # Get pre-computed contact points from calibration if available
+        pre_contact_points = getattr(ctx, "contact_points", None)
+        
         from .metrics import compute_sessile_metrics
 
         metrics = compute_sessile_metrics(
@@ -112,6 +122,7 @@ class SessilePipeline(PipelineBase):
             auto_detect_baseline=auto_detect_baseline,
             auto_detect_apex=auto_detect_apex,
             contact_angle_method=contact_angle_method,
+            contact_points=pre_contact_points,
         )
 
         from menipy.models.geometry import Geometry

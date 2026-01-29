@@ -26,6 +26,7 @@ def compute_sessile_metrics(
     auto_detect_baseline: bool = False,
     auto_detect_apex: bool = False,
     contact_angle_method: str = "tangent",
+    contact_points: tuple[tuple[int, int], tuple[int, int]] | None = None,
 ) -> dict:
     """Compute sessile drop metrics with optional auto-detection."""
     contour_2d = contour.reshape(-1, 2)
@@ -43,10 +44,16 @@ def compute_sessile_metrics(
     contact_surface_mm2 = 0.0
     drop_surface_mm2 = 0.0
 
-    # If we auto-detected a baseline, find contact points early so apex
-    # detection can be constrained to the region above the substrate.
+    # Use pre-computed contact points if provided, otherwise find them
     p1 = p2 = None
-    if substrate_line is not None:
+    if contact_points is not None:
+        # Use pre-computed contact points from calibration
+        p1 = np.array(contact_points[0], dtype=float)
+        p2 = np.array(contact_points[1], dtype=float)
+        contact_line = (tuple(p1.astype(int)), tuple(p2.astype(int)))
+        diameter_px = float(np.linalg.norm(p1 - p2))
+    elif substrate_line is not None:
+        # Find contact points from contour intersection with substrate
         contour_2d = contour.reshape(-1, 2)
         p1, p2 = find_contact_points_from_contour(
             contour_2d, substrate_line, tolerance=contact_point_tolerance_px
