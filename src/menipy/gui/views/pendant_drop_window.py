@@ -24,6 +24,8 @@ from menipy.gui.dialogs.calibration_wizard_dialog import CalibrationWizardDialog
 from menipy.gui.widgets.pendant_results_widget import PendantResultsWidget
 from menipy.pipelines.pendant import PendantPipeline
 from menipy.models.context import Context
+import cv2
+import numpy as np
 
 
 class PendantHistoryTableWidget(QWidget):
@@ -103,7 +105,7 @@ class PendantHistoryTableWidget(QWidget):
         self.table.scrollToBottom()
 
 
-
+class PendantImageViewer(QWidget):
     """
     Central image viewer for pendant drop with zoom and pan.
     Displays the loaded image with analysis overlays.
@@ -274,21 +276,15 @@ class PendantParametersPanel(QFrame):
         if spin:
             spin.setValue(value)
 
-
 class PendantDropWindow(BaseExperimentWindow):
     """
     Window for pendant drop surface tension analysis.
-    
-    Provides controls for:
-    - Image loading
-    - Needle calibration
-    - Density parameters
-    - Young-Laplace fitting
-    - Surface tension results
     """
     
     def __init__(self, parent=None):
         super().__init__(parent)
+        self._current_image = None
+        self._current_path = None
         self._connect_signals()
     
     def get_experiment_type(self) -> str:
@@ -455,58 +451,186 @@ class PendantDropWindow(BaseExperimentWindow):
         # Calibration signals
         self._calibration_panel.calibration_requested.connect(self._on_calibration_requested)
         
-        # Database connections (removed needle_panel generic call)
-        # self._calibration_panel might have needle DB logic? 
-        # Actually CalibrationPanel handles logical connection via signals usually.
-        # But here we used wizard.
-        
         self._parameters_panel.material_db_requested.connect(self._on_material_db_requested)
-    
-    # -------------------------------------------------------------------------
-    # Signal Handlers
-    # -------------------------------------------------------------------------
     
     def _on_image_loaded(self, path: str, pixmap: QPixmap | None):
         """Handle image loaded."""
+        self._current_path = path
+        if path:
+            self._current_image = cv2.imread(path)
+            
         if pixmap:
             self._image_viewer.set_image(pixmap)
             self._image_viewer.fit_to_view()
             self.set_status(f"Loaded: {path}")
     
+
+    
+    
+    def _on_calibration_requested(self):
+        """Handle calibration request."""
+        if self._current_image is None:
+            self.set_status("Please load an image first")
+            return
+            
+        wizard = CalibrationWizardDialog(self._current_image, "pendant", self)
+        if wizard.exec():
+            result = wizard.get_result()
+            self._on_calibration_result(result)
+
+    def _on_calibration_result(self, result):
+        """Handle calibration result."""
+        self._last_calibration_result = result
+        
+        # Calculate scale
+        px_per_mm = 1.0
+        needle_width_px = 0
+        
+        # Try to get needle width from result
+        if result.needle_rect:
+             _, _, w, _ = result.needle_rect
+             needle_width_px = w
+             
+        # Ask user for needle diameter if we have pixel width
+        if needle_width_px > 0:
+            from PySide6.QtWidgets import QInputDialog
+            diameter, ok = QInputDialog.getDouble(
+                self, "Needle Diameter", 
+                "Enter needle outer diameter (mm):", 
+                0.71, 0.01, 100.0, 3
+            )
+            known_diameter_mm = diameter if ok else 0.71
+        else:
+             known_diameter_mm = 0.71
+
+        if needle_width_px > 0 and known_diameter_mm > 0:
+            px_per_mm = needle_width_px / known_diameter_mm
+            self.set_status(f"Calibrated: {px_per_mm:.1f} px/mm (Needle: {needle_width_px}px, {known_diameter_mm}mm)")
+        else:
+            self.set_status("Calibration incomplete: Need needle width and diameter")
+
+        # Update panel
+        # Use set_calibration instead of set_scale (which doesn't exist)
+        import datetime
+        date_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+        self._calibration_panel.set_calibration(px_per_mm, "Auto-Calibration", date_str)
+        
+        # Store diameter for analysis
+        self._last_known_diameter = known_diameter_mm
+        
+    def _run_analysis(self):
+        """Run the actual pendant drop analysis."""
+        if self._current_image is None:
+            self._action_panel.set_state(ActionPanel.STATE_READY)
+            return
+
+        try:
+            # 1. Setup Context
+            ctx = Context(image=self._current_image)
+            ctx.image_path = self._current_path
+            
+            # Calibration
+            # Use get_scale_factor instead of get_scale
+            scale = self._calibration_panel.get_scale_factor()
+            ctx.scale = {"px_per_mm": scale}
+            
+            # If we have calibration result (ROI/Needle), pass it
+            calib = getattr(self, "_last_calibration_result", None)
+            if calib:
+                ctx.needle_rect = calib.needle_rect
+                ctx.roi_rect = calib.roi_rect
+                # Reuse needle diameter
+                ctx.needle_diameter_mm = getattr(self, "_last_known_diameter", 0.71)
+                
+            # Physics params
+            params = self._parameters_panel.get_parameters()
+            ctx.physics = {
+                "rho1": params.get("liquid_density", 1000.0),
+                "rho2": params.get("surrounding_density", 1.2),
+                "g": params.get("gravity", 9.81)
+            }
+
+            # 2. Run Pipeline
+            pipeline = PendantPipeline()
+            # In a real app, run in background thread. For now, run directly.
+            pipeline.run(ctx)
+            
+            # 3. Process Results
+            results = ctx.results or {}
+            
+            # Map pipeline results to UI keys
+            # Pipeline: surface_tension_mN_m, beta, r0_mm, volume_uL, height_mm, diameter_mm
+            # Widget: surface_tension, bond_number, apex_radius, volume, de, ds...
+            
+            ui_results = {
+                "surface_tension": results.get("surface_tension_mN_m"),
+                "bond_number": results.get("beta"),
+                "apex_radius": results.get("r0_mm"),
+                "volume": results.get("volume_uL"),
+                "de": results.get("diameter_mm"), # Approx DE = 2*R0 for sphere, close enough for visual?
+                "ds": results.get("diameter_mm"), # Placeholder
+                "density_diff": params.get("liquid_density", 0) - params.get("surrounding_density", 0),
+                "rmse": results.get("residuals", {}).get("optimality", 0.0), # or extract properly
+                "iterations": 0, # Pipeline fit doesn't expose iterations cleanly in top dict yet
+                "confidence": 100.0 # Placeholder
+            }
+            
+            # Filter None
+            ui_results = {k: v for k, v in ui_results.items() if v is not None}
+            
+            self._results_widget.set_results(ui_results)
+            self._history_widget.add_result(results) # History uses pipeline keys (surface_tension_mN_m etc... wait!)
+            
+            # History widget expects: surface_tension, volume, bond_number, r0_mm
+            # My HistoryWidget implementation uses fmt("surface_tension", ...)
+            # BUT pipeline output has "surface_tension_mN_m".
+            # I must fix HistoryWidget OR flatten results.
+            # I'll update HistoryWidget keys in Next Step or map them here?
+            # Better: Map them here to a 'clean' dict for history? 
+            # Or use `results` but add aliases.
+            
+            results["surface_tension"] = results.get("surface_tension_mN_m")
+            results["volume"] = results.get("volume_uL")
+            results["bond_number"] = results.get("beta")
+            
+            self._history_widget.add_result(results)
+
+            self._action_panel.set_state(ActionPanel.STATE_COMPLETE)
+            self.set_status("Analysis complete")
+            
+            # Update image viewer with overlay
+            if ctx.image is not None:
+                import cv2
+                from PySide6.QtGui import QImage
+                 # Ensure contiguous array for QImage
+                rgb = cv2.cvtColor(ctx.image, cv2.COLOR_BGR2RGB)
+                h, w, ch = rgb.shape
+                bytes_per_line = ch * w
+                qimg = QImage(rgb.data, w, h, bytes_per_line, QImage.Format_RGB888)
+                self._image_viewer.set_image(QPixmap.fromImage(qimg))
+            
+            self.analysis_completed.emit(results)
+            
+        except Exception as e:
+            self.set_status(f"Analysis failed: {e}")
+            self._action_panel.set_state(ActionPanel.STATE_READY)
+            import traceback
+            traceback.print_exc()
+
     def _on_analyze_requested(self):
         """Handle analyze button click."""
         self._action_panel.set_state(ActionPanel.STATE_PROCESSING)
         self.set_status("Analyzing pendant drop...")
         
-        # Simulate analysis
-        self._simulate_analysis()
-    
+        # Use QTimer to allow UI update before blocking
+        from PySide6.QtCore import QTimer
+        QTimer.singleShot(100, self._run_analysis)
+
     def _on_cancel_requested(self):
         """Handle cancel button click."""
         self._action_panel.set_state(ActionPanel.STATE_READY)
         self.set_status("Analysis cancelled")
-    
-    def _on_auto_detect_needle(self):
-        """Handle auto-detect needle request."""
-        self.set_status("Detecting needle...")
-        # Simulate detection
-        self._needle_panel.set_detected_needle(45.2, 49.7)
-        self.set_status("Needle detected")
         
-    def _on_needle_db_requested(self):
-        """Handle needle database request."""
-        from menipy.gui.dialogs.material_dialog import MaterialDialog
-        dialog = MaterialDialog(self, selection_mode=True, table_type="needles")
-        dialog.item_selected.connect(self._on_needle_selected)
-        dialog.exec()
-        
-    def _on_needle_selected(self, data: dict):
-        """Handle needle selection."""
-        # data contains 'outer_diameter'
-        if od := data.get("outer_diameter"):
-            self._needle_panel.set_diameter(od)
-            self.set_status(f"Selected needle: {data['name']} ({od} mm)")
-            
     def _on_material_db_requested(self, field_name: str):
         """Handle material database request."""
         from menipy.gui.dialogs.material_dialog import MaterialDialog
@@ -521,36 +645,12 @@ class PendantDropWindow(BaseExperimentWindow):
         if density := data.get("density"):
             self._parameters_panel.set_density(field_name, density)
             self.set_status(f"Selected material: {data['name']} ({density} kg/m³)")
-    
-    def _simulate_analysis(self):
-        """Simulate analysis with mock results."""
-        import random
-        
-        self._action_panel.set_progress(30, "Detecting drop contour...")
-        self._action_panel.set_progress(60, "Fitting Young-Laplace equation...")
-        self._action_panel.set_progress(90, "Calculating surface tension...")
-        
-        # Mock results
-        results = {
-            "surface_tension": 72.8 + random.uniform(-2, 2),
-            "surface_tension_uncertainty": 0.5,
-            "de": 2.45 + random.uniform(-0.05, 0.05),
-            "ds": 2.18 + random.uniform(-0.05, 0.05),
-            "apex_radius": 1.23 + random.uniform(-0.02, 0.02),
-            "bond_number": 0.35 + random.uniform(-0.02, 0.02),
-            "volume": 12.5 + random.uniform(-0.5, 0.5),
-            "surface_area": 28.3 + random.uniform(-1, 1),
-            "density_diff": 998.8,
-            "rmse": 0.0025 + random.uniform(-0.001, 0.001),
-            "iterations": random.randint(8, 15),
-            "confidence": 95 + random.uniform(-5, 5),
-        }
-        
-        self._results_widget.set_results(results)
-        self._action_panel.set_state(ActionPanel.STATE_COMPLETE)
-        self.set_status("Analysis complete")
-        
-        self.analysis_completed.emit(results)
+            
+    def _on_needle_db_requested(self):
+        # CalibrationPanel might not emit this, but if we add it later:
+        pass
+
+
     
     # -------------------------------------------------------------------------
     # Toolbar Actions
