@@ -15,7 +15,7 @@ from PySide6.QtCore import QObject, Signal
 from menipy.models.context import Context
 from menipy.models.config import PreprocessingSettings
 from menipy.models.state import PreprocessingState, MarkerSet
-from menipy.common import preprocessing
+from menipy.common import preprocessing, registry
 
 logger = logging.getLogger(__name__)
 
@@ -131,8 +131,20 @@ class PreprocessingPipelineController(QObject):
             ctx.contact_line = self._contact_line
         if self._markers:
             ctx.preprocessing_markers = self._markers.model_copy(deep=True)
+        if self._markers:
+            ctx.preprocessing_markers = self._markers.model_copy(deep=True)
         ctx.preprocessing_settings = self._settings
 
+        # Run auto-detection if enabled in settings
+        if hasattr(self._settings, "auto_detect") and self._settings.auto_detect.enabled:
+            detect_plugin = registry.PREPROCESSORS.get("auto_detect")
+            if detect_plugin:
+                try:
+                    detect_plugin(ctx)
+                except Exception as exc:
+                    logger.warning("Auto-detection plugin failed: %s", exc)
+                    # Don't fail the whole run, just continue with manual settings
+        
         try:
             preprocessing.run(ctx, self._settings)
         except Exception as exc:  # pragma: no cover - guard for runtime issues
@@ -148,6 +160,11 @@ class PreprocessingPipelineController(QObject):
         self.stateChanged.emit(self._state)
         if ctx.preprocessed is not None:
             metadata = {"roi": self._state.roi_bounds, "scale": self._state.scale}
+            if getattr(ctx, "needle_rect", None):
+                metadata["needle_rect"] = ctx.needle_rect
+            if getattr(ctx, "substrate_line", None):
+                metadata["substrate_line"] = ctx.substrate_line
+
             if fresh_state.metadata.get("roi_resized"):
                 metadata["roi_resized_shape"] = fresh_state.metadata.get(
                     "roi_resized_shape"

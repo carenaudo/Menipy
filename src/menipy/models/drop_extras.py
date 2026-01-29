@@ -44,6 +44,10 @@ def surface_area_mm2(contour_px: np.ndarray, px_per_mm: float) -> float:
     r_mm, z_mm = r_mm[order], z_mm[order]
     z_mm, unique_idx = np.unique(z_mm, return_index=True)
     r_mm = r_mm[unique_idx].astype(float)
+    
+    if len(r_mm) < 3 or len(z_mm) < 3:
+        return 0.0
+        
     dr_dz: np.ndarray = np.gradient(r_mm, z_mm, edge_order=2)
     integrand: np.ndarray = np.asarray(r_mm * np.sqrt(1.0 + dr_dz**2), dtype=float)
     trapz_val = float(np.trapz(integrand, z_mm))

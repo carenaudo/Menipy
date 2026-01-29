@@ -30,15 +30,33 @@ def auto_detect_preprocessor(ctx):
     Returns:
         Updated context with all detected features.
     """
-    # Check if auto-detection is enabled
-    if not getattr(ctx, "auto_detect_features", True):
-        logger.debug("Auto-detection disabled")
-        return ctx
+    # Check settings
+    settings = getattr(ctx, "preprocessing_settings", None)
+    should_auto_detect = getattr(ctx, "auto_detect_features", True)
     
+    detect_roi = True
+    detect_needle = True
+    detect_substrate = True
+    detect_drop = True
+
+    if settings and hasattr(settings, "auto_detect"):
+        ad = settings.auto_detect
+        if not ad.enabled:
+            logger.debug("Auto-detection disabled via settings")
+            return ctx
+        # Map settings to flags
+        detect_roi = ad.detect_roi
+        detect_needle = ad.detect_needle
+        detect_substrate = ad.detect_substrate
+        # Drop detection usually needed if others are needed, or implied
+    elif not should_auto_detect:
+        logger.debug("Auto-detection disabled via context flag")
+        return ctx
+
     # Get pipeline type
     pipeline = getattr(ctx, "pipeline_name", "sessile").lower()
     logger.info(f"Running auto-detection for {pipeline} pipeline")
-    
+
     # Import detection preprocessors (they register themselves)
     try:
         from menipy.common.registry import PREPROCESSORS
@@ -59,21 +77,21 @@ def auto_detect_preprocessor(ctx):
         # Run in correct order
         if pipeline == "sessile":
             # Sessile: substrate -> drop -> needle -> roi
-            if "detect_substrate" in PREPROCESSORS:
+            if detect_substrate and "detect_substrate" in PREPROCESSORS:
                 ctx = PREPROCESSORS["detect_substrate"](ctx)
-            if "detect_drop" in PREPROCESSORS:
+            if detect_drop and "detect_drop" in PREPROCESSORS:
                 ctx = PREPROCESSORS["detect_drop"](ctx)
-            if "detect_needle" in PREPROCESSORS:
+            if detect_needle and "detect_needle" in PREPROCESSORS:
                 ctx = PREPROCESSORS["detect_needle"](ctx)
-            if "detect_roi" in PREPROCESSORS:
+            if detect_roi and "detect_roi" in PREPROCESSORS:
                 ctx = PREPROCESSORS["detect_roi"](ctx)
         else:
             # Pendant: drop -> needle -> roi
-            if "detect_drop" in PREPROCESSORS:
+            if detect_drop and "detect_drop" in PREPROCESSORS:
                 ctx = PREPROCESSORS["detect_drop"](ctx)
-            if "detect_needle" in PREPROCESSORS:
+            if detect_needle and "detect_needle" in PREPROCESSORS:
                 ctx = PREPROCESSORS["detect_needle"](ctx)
-            if "detect_roi" in PREPROCESSORS:
+            if detect_roi and "detect_roi" in PREPROCESSORS:
                 ctx = PREPROCESSORS["detect_roi"](ctx)
         
         logger.info("Auto-detection complete")

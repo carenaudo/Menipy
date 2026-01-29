@@ -128,6 +128,16 @@ class PreprocessingSettings(BaseModel):
     normalization: NormalizationSettings = Field(default_factory=NormalizationSettings)
     contact_line: ContactLineSettings = Field(default_factory=ContactLineSettings)
     fill_holes: FillHolesSettings = Field(default_factory=FillHolesSettings)
+
+    class AutoDetectSettings(BaseModel):
+        """Configuration for automatic feature detection (ROI, Needle, etc.)."""
+        
+        enabled: bool = Field(default=True, description="Enable automatic feature detection")
+        detect_roi: bool = Field(default=True, description="Automatically detect Region of Interest")
+        detect_needle: bool = Field(default=True, description="Automatically detect Needle/Nozzle")
+        detect_substrate: bool = Field(default=True, description="Automatically detect Substrate/Baseline")
+        
+    auto_detect: AutoDetectSettings = Field(default_factory=AutoDetectSettings)
     preset_id: Optional[str] = Field(default=None)
 
 
