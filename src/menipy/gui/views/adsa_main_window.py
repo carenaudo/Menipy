@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
 
 from menipy.gui import theme
 from menipy.gui.views.experiment_selector import ExperimentSelectorView
+from PySide6.QtCore import QSettings
 
 
 class ADSAMainWindow(QMainWindow):
@@ -44,6 +45,7 @@ class ADSAMainWindow(QMainWindow):
         # Track current experiment type and window
         self._current_experiment_type: str | None = None
         self._experiment_windows: dict[str, QWidget] = {}
+        self._settings_store = QSettings("Menipy", "ADSA")
         
         self._setup_ui()
         self._setup_menus()
@@ -205,6 +207,14 @@ class ADSAMainWindow(QMainWindow):
         material_db_action = QAction("📚 Material Database...", self)
         material_db_action.triggered.connect(self._on_material_database)
         tools_menu.addAction(material_db_action)
+
+        needle_db_action = QAction("💉 Needle Database...", self)
+        needle_db_action.triggered.connect(self._on_needle_database)
+        tools_menu.addAction(needle_db_action)
+
+        syringe_db_action = QAction("💊 Syringe Database...", self)
+        syringe_db_action.triggered.connect(self._on_syringe_database)
+        tools_menu.addAction(syringe_db_action)
         
         # === Analysis Menu ===
         analysis_menu = menubar.addMenu("&Analysis")
@@ -272,29 +282,58 @@ class ADSAMainWindow(QMainWindow):
         self._selector.project_opened.connect(self._on_project_opened)
     
     def _load_recent_projects(self):
-        """Load and display recent projects."""
-        # TODO: Load from settings
-        sample_projects = [
-            {
-                "filename": "Sessile_Water_Glass_2025-01-27.adsa",
-                "experiment_type": theme.EXPERIMENT_SESSILE,
-                "date_str": "2 hours ago",
-                "path": ""
-            },
-            {
-                "filename": "Pendant_Ethanol_Air_2025-01-26.adsa",
-                "experiment_type": theme.EXPERIMENT_PENDANT,
-                "date_str": "Yesterday",
-                "path": ""
-            },
-            {
-                "filename": "Tilted_Surface_Treatment_2025-01-25.adsa",
-                "experiment_type": theme.EXPERIMENT_TILTED_SESSILE,
-                "date_str": "2 days ago",
-                "path": ""
-            },
-        ]
-        self._selector.set_recent_projects(sample_projects)
+        """Load and display recent projects from settings (fallback to seeds)."""
+        import json, datetime
+
+        raw = self._settings_store.value("recent_projects")
+        projects = []
+        if raw:
+            try:
+                projects = json.loads(raw)
+            except Exception:
+                projects = []
+
+        if not projects:
+            projects = [
+                {
+                    "filename": "Sessile_Water_Glass",
+                    "experiment_type": theme.EXPERIMENT_SESSILE,
+                    "date_str": "Seed",
+                    "path": "",
+                },
+                {
+                    "filename": "Pendant_Ethanol_Air",
+                    "experiment_type": theme.EXPERIMENT_PENDANT,
+                    "date_str": "Seed",
+                    "path": "",
+                },
+            ]
+            self._settings_store.setValue("recent_projects", json.dumps(projects))
+
+        self._selector.set_recent_projects(projects)
+
+    def _record_recent(self, experiment_type: str, title: str, path: str | None):
+        """Append an entry to recent projects list (max 10)."""
+        import json, datetime
+
+        raw = self._settings_store.value("recent_projects") or "[]"
+        try:
+            projects = json.loads(raw)
+        except Exception:
+            projects = []
+
+        entry = {
+            "filename": title,
+            "experiment_type": experiment_type,
+            "date_str": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "path": path or "",
+        }
+        # Remove duplicates by filename/type
+        projects = [p for p in projects if not (p.get("filename") == title and p.get("experiment_type") == experiment_type)]
+        projects.insert(0, entry)
+        projects = projects[:10]
+        self._settings_store.setValue("recent_projects", json.dumps(projects))
+        self._selector.set_recent_projects(projects)
     
     # =========================================================================
     # Public Methods
@@ -330,6 +369,7 @@ class ADSAMainWindow(QMainWindow):
             self.setWindowTitle(f"ADSA - {title}")
             
             self.experiment_changed.emit(experiment_type)
+            self._record_recent(experiment_type, title, path=None)
     
     def get_current_experiment_type(self) -> str | None:
         """Get the currently active experiment type."""
@@ -340,6 +380,48 @@ class ADSAMainWindow(QMainWindow):
         if self._current_experiment_type:
             return self._experiment_windows.get(self._current_experiment_type)
         return None
+
+    def _apply_saved_analysis_settings(self, experiment_type: str, window: QWidget):
+        """Load persisted analysis settings and apply to window if supported."""
+        from menipy.models.config import PreprocessingSettings, EdgeDetectionSettings
+        import json
+
+        key = f"analysis/{experiment_type.lower()}"
+        raw = self._settings_store.value(key)
+        if not raw:
+            return
+        try:
+            data = json.loads(raw)
+            pre = (
+                PreprocessingSettings(**data.get("preproc", {}))
+                if data.get("preproc")
+                else PreprocessingSettings()
+            )
+            edge = (
+                EdgeDetectionSettings(**data.get("edge", {}))
+                if data.get("edge")
+                else EdgeDetectionSettings()
+            )
+            pipe = data.get("pipeline") or {}
+            if hasattr(window, "apply_analysis_settings"):
+                window.apply_analysis_settings(pre, edge, pipe)
+            else:
+                window._preprocessing_settings = pre
+                window._edge_settings = edge
+                window._pipeline_settings = pipe
+        except Exception:
+            return
+
+    def _save_analysis_settings(self, experiment_type: str, pre, edge, pipe):
+        import json
+
+        payload = {
+            "preproc": pre.model_dump(),
+            "edge": edge.model_dump(),
+            "pipeline": pipe or {},
+        }
+        key = f"analysis/{experiment_type.lower()}"
+        self._settings_store.setValue(key, json.dumps(payload))
     
     # =========================================================================
     # Private Methods
@@ -382,6 +464,7 @@ class ADSAMainWindow(QMainWindow):
         if window:
             window.switch_experiment_requested.connect(self.show_experiment_selector)
             window.notification_requested.connect(self._on_notification_requested)
+            self._apply_saved_analysis_settings(experiment_type, window)
             return window
         else:
             return self._create_placeholder_window(experiment_type)
@@ -464,10 +547,10 @@ class ADSAMainWindow(QMainWindow):
         self.statusBar().showMessage("Camera connection not implemented yet", 3000)
     
     def _on_save_project(self):
-        self.statusBar().showMessage("Save not implemented yet", 3000)
+        self._save_project_dialog()
     
     def _on_save_project_as(self):
-        self.statusBar().showMessage("Save As not implemented yet", 3000)
+        self._save_project_dialog()
     
     def _on_export_csv(self):
         self.statusBar().showMessage("Export CSV not implemented yet", 3000)
@@ -533,6 +616,18 @@ class ADSAMainWindow(QMainWindow):
         from menipy.gui.dialogs.material_dialog import MaterialDialog
         dialog = MaterialDialog(self, selection_mode=False)
         dialog.exec()
+
+    def _on_needle_database(self):
+        """Open needle database manager."""
+        from menipy.gui.dialogs.material_dialog import MaterialDialog
+        dialog = MaterialDialog(self, selection_mode=False, table_type="needles")
+        dialog.exec()
+
+    def _on_syringe_database(self):
+        """Open syringe database manager."""
+        from menipy.gui.dialogs.material_dialog import MaterialDialog
+        dialog = MaterialDialog(self, selection_mode=False, table_type="syringes")
+        dialog.exec()
     
     def _on_run_analysis(self):
         self.statusBar().showMessage("Running analysis...", 1500)
@@ -544,7 +639,36 @@ class ADSAMainWindow(QMainWindow):
         self.statusBar().showMessage("Analysis stopped", 1500)
     
     def _on_analysis_settings(self):
-        self.statusBar().showMessage("Analysis settings not implemented yet", 3000)
+        from menipy.gui.dialogs.analysis_settings_dialog import AnalysisSettingsDialog
+        from menipy.models.config import PreprocessingSettings, EdgeDetectionSettings
+
+        window = self.get_current_experiment_window()
+        pipeline_name = None
+        if hasattr(window, "get_experiment_type"):
+            pipeline_name = window.get_experiment_type().lower()
+        pipeline_name = pipeline_name or "generic"
+
+        dlg = AnalysisSettingsDialog(
+            pipeline_name,
+            preprocessing=getattr(window, "_preprocessing_settings", PreprocessingSettings()),
+            edge=getattr(window, "_edge_settings", EdgeDetectionSettings()),
+            pipeline_settings=getattr(window, "_pipeline_settings", {}),
+            parent=self,
+        )
+        if dlg.exec():
+            pre = dlg.preprocessing_settings()
+            edge = dlg.edge_settings()
+            pipe = dlg.pipeline_settings()
+            if hasattr(dlg, "persist"):
+                dlg.persist()
+            if hasattr(window, "apply_analysis_settings"):
+                window.apply_analysis_settings(pre, edge, pipe)
+            else:
+                window._preprocessing_settings = pre
+                window._edge_settings = edge
+                window._pipeline_settings = pipe or {}
+            self._save_analysis_settings(pipeline_name, pre, edge, pipe)
+            self.statusBar().showMessage("Analysis settings saved", 2000)
     
     def _on_batch_process(self):
         self.statusBar().showMessage("Batch processing not implemented yet", 3000)
@@ -561,7 +685,59 @@ class ADSAMainWindow(QMainWindow):
         )
         if reply == QMessageBox.StandardButton.Yes:
             self.statusBar().showMessage("Results cleared", 1500)
-    
+
+    # ------------------------------------------------------------------
+    # Project persistence
+    # ------------------------------------------------------------------
+    def _save_project_dialog(self):
+        """Prompt for file path and save current project as JSON (.adsa.json)."""
+        from pathlib import Path
+        exp_type = self.get_current_experiment_type()
+        if not exp_type:
+            self.statusBar().showMessage("No experiment to save.", 2000)
+            return
+        default_name = f"{exp_type}_project.adsa.json"
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save ADSA Project",
+            default_name,
+            "ADSA Project (*.adsa.json);;JSON (*.json)",
+        )
+        if not path:
+            return
+        if not path.lower().endswith(".json"):
+            path += ".json"
+        self._save_project(path)
+        self._record_recent(exp_type, Path(path).name, path)
+        self.statusBar().showMessage(f"Saved project: {path}", 2000)
+
+    def _save_project(self, path: str):
+        """Write minimal project JSON including current analysis settings and image path."""
+        import json, datetime
+        from pathlib import Path
+
+        exp_type = self.get_current_experiment_type() or "unknown"
+        window = self.get_current_experiment_window()
+        image_path = None
+        for attr in ("_current_path", "_current_image_path"):
+            if window and hasattr(window, attr):
+                image_path = getattr(window, attr)
+                if image_path:
+                    break
+
+        analysis_raw = self._settings_store.value(f"analysis/{exp_type.lower()}")
+        try:
+            analysis = json.loads(analysis_raw) if analysis_raw else None
+        except Exception:
+            analysis = None
+
+        payload = {
+            "experiment_type": exp_type,
+            "saved_at": datetime.datetime.now().isoformat(),
+            "image_path": image_path,
+            "analysis_settings": analysis,
+        }
+        Path(path).write_text(json.dumps(payload, indent=2), encoding="utf-8")
     def _on_help(self):
         self.statusBar().showMessage("Help not implemented yet", 3000)
     

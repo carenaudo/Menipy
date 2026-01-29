@@ -48,6 +48,18 @@ def _require_cv2():
         )
 
 
+def _as_ndarray(img_like: Any) -> np.ndarray:
+    """
+    Accept either a raw numpy image or a Frame-like object with an `.image` attribute.
+    """
+    try:
+        if hasattr(img_like, "image"):
+            return img_like.image  # type: ignore[return-value]
+    except Exception:
+        pass
+    return img_like  # type: ignore[return-value]
+
+
 # ---- commands ---------------------------------------------------------------
 # Each command is a dict with a "type" field and the needed params.
 # Types: line, polyline, cross, text, circle, scatter
@@ -147,7 +159,8 @@ def run(ctx, *, commands: Iterable[Dict[str, Any]], alpha: float = 0.6):
     frames = ctx.frames if isinstance(ctx.frames, list) else [ctx.frames]
     if not frames:
         raise ValueError("overlay.run: no frames available")
-    overlay, comp = draw_overlay(frames[0], commands, alpha=alpha)
+    base_img = _as_ndarray(frames[0])
+    overlay, comp = draw_overlay(base_img, commands, alpha=alpha)
     ctx.overlay = overlay
     ctx.preview = comp
     return ctx

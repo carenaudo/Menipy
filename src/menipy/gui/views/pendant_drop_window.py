@@ -3,7 +3,7 @@ Pendant Drop Window
 
 Specialized window for pendant drop surface tension measurements.
 """
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, QPoint
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame,
@@ -23,7 +23,7 @@ from menipy.gui.panels import (
 from menipy.gui.dialogs.calibration_wizard_dialog import CalibrationWizardDialog
 from menipy.gui.widgets.pendant_results_widget import PendantResultsWidget
 from menipy.pipelines.pendant import PendantPipeline
-from menipy.models.context import Context
+from menipy.models.config import PreprocessingSettings, EdgeDetectionSettings
 import cv2
 import numpy as np
 
@@ -113,7 +113,16 @@ class PendantImageViewer(QWidget):
     
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._pixmap: QPixmap | None = None
+        self._base_pixmap: QPixmap | None = None
+        self._composited_pixmap: QPixmap | None = None
+        self._overlay_commands: list[dict] = []
+        # Visibility toggles
+        self._overlay_visible = True
+        self._contour_visible = True
+        self._axis_visible = True
+        self._fit_visible = True
+        self._overlay_alpha = 0.6
+
         self._zoom = 1.0
         
         self._setup_ui()
@@ -143,23 +152,34 @@ class PendantImageViewer(QWidget):
         layout.addWidget(self._scroll_area)
     
     def set_image(self, pixmap: QPixmap | None):
-        """Set the image to display."""
-        self._pixmap = pixmap
-        if pixmap and not pixmap.isNull():
-            scaled = pixmap.scaled(
-                pixmap.size() * self._zoom,
-                Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.TransformationMode.SmoothTransformation
-            )
-            self._image_label.setPixmap(scaled)
-        else:
-            self._image_label.clear()
-            self._image_label.setText("Load an image to begin analysis")
+        """Set the base image (no overlay)."""
+        self._base_pixmap = pixmap
+        self._repaint_with_overlays()
+
+    def set_overlay_commands(self, commands: list[dict] | None):
+        """Store overlay drawing commands from pipeline."""
+        self._overlay_commands = commands or []
+        self._repaint_with_overlays()
+
+    def set_overlay_visibility(self, *, overlay: bool | None = None, contour: bool | None = None,
+                                axis: bool | None = None, fit: bool | None = None):
+        if overlay is not None:
+            self._overlay_visible = overlay
+        if contour is not None:
+            self._contour_visible = contour
+        if axis is not None:
+            self._axis_visible = axis
+        if fit is not None:
+            self._fit_visible = fit
+        self._repaint_with_overlays()
+
+    def set_overlay_alpha(self, alpha: float):
+        self._overlay_alpha = max(0.0, min(1.0, alpha))
+        self._repaint_with_overlays()
     
     def set_zoom(self, zoom: float):
         self._zoom = max(0.1, min(10.0, zoom))
-        if self._pixmap:
-            self.set_image(self._pixmap)
+        self._repaint_with_overlays()
     
     def zoom_in(self):
         self.set_zoom(self._zoom * 1.25)
@@ -168,16 +188,107 @@ class PendantImageViewer(QWidget):
         self.set_zoom(self._zoom / 1.25)
     
     def fit_to_view(self):
-        if self._pixmap and not self._pixmap.isNull():
+        if self._base_pixmap and not self._base_pixmap.isNull():
             vp_size = self._scroll_area.viewport().size()
-            img_size = self._pixmap.size()
+            img_size = self._base_pixmap.size()
             scale_x = vp_size.width() / img_size.width()
             scale_y = vp_size.height() / img_size.height()
             self._zoom = min(scale_x, scale_y) * 0.95
-            self.set_image(self._pixmap)
+            self._repaint_with_overlays()
     
     def reset_view(self):
         self.set_zoom(1.0)
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+    def _repaint_with_overlays(self):
+        """Compose base + overlays according to toggles and zoom, then set on label."""
+        if not self._base_pixmap or self._base_pixmap.isNull():
+            self._image_label.clear()
+            self._image_label.setText("Load an image to begin analysis")
+            return
+
+        composed = QPixmap(self._base_pixmap)  # copy
+
+        if self._overlay_visible and self._overlay_commands:
+            self._draw_overlay(composed)
+        self._composited_pixmap = composed
+
+        target = composed.scaled(
+            composed.size() * self._zoom,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation
+        )
+        self._image_label.setPixmap(target)
+
+    def _color_from(self, c):
+        from PySide6.QtGui import QColor
+        if isinstance(c, str):
+            return QColor(c)
+        if isinstance(c, (tuple, list)) and len(c) == 3:
+            return QColor(int(c[2]), int(c[1]), int(c[0]))  # BGR -> RGB
+        return QColor("white")
+
+    def _draw_overlay(self, pix: QPixmap):
+        from PySide6.QtGui import QPainter, QPen
+        painter = QPainter(pix)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        painter.setOpacity(self._overlay_alpha)
+
+        for cmd in self._overlay_commands:
+            typ = cmd.get("type")
+            # per-layer visibility
+            if typ == "polyline" and not self._contour_visible:
+                continue
+            if typ in {"line", "cross"} and not self._axis_visible:
+                continue
+            if typ == "text" and not self._fit_visible:
+                continue
+
+            if typ == "line":
+                p1 = cmd.get("p1", (0, 0))
+                p2 = cmd.get("p2", (0, 0))
+                pen = QPen(self._color_from(cmd.get("color", "cyan")), int(cmd.get("thickness", 2)))
+                painter.setPen(pen)
+                painter.drawLine(int(p1[0]), int(p1[1]), int(p2[0]), int(p2[1]))
+            elif typ == "polyline":
+                pts = cmd.get("points", [])
+                if not pts:
+                    continue
+                from PySide6.QtGui import QPolygon
+                poly = QPolygon([QPoint(int(x), int(y)) for x, y in pts])
+                pen = QPen(self._color_from(cmd.get("color", "yellow")), int(cmd.get("thickness", 2)))
+                painter.setPen(pen)
+                painter.drawPolygon(poly)
+            elif typ == "cross":
+                cx, cy = cmd.get("p", (0, 0))
+                size = int(cmd.get("size", 6))
+                pen = QPen(self._color_from(cmd.get("color", "red")), int(cmd.get("thickness", 2)))
+                painter.setPen(pen)
+                painter.drawLine(int(cx - size), int(cy), int(cx + size), int(cy))
+                painter.drawLine(int(cx), int(cy - size), int(cx), int(cy + size))
+            elif typ == "text":
+                x, y = cmd.get("p", (0, 0))
+                text = str(cmd.get("text", ""))
+                pen = QPen(self._color_from(cmd.get("color", "white")), 1)
+                painter.setPen(pen)
+                painter.drawText(int(x), int(y), text)
+            elif typ == "circle":
+                c = cmd.get("center", (0, 0))
+                r = int(cmd.get("radius", 10))
+                pen = QPen(self._color_from(cmd.get("color", "magenta")), int(cmd.get("thickness", 2)))
+                painter.setPen(pen)
+                painter.drawEllipse(QPoint(int(c[0]), int(c[1])), r, r)
+            elif typ == "scatter":
+                pts = cmd.get("points", [])
+                r = int(cmd.get("radius", 2))
+                th = int(cmd.get("thickness", -1))
+                pen = QPen(self._color_from(cmd.get("color", "white")), th if th > 0 else 1)
+                painter.setPen(pen)
+                for x, y in pts:
+                    painter.drawEllipse(QPoint(int(x), int(y)), r, r)
+        painter.end()
 
 
 class PendantParametersPanel(QFrame):
@@ -285,6 +396,9 @@ class PendantDropWindow(BaseExperimentWindow):
         super().__init__(parent)
         self._current_image = None
         self._current_path = None
+        self._preprocessing_settings = PreprocessingSettings()
+        self._edge_settings = EdgeDetectionSettings()
+        self._pipeline_settings: dict = {}
         self._connect_signals()
     
     def get_experiment_type(self) -> str:
@@ -419,28 +533,32 @@ class PendantDropWindow(BaseExperimentWindow):
     def _add_toolbar_items(self, toolbar: QToolBar):
         """Add pendant-drop specific toolbar items."""
         # Overlay toggle
-        overlay_action = QAction("🔲 Overlay", self)
-        overlay_action.setCheckable(True)
-        overlay_action.setChecked(True)
-        toolbar.addAction(overlay_action)
+        self._overlay_action = QAction("🔲 Overlay", self)
+        self._overlay_action.setCheckable(True)
+        self._overlay_action.setChecked(True)
+        self._overlay_action.toggled.connect(self._on_overlay_toggled)
+        toolbar.addAction(self._overlay_action)
         
         # Needle detection
-        needle_action = QAction("📍 Needle", self)
-        needle_action.setCheckable(True)
-        needle_action.setChecked(True)
-        toolbar.addAction(needle_action)
+        self._needle_action = QAction("📍 Needle", self)
+        self._needle_action.setCheckable(True)
+        self._needle_action.setChecked(True)
+        self._needle_action.toggled.connect(self._on_needle_toggled)
+        toolbar.addAction(self._needle_action)
         
         # Drop contour
-        contour_action = QAction("〰️ Contour", self)
-        contour_action.setCheckable(True)
-        contour_action.setChecked(True)
-        toolbar.addAction(contour_action)
+        self._contour_action = QAction("〰️ Contour", self)
+        self._contour_action.setCheckable(True)
+        self._contour_action.setChecked(True)
+        self._contour_action.toggled.connect(self._on_contour_toggled)
+        toolbar.addAction(self._contour_action)
         
         # Fitted profile
-        fit_action = QAction("📐 Fitted Profile", self)
-        fit_action.setCheckable(True)
-        fit_action.setChecked(True)
-        toolbar.addAction(fit_action)
+        self._fit_action = QAction("📐 Fitted Profile", self)
+        self._fit_action.setCheckable(True)
+        self._fit_action.setChecked(True)
+        self._fit_action.toggled.connect(self._on_fit_toggled)
+        toolbar.addAction(self._fit_action)
     
     def _connect_signals(self):
         """Connect internal signals."""
@@ -455,12 +573,16 @@ class PendantDropWindow(BaseExperimentWindow):
     
     def _on_image_loaded(self, path: str, pixmap: QPixmap | None):
         """Handle image loaded."""
-        self._current_path = path
-        if path:
-            self._current_image = cv2.imread(path)
-            
+        self._current_path = path or None
+        self._current_image = cv2.imread(path) if path else None
+
+        if path and self._current_image is None:
+            self.set_status(f"Failed to load image: {path}")
+            return
+
         if pixmap:
             self._image_viewer.set_image(pixmap)
+            self._image_viewer.set_overlay_commands([])
             self._image_viewer.fit_to_view()
             self.set_status(f"Loaded: {path}")
     
@@ -525,35 +647,46 @@ class PendantDropWindow(BaseExperimentWindow):
             return
 
         try:
-            # 1. Setup Context
-            ctx = Context(image=self._current_image)
-            ctx.image_path = self._current_path
-            
+            # 1. Gather pipeline inputs
             # Calibration
-            # Use get_scale_factor instead of get_scale
             scale = self._calibration_panel.get_scale_factor()
-            ctx.scale = {"px_per_mm": scale}
-            
+
             # If we have calibration result (ROI/Needle), pass it
             calib = getattr(self, "_last_calibration_result", None)
+            pipeline_kwargs = {
+                "image": self._current_image,
+                "image_path": self._current_path,
+                "scale": {"px_per_mm": scale},
+            }
             if calib:
-                ctx.needle_rect = calib.needle_rect
-                ctx.roi_rect = calib.roi_rect
+                pipeline_kwargs["needle_rect"] = calib.needle_rect
+                pipeline_kwargs["roi_rect"] = calib.roi_rect
                 # Reuse needle diameter
-                ctx.needle_diameter_mm = getattr(self, "_last_known_diameter", 0.71)
-                
+                pipeline_kwargs["needle_diameter_mm"] = getattr(
+                    self, "_last_known_diameter", 0.71
+                )
+
             # Physics params
             params = self._parameters_panel.get_parameters()
-            ctx.physics = {
-                "rho1": params.get("liquid_density", 1000.0),
-                "rho2": params.get("surrounding_density", 1.2),
-                "g": params.get("gravity", 9.81)
+            pipeline_kwargs["physics"] = {
+                "rho1": self._pipeline_settings.get("rho1", params.get("liquid_density", 1000.0)),
+                "rho2": self._pipeline_settings.get("rho2", params.get("surrounding_density", 1.2)),
+                "g": self._pipeline_settings.get("g", params.get("gravity", 9.81)),
             }
 
             # 2. Run Pipeline
-            pipeline = PendantPipeline()
+            pipeline = PendantPipeline(
+                preprocessing_settings=self._preprocessing_settings,
+                edge_detection_settings=self._edge_settings,
+            )
+            if "solver" in self._pipeline_settings:
+                pipeline.solver_name = self._pipeline_settings["solver"]
+            if "preprocessor" in self._pipeline_settings:
+                pipeline.preprocessor_name = self._pipeline_settings["preprocessor"]
+            if "edge_detector" in self._pipeline_settings:
+                pipeline.edge_detector_name = self._pipeline_settings["edge_detector"]
             # In a real app, run in background thread. For now, run directly.
-            pipeline.run(ctx)
+            ctx = pipeline.run(**pipeline_kwargs)
             
             # 3. Process Results
             results = ctx.results or {}
@@ -567,47 +700,45 @@ class PendantDropWindow(BaseExperimentWindow):
                 "bond_number": results.get("beta"),
                 "apex_radius": results.get("r0_mm"),
                 "volume": results.get("volume_uL"),
-                "de": results.get("diameter_mm"), # Approx DE = 2*R0 for sphere, close enough for visual?
-                "ds": results.get("diameter_mm"), # Placeholder
+                "de": results.get("diameter_mm"),  # Approx DE = 2*R0 for sphere
+                "ds": results.get("diameter_mm"),  # Placeholder
                 "density_diff": params.get("liquid_density", 0) - params.get("surrounding_density", 0),
-                "rmse": results.get("residuals", {}).get("optimality", 0.0), # or extract properly
-                "iterations": 0, # Pipeline fit doesn't expose iterations cleanly in top dict yet
-                "confidence": 100.0 # Placeholder
+                "rmse": results.get("residuals", {}).get("optimality", 0.0),
+                "iterations": results.get("residuals", {}).get("nfev")
+                or results.get("residuals", {}).get("nit")
+                or 0,
+                "confidence": 100.0,
             }
+            # Add a rough surface area estimate if diameter present (sphere approx)
+            if results.get("diameter_mm"):
+                d = results["diameter_mm"]
+                ui_results["surface_area"] = 4 * 3.14159 * (d / 2) ** 2
             
-            # Filter None
-            ui_results = {k: v for k, v in ui_results.items() if v is not None}
-            
+            # Do not drop keys; widget handles None/invalid gracefully
             self._results_widget.set_results(ui_results)
-            self._history_widget.add_result(results) # History uses pipeline keys (surface_tension_mN_m etc... wait!)
             
-            # History widget expects: surface_tension, volume, bond_number, r0_mm
-            # My HistoryWidget implementation uses fmt("surface_tension", ...)
-            # BUT pipeline output has "surface_tension_mN_m".
-            # I must fix HistoryWidget OR flatten results.
-            # I'll update HistoryWidget keys in Next Step or map them here?
-            # Better: Map them here to a 'clean' dict for history? 
-            # Or use `results` but add aliases.
-            
-            results["surface_tension"] = results.get("surface_tension_mN_m")
-            results["volume"] = results.get("volume_uL")
-            results["bond_number"] = results.get("beta")
-            
-            self._history_widget.add_result(results)
+            # Align history row keys with widget expectations
+            history_row = dict(results)
+            history_row["surface_tension"] = results.get("surface_tension_mN_m")
+            history_row["volume"] = results.get("volume_uL")
+            history_row["bond_number"] = results.get("beta")
+            self._history_widget.add_result(history_row)
 
             self._action_panel.set_state(ActionPanel.STATE_COMPLETE)
             self.set_status("Analysis complete")
             
-            # Update image viewer with overlay
-            if ctx.image is not None:
+            # Update image viewer with overlay if available (ctx.preview)
+            base_img = getattr(ctx, "image", None)
+            if base_img is not None:
                 import cv2
                 from PySide6.QtGui import QImage
-                 # Ensure contiguous array for QImage
-                rgb = cv2.cvtColor(ctx.image, cv2.COLOR_BGR2RGB)
+                rgb = cv2.cvtColor(base_img, cv2.COLOR_BGR2RGB)
                 h, w, ch = rgb.shape
                 bytes_per_line = ch * w
-                qimg = QImage(rgb.data, w, h, bytes_per_line, QImage.Format_RGB888)
+                qimg = QImage(rgb.data, w, h, bytes_per_line, QImage.Format_RGB888).copy()
                 self._image_viewer.set_image(QPixmap.fromImage(qimg))
+                # Pass overlay drawing commands to Qt painter layer
+                self._image_viewer.set_overlay_commands(getattr(ctx, "overlay_commands", None))
             
             self.analysis_completed.emit(results)
             
@@ -667,3 +798,47 @@ class PendantDropWindow(BaseExperimentWindow):
     
     def _on_reset_view(self):
         self._image_viewer.reset_view()
+
+    # ------------------------------------------------------------------
+    # Analysis settings hook
+    # ------------------------------------------------------------------
+    def apply_analysis_settings(
+        self,
+        pre: PreprocessingSettings,
+        edge: EdgeDetectionSettings,
+        pipeline_settings: dict | None = None,
+    ):
+        self._preprocessing_settings = pre
+        self._edge_settings = edge
+        self._pipeline_settings = pipeline_settings or {}
+        if pipeline_settings:
+            # Update parameter panel with physics defaults
+            if "rho1" in pipeline_settings:
+                self._parameters_panel.set_density("liquid_density", pipeline_settings["rho1"])
+            if "rho2" in pipeline_settings:
+                self._parameters_panel.set_density("surrounding_density", pipeline_settings["rho2"])
+            if "g" in pipeline_settings and hasattr(self._parameters_panel, "_gravity"):
+                self._parameters_panel._gravity.setValue(pipeline_settings["g"])
+            # Overlay prefs
+            if "overlay_visible" in pipeline_settings:
+                self._image_viewer.set_overlay_visibility(overlay=pipeline_settings["overlay_visible"])
+            if "contour_visible" in pipeline_settings:
+                self._image_viewer.set_overlay_visibility(contour=pipeline_settings["contour_visible"])
+            if "axis_visible" in pipeline_settings:
+                self._image_viewer.set_overlay_visibility(axis=pipeline_settings["axis_visible"])
+            if "fit_visible" in pipeline_settings:
+                self._image_viewer.set_overlay_visibility(fit=pipeline_settings["fit_visible"])
+            if "overlay_alpha" in pipeline_settings:
+                self._image_viewer.set_overlay_alpha(pipeline_settings["overlay_alpha"])
+    def _on_overlay_toggled(self, checked: bool):
+        self._image_viewer.set_overlay_visibility(overlay=checked)
+
+    def _on_needle_toggled(self, checked: bool):
+        # Treat needle toggle as axis/apex overlay
+        self._image_viewer.set_overlay_visibility(axis=checked)
+
+    def _on_contour_toggled(self, checked: bool):
+        self._image_viewer.set_overlay_visibility(contour=checked)
+
+    def _on_fit_toggled(self, checked: bool):
+        self._image_viewer.set_overlay_visibility(fit=checked)

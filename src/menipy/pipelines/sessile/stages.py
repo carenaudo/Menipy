@@ -11,6 +11,7 @@ from menipy.pipelines.base import PipelineBase
 from menipy.models.context import Context
 from menipy.models.fit import FitConfig
 from menipy.common import solver as common_solver
+from menipy.common import registry
 from menipy.common.plugin_loader import get_solver
 from menipy.pipelines.utils import ensure_contour
 
@@ -22,6 +23,9 @@ class SessilePipeline(PipelineBase):
     """Sessile drop pipeline (simplified): contour → baseline/axis/angles → toy Y–L radius fit."""
 
     name = "sessile"
+    solver_name: str = "toy_young_laplace"
+    preprocessor_name: str | None = None
+    edge_detector_name: str | None = None
 
     # UI metadata for plugin-centric configuration
     ui_metadata = {
@@ -67,8 +71,17 @@ class SessilePipeline(PipelineBase):
 
     def do_preprocessing(self, ctx: Context) -> Optional[Context]:
         """Run preprocessing with automatic feature detection."""
+        if self.preprocessor_name and self.preprocessor_name in registry.PREPROCESSORS:
+            fn = registry.PREPROCESSORS[self.preprocessor_name]
+            return fn(ctx) or ctx
         from menipy.pipelines.sessile.preprocessing import do_preprocessing
         return do_preprocessing(ctx)
+
+    def do_edge_detection(self, ctx: Context) -> Optional[Context]:
+        if self.edge_detector_name and self.edge_detector_name in registry.EDGE_DETECTORS:
+            fn = registry.EDGE_DETECTORS[self.edge_detector_name]
+            return fn(ctx) or ctx
+        return super().do_edge_detection(ctx)
 
     def do_geometry(self, ctx: Context) -> Optional[Context]:
         xy = ensure_contour(ctx)
@@ -175,7 +188,8 @@ class SessilePipeline(PipelineBase):
             distance="pointwise",
             param_names=["R0_mm"],
         )
-        common_solver.run(ctx, integrator=young_laplace_sphere, config=cfg)
+        integrator = get_solver(self.solver_name, fallback=young_laplace_sphere)
+        common_solver.run(ctx, integrator=integrator, config=cfg)
         return ctx
 
     def do_optimization(self, ctx: Context) -> Optional[Context]:

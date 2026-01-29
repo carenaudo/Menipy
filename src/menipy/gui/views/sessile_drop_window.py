@@ -25,7 +25,7 @@ from menipy.gui.widgets.quick_stats_widget import QuickStatsWidget
 from menipy.gui.widgets.interactive_image_viewer import InteractiveImageViewer
 from menipy.pipelines.sessile import SessilePipeline
 from menipy.models.context import Context
-from menipy.models.config import PreprocessingSettings
+from menipy.models.config import PreprocessingSettings, EdgeDetectionSettings
 from menipy.gui.dialogs.preprocessing_config_dialog import PreprocessingConfigDialog
 
 
@@ -129,6 +129,8 @@ class SessileDropWindow(BaseExperimentWindow):
         self._current_image_path = None
         self._last_ctx: Context | None = None
         self._preprocessing_settings = PreprocessingSettings()
+        self._edge_settings = EdgeDetectionSettings()
+        self._pipeline_settings: dict = {}
         self._connect_signals()
     
     def get_experiment_type(self) -> str:
@@ -507,13 +509,32 @@ class SessileDropWindow(BaseExperimentWindow):
             # (ParametersPanel usually manages this, assumes defaults if not set)
             
             # 2. Run Pipeline
-            pipeline = SessilePipeline()
+            pipeline = SessilePipeline(
+                preprocessing_settings=self._preprocessing_settings,
+                edge_detection_settings=self._edge_settings,
+            )
+            if "solver" in self._pipeline_settings:
+                pipeline.solver_name = self._pipeline_settings["solver"]
+            if "preprocessor" in self._pipeline_settings:
+                pipeline.preprocessor_name = self._pipeline_settings["preprocessor"]
+            if "edge_detector" in self._pipeline_settings:
+                pipeline.edge_detector_name = self._pipeline_settings["edge_detector"]
             
             # Build kwargs from calibration result if available
             pipeline_kwargs = {
                 "image_path": self._current_image_path,
                 "preprocessing_settings": self._preprocessing_settings,
             }
+            # pipeline-stage choices
+            if "contact_angle_method" in self._pipeline_settings:
+                pipeline_kwargs["contact_angle_method"] = self._pipeline_settings["contact_angle_method"]
+            # physics overrides
+            if any(k in self._pipeline_settings for k in ("rho1", "rho2", "g")):
+                pipeline_kwargs["physics"] = {
+                    "rho1": float(self._pipeline_settings.get("rho1", 1000.0)),
+                    "rho2": float(self._pipeline_settings.get("rho2", 1.2)),
+                    "g": float(self._pipeline_settings.get("g", 9.80665)),
+                }
             
             # Use calibration result if available (from CalibrationWizardDialog)
             calib = getattr(self, "_last_calibration_result", None)
@@ -743,3 +764,36 @@ class SessileDropWindow(BaseExperimentWindow):
     
     def _on_reset_view(self):
         self._image_viewer.reset_view()
+
+    # ------------------------------------------------------------------
+    # Analysis settings hook
+    # ------------------------------------------------------------------
+    def apply_analysis_settings(
+        self,
+        pre: PreprocessingSettings,
+        edge: EdgeDetectionSettings,
+        pipeline_settings: dict | None = None,
+    ):
+        self._preprocessing_settings = pre
+        self._edge_settings = edge
+        self._pipeline_settings = pipeline_settings or {}
+        # Overlay prefs
+        if "overlay_visible" in self._pipeline_settings:
+            self._show_overlay = self._pipeline_settings["overlay_visible"]
+        if "baseline_visible" in self._pipeline_settings:
+            self._show_baseline = self._pipeline_settings["baseline_visible"]
+        if "contact_visible" in self._pipeline_settings:
+            self._show_contact_points = self._pipeline_settings["contact_visible"]
+
+    # ------------------------------------------------------------------
+    # Analysis settings hook
+    # ------------------------------------------------------------------
+    def apply_analysis_settings(
+        self,
+        pre: PreprocessingSettings,
+        edge: EdgeDetectionSettings,
+        pipeline_settings: dict | None = None,
+    ):
+        self._preprocessing_settings = pre
+        self._edge_settings = edge
+        self._pipeline_settings = pipeline_settings or {}

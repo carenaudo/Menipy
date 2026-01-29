@@ -5,6 +5,7 @@ Widget displaying pendant drop specific results including surface tension,
 Bond number, and drop shape parameters.
 """
 from PySide6.QtCore import Qt
+import math
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QGridLayout
 )
@@ -74,13 +75,14 @@ class PendantResultsWidget(QFrame):
         self._surface_tension_label = QLabel("--")
         self._surface_tension_label.setStyleSheet(f"""
             color: white;
-            font-size: 28px;
+            font-family: "{theme.FONT_FAMILY}";
+            font-size: 22px;
             font-weight: bold;
         """)
         st_layout.addWidget(self._surface_tension_label)
         
         self._st_uncertainty_label = QLabel("")
-        self._st_uncertainty_label.setStyleSheet("color: #B3FFFFFF;")
+        self._st_uncertainty_label.setStyleSheet(f"color: #B3FFFFFF; font-family: \"{theme.FONT_FAMILY}\";")
         st_layout.addWidget(self._st_uncertainty_label)
         
         layout.addWidget(st_section)
@@ -176,7 +178,7 @@ class PendantResultsWidget(QFrame):
     def _create_value_label(self) -> QLabel:
         """Create a styled value label."""
         label = QLabel("--")
-        label.setStyleSheet(f"color: {theme.TEXT_PRIMARY};")
+        label.setStyleSheet(f"color: {theme.TEXT_PRIMARY}; font-family: \"{theme.FONT_FAMILY}\"; font-size: {theme.FONT_SIZE_LARGE}px;")
         label.setAlignment(Qt.AlignmentFlag.AlignRight)
         return label
     
@@ -240,38 +242,54 @@ class PendantResultsWidget(QFrame):
                 - iterations: Number of fit iterations
                 - confidence: Confidence score (0-100)
         """
+        # Reset first to avoid stale values
+        self._reset_display()
+
+        def fmt(val, pattern):
+            try:
+                if val is None:
+                    return None
+                if isinstance(val, float) and (math.isnan(val) or math.isinf(val)):
+                    return None
+                return pattern.format(val)
+            except Exception:
+                return None
+
         # Surface tension
         if "surface_tension" in results:
             st = results["surface_tension"]
-            self._surface_tension_label.setText(f"γ = {st:.2f} mN/m")
+            if isinstance(st, (int, float)) and math.isfinite(st):
+                self._surface_tension_label.setText(f"γ = {st:.2f} mN/m")
+            else:
+                self._surface_tension_label.setText("γ = --")
             
             if "surface_tension_uncertainty" in results:
                 unc = results["surface_tension_uncertainty"]
                 self._st_uncertainty_label.setText(f"± {unc:.2f} mN/m")
         
         # Shape parameters
-        if "de" in results:
-            self._de_label.setText(f"{results['de']:.3f} mm")
-        if "ds" in results:
-            self._ds_label.setText(f"{results['ds']:.3f} mm")
-        if "apex_radius" in results:
-            self._apex_label.setText(f"{results['apex_radius']:.3f} mm")
-        if "bond_number" in results:
-            self._bond_label.setText(f"{results['bond_number']:.4f}")
+        if val := fmt(results.get("de"), "{:.3f} mm"):
+            self._de_label.setText(val)
+        if val := fmt(results.get("ds"), "{:.3f} mm"):
+            self._ds_label.setText(val)
+        if val := fmt(results.get("apex_radius"), "{:.3f} mm"):
+            self._apex_label.setText(val)
+        if val := fmt(results.get("bond_number"), "{:.4f}"):
+            self._bond_label.setText(val)
         
         # Physical properties
-        if "volume" in results:
-            self._volume_label.setText(f"{results['volume']:.2f} μL")
-        if "surface_area" in results:
-            self._area_label.setText(f"{results['surface_area']:.2f} mm²")
-        if "density_diff" in results:
-            self._density_diff_label.setText(f"{results['density_diff']:.1f} kg/m³")
+        if val := fmt(results.get("volume"), "{:.2f} μL"):
+            self._volume_label.setText(val)
+        if val := fmt(results.get("surface_area"), "{:.2f} mm²"):
+            self._area_label.setText(val)
+        if val := fmt(results.get("density_diff"), "{:.1f} kg/m³"):
+            self._density_diff_label.setText(val)
         
         # Fit quality
-        if "rmse" in results:
-            self._rmse_label.setText(f"{results['rmse']:.4f}")
-        if "iterations" in results:
-            self._iterations_label.setText(f"{results['iterations']}")
+        if val := fmt(results.get("rmse"), "{:.4f}"):
+            self._rmse_label.setText(val)
+        if val := fmt(results.get("iterations"), "{}"):
+            self._iterations_label.setText(val)
         
         # Confidence
         self._set_confidence(results.get("confidence"))

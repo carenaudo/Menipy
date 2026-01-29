@@ -228,3 +228,41 @@ class MaterialDB:
         with self.connect() as con:
             rows = con.execute("SELECT * FROM syringes ORDER BY volume_ul").fetchall()
             return [dict(row) for row in rows]
+
+    def upsert_syringe(
+        self,
+        name: str,
+        *,
+        manufacturer: str | None = None,
+        volume_ul: float | None = None,
+        diameter_mm: float | None = None,
+        description: str | None = None,
+        is_favorite: int | None = None,
+    ) -> int:
+        """Insert or update syringe entry. Returns row ID."""
+        valid_data = {
+            "manufacturer": manufacturer,
+            "volume_ul": volume_ul,
+            "diameter_mm": diameter_mm,
+            "description": description,
+            "is_favorite": is_favorite,
+        }
+        # Remove None values
+        valid_data = {k: v for k, v in valid_data.items() if v is not None}
+        columns = ", ".join(valid_data.keys())
+        placeholders = ", ".join(["?"] * len(valid_data))
+        updates = ", ".join([f"{k}=Excluded.{k}" for k in valid_data.keys()])
+
+        values = list(valid_data.values())
+
+        sql = f"""
+        INSERT INTO syringes (name, {columns})
+        VALUES (?, {placeholders})
+        ON CONFLICT(name) DO UPDATE SET
+            {updates},
+            updated_at=CURRENT_TIMESTAMP
+        """
+
+        with self.connect() as con:
+            cur = con.execute(sql, [name] + values)
+            return cur.lastrowid

@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QGraphicsEllipseItem,
     QGraphicsLineItem,
     QGraphicsRectItem,
+    QGraphicsPathItem,
 )
 
 # Drawing modes for overlays
@@ -540,6 +541,7 @@ class ImageView(QGraphicsView):
                 item.setZValue(10_000)
                 self.scene().addItem(item)
                 self._overlays.append(item)
+                self._register_overlay_item(item)
                 self._press_pos_scene = None
             elif self._draw_mode == DRAW_LINE:
                 item = QGraphicsLineItem(

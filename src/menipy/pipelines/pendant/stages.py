@@ -9,18 +9,41 @@ from menipy.models.context import Context
 from menipy.models.fit import FitConfig
 from menipy.common import solver as common_solver
 from menipy.common import overlay as ovl
+from menipy.common import registry
 from menipy.common.plugin_loader import get_solver
 from menipy.pipelines.utils import ensure_contour
 
 # Get solvers from registry (loaded at startup)
 young_laplace_adsa = get_solver("young_laplace_adsa")
-calculate_surface_tension = get_solver("calculate_surface_tension")
+
+
+def _calc_surface_tension_fallback(
+    R0_mm: float, beta: float, delta_rho_kg_m3: float, g: float = 9.80665
+) -> float:
+    """
+    Local fallback if plugin solver isn't registered.
+    gamma = (delta_rho * g * R0^2) / beta
+    Returns mN/m.
+    """
+    if abs(beta) < 1e-10:
+        return float("nan")
+    R0_m = R0_mm / 1000.0
+    gamma_N_per_m = (delta_rho_kg_m3 * g * (R0_m**2)) / beta
+    return gamma_N_per_m * 1000.0
+
+
+calculate_surface_tension = get_solver(
+    "calculate_surface_tension", fallback=_calc_surface_tension_fallback
+)
 
 
 class PendantPipeline(PipelineBase):
     """Pendant drop pipeline (simplified): contour → axis/apex → toy Y–L radius fit."""
 
     name = "pendant"
+    solver_name: str = "young_laplace_adsa"
+    preprocessor_name: str | None = None
+    edge_detector_name: str | None = None
 
     # UI metadata for plugin-centric configuration
     ui_metadata = {
@@ -88,8 +111,17 @@ class PendantPipeline(PipelineBase):
 
     def do_preprocessing(self, ctx: Context) -> Optional[Context]:
         """Run preprocessing with automatic feature detection."""
+        if self.preprocessor_name and self.preprocessor_name in registry.PREPROCESSORS:
+            fn = registry.PREPROCESSORS[self.preprocessor_name]
+            return fn(ctx) or ctx
         from menipy.pipelines.pendant.preprocessing import do_preprocessing
         return do_preprocessing(ctx)
+
+    def do_edge_detection(self, ctx: Context) -> Optional[Context]:
+        if self.edge_detector_name and self.edge_detector_name in registry.EDGE_DETECTORS:
+            fn = registry.EDGE_DETECTORS[self.edge_detector_name]
+            return fn(ctx) or ctx
+        return super().do_edge_detection(ctx)
 
     def do_geometry(self, ctx: Context) -> Optional[Context]:
         xy = ensure_contour(ctx)
@@ -168,7 +200,8 @@ class PendantPipeline(PipelineBase):
             distance="pointwise",
             param_names=["r0_mm", "beta"],
         )
-        common_solver.run(ctx, integrator=young_laplace_adsa, config=cfg)
+        integrator = get_solver(self.solver_name, fallback=young_laplace_adsa)
+        common_solver.run(ctx, integrator=integrator, config=cfg)
         return ctx
 
     def do_optimization(self, ctx: Context) -> Optional[Context]:
@@ -295,6 +328,8 @@ class PendantPipeline(PipelineBase):
                 "scale": 0.55,
             },
         ]
+        # Store commands for UI-side rendering (e.g., Qt painter toggles)
+        ctx.overlay_commands = cmds
         return ovl.run(ctx, commands=cmds, alpha=0.6)
 
     def do_validation(self, ctx: Context) -> Optional[Context]:
