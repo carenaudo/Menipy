@@ -739,7 +739,12 @@ class ADSAMainWindow(QMainWindow):
         }
         Path(path).write_text(json.dumps(payload, indent=2), encoding="utf-8")
     def _on_help(self):
-        self.statusBar().showMessage("Help not implemented yet", 3000)
+        from pathlib import Path
+        from menipy.gui.dialogs.help_dialog import HelpDialog
+
+        docs_root = Path("docs")
+        dlg = HelpDialog(self, docs_dir=docs_root)
+        dlg.exec()
     
     def _on_about(self):
         QMessageBox.about(
