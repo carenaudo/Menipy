@@ -427,14 +427,39 @@ class SessileDropWindow(BaseExperimentWindow):
             
             # 2. Run Pipeline
             pipeline = SessilePipeline()
-            # Note: We pass image_path and enable auto_detect_features.
-            # We also pass the user-configured preprocessing settings.
-            ctx = pipeline.run(
-                image_path=self._current_image_path,
-                auto_detect_features=True,
-                preprocessing_settings=self._preprocessing_settings,
-                # Additional params can be passed here (physics, scale, etc.)
-            )
+            
+            # Build kwargs from calibration result if available
+            pipeline_kwargs = {
+                "image_path": self._current_image_path,
+                "preprocessing_settings": self._preprocessing_settings,
+            }
+            
+            # Use calibration result if available (from CalibrationWizardDialog)
+            calib = getattr(self, "_last_calibration_result", None)
+            if calib:
+                # Pass pre-detected regions to skip auto-detection
+                if calib.needle_rect:
+                    pipeline_kwargs["needle_rect"] = calib.needle_rect
+                if calib.substrate_line:
+                    pipeline_kwargs["substrate_line"] = calib.substrate_line
+                if calib.roi_rect:
+                    pipeline_kwargs["roi_rect"] = calib.roi_rect
+                if calib.drop_contour is not None:
+                    pipeline_kwargs["drop_contour"] = calib.drop_contour
+                if calib.contact_points:
+                    pipeline_kwargs["contact_points"] = calib.contact_points
+                # With pre-detected features, we can skip auto-detection
+                pipeline_kwargs["auto_detect_features"] = False
+            else:
+                # No calibration - run auto-detection
+                pipeline_kwargs["auto_detect_features"] = True
+            
+            # Get needle diameter from parameters panel for scale calculation
+            needle_diameter_mm = self._parameters_panel.get_needle_diameter()
+            if needle_diameter_mm and needle_diameter_mm > 0:
+                pipeline_kwargs["needle_diameter_mm"] = needle_diameter_mm
+            
+            ctx = pipeline.run(**pipeline_kwargs)
             
             # 3. Handle Results
             if ctx.error:
