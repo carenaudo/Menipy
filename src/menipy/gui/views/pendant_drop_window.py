@@ -400,6 +400,23 @@ class PendantDropWindow(BaseExperimentWindow):
         self._edge_settings = EdgeDetectionSettings()
         self._pipeline_settings: dict = {}
         self._connect_signals()
+
+    def load_image(self, path: str):
+        """Load image via source panel."""
+        self._image_source_panel.load_image(path)
+        
+    def apply_analysis_settings(
+        self,
+        pre: PreprocessingSettings,
+        edge: EdgeDetectionSettings,
+        pipeline_settings: dict | None = None,
+    ):
+        self._preprocessing_settings = pre
+        self._edge_settings = edge
+        self._pipeline_settings = pipeline_settings or {}
+        # Apply visibility settings if present
+        if "overlay_visible" in self._pipeline_settings:
+            self._image_viewer.set_overlay_visibility(overlay=self._pipeline_settings["overlay_visible"])
     
     def get_experiment_type(self) -> str:
         return theme.EXPERIMENT_PENDANT

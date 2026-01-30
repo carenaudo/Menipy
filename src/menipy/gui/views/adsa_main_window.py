@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
 from menipy.gui import theme
 from menipy.gui.views.experiment_selector import ExperimentSelectorView
 from PySide6.QtCore import QSettings
+import json
 
 
 class ADSAMainWindow(QMainWindow):
@@ -282,8 +283,8 @@ class ADSAMainWindow(QMainWindow):
         self._selector.project_opened.connect(self._on_project_opened)
     
     def _load_recent_projects(self):
-        """Load and display recent projects from settings (fallback to seeds)."""
-        import json, datetime
+        """Load and display recent projects from settings."""
+        import datetime
 
         raw = self._settings_store.value("recent_projects")
         projects = []
@@ -293,47 +294,149 @@ class ADSAMainWindow(QMainWindow):
             except Exception:
                 projects = []
 
-        if not projects:
-            projects = [
-                {
-                    "filename": "Sessile_Water_Glass",
-                    "experiment_type": theme.EXPERIMENT_SESSILE,
-                    "date_str": "Seed",
-                    "path": "",
-                },
-                {
-                    "filename": "Pendant_Ethanol_Air",
-                    "experiment_type": theme.EXPERIMENT_PENDANT,
-                    "date_str": "Seed",
-                    "path": "",
-                },
-            ]
-            self._settings_store.setValue("recent_projects", json.dumps(projects))
-
         self._selector.set_recent_projects(projects)
+        self._update_recent_menu()
 
     def _record_recent(self, experiment_type: str, title: str, path: str | None):
         """Append an entry to recent projects list (max 10)."""
-        import json, datetime
+        import datetime
 
         raw = self._settings_store.value("recent_projects") or "[]"
         try:
             projects = json.loads(raw)
         except Exception:
             projects = []
-
+        
+        # Ensure it's a list
+        if not isinstance(projects, list):
+            projects = []
+            
         entry = {
             "filename": title,
             "experiment_type": experiment_type,
             "date_str": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
             "path": path or "",
         }
-        # Remove duplicates by filename/type
-        projects = [p for p in projects if not (p.get("filename") == title and p.get("experiment_type") == experiment_type)]
+        # Remove duplicates by filename/type OR by path if provided
+        filtered = []
+        for p in projects:
+            same_path = (path is not None) and (p.get("path") == path)
+            same_name = (p.get("filename") == title) and (p.get("experiment_type") == experiment_type)
+            if not same_path and not same_name:
+                filtered.append(p)
+                
+        projects = filtered
         projects.insert(0, entry)
         projects = projects[:10]
+        
         self._settings_store.setValue("recent_projects", json.dumps(projects))
         self._selector.set_recent_projects(projects)
+        self._update_recent_menu()
+    
+    def _update_recent_menu(self):
+        """Populate the recent projects menu."""
+        if not hasattr(self, "_recent_menu"):
+            return
+            
+        self._recent_menu.clear()
+        
+        raw = self._settings_store.value("recent_projects")
+        projects = []
+        if raw:
+            try:
+                projects = json.loads(raw)
+            except Exception:
+                projects = []
+                
+        if not projects:
+            dummy = QAction("(No recent projects)", self)
+            dummy.setEnabled(False)
+            self._recent_menu.addAction(dummy)
+            return
+            
+        for proj in projects:
+            name = proj.get("filename", "Untitled")
+            date = proj.get("date_str", "")
+            path = proj.get("path", "")
+            
+            label = f"{name} ({date})"
+            action = QAction(label, self)
+            if path:
+                action.setToolTip(path)
+                # Use default argument capture for lambda closure
+                action.triggered.connect(lambda checked=False, p=path: self._on_project_opened(p))
+            else:
+                action.setEnabled(False) # Disable seed items with no path
+                
+            self._recent_menu.addAction(action)
+            
+        self._recent_menu.addSeparator()
+        clear_action = QAction("Clear Recent Projects", self)
+        clear_action.triggered.connect(self._clear_recent_projects)
+        self._recent_menu.addAction(clear_action)
+        
+    def _clear_recent_projects(self):
+        """Clear the recent projects list."""
+        self._settings_store.setValue("recent_projects", "[]")
+        self._selector.set_recent_projects([])
+        self._update_recent_menu()
+        
+    def _open_project_file(self, path: str):
+        """
+        Open a project file and restore state.
+        
+        Args:
+            path: Absolute path to .adsa.json file.
+        """
+        import os
+        from menipy.models.config import PreprocessingSettings, EdgeDetectionSettings
+
+        if not os.path.exists(path):
+            self.statusBar().showMessage(f"Project file not found: {path}", 4000)
+            return
+            
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                
+            exp_type = data.get("experiment_type")
+            image_path = data.get("image_path")
+            analysis_data = data.get("analysis_settings") or {}
+            
+            if not exp_type:
+                raise ValueError("Missing experiment_type in project file")
+                
+            # 1. Switch to experiment
+            self.show_experiment_window(exp_type)
+            window = self.get_current_experiment_window()
+            
+            if window:
+                # 2. Load image
+                if image_path and os.path.exists(image_path):
+                    if hasattr(window, "load_image"):
+                        window.load_image(image_path)
+                    elif hasattr(window, "_image_source_panel"):
+                        window._image_source_panel.load_image(image_path)
+                
+                # 3. Apply settings
+                # If analysis_settings are in the project file, use them overrides stored defaults
+                if analysis_data:
+                    pre = PreprocessingSettings(**analysis_data.get("preproc", {}))
+                    edge = EdgeDetectionSettings(**analysis_data.get("edge", {}))
+                    pipe = analysis_data.get("pipeline", {})
+                    
+                    if hasattr(window, "apply_analysis_settings"):
+                        window.apply_analysis_settings(pre, edge, pipe)
+            
+            self.statusBar().showMessage(f"Opened project: {path}", 3000)
+            
+            # Update recents list (move to top)
+            title = data.get("filename") or os.path.basename(path).replace(".adsa.json", "").replace(".json", "")
+            self._record_recent(exp_type, title, path)
+            
+        except Exception as e:
+            self.statusBar().showMessage(f"Error opening project: {str(e)}", 4000)
+            print(f"Project open error: {e}")
     
     # =========================================================================
     # Public Methods
@@ -520,8 +623,7 @@ class ADSAMainWindow(QMainWindow):
             )
         
         if path:
-            # TODO: Load project file and switch to appropriate experiment window
-            self.statusBar().showMessage(f"Opened: {path}", 3000)
+            self._open_project_file(path)
     
     # -------------------------------------------------------------------------
     # Menu Action Handlers (Placeholders)

@@ -341,6 +341,26 @@ class BaseExperimentWindow(QWidget):
             Title string for display.
         """
         pass
+        
+    def load_image(self, path: str):
+        """
+        Load an image into the experiment window.
+        
+        Args:
+            path: Absolute path to the image file.
+        """
+        pass
+        
+    def apply_analysis_settings(self, pre, edge, pipeline_settings=None):
+        """
+        Apply analysis settings to the window.
+        
+        Args:
+            pre: PreprocessingSettings
+            edge: EdgeDetectionSettings
+            pipeline_settings: Dict of pipeline settings
+        """
+        pass
     
     # -------------------------------------------------------------------------
     # Virtual Methods - Can be overridden by subclasses

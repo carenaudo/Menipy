@@ -1,0 +1,89 @@
+{
+  "experiment_type": "sessile",
+  "saved_at": "2026-01-30T10:34:16.053049",
+  "image_path": "D:/programacion/Menipy/data/samples/gota depositada 1.png",
+  "analysis_settings": {
+    "preproc": {
+      "crop_to_roi": true,
+      "convert_to_grayscale": true,
+      "work_on_roi_mask": true,
+      "resize": {
+        "enabled": false,
+        "target_width": null,
+        "target_height": null,
+        "preserve_aspect": true,
+        "interpolation": "linear"
+      },
+      "filtering": {
+        "enabled": false,
+        "method": "none",
+        "kernel_size": 3,
+        "sigma": 1.0,
+        "sigma_color": 75.0,
+        "sigma_space": 75.0
+      },
+      "background": {
+        "enabled": false,
+        "mode": "flat",
+        "strength": 0.8,
+        "rolling_radius": 15
+      },
+      "normalization": {
+        "enabled": false,
+        "method": "clahe",
+        "clip_limit": 2.0,
+        "grid_size": 8
+      },
+      "contact_line": {
+        "strategy": "preserve",
+        "threshold": 0.15,
+        "dilation": 3
+      },
+      "fill_holes": {
+        "enabled": false,
+        "max_hole_area": 500,
+        "remove_spurious_near_contact": true,
+        "proximity_px": 5
+      },
+      "auto_detect": {
+        "enabled": true,
+        "detect_roi": true,
+        "detect_needle": true,
+        "detect_substrate": true
+      },
+      "preset_id": null
+    },
+    "edge": {
+      "enabled": true,
+      "method": "canny",
+      "gaussian_blur_before": true,
+      "gaussian_kernel_size": 5,
+      "gaussian_sigma_x": 0.0,
+      "canny_threshold1": 50,
+      "canny_threshold2": 150,
+      "canny_aperture_size": 3,
+      "canny_L2_gradient": false,
+      "threshold_value": 128,
+      "threshold_max_value": 255,
+      "threshold_type": "binary",
+      "sobel_kernel_size": 3,
+      "laplacian_kernel_size": 1,
+      "active_contour_iterations": 100,
+      "active_contour_alpha": 0.01,
+      "active_contour_beta": 0.1,
+      "min_contour_length": 10,
+      "max_contour_length": 10000,
+      "detect_fluid_interface": true,
+      "detect_solid_interface": true,
+      "solid_interface_proximity": 10
+    },
+    "pipeline": {
+      "contact_angle_method": "spherical_cap",
+      "rho1": 1000.0,
+      "rho2": 1.2,
+      "g": 9.8066,
+      "solver": "young_laplace_ode",
+      "notes": null
+    }
+  }
+}

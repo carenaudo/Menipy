@@ -1,15 +1,37 @@
-[discover.py] Discovered pipelines: {'capillary_rise': <class 'menipy.pipelines.capillary_rise.stages.CapillaryRisePipeline'>, 'captive_bubble': <class 'menipy.pipelines.captive_bubble.stages.CaptiveBubblePipeline'>, 'oscillating': <class 'menipy.pipelines.oscillating.stages.OscillatingPipeline'>, 'pendant': <class 'menipy.pipelines.pendant.stages.PendantPipeline'>, 'sessile': <class 'menipy.pipelines.sessile.stages.SessilePipeline'>}
-Traceback (most recent call last):
-  File "<string>", line 9, in <module>
-    w = MainWindow()
-  File "D:\programacion\Menipy\src\menipy\gui\mainwindow.py", line 194, in __init__
-    self.main_controller = MainController(self)
-                           ~~~~~~~~~~~~~~^^^^^^
-  File "D:\programacion\Menipy\src\menipy\gui\main_controller.py", line 75, in __init__
-    self._wire_signals()
-    ~~~~~~~~~~~~~~~~~~^^
-  File "D:\programacion\Menipy\src\menipy\gui\main_controller.py", line 101, in _wire_signals
-    self.setup_ctrl.auto_calibrate_requested.connect(self.on_auto_calibrate_requested)
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AttributeError: 'SetupPanelController' object has no attribute 'auto_calibrate_requested'
-QThread: Destroyed while thread '' is still running
+============================= test session starts =============================
+platform win32 -- Python 3.13.8, pytest-9.0.1, pluggy-1.6.0 -- D:\programacion\Menipy\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+metadata: {'Python': '3.13.8', 'Platform': 'Windows-11-10.0.26200-SP0', 'Packages': {'pytest': '9.0.1', 'pluggy': '1.6.0'}, 'Plugins': {'cov': '7.0.0', 'flask': '1.3.0', 'html': '4.2.0', 'metadata': '3.1.1', 'mock': '3.15.1', 'qt': '4.5.0'}}
+PySide6 6.10.1 -- Qt runtime 6.10.1 -- Qt compiled 6.10.1
+rootdir: D:\programacion\Menipy
+configfile: pyproject.toml
+plugins: cov-7.0.0, flask-1.3.0, html-4.2.0, metadata-3.1.1, mock-3.15.1, qt-4.5.0
+collecting ... collected 3 items
+
+tests/test_project_loading.py::test_record_recent_adds_item PASSED       [ 33%]
+tests/test_project_loading.py::test_record_recent_deduplication FAILED   [ 66%]
+tests/test_project_loading.py::test_open_project_file_success FAILED     [100%]
+
+================================== FAILURES ===================================
+______________________ test_record_recent_deduplication _______________________
+tests\test_project_loading.py:74: in test_record_recent_deduplication
+    assert len(stored_list) == 2
+E   AssertionError: assert 1 == 2
+E    +  where 1 = len([{'date_str': '2026-01-30 10:31', 'experiment_type': 'sessile', 'filename': 'Test Project', 'path': '/p2'}])
+_______________________ test_open_project_file_success ________________________
+D:\Usuarios\crenaudo\AppData\Local\Python\pythoncore-3.13-64\Lib\unittest\mock.py:970: in assert_called_with
+    raise AssertionError(error_message)
+E   AssertionError: expected call not found.
+E   Expected: show_experiment_window('sessile')
+E     Actual: not called.
+
+During handling of the above exception, another exception occurred:
+tests\test_project_loading.py:112: in test_open_project_file_success
+    window._controller.show_experiment_window.assert_called_with(theme.EXPERIMENT_SESSILE)
+E   AssertionError: expected call not found.
+E   Expected: show_experiment_window('sessile')
+E     Actual: not called.
+=========================== short test summary info ===========================
+FAILED tests/test_project_loading.py::test_record_recent_deduplication - Asse...
+FAILED tests/test_project_loading.py::test_open_project_file_success - Assert...
+========================= 2 failed, 1 passed in 1.56s =========================

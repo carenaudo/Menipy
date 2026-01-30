@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-01-30
+
 ### Added
 
 - **Auto-Calibration Wizard**
@@ -59,6 +61,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `src/menipy/common/preprocessing.py` (calls `fill_holes` after `crop_to_roi`)
     - `src/menipy/gui/dialogs/preprocessing_config_dialog.py` (adds UI page and bindings)
 
+- **Pendant Drop Calibration Panel**:
+  - Fixed `AttributeError` by updating method calls to match the `CalibrationPanel` API (e.g., using `get_scale_factor` instead of `get_scale`).
+  - Improved calibration result handling in `PendantDropWindow`.
+  - Files touched:
+    - `src/menipy/gui/views/pendant_drop_window.py`
+
 ### Fixed
 
 - **Sessile Pipeline Overlay Stage**:
@@ -105,8 +113,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Tests**:
   - Temporarily skipped a flaky test (`TestComputeSessileMetrics.test_manual_vs_auto_consistency`) while improving auto-detection behaviour.
   - Added regression fixes and re-ran the full test suite; all tests now pass locally.
+  - Removed unused imports in `tests/test_preproc_plugins.py`.
   - Files touched:
     - `tests/test_sessile_auto_detection.py`
+    - `tests/test_preproc_plugins.py`
 
 - **Branch & merge**:
   - Changes were developed on `feat/sessile-single-fix`, pushed, and merged into `main` as a single commit (squashed), then pushed to remote.

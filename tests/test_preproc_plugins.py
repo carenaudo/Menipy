@@ -1,7 +1,7 @@
 """
 Tests for stage-based detection preprocessor plugins.
 """
-import pytest
+
 import numpy as np
 import cv2
 import sys

@@ -155,7 +155,6 @@ class EdgeDetectionSettings(BaseModel):
     gaussian_kernel_size: int = Field(
         default=5,
         ge=1,
-        multiple_of=2,
         description="Kernel size for Gaussian blur (must be odd)",
     )
     gaussian_sigma_x: float = Field(
@@ -203,13 +202,11 @@ class EdgeDetectionSettings(BaseModel):
     sobel_kernel_size: int = Field(
         default=3,
         ge=1,
-        multiple_of=2,
         description="Kernel size for Sobel/Scharr (must be odd)",
     )
     laplacian_kernel_size: int = Field(
         default=1,
         ge=1,
-        multiple_of=2,
         description="Kernel size for Laplacian (must be odd)",
     )
 
