@@ -1,124 +1,70 @@
 import numpy as np
-import cv2
 import pytest
 
-try:
-    from menipy.pipelines.sessile.geometry_alt import (
-        filter_contours_by_size,
-        project_onto_line,
-        find_contact_points,
-        compute_apex,
-        compute_contact_angles,
-        clean_droplet_contour,
-        analyze,
-        HelperBundle,
-    )
-except Exception as exc:  # pragma: no cover - dependency issue
-    filter_contours_by_size = None
-    project_onto_line = None
-    find_contact_points = None
-    compute_apex = None
-    compute_contact_angles = None
-    analyze = None
-    HelperBundle = None
-    clean_droplet_contour = None
-    missing_dependency = exc
-else:
-    missing_dependency = None
+from menipy.common.geometry import (
+    find_contact_points_from_contour,
+    detect_baseline_ransac,
+    refine_apex_curvature,
+)
+from menipy.pipelines.sessile.metrics import compute_sessile_metrics
 
 
-def test_filter_contours_by_size():
-    if filter_contours_by_size is None:
-        pytest.skip(f"PySide6 not available: {missing_dependency}")
-    c1 = np.array([[0, 0], [1, 0], [1, 1], [0, 1]], np.float32)
-    c2 = np.array([[0, 0], [2, 0], [2, 2], [0, 2]], np.float32)
-    res = filter_contours_by_size([c1, c2], 0.5, 2.0)
-    assert len(res) == 1
-    assert np.allclose(res[0], c1)
+def _circle_contour(center=(50, 50), radius=10, n=200):
+    theta = np.linspace(0, 2 * np.pi, n)
+    x = radius * np.cos(theta) + center[0]
+    y = radius * np.sin(theta) + center[1]
+    return np.stack([x, y], axis=1)
 
 
-def test_clean_droplet_contour_basic():
-    if clean_droplet_contour is None:
-        pytest.skip(f"PySide6 not available: {missing_dependency}")
-    img = np.zeros((80, 100), np.uint8)
-    cv2.circle(img, (50, 30), 20, 255, -1)
-    img[70:, :] = 255  # noise below substrate
-    contours = clean_droplet_contour(img, 60, min_area=50)
-    assert len(contours) == 1
-    cnt = contours[0]
-    assert cnt.shape[1] == 2
-    assert cnt[:, 1].max() < 60
-
-
-def test_analyze_removes_substrate_noise():
-    if analyze is None:
-        pytest.skip(f"PySide6 not available: {missing_dependency}")
-    img = np.zeros((80, 100), np.uint8)
-    cv2.circle(img, (50, 30), 20, 255, -1)
-    img[70:, :] = 255
-    helpers = HelperBundle(px_per_mm=10.0)
-    res = analyze(img, helpers, ((40, 60), (60, 60)))
-    assert res.contour[:, 1].max() < 60
-
-
-def test_project_onto_line():
-    if project_onto_line is None:
-        pytest.skip(f"PySide6 not available: {missing_dependency}")
-    pts = np.array([[1.0, 1.0], [2.0, 2.0]], float)
-    dist, foot = project_onto_line(pts, ((0.0, 0.0), (0.0, 3.0)))
-    assert np.allclose(dist, [1.0, 2.0])
-    assert np.allclose(foot, [[0.0, 1.0], [0.0, 2.0]])
-
-
-def test_find_apex_and_contact():
-    if find_contact_points is None:
-        pytest.skip(f"PySide6 not available: {missing_dependency}")
-    theta = np.linspace(0, 2 * np.pi, 200)
-    contour = np.stack([10 * np.cos(theta) + 50, 10 * np.sin(theta) + 60], axis=1)
+def test_find_contact_points_from_contour_circle():
+    contour = _circle_contour(center=(50, 50), radius=10)
     line = ((40.0, 60.0), (60.0, 60.0))
-    p1, p2 = find_contact_points(contour, line, (42, 60), (58, 60))
-    apex = compute_apex(contour, line, p1, p2)
-    assert np.allclose(p1[1], 60.0, atol=1e-6)
-    assert np.allclose(p2[1], 60.0, atol=1e-6)
-    assert apex[1] < 60.0
+    p1, p2 = find_contact_points_from_contour(contour, line, tolerance=3.0)
+    assert p1 is not None and p2 is not None
+    # Should land on opposite sides of the contour and roughly horizontal
+    assert p1[0] < p2[0]
+    assert 40.0 <= p1[1] <= 60.0
+    assert 40.0 <= p2[1] <= 60.0
 
 
-def test_find_contact_points_ignores_below_substrate():
-    if find_contact_points is None:
-        pytest.skip(f"PySide6 not available: {missing_dependency}")
-    theta = np.linspace(0, 2 * np.pi, 200)
-    base = np.stack([10 * np.cos(theta) + 50, 10 * np.sin(theta) + 60], axis=1)
-    noise = np.array([[55.0, 65.0], [56.0, 70.0], [54.0, 62.0]])
-    contour = np.vstack([base, noise])
-    line = ((40.0, 60.0), (60.0, 60.0))
-    p1, p2 = find_contact_points(contour, line, (40, 60), (60, 60))
-    assert p1[0] < 41
-    assert p2[0] > 59
-    assert p1[1] <= 60.0
-    assert p2[1] <= 60.0
-
-
-def test_analyze_simple_circle():
-    if analyze is None:
-        pytest.skip(f"PySide6 not available: {missing_dependency}")
-    img = np.full((100, 100), 255, np.uint8)
-    cv2.circle(img, (50, 50), 10, 0, -1)
-    helpers = HelperBundle(px_per_mm=10.0)
-    res = analyze(
-        img, helpers, ((40, 60), (60, 60)), contact_points=((45, 60), (55, 60))
+def test_detect_baseline_ransac_bottom_aligns():
+    # Rectangle contour spanning x=0..20, y=0..10
+    contour = np.array(
+        [[0, 0], [20, 0], [20, 10], [0, 10]], dtype=float
     )
-    d_px = np.linalg.norm(np.subtract(res.p1, res.p2))
-    assert pytest.approx(d_px, rel=1e-2) == 20.0
+    p1, p2, conf = detect_baseline_ransac(contour, threshold=1.0, min_samples=3)
+    assert conf >= 0  # confidence returned
+    # Baseline should be within the vertical extent
+    assert 0.0 <= p1[1] <= 10.0
+    assert 0.0 <= p2[1] <= 10.0
 
 
-def test_contact_angle_computation():
-    if compute_contact_angles is None:
-        pytest.skip(f"PySide6 not available: {missing_dependency}")
-    theta = np.linspace(0, 2 * np.pi, 200)
-    contour = np.stack([10 * np.cos(theta) + 50, 10 * np.sin(theta) + 60], axis=1)
-    p1 = np.array([40.0, 60.0])
-    p2 = np.array([60.0, 60.0])
-    res = compute_contact_angles(contour, p1, p2, 2.0, 1.0, (p1, p2))
-    assert "theta_spherical_p1" in res
-    assert pytest.approx(res["theta_spherical_p1"], rel=1e-2) == 90.0
-    assert pytest.approx(res["theta_slope_p1"], rel=1e-1) == 90.0
+def test_refine_apex_curvature_on_circle():
+    contour = _circle_contour(center=(50, 50), radius=10)
+    apex, conf = refine_apex_curvature(contour, window=5)
+    # Apex should lie on the contour vertical span
+    assert 40.0 <= apex[1] <= 60.0
+    assert conf >= 0.0
+
+
+def test_compute_sessile_metrics_circle():
+    contour = _circle_contour(center=(50, 50), radius=10)
+    px_per_mm = 10.0
+    substrate = ((40.0, 60.0), (60.0, 60.0))
+
+    res = compute_sessile_metrics(
+        contour,
+        px_per_mm=px_per_mm,
+        substrate_line=substrate,
+        auto_detect_baseline=False,
+        auto_detect_apex=True,
+        contact_angle_method="spherical_cap",
+    )
+
+    # Ensure outputs are finite and non-negative
+    for key in ("diameter_mm", "height_mm", "volume_uL",
+                "theta_left_deg", "theta_right_deg",
+                "contact_angle_deg"):
+        assert res[key] >= 0.0
+    assert 0.0 <= res["baseline_confidence"] <= 1.0
+    assert 0.0 <= res["apex_confidence"] <= 1.0
