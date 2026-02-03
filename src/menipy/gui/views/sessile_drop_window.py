@@ -328,6 +328,12 @@ class SessileDropWindow(BaseExperimentWindow):
         self._calibration_panel.calibration_requested.connect(
             self._on_calibration_requested
         )
+        self._calibration_panel.recalibration_requested.connect(
+            self._on_calibration_requested  # Reuse same handler for recalibration
+        )
+        self._calibration_panel.details_requested.connect(
+            self._on_calibration_details_requested
+        )
         
         # Material Database
         self._parameters_panel.material_database_requested.connect(
@@ -498,6 +504,55 @@ class SessileDropWindow(BaseExperimentWindow):
         """Handle successful calibration (legacy signal)."""
         self._calibration_panel.set_calibration(scale_factor)
         self.set_status(f"Calibration updated: {scale_factor:.2f} px/mm")
+    
+    def _on_calibration_details_requested(self):
+        """Handle calibration details request - show current calibration info."""
+        from PySide6.QtWidgets import QMessageBox
+        
+        if not self._calibration_panel.is_calibrated():
+            QMessageBox.information(
+                self,
+                "Calibration Details",
+                "No calibration is currently set.\n\n"
+                "Click 'Start Calibration Wizard' to calibrate."
+            )
+            return
+        
+        # Build details message
+        scale = self._calibration_panel.get_scale_factor()
+        calib = getattr(self, "_last_calibration_result", None)
+        
+        details = f"Scale Factor: {scale:.2f} px/mm\n"
+        details += f"Resolution: {1.0/scale*1000:.1f} μm/pixel\n\n"
+        
+        if calib:
+            if calib.needle_rect:
+                x, y, w, h = calib.needle_rect
+                details += f"Needle: {w:.0f}×{h:.0f} px at ({x:.0f}, {y:.0f})\n"
+            if calib.substrate_line is not None:
+                # substrate_line can be a single y value or a tuple ((x1,y1), (x2,y2))
+                sl = calib.substrate_line
+                if isinstance(sl, (int, float)):
+                    details += f"Substrate Line: y={sl:.0f}\n"
+                elif isinstance(sl, (list, tuple)) and len(sl) == 2:
+                    if isinstance(sl[0], (int, float)):
+                        details += f"Substrate Line: y={sl[0]:.0f} to y={sl[1]:.0f}\n"
+                    else:
+                        # Tuple of points ((x1,y1), (x2,y2))
+                        details += f"Substrate Line: ({sl[0][0]:.0f}, {sl[0][1]:.0f}) to ({sl[1][0]:.0f}, {sl[1][1]:.0f})\n"
+                else:
+                    details += f"Substrate Line: {sl}\n"
+            if calib.roi_rect:
+                x, y, w, h = calib.roi_rect
+                details += f"ROI: {w:.0f}×{h:.0f} px at ({x:.0f}, {y:.0f})\n"
+            
+            # Confidence scores
+            if calib.confidence_scores:
+                details += "\nConfidence Scores:\n"
+                for key, value in calib.confidence_scores.items():
+                    details += f"  • {key}: {value*100:.0f}%\n"
+        
+        QMessageBox.information(self, "Calibration Details", details)
     
     def _run_analysis(self):
         """Run the actual analysis pipeline."""

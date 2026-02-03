@@ -258,6 +258,24 @@ class ADSAMainWindow(QMainWindow):
         clear_action.triggered.connect(self._on_clear_results)
         analysis_menu.addAction(clear_action)
         
+        # === Utilities Menu ===
+        utilities_menu = menubar.addMenu("&Utilities")
+        
+        utilities_action = QAction("🔧 Image Utilities...", self)
+        utilities_action.setShortcut(QKeySequence("Ctrl+U"))
+        utilities_action.triggered.connect(self._on_utilities)
+        utilities_menu.addAction(utilities_action)
+        
+        utilities_menu.addSeparator()
+        
+        image_quality_action = QAction("📊 Image Quality Analysis", self)
+        image_quality_action.triggered.connect(self._on_image_quality_analysis)
+        utilities_menu.addAction(image_quality_action)
+        
+        edge_comparison_action = QAction("🔍 Edge Detection Comparison", self)
+        edge_comparison_action.triggered.connect(self._on_edge_comparison)
+        utilities_menu.addAction(edge_comparison_action)
+        
         # === Help Menu ===
         help_menu = menubar.addMenu("&Help")
         
@@ -787,6 +805,71 @@ class ADSAMainWindow(QMainWindow):
         )
         if reply == QMessageBox.StandardButton.Yes:
             self.statusBar().showMessage("Results cleared", 1500)
+    
+    # ------------------------------------------------------------------
+    # Utilities
+    # ------------------------------------------------------------------
+    def _on_utilities(self):
+        """Open the utilities dialog."""
+        from menipy.gui.dialogs.utilities_dialog import UtilitiesDialog
+        
+        # Get current image from experiment window if available
+        image = None
+        window = self.get_current_experiment_window()
+        if window and hasattr(window, "_current_image_path"):
+            import cv2
+            path = window._current_image_path
+            if path:
+                image = cv2.imread(path)
+        
+        dialog = UtilitiesDialog(image=image, parent=self)
+        dialog.exec()
+    
+    def _on_image_quality_analysis(self):
+        """Run image quality analysis on current image."""
+        window = self.get_current_experiment_window()
+        if not window or not hasattr(window, "_current_image_path") or not window._current_image_path:
+            self._notification_manager.show("Load an image first", "warning")
+            return
+        
+        import cv2
+        from menipy.common.registry import UTILITIES
+        
+        image = cv2.imread(window._current_image_path)
+        if image is None:
+            self._notification_manager.show("Could not load image", "error")
+            return
+        
+        # Run image quality utility if registered
+        if "image_quality" in UTILITIES:
+            result = UTILITIES["image_quality"](image)
+            msg = f"Quality: {result.get('overall_quality', 'N/A')}"
+            self._notification_manager.show(msg, "success")
+        else:
+            self._notification_manager.show("Image quality utility not registered", "warning")
+    
+    def _on_edge_comparison(self):
+        """Open edge detection comparison tool."""
+        window = self.get_current_experiment_window()
+        if not window or not hasattr(window, "_current_image_path") or not window._current_image_path:
+            self._notification_manager.show("Load an image first", "warning")
+            return
+        
+        import cv2
+        from menipy.common.registry import UTILITIES
+        
+        image = cv2.imread(window._current_image_path)
+        if image is None:
+            self._notification_manager.show("Could not load image", "error")
+            return
+        
+        # Run edge comparison utility if registered
+        if "edge_comparison" in UTILITIES:
+            result = UTILITIES["edge_comparison"](image)
+            msg = f"Best method: {result.get('recommended_method', 'N/A')}"
+            self._notification_manager.show(msg, "success")
+        else:
+            self._notification_manager.show("Edge comparison utility not registered", "warning")
 
     # ------------------------------------------------------------------
     # Project persistence

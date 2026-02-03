@@ -83,23 +83,61 @@ def detect_drop_sessile(
     center_x = width // 2
     min_area = image_area * min_area_fraction
     
-    # Filter for valid drop contours
-    valid_contours = []
+    # Substrate contact tolerance (pixels) - contour bottom must be within this distance
+    substrate_touch_tolerance = 10
+    
+    # Filter valid contours - separate into substrate-touching and non-touching
+    substrate_contours = []  # Contours touching substrate (preferred)
+    floating_contours = []   # Contours not touching substrate (fallback)
+    
     for cnt in contours:
         x, y, w, h = cv2.boundingRect(cnt)
         area = cv2.contourArea(cnt)
+        bottom_y = y + h  # Bottom edge of bounding box
         
         # Skip needle (touches top)
         if y < 5:
             continue
         
+        # Skip rectangular contours (likely ROI boundaries, not droplets)
+        rect_area = w * h
+        if rect_area > 0:
+            rectangularity = area / rect_area
+            # Perfect rectangle = 1.0, circle/ellipse ≈ 0.78 (pi/4)
+            # Skip if very rectangular (rectangularity > 0.85)
+            if rectangularity > 0.85:
+                continue
+        
         # Filter by area and position
         if area > min_area and x > 5 and (x + w) < (width - 5):
             cnt_center_x = x + w // 2
             distance_from_center = abs(cnt_center_x - center_x)
-            valid_contours.append((cnt, area, distance_from_center))
+            
+            # Check if contour touches substrate
+            if substrate_y is not None:
+                distance_to_substrate = abs(bottom_y - substrate_y)
+                touches_substrate = distance_to_substrate <= substrate_touch_tolerance
+                
+                if touches_substrate:
+                    substrate_contours.append((cnt, area, distance_from_center, distance_to_substrate))
+                else:
+                    floating_contours.append((cnt, area, distance_from_center, distance_to_substrate))
+            else:
+                # No substrate line - use old behavior
+                floating_contours.append((cnt, area, distance_from_center, 0))
     
-    if not valid_contours:
+    # Prefer substrate-touching contours
+    if substrate_contours:
+        # Sort by: closest to substrate, then largest area, then closest to center
+        substrate_contours.sort(key=lambda x: (x[3], -x[1], x[2]))
+        valid_contours = substrate_contours
+        logger.info(f"Found {len(substrate_contours)} substrate-touching contour(s)")
+    elif floating_contours:
+        # Fallback: use floating contours if no substrate-touching ones
+        floating_contours.sort(key=lambda x: (-x[1], x[2]))
+        valid_contours = floating_contours
+        logger.warning(f"No substrate-touching contours found, using {len(floating_contours)} floating contour(s)")
+    else:
         # Fallback to largest contour
         largest = max(contours, key=cv2.contourArea)
         if cv2.contourArea(largest) > min_area:
@@ -108,7 +146,6 @@ def detect_drop_sessile(
         return None
     
     # Select best contour
-    valid_contours.sort(key=lambda x: (-x[1], x[2]))
     best_cnt = valid_contours[0][0]
     
     # Apply convex hull

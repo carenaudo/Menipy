@@ -60,8 +60,8 @@ class OscillatingPipeline(PipelineBase):
         "stages": [
             "acquisition",
             "preprocessing",
-            "edge_detection",
-            "geometry",
+            "contour_extraction",
+            "geometric_features",
             "physics",
         ],
         "calibration_params": [
@@ -82,7 +82,8 @@ class OscillatingPipeline(PipelineBase):
     def do_preprocessing(self, ctx: Context) -> Optional[Context]:
         return ctx
 
-    def do_edge_detection(self, ctx: Context) -> Optional[Context]:
+    def do_contour_extraction(self, ctx: Context) -> Optional[Context]:
+        """Extract contour from each frame for oscillation analysis."""
         frames = (
             ctx.frames
             if isinstance(ctx.frames, list)
@@ -101,7 +102,8 @@ class OscillatingPipeline(PipelineBase):
             ctx.contour = contours[0]
         return ctx
 
-    def do_geometry(self, ctx: Context) -> Optional[Context]:
+    def do_geometric_features(self, ctx: Context) -> Optional[Context]:
+        """Extract axis, apex and radius series from contours."""
         # Use frame 0 for geometry refs; also build r_eq(t)
         if getattr(ctx, "contours_by_frame", None):
             series = []
@@ -136,7 +138,8 @@ class OscillatingPipeline(PipelineBase):
         }
         return ctx
 
-    def do_scaling(self, ctx: Context) -> Optional[Context]:
+    def do_calibration(self, ctx: Context) -> Optional[Context]:
+        """Set up pixel-to-mm scaling."""
         ctx.scale = ctx.scale or {"px_per_mm": 1.0}
         return ctx
 
@@ -149,7 +152,8 @@ class OscillatingPipeline(PipelineBase):
         ctx.physics.setdefault("g", 9.80665)
         return ctx
 
-    def do_solver(self, ctx: Context) -> Optional[Context]:
+    def do_profile_fitting(self, ctx: Context) -> Optional[Context]:
+        """Fit R0 from frame 0 contour."""
         # Simple: fit R0_mm on frame-0 only (toy model)
         cfg = FitConfig(
             x0=[30.0],
@@ -161,8 +165,9 @@ class OscillatingPipeline(PipelineBase):
         common_solver.run(ctx, integrator=young_laplace_sphere, config=cfg)
         return ctx
 
-    def do_optimization(self, ctx: Context) -> Optional[Context]:
-        # If we have a series and fps, estimate the dominant frequency of r_eq(t)
+    def do_compute_metrics(self, ctx: Context) -> Optional[Context]:
+        """Aggregate fit results, compute frequency from oscillation data."""
+        # First estimate oscillation frequency from r_eq(t)
         series = (ctx.geometry or {}).get("r_eq_series_px")
         fps = (ctx.physics or {}).get("fps", None)
         f0 = None
@@ -177,17 +182,17 @@ class OscillatingPipeline(PipelineBase):
                 mag[0] = 0.0
                 k = int(np.argmax(mag))
                 f0 = float(freqs[k])
-        ctx.fit = ctx.fit or {}
-        if f0 is not None:
-            # stash into fit dict alongside solver outputs
-            ctx.fit.setdefault("param_names", []).append("f0_Hz")
-            ctx.fit.setdefault("params", []).append(f0)
-        return ctx
-
-    def do_outputs(self, ctx: Context) -> Optional[Context]:
+        
+        # Collect fit results
         fit = ctx.fit or {}
-        names = fit.get("param_names") or []
-        params = fit.get("params", [])
+        names = list(fit.get("param_names") or [])
+        params = list(fit.get("params", []))
+        
+        # Add frequency if found
+        if f0 is not None:
+            names.append("f0_Hz")
+            params.append(f0)
+        
         results = {n: p for n, p in zip(names, params)}
         results["residuals"] = fit.get("residuals", {})
         # Export a couple of geometry refs

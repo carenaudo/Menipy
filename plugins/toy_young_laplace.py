@@ -9,4 +9,4 @@ def toy_young_laplace(params, physics, geometry):
     return np.column_stack([r, z])
 
 
-SOLVERS = {"toy_yl": toy_young_laplace}
+SOLVERS = {"toy_young_laplace": toy_young_laplace}

@@ -33,7 +33,7 @@ This plan documents the current implementation of the “capillary rise” pipel
 
 ### 1.2 Data Flow
 
-- Full staged path only: acquisition/preprocessing/edge_detection → geometry (baseline/apex/axis; height) → scaling → physics → solver (toy) → outputs → overlay → validation.
+- Full staged path only: acquisition/preprocessing/contour_extraction → geometric_features (baseline/apex/axis; height) → calibration → physics → profile_fitting (toy) → compute_metrics → overlay → validation.
 - Inputs: single image or frames, ROI; calibration (`px_per_mm`), densities (`ρ_liquid`, `ρ_air`), gravity.
 - Outputs: `h_px` (currently), `R0_mm` (toy).
 

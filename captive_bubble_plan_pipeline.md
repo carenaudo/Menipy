@@ -33,7 +33,7 @@ This document captures the state of the “captive bubble” pipeline and propos
 
 ### 1.2 Data Flow
 
-- Full pipeline path only (no separate functional analyzer): acquisition/preprocess/edge_detection → geometry → scaling → physics → solver → outputs → overlay → validation.
+- Full pipeline path only (no separate functional analyzer): acquisition/preprocess/contour_extraction → geometric_features → calibration → physics → profile_fitting → compute_metrics → overlay → validation.
 - Results consumed by GUI via `ctx.results`; overlay via `ovl.run` commands.
 
 ### 1.3 Algorithms (current)

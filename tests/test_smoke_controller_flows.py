@@ -186,7 +186,7 @@ class TestSessileControllerFlows:
             assert call_kwargs["only"] == ["acquisition"]
 
     def test_run_stage_geometry(self, controller):
-        """Test running individual geometry stage."""
+        """Test running individual geometric_features stage."""
         controller.setup_ctrl.gather_run_params.return_value = {
             "name": "sessile",
             "image": np.zeros((100, 100, 3), dtype=np.uint8),
@@ -204,16 +204,16 @@ class TestSessileControllerFlows:
             mock_ctx.results = {"diameter_mm": 2.0, "height_mm": 1.5}
             mock_direct.return_value = mock_ctx
 
-            controller.run_stage("geometry")
+            controller.run_stage("geometric_features")
             mock_direct.assert_called_once()
             call_kwargs = mock_direct.call_args[1]
             assert "only" in call_kwargs
-            assert call_kwargs["only"] == ["geometry"]
+            assert call_kwargs["only"] == ["geometric_features"]
             # Should not show critical error dialog for expected pipeline behavior
             mock_critical.assert_not_called()
 
     def test_run_stage_edge_detection(self, controller):
-        """Test running individual edge detection stage."""
+        """Test running individual contour_extraction stage."""
         controller.setup_ctrl.gather_run_params.return_value = {
             "name": "sessile",
             "image": np.zeros((100, 100, 3), dtype=np.uint8),
@@ -227,11 +227,11 @@ class TestSessileControllerFlows:
             mock_ctx.results = {"edge_detection_complete": True}
             mock_direct.return_value = mock_ctx
 
-            controller.run_stage("edge_detection")
+            controller.run_stage("contour_extraction")
             mock_direct.assert_called_once()
             call_kwargs = mock_direct.call_args[1]
             assert "only" in call_kwargs
-            assert call_kwargs["only"] == ["edge_detection"]
+            assert call_kwargs["only"] == ["contour_extraction"]
 
     def test_run_stage_physics(self, controller):
         """Test running individual physics stage."""
@@ -443,7 +443,7 @@ class TestSessileControllerFlows:
 
         controller.setup_ctrl.collect_included_stages.return_value = [
             "acquisition",
-            "geometry",
+            "geometric_features",
             "physics",
         ]
         controller._collect_acquisition_inputs = Mock(return_value=(True, {}))
@@ -464,7 +464,7 @@ class TestSessileControllerFlows:
             if "only" in call_kwargs:
                 assert set(call_kwargs["only"]) == {
                     "acquisition",
-                    "geometry",
+                    "geometric_features",
                     "physics",
                 }
             else:
@@ -487,7 +487,7 @@ class TestSessileControllerFlows:
             "frames": 1,
         }
 
-        stages = ["acquisition", "edge_detection", "geometry"]
+        stages = ["acquisition", "contour_extraction", "geometric_features"]
         controller.setup_ctrl.collect_included_stages.return_value = stages
         controller._collect_acquisition_inputs = Mock(return_value=(True, {}))
 

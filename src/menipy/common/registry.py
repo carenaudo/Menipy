@@ -62,6 +62,9 @@ OUTPUTS = Registry("outputs")
 OVERLAYERS = Registry("overlayers")
 VALIDATORS = Registry("validators")
 
+# Utilities registry for image testing and analysis tools
+UTILITIES = Registry("utilities")
+
 # Detection registries for auto-calibration plugins
 NEEDLE_DETECTORS = Registry("needle_detectors")
 ROI_DETECTORS = Registry("roi_detectors")
@@ -114,6 +117,11 @@ def register_overlayer(name: str, fn: Callable[..., Any]) -> None:
 def register_validator(name: str, fn: Callable[..., Any]) -> None:
     VALIDATORS.register(name, fn)
 
+
+def register_utility(name: str, fn: Callable[..., Any]) -> None:
+    """Register a utility function for image testing/analysis."""
+    UTILITIES.register(name, fn)
+
 # Detector registration functions
 def register_needle_detector(name: str, fn: Callable[..., Any]) -> None:
     NEEDLE_DETECTORS.register(name, fn)
@@ -155,4 +163,5 @@ def get_registry_snapshot() -> Dict[str, Dict[str, Callable[..., Any]]]:
         "substrate_detectors": dict(SUBSTRATE_DETECTORS),
         "drop_detectors": dict(DROP_DETECTORS),
         "apex_detectors": dict(APEX_DETECTORS),
+        "utilities": dict(UTILITIES),
     }

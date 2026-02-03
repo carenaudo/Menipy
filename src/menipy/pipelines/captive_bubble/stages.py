@@ -29,7 +29,7 @@ class CaptiveBubblePipeline(PipelineBase):
         "display_name": "Captive Bubble",
         "icon": "captive_bubble.svg",
         "color": "#50E3C2",
-        "stages": ["acquisition", "edge_detection", "geometry", "physics"],
+        "stages": ["acquisition", "contour_extraction", "geometric_features", "physics"],
         "calibration_params": [
             "needle_diameter_mm",
             "drop_density_kg_m3",
@@ -48,7 +48,8 @@ class CaptiveBubblePipeline(PipelineBase):
     def do_preprocessing(self, ctx: Context) -> Optional[Context]:
         return ctx
 
-    def do_geometry(self, ctx: Context) -> Optional[Context]:
+    def do_geometric_features(self, ctx: Context) -> Optional[Context]:
+        """Extract ceiling, axis, apex and bubble depth."""
         xy = ensure_contour(ctx)
         x, y = xy[:, 0], xy[:, 1]
 
@@ -66,7 +67,8 @@ class CaptiveBubblePipeline(PipelineBase):
         )
         return ctx
 
-    def do_scaling(self, ctx: Context) -> Optional[Context]:
+    def do_calibration(self, ctx: Context) -> Optional[Context]:
+        """Set up pixel-to-mm scaling."""
         ctx.scale = ctx.scale or {"px_per_mm": 1.0}
         return ctx
 
@@ -75,7 +77,8 @@ class CaptiveBubblePipeline(PipelineBase):
         ctx.physics = ctx.physics or {"rho1": 1000.0, "rho2": 1.2, "g": 9.80665}
         return ctx
 
-    def do_solver(self, ctx: Context) -> Optional[Context]:
+    def do_profile_fitting(self, ctx: Context) -> Optional[Context]:
+        """Fit spherical Young-Laplace profile."""
         # Toy: fit a single curvature radius
         cfg = FitConfig(
             x0=[18.0],
@@ -87,10 +90,8 @@ class CaptiveBubblePipeline(PipelineBase):
         common_solver.run(ctx, integrator=young_laplace_sphere, config=cfg)
         return ctx
 
-    def do_optimization(self, ctx: Context) -> Optional[Context]:
-        return ctx
-
-    def do_outputs(self, ctx: Context) -> Optional[Context]:
+    def do_compute_metrics(self, ctx: Context) -> Optional[Context]:
+        """Aggregate fit results and bubble metrics."""
         fit = ctx.fit or {}
         names = fit.get("param_names") or []
         params = fit.get("params", [])

@@ -162,6 +162,44 @@ class TestDropDetector:
         
         assert result is not None
         assert len(result) > 0
+    
+    def test_sessile_prefers_substrate_drop(self):
+        """Test that sessile detector prefers drops touching substrate over needle drops.
+        
+        This tests the substrate-constrained detection: when there's a drop on the
+        needle and a drop on the substrate, the substrate drop should be selected.
+        """
+        # Create image with TWO drops: one on needle, one on substrate
+        image = np.full((480, 640, 3), 200, dtype=np.uint8)
+        
+        # Needle at top
+        cv2.rectangle(image, (300, 0), (340, 100), (50, 50, 50), -1)
+        
+        # Drop on needle (at y=120-180, NOT touching substrate)
+        cv2.ellipse(image, (320, 150), (40, 30), 0, 0, 360, (50, 50, 50), -1)
+        
+        # Drop on substrate (at y=350, touching substrate at y=400)
+        cv2.ellipse(image, (320, 360), (60, 40), 0, 0, 360, (50, 50, 50), -1)
+        
+        # Substrate
+        substrate_y = 400
+        cv2.rectangle(image, (0, substrate_y), (640, 480), (50, 50, 50), -1)
+        
+        detector = DROP_DETECTORS["sessile"]
+        result = detector(image, substrate_y=substrate_y)
+        
+        assert result is not None
+        if isinstance(result, tuple) and len(result) == 2:
+            contour, contact_pts = result
+            assert contour is not None
+            
+            # The detected contour should be near the substrate, not near the needle
+            # Check that the contour's max y is close to substrate_y
+            contour_max_y = contour[:, 1].max()
+            assert contour_max_y > 350, f"Contour max_y={contour_max_y} should be near substrate"
+            
+            # The needle drop is around y=120-180, so if we got a drop there, it's wrong
+            assert contour_max_y > 250, "Should have selected substrate drop, not needle drop"
 
 
 class TestApexDetector:

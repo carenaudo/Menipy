@@ -32,7 +32,7 @@ class SessilePipeline(PipelineBase):
         "display_name": "Sessile Drop",
         "icon": "sessile.svg",
         "color": "#4A90E2",
-        "stages": ["acquisition", "edge_detection", "geometry", "overlay", "physics"],
+        "stages": ["acquisition", "contour_extraction", "contour_refinement", "geometric_features", "overlay", "physics"],
         "calibration_params": [
             "needle_length_mm",
             "drop_density_kg_m3",
@@ -43,31 +43,9 @@ class SessilePipeline(PipelineBase):
     }
 
     def do_acquisition(self, ctx: Context) -> Optional[Context]:
-        if ctx.image is not None:
-            # If image is a string path, load it
-            if isinstance(ctx.image, str):
-                try:
-                    img = cv2.imread(ctx.image, cv2.IMREAD_COLOR)
-                    if img is None:
-                        logger.warning("Could not load image from path: %s", ctx.image)
-                        return ctx
-                    ctx.image = img
-                except Exception as exc:
-                    logger.error("Error loading image %s: %s", ctx.image, exc)
-                    return ctx
-            return ctx
-        if ctx.image_path:
-            try:
-                img = cv2.imread(ctx.image_path, cv2.IMREAD_COLOR)
-                if img is None:
-                    logger.warning("Could not load image from path: %s", ctx.image_path)
-                    return ctx
-                ctx.image = img
-            except Exception as exc:
-                logger.error("Error loading image %s: %s", ctx.image_path, exc)
-        else:
-            logger.warning("No image or image path provided in context for acquisition stage.")
-        return ctx
+        """Load frames from disk or wrap existing image in frames."""
+        from menipy.common.acquisition_stage import do_acquisition
+        return do_acquisition(ctx, self.logger)
 
     def do_preprocessing(self, ctx: Context) -> Optional[Context]:
         """Run preprocessing with automatic feature detection."""
@@ -77,13 +55,67 @@ class SessilePipeline(PipelineBase):
         from menipy.pipelines.sessile.preprocessing import do_preprocessing
         return do_preprocessing(ctx)
 
-    def do_edge_detection(self, ctx: Context) -> Optional[Context]:
-        if self.edge_detector_name and self.edge_detector_name in registry.EDGE_DETECTORS:
-            fn = registry.EDGE_DETECTORS[self.edge_detector_name]
-            return fn(ctx) or ctx
-        return super().do_edge_detection(ctx)
+    def do_contour_extraction(self, ctx: Context) -> Optional[Context]:
+        """Extract droplet contour using edge detection."""
+        # Check if drop_contour is already provided (e.g. from calibration wizard)
+        drop_contour = getattr(ctx, "drop_contour", None)
+        if drop_contour is not None:
+            from menipy.models.geometry import Contour
+            # Convert to Contour object if needed
+            if isinstance(drop_contour, np.ndarray):
+                ctx.contour = Contour(xy=drop_contour)
+            elif isinstance(drop_contour, Contour):
+                ctx.contour = drop_contour
+            
+            logger.info("Using pre-detected drop contour from calibration")
+            return ctx
 
-    def do_geometry(self, ctx: Context) -> Optional[Context]:
+        from menipy.common import edge_detection
+        from menipy.models.config import EdgeDetectionSettings
+        
+        # Use custom edge detector if specified
+        if self.edge_detector_name:
+            settings = self.edge_detection_settings or EdgeDetectionSettings()
+            # Override the method with the specified detector name
+            settings = EdgeDetectionSettings(
+                **{**settings.__dict__, "method": self.edge_detector_name}
+            )
+            return edge_detection.run(ctx, settings)
+        return super().do_contour_extraction(ctx)
+
+    def do_contour_refinement(self, ctx: Context) -> Optional[Context]:
+        """Clip contour at substrate line and refine contact points."""
+        # If using pre-detected contour, skip refinement to preserve the closed polygon
+        if getattr(ctx, "drop_contour", None) is not None:
+            return ctx
+            
+        xy = ensure_contour(ctx)
+        
+        substrate_line = getattr(ctx, "substrate_line", None)
+        if not substrate_line:
+            return ctx
+            
+        # Get apex for reference
+        x, y = xy[:, 0], xy[:, 1]
+        apex_i = int(np.argmin(y))
+        apex_xy = (float(x[apex_i]), float(y[apex_i]))
+        
+        from .geometry import clip_contour_to_substrate
+        
+        xy, refined_contact_points = clip_contour_to_substrate(xy, substrate_line, apex_xy)
+        
+        # Update contour in context
+        from menipy.models.geometry import Contour
+        ctx.contour = Contour(xy=xy)
+        
+        # Store refined contact points for use in geometric_features
+        if refined_contact_points:
+            ctx.contact_points = refined_contact_points
+            
+        return ctx
+
+    def do_geometric_features(self, ctx: Context) -> Optional[Context]:
+        """Extract geometric features: axis, apex, baseline, tilt, and angles."""
         xy = ensure_contour(ctx)
         x, y = xy[:, 0], xy[:, 1]
 
@@ -93,10 +125,8 @@ class SessilePipeline(PipelineBase):
         auto_detect_apex = True  # Always refine apex
 
         if substrate_line:
-            # substrate_line is ((x1,y1), (x2,y2))
             p1, p2 = substrate_line
-            baseline_y = float((p1[1] + p2[1]) / 2)  # approximate baseline y
-            # Calculate tilt
+            baseline_y = float((p1[1] + p2[1]) / 2)
             dx = p2[0] - p1[0]
             dy = p2[1] - p1[1]
             tilt_deg = float(np.degrees(np.arctan2(dy, dx)))
@@ -108,71 +138,49 @@ class SessilePipeline(PipelineBase):
         apex_i = int(np.argmin(y))
         apex_xy = (float(x[apex_i]), float(y[apex_i]))
 
-        # Compute diameter, height, contact points using metrics logic with auto-detection
-        # First check ctx.scale dict, then fallback to ctx.px_per_mm set by calibration
+        # Get scale
         if ctx.scale and ctx.scale.get("px_per_mm"):
             px_per_mm = ctx.scale.get("px_per_mm", 1.0)
         elif hasattr(ctx, "px_per_mm") and ctx.px_per_mm:
             px_per_mm = ctx.px_per_mm
         else:
             px_per_mm = 1.0
-        # Get contact angle method from context or default to tangent
+            
+        # Get contact angle method
         contact_angle_method = getattr(ctx, "contact_angle_method", "tangent")
         if contact_angle_method not in ["tangent", "circle_fit", "spherical_cap"]:
-            contact_angle_method = "tangent"  # Default fallback
+            contact_angle_method = "tangent"
         
-        # Get pre-computed contact points from calibration if available
-        pre_contact_points = getattr(ctx, "contact_points", None)
+        # Get contact points (may have been set by contour_refinement)
+        use_contact_points = getattr(ctx, "contact_points", None)
         
         from .metrics import compute_sessile_metrics
 
+        # Compute metrics (will be stored in ctx.results by compute_metrics stage)
         metrics = compute_sessile_metrics(
             xy,
             px_per_mm=px_per_mm,
             substrate_line=substrate_line,
             apex=apex_xy,
-            contact_point_tolerance_px=20.0,  # default
+            contact_point_tolerance_px=20.0,
             auto_detect_baseline=auto_detect_baseline,
             auto_detect_apex=auto_detect_apex,
             contact_angle_method=contact_angle_method,
-            contact_points=pre_contact_points,
+            contact_points=use_contact_points,
         )
+        
+        # Store metrics temporarily for compute_metrics stage
+        ctx._sessile_metrics = metrics
 
         from menipy.models.geometry import Geometry
 
         ctx.geometry = Geometry(
             axis_x=axis_x, baseline_y=baseline_y, apex_xy=apex_xy, tilt_deg=tilt_deg
         )
-
-        # Store computed metrics in results
-        if not hasattr(ctx, "results"):
-            ctx.results = {}
-        ctx.results.update(
-            {
-                "diameter_mm": metrics.get("diameter_mm", 0.0),
-                "height_mm": metrics.get("height_mm", 0.0),
-                "volume_uL": metrics.get("volume_uL", 0.0),
-                "contact_angle_deg": metrics.get(
-                    "contact_angle_deg", 0.0
-                ),  # legacy compatibility
-                "theta_left_deg": metrics.get("theta_left_deg", 0.0),
-                "theta_right_deg": metrics.get("theta_right_deg", 0.0),
-                "contact_surface_mm2": metrics.get("contact_surface_mm2", 0.0),
-                "drop_surface_mm2": metrics.get("drop_surface_mm2", 0.0),
-                "baseline_tilt_deg": tilt_deg,
-                "method": metrics.get("method", "spherical_cap"),
-                "uncertainty_deg": metrics.get(
-                    "uncertainty_deg", {"left": 0.0, "right": 0.0}
-                ),
-                "baseline_confidence": metrics.get("baseline_confidence", 1.0),
-                "apex_confidence": metrics.get("apex_confidence", 1.0),
-                "baseline_method": metrics.get("baseline_method", "manual"),
-                "apex_method": metrics.get("apex_method", "manual"),
-            }
-        )
         return ctx
 
-    def do_scaling(self, ctx: Context) -> Optional[Context]:
+    def do_calibration(self, ctx: Context) -> Optional[Context]:
+        """Set up pixel-to-mm scaling."""
         ctx.scale = ctx.scale or {"px_per_mm": 1.0}
         return ctx
 
@@ -180,32 +188,42 @@ class SessilePipeline(PipelineBase):
         ctx.physics = ctx.physics or {"rho1": 1000.0, "rho2": 1.2, "g": 9.80665}
         return ctx
 
-    def do_solver(self, ctx: Context) -> Optional[Context]:
-        cfg = FitConfig(
-            x0=[20.0],
-            bounds=([1.0], [2000.0]),
-            loss="soft_l1",
-            distance="pointwise",
-            param_names=["R0_mm"],
-        )
+    def do_profile_fitting(self, ctx: Context) -> Optional[Context]:
+        """Fit spherical Young-Laplace profile."""
         integrator = get_solver(self.solver_name, fallback=young_laplace_sphere)
+        # Some solvers (e.g., young_laplace_adsa) require both R0 and beta.
+        if getattr(integrator, "__name__", "") == "young_laplace_adsa":
+            cfg = FitConfig(
+                x0=[20.0, 1.0],
+                bounds=([1.0, 1e-4], [2000.0, 200.0]),
+                loss="soft_l1",
+                distance="pointwise",
+                param_names=["R0_mm", "beta"],
+            )
+        else:
+            cfg = FitConfig(
+                x0=[20.0],
+                bounds=([1.0], [2000.0]),
+                loss="soft_l1",
+                distance="pointwise",
+                param_names=["R0_mm"],
+            )
         common_solver.run(ctx, integrator=integrator, config=cfg)
         return ctx
 
-    def do_optimization(self, ctx: Context) -> Optional[Context]:
-        return ctx
-
-    def do_outputs(self, ctx: Context) -> Optional[Context]:
+    def do_compute_metrics(self, ctx: Context) -> Optional[Context]:
+        """Aggregate fit results and sessile metrics."""
         fit = ctx.fit or {}
         names = fit.get("param_names") or []
         params = fit.get("params", [])
         res = {n: p for n, p in zip(names, params)}
-        res.update(
-            {
-                "residuals": fit.get("residuals", {}),
-            }
-        )
-        # Merge with existing results from geometry
+        res.update({"residuals": fit.get("residuals", {})})
+        
+        # Merge sessile metrics from geometric_features stage
+        if hasattr(ctx, "_sessile_metrics") and ctx._sessile_metrics:
+            res.update(ctx._sessile_metrics)
+        
+        # Merge with existing results
         if hasattr(ctx, "results") and ctx.results:
             ctx.results.update(res)
         else:

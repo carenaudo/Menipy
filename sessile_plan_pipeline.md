@@ -20,12 +20,12 @@ This document analyzes the current "sessile" pipeline (processing and GUI), high
 - Sessile pipeline
   - `src/menipy/pipelines/sessile/stages.py` — `SessilePipeline(PipelineBase)` basic implementation:
     - Acquisition: loads image via OpenCV if not present in context.
-    - Ensures contour via `edge_detection.run(...)` (Canny default if settings absent).
-    - Geometry: crude baseline at max y, symmetry axis as median x, apex as min y; crude contact angles via local slope at estimated left/right base points; stores angles in `ctx.results`.
-    - Scaling: default `px_per_mm=1.0`.
+    - Ensures contour via `contour_extraction` stage (Canny default if settings absent).
+    - Geometric Features: baseline at max y, symmetry axis as median x, apex as min y; crude contact angles via local slope at estimated left/right base points; stores angles in `ctx.results`.
+    - Calibration: default `px_per_mm=1.0`.
     - Physics: default densities and `g`.
-    - Solver: toy Young–Laplace "sphere" integrator to estimate `R0_mm` (for display only).
-    - Outputs: merges `R0_mm` with `theta_left_deg`, `theta_right_deg`, residuals.
+    - Profile Fitting: toy Young–Laplace "sphere" integrator to estimate `R0_mm` (for display only).
+    - Compute Metrics: merges `R0_mm` with `theta_left_deg`, `theta_right_deg`, residuals.
     - Overlay: draws contour, symmetry axis, baseline, apex cross, and text label with `R0` and contact angles.
     - Validation: checks toy solver success flag.
 
@@ -107,7 +107,7 @@ This document analyzes the current "sessile" pipeline (processing and GUI), high
 ### 2.3 Scalability and Architecture
 
 - Consolidate the two execution paths: drive the GUI's "Analyze" through the staged pipeline to share configuration and results.
-- Separate concerns into stage modules (`geometry`, `edge_detection`, `overlay`, `solver`) and keep `stages.py` as orchestration/thin wiring.
+- Separate concerns into stage modules (`geometric_features`, `contour_extraction`, `overlay`, `profile_fitting`) and keep `stages.py` as orchestration/thin wiring.
 - Standardize results schema and units across pipelines and document in a shared contract document.
 
 ### 2.4 UX and Workflow
@@ -156,7 +156,7 @@ Phase 0 — Contracts and groundwork (1–2 days)
 Phase 1 — Unify execution path (1–2 days)
 
 - Make GUI "Analyze" call into staged pipeline; populate preview from `ctx.preview/overlay` and results from `ctx.results`.
-- Factor current metrics logic into `do_geometry` and friends; ensure edge detection settings are respected.
+- Factor current metrics logic into `do_geometric_features` and friends; ensure contour extraction settings are respected.
 
 Phase 2 — Detection and geometry accuracy (3–5 days)
 
@@ -184,7 +184,7 @@ Phase 4 — UX, diagnostics, and exports (2–4 days)
 
 - P1
   - Introduce a unified controller method to run a staged sessile analysis for the current view; update GUI wiring.
-  - Move diameter/height/contact-line computations into `do_geometry`; keep functional analyzer for tests/CLI if desired.
+  - Move diameter/height/contact-line computations into `do_geometric_features`; keep functional analyzer for tests/CLI if desired.
 
 - P2
   - Implement and unit-test baseline detection (RANSAC) on samples; provide fallback to user line.

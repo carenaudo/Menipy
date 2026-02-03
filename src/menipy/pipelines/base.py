@@ -62,57 +62,174 @@ class PipelineBase:
     DEFAULT_SEQ = [
         ("acquisition", None),
         ("preprocessing", None),
-        ("edge_detection", None),
-        ("geometry", None),
-        ("scaling", None),
+        ("feature_detection", None),      # NEW: detect ROI, needle, substrate
+        ("contour_extraction", None),     # was: edge_detection
+        ("contour_refinement", None),     # NEW: clip/smooth contour
+        ("calibration", None),            # was: scaling
+        ("geometric_features", None),     # was: geometry
         ("physics", None),
-        ("solver", None),
-        ("optimization", None),
-        ("outputs", None),
+        ("profile_fitting", None),        # was: solver
+        # optimization stage REMOVED
+        ("compute_metrics", None),        # was: outputs
         ("overlay", None),
         ("validation", None),
     ]
 
     # ---- Stage hooks (override in subclasses as needed) ----
     def do_acquisition(self, ctx: Context) -> Optional[Context]:
+        """Load raw image data from file paths or wrap existing arrays."""
         return ctx
 
     def do_preprocessing(self, ctx: Context) -> Optional[Context]:
+        """Apply image filters and enhancements (blur, contrast, threshold)."""
         from menipy.common import preprocessing
 
         if self.preprocessing_settings:
             return preprocessing.run(ctx, self.preprocessing_settings)
         return ctx
 
-    def do_edge_detection(self, ctx: Context) -> Optional[Context]:
+    def do_feature_detection(self, ctx: Context) -> Optional[Context]:
+        """Detect features like ROI, needle, substrate, and contact points.
+        
+        This stage runs automatic detection algorithms to identify key image
+        features before contour extraction. Results are stored in ctx for use
+        by subsequent stages.
+        """
+        return ctx
+
+    def do_contour_extraction(self, ctx: Context) -> Optional[Context]:
+        """Extract the droplet contour from the preprocessed image.
+        
+        Previously named 'edge_detection'. Uses Canny or registered plugins
+        to extract contour points as (x, y) coordinate arrays.
+        """
         from menipy.common import edge_detection
 
         if self.edge_detection_settings:
             return edge_detection.run(ctx, self.edge_detection_settings)
         return ctx
 
-    def do_geometry(self, ctx: Context) -> Optional[Context]:
+    def do_contour_refinement(self, ctx: Context) -> Optional[Context]:
+        """Refine the extracted contour by clipping, smoothing, or filtering.
+        
+        Operations may include:
+        - Clipping contour at substrate line
+        - Removing noise points
+        - Smoothing contour path
+        - Interpolating missing segments
+        """
         return ctx
 
-    def do_scaling(self, ctx: Context) -> Optional[Context]:
+    def do_calibration(self, ctx: Context) -> Optional[Context]:
+        """Convert pixel measurements to physical units (mm).
+        
+        Previously named 'scaling'. Calculates px_per_mm from calibration
+        objects (needle diameter) and scales contour coordinates.
+        """
+        return ctx
+
+    def do_geometric_features(self, ctx: Context) -> Optional[Context]:
+        """Extract geometric features from the contour.
+        
+        Previously named 'geometry'. Calculates:
+        - Axis of symmetry
+        - Apex point location
+        - Baseline/substrate line
+        - Tilt angle
+        
+        Note: Metric computation has been moved to do_compute_metrics.
+        """
         return ctx
 
     def do_physics(self, ctx: Context) -> Optional[Context]:
+        """Define physical parameters for the model (densities, gravity)."""
         return ctx
 
-    def do_solver(self, ctx: Context) -> Optional[Context]:
+    def do_profile_fitting(self, ctx: Context) -> Optional[Context]:
+        """Fit the physical model (Young-Laplace) to the contour data.
+        
+        Previously named 'solver'. Uses least-squares optimization to fit
+        theoretical curves to measured contour points.
+        """
         return ctx
 
-    def do_optimization(self, ctx: Context) -> Optional[Context]:
-        return ctx
-
-    def do_outputs(self, ctx: Context) -> Optional[Context]:
+    def do_compute_metrics(self, ctx: Context) -> Optional[Context]:
+        """Aggregate and compute final measurement results.
+        
+        Previously named 'outputs'. Computes derived metrics like:
+        - Surface tension (from fit parameters)
+        - Volume (disk integration)
+        - Diameter, height
+        - Contact angles
+        """
         return ctx
 
     def do_overlay(self, ctx: Context) -> Optional[Context]:
+        """Generate visual annotations to overlay on the original image."""
         return ctx
 
     def do_validation(self, ctx: Context) -> Optional[Context]:
+        """Quality assurance checks on analysis results.
+        
+        This stage should verify:
+        
+        1. RESIDUAL MAGNITUDES
+           - Check if fit residuals are within acceptable bounds
+           - Flag results with high residual RMS (> threshold)
+           - Compute goodness-of-fit metrics (R², chi-squared)
+        
+        2. PHYSICAL PLAUSIBILITY
+           - Verify surface tension is in expected range (e.g., 15-80 mN/m)
+           - Check contact angles are valid (0-180°)
+           - Validate volume is positive and reasonable
+           - Ensure Bond number is physically meaningful
+        
+        3. CONTOUR QUALITY
+           - Check contour point density (too few points = unreliable fit)
+           - Detect contour artifacts (gaps, noise spikes)
+           - Verify contour is closed/continuous
+           - Check for asymmetry beyond threshold
+        
+        4. GEOMETRIC CONSISTENCY
+           - Validate apex is at expected location
+           - Check baseline detection quality
+           - Verify needle/calibration object detection
+        
+        5. REPEATABILITY (for batch processing)
+           - Compare with previous frames if available
+           - Flag sudden jumps in measured values
+        
+        Sets ctx.qa dict with:
+           - 'ok': bool - overall pass/fail
+           - 'warnings': list - non-fatal issues
+           - 'errors': list - fatal issues
+           - 'scores': dict - quality scores per check
+        """
+        return ctx
+
+    # ---- Backward compatibility aliases (deprecated) ----
+    def do_edge_detection(self, ctx: Context) -> Optional[Context]:
+        """DEPRECATED: Use do_contour_extraction instead."""
+        return self.do_contour_extraction(ctx)
+
+    def do_geometry(self, ctx: Context) -> Optional[Context]:
+        """DEPRECATED: Use do_geometric_features instead."""
+        return self.do_geometric_features(ctx)
+
+    def do_scaling(self, ctx: Context) -> Optional[Context]:
+        """DEPRECATED: Use do_calibration instead."""
+        return self.do_calibration(ctx)
+
+    def do_solver(self, ctx: Context) -> Optional[Context]:
+        """DEPRECATED: Use do_profile_fitting instead."""
+        return self.do_profile_fitting(ctx)
+
+    def do_outputs(self, ctx: Context) -> Optional[Context]:
+        """DEPRECATED: Use do_compute_metrics instead."""
+        return self.do_compute_metrics(ctx)
+
+    def do_optimization(self, ctx: Context) -> Optional[Context]:
+        """DEPRECATED: This stage has been removed."""
         return ctx
 
     # ---- Orchestration -------------------------------------------------------
@@ -229,6 +346,18 @@ class PipelineBase:
             ctx.scale = kwargs["scale"]
         if "physics" in kwargs:
             ctx.physics = kwargs["physics"]
+
+        # Store any other kwargs into context (e.g. auto_detect_features)
+        known_keys = {
+            "image", "image_path", "camera", "cam_id", "frames", "roi", "roi_rect",
+            "needle_rect", "contact_line", "substrate_line", "drop_contour", "contact_points",
+            "px_per_mm", "needle_diameter_mm", "calibration_params",
+            "preprocessing_settings", "edge_detection_settings",
+            "measurement_id", "measurement_sequence", "scale", "physics"
+        }
+        for k, v in kwargs.items():
+            if k not in known_keys:
+                setattr(ctx, k, v)
 
         return ctx
 
@@ -373,13 +502,14 @@ class PipelineBase:
         stages: list[tuple[str, Callable[[Context], Optional[Context]]]] = [
             ("acquisition", self.do_acquisition),
             ("preprocessing", self.do_preprocessing),
-            ("edge_detection", self.do_edge_detection),
-            ("geometry", self.do_geometry),
-            ("scaling", self.do_scaling),
+            ("feature_detection", self.do_feature_detection),
+            ("contour_extraction", self.do_contour_extraction),
+            ("contour_refinement", self.do_contour_refinement),
+            ("calibration", self.do_calibration),
+            ("geometric_features", self.do_geometric_features),
             ("physics", self.do_physics),
-            ("solver", self.do_solver),
-            ("optimization", self.do_optimization),
-            ("outputs", self.do_outputs),
+            ("profile_fitting", self.do_profile_fitting),
+            ("compute_metrics", self.do_compute_metrics),
             ("overlay", self.do_overlay),
             ("validation", self.do_validation),
         ]

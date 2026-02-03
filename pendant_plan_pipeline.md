@@ -15,14 +15,14 @@ This document analyzes the current “pendant” pipeline (processing and GUI), 
 
 - Core pipeline base
   - `src/menipy/pipelines/base.py:35` — `PipelineBase` template class and stage orchestration (`DEFAULT_SEQ`, `run`, `run_with_plan`, error/timing handling).
-  - Stages supported: acquisition → preprocessing → edge_detection → geometry → scaling → physics → solver → optimization → outputs → overlay → validation.
+  - Stages supported: acquisition → preprocessing → feature_detection → contour_extraction → contour_refinement → calibration → geometric_features → physics → profile_fitting → compute_metrics → overlay → validation.
 
 - Pendant pipeline
   - `src/menipy/pipelines/pendant/stages.py:38` — `PendantPipeline(PipelineBase)` simplified implementation:
     - Ensures contour via common edge detection; geometry extracts vertical axis (median x) and apex (max y).
-    - Sets default scaling (`px_per_mm=1.0`) and physics (`rho1, rho2, g`).
-    - Solver: calls a toy Young–Laplace integrator plugin to fit apex radius `R0_mm` with `FitConfig`.
-    - Outputs: maps fit params to `ctx.results` and adds residuals; overlay draws contour, symmetry axis, apex cross, and a text label of `R0`; validation passes solver success.
+    - Sets default calibration (`px_per_mm=1.0`) and physics (`rho1, rho2, g`).
+    - Profile Fitting: calls a toy Young–Laplace integrator plugin to fit apex radius `R0_mm` with `FitConfig`.
+    - Compute Metrics: maps fit params to `ctx.results` and adds residuals; overlay draws contour, symmetry axis, apex cross, and a text label of `R0`; validation passes solver success.
 
   - `src/menipy/pipelines/pendant/geometry.py:30` — Functional analyzer path used by the GUI’s “simple analysis”:
     - `analyze(frame, helpers)` → `extract_external_contour` → `find_pendant_apex` → `compute_pendant_metrics` → returns `PendantMetrics` with contour, apex, diameter line, and derived metrics.
@@ -110,7 +110,7 @@ This document analyzes the current “pendant” pipeline (processing and GUI), 
 ### 2.3 Scalability and Architecture
 
 - Consolidate the two paths: make the functional “simple analysis” call into the same staged pipeline (single entry point), or promote the staged pipeline to be the only path and expose helper convenience wrappers for GUI.
-- Fill out pendant module stages (acquisition, preprocessing, edge_detection, geometry, scaling, physics, solver, overlay) to avoid behavior inlining in `stages.py` and support testing and reuse.
+- Fill out pendant module stages (acquisition, preprocessing, contour_extraction, geometric_features, calibration, physics, profile_fitting, overlay) to avoid behavior inlining in `stages.py` and support testing and reuse.
 - Standardize results schema across pipelines (keys and units) and document in a shared contract.
 - Strengthen plugin integration for solvers/edge detectors; move “toy” solver under a consistent plugin strategy and hide from production runs by default.
 
@@ -198,7 +198,7 @@ Selected high-level tasks (non-exhaustive):
 - P1
   - Add a unified `PipelineController.analyze_current_view()` that wraps the staged pipeline and populates the preview via `ctx.preview/overlay`.
   - Deprecate the direct `geometry.analyze` path in GUI; keep for testing/CLI only if needed.
-  - Move geometry computations from functional path into `do_geometry` stage; ensure edge detection settings are honored consistently.
+  - Move geometry computations from functional path into `do_geometric_features` stage; ensure contour_extraction settings are honored consistently.
 
 - P2
   - Implement `find_pendant_apex` refinement and axis estimator; unit-test on sample images under `data/samples`.

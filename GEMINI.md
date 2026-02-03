@@ -38,7 +38,10 @@ Understanding the repository structure is crucial for effective navigation and c
 ### 4.1. Pipelines
 
 Menipy's analysis capabilities are built on a flexible, stage-based pipeline architecture.
-*   **`PipelineBase`**: The base class (`src/menipy/pipelines/base.py`) defining a series of stages (Acquisition, Preprocessing, Edge Detection, Geometry, Scaling, Physics, Solver, Optimization, Outputs, Overlay, Validation).
+*   **`PipelineBase`**: The base class (`src/menipy/pipelines/base.py`) defining a series of stages:
+    - Acquisition, Preprocessing, Feature Detection, Contour Extraction, Contour Refinement
+    - Calibration, Geometric Features, Physics, Profile Fitting, Compute Metrics
+    - Overlay, Validation
 *   **`Context` Object**: A central data container passed between pipeline stages, enabling loose coupling.
 *   **Discovery**: Pipelines are automatically discovered from subdirectories within `src/menipy/pipelines/`.
 
@@ -47,7 +50,12 @@ Menipy's analysis capabilities are built on a flexible, stage-based pipeline arc
 The plugin system allows for extending functionality with new algorithms and processing stages.
 *   **Discovery**: Plugins are discovered by scanning designated directories (e.g., `plugins/`) and managed by `PluginDB` (`src/menipy/common/plugin_db.py`).
 *   **Registration**: Plugins register their functionality with a central `registry` (`src/menipy/common/registry.py`).
-*   **Types (Kinds)**: Plugins are categorized by "kind" (e.g., `acquisition`, `edge_detection`, `solver`).
+*   **Types (Kinds)**: Plugins are categorized by "kind":
+    - `acquisition`, `preprocessors`, `contour_extraction`, `calibration`
+    - `geometric_features`, `physics`, `profile_fitting`, `compute_metrics`
+    - `overlayers`, `validators`
+    - `needle_detectors`, `roi_detectors`, `substrate_detectors`, `drop_detectors`, `apex_detectors`
+    - `utilities` - Image testing and analysis tools (accessible via Utilities menu)
 
 ## 5. Getting Started (for Gemini)
 

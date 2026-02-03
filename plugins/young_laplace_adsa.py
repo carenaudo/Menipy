@@ -11,7 +11,7 @@ import numpy as np
 from scipy.integrate import solve_ivp
 
 
-def young_laplace_ode(s, y, beta):
+def _young_laplace_ode(s, y, beta):
     """
     Young-Laplace ODE for axisymmetric pendant drop.
 
@@ -80,7 +80,7 @@ def integrate_profile(
     event_detach.direction = 1
 
     sol = solve_ivp(
-        young_laplace_ode,
+        _young_laplace_ode,
         s_span,
         y0,
         args=(beta,),

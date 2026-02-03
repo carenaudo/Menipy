@@ -127,6 +127,7 @@ For developers looking to extend Menipy's functionality, we provide guides on co
 
 - [**Adding a New Analysis Pipeline**](docs/guides/developer_guide_pipelines.md): A step-by-step guide on how to create and integrate a new analysis workflow into the application.
 - [**Adding a New Image Filter Plugin**](docs/guides/developer_guide_plugins.md): A guide on creating and integrating custom image filters using the plugin system.
+- [**Creating Utility Plugins**](docs/guides/developer_guide_utilities.md): How to create utility plugins for image testing and analysis (accessible via Utilities menu).
 
 ## Contributing
 

@@ -25,7 +25,7 @@ class CapillaryRisePipeline(PipelineBase):
         "display_name": "Capillary Rise",
         "icon": "capillary_rise.svg",
         "color": "#9B59B6",
-        "stages": ["acquisition", "edge_detection", "scaling", "solver"],
+        "stages": ["acquisition", "contour_extraction", "calibration", "profile_fitting"],
         "calibration_params": [
             "tube_diameter_mm",
             "fluid_density_kg_m3",
@@ -44,7 +44,8 @@ class CapillaryRisePipeline(PipelineBase):
     def do_preprocessing(self, ctx: Context) -> Optional[Context]:
         return ctx
 
-    def do_geometry(self, ctx: Context) -> Optional[Context]:
+    def do_geometric_features(self, ctx: Context) -> Optional[Context]:
+        """Extract baseline, apex, axis and rise height."""
         xy = ensure_contour(ctx)
         x, y = xy[:, 0], xy[:, 1]
         baseline_y = float(np.max(y))  # assume tube base at bottom of image
@@ -63,7 +64,8 @@ class CapillaryRisePipeline(PipelineBase):
         }
         return ctx
 
-    def do_scaling(self, ctx: Context) -> Optional[Context]:
+    def do_calibration(self, ctx: Context) -> Optional[Context]:
+        """Set up pixel-to-mm scaling."""
         ctx.scale = ctx.scale or {"px_per_mm": 1.0}
         return ctx
 
@@ -71,7 +73,8 @@ class CapillaryRisePipeline(PipelineBase):
         ctx.physics = ctx.physics or {"rho1": 1000.0, "rho2": 1.2, "g": 9.80665}
         return ctx
 
-    def do_solver(self, ctx: Context) -> Optional[Context]:
+    def do_profile_fitting(self, ctx: Context) -> Optional[Context]:
+        """Fit spherical Young-Laplace profile."""
         # Wiring: toy spherical radius (real model would relate h to curvature & wetting)
         cfg = FitConfig(
             x0=[15.0],
@@ -83,10 +86,8 @@ class CapillaryRisePipeline(PipelineBase):
         common_solver.run(ctx, integrator=young_laplace_sphere, config=cfg)
         return ctx
 
-    def do_optimization(self, ctx: Context) -> Optional[Context]:
-        return ctx
-
-    def do_outputs(self, ctx: Context) -> Optional[Context]:
+    def do_compute_metrics(self, ctx: Context) -> Optional[Context]:
+        """Aggregate fit results and rise height."""
         fit = ctx.fit or {}
         names = fit.get("param_names") or []
         params = fit.get("params", [])

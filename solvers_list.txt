@@ -1,0 +1,6 @@
+Registered SOLVERS keys: ['parabola', 'parabola_solver', 'register_solver', 'toy_young_laplace', 'young_laplace_adsa']
+get_solver('toy_young_laplace') -> <function toy_young_laplace at 0x00000237084FE160>
+Solver name: toy_young_laplace
+Solver module: menipy_plugins.toy_young_laplace
+get_solver('young_laplace_ode') -> None
+SessilePipeline.solver_name: toy_young_laplace

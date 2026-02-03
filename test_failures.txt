@@ -1,0 +1,85 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.8, pytest-9.0.1, pluggy-1.6.0 -- D:\programacion\Menipy\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+metadata: {'Python': '3.13.8', 'Platform': 'Windows-11-10.0.26200-SP0', 'Packages': {'pytest': '9.0.1', 'pluggy': '1.6.0'}, 'Plugins': {'cov': '7.0.0', 'flask': '1.3.0', 'html': '4.2.0', 'metadata': '3.1.1', 'mock': '3.15.1', 'qt': '4.5.0'}}
+PySide6 6.10.1 -- Qt runtime 6.10.1 -- Qt compiled 6.10.1
+rootdir: D:\programacion\Menipy
+configfile: pyproject.toml
+plugins: cov-7.0.0, flask-1.3.0, html-4.2.0, metadata-3.1.1, mock-3.15.1, qt-4.5.0
+collecting ... collected 20 items / 15 deselected / 5 selected
+run-last-failure: rerun previous 5 failures (skipped 22 files)
+
+tests/test_sessile_geometry.py::test_clip_contour_simple FAILED          [ 20%]
+tests/test_sessile_geometry.py::test_clip_contour_tilted FAILED          [ 40%]
+tests/test_sessile_geometry.py::test_no_clipping_needed FAILED           [ 60%]
+tests/test_smoke_controller_flows.py::TestSessileControllerFlows::test_run_stage_geometry FAILED [ 80%]
+tests/test_smoke_controller_flows.py::TestSessileControllerFlows::test_run_stage_edge_detection FAILED [100%]
+
+================================== FAILURES ===================================
+__________________________ test_clip_contour_simple ___________________________
+tests\test_sessile_geometry.py:78: in test_clip_contour_simple
+    np.testing.assert_allclose(left, [-1, 0], atol=1e-5)
+E   AssertionError: 
+E   Not equal to tolerance rtol=1e-07, atol=1e-05
+E   
+E   Mismatched elements: 2 / 2 (100%)
+E   Max absolute difference among violations: 2.
+E   Max relative difference among violations: 2.
+E    ACTUAL: array([1., 2.])
+E    DESIRED: array([-1,  0])
+---------------------------- Captured stdout call -----------------------------
+DEBUG CLIP: Apex=(0.0, 2.0), Substrate=((-2.0, 0.0), (2.0, 0.0))
+DEBUG CLIP: Enforced Side=-1.0 (Upward), LineVec=[4. 0.]
+DEBUG CLIP: Contour len=4
+__________________________ test_clip_contour_tilted ___________________________
+tests\test_sessile_geometry.py:118: in test_clip_contour_tilted
+    assert contacts is not None
+E   assert None is not None
+---------------------------- Captured stdout call -----------------------------
+DEBUG CLIP: Apex=(0.0, 1.0), Substrate=((-1.0, -1.0), (3.0, 3.0))
+DEBUG CLIP: Enforced Side=-1.0 (Upward), LineVec=[4. 4.]
+DEBUG CLIP: Contour len=4
+___________________________ test_no_clipping_needed ___________________________
+tests\test_sessile_geometry.py:141: in test_no_clipping_needed
+    assert len(refined) == 3
+E   assert 5 == 3
+E    +  where 5 = len(array([[0. , 1. ],\n       [1. , 1. ],\n       [0.5, 2. ],\n       [0. , 1. ],\n       [1. , 1. ]]))
+---------------------------- Captured stdout call -----------------------------
+DEBUG CLIP: Apex=(0.5, 2), Substrate=((-1, 0), (2, 0))
+DEBUG CLIP: Enforced Side=-1.0 (Upward), LineVec=[3 0]
+DEBUG CLIP: Contour len=3
+_____________ TestSessileControllerFlows.test_run_stage_geometry ______________
+tests\test_smoke_controller_flows.py:207: in test_run_stage_geometry
+    controller.run_stage("geometry")
+src\menipy\gui\controllers\pipeline_controller.py:575: in run_stage
+    plan = pipe.build_plan(only=[stage_name], include_prereqs=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\menipy\pipelines\base.py:472: in build_plan
+    last = max(idx[n] for n in only if n in idx)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ValueError: max() iterable argument is empty
+__________ TestSessileControllerFlows.test_run_stage_edge_detection ___________
+tests\test_smoke_controller_flows.py:230: in test_run_stage_edge_detection
+    controller.run_stage("edge_detection")
+src\menipy\gui\controllers\pipeline_controller.py:575: in run_stage
+    plan = pipe.build_plan(only=[stage_name], include_prereqs=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\menipy\pipelines\base.py:472: in build_plan
+    last = max(idx[n] for n in only if n in idx)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ValueError: max() iterable argument is empty
+=========================== short test summary info ===========================
+FAILED tests/test_sessile_geometry.py::test_clip_contour_simple - AssertionError: 
+Not equal to tolerance rtol=1e-07, atol=1e-05
+
+Mismatched elements: 2 / 2 (100%)
+Max absolute difference among violations: 2.
+Max relative difference among violations: 2.
+ ACTUAL: array([1., 2.])
+ DESIRED: array([-1,  0])
+FAILED tests/test_sessile_geometry.py::test_clip_contour_tilted - assert None is not None
+FAILED tests/test_sessile_geometry.py::test_no_clipping_needed - assert 5 == 3
+ +  where 5 = len(array([[0. , 1. ],\n       [1. , 1. ],\n       [0.5, 2. ],\n       [0. , 1. ],\n       [1. , 1. ]]))
+FAILED tests/test_smoke_controller_flows.py::TestSessileControllerFlows::test_run_stage_geometry - ValueError: max() iterable argument is empty
+FAILED tests/test_smoke_controller_flows.py::TestSessileControllerFlows::test_run_stage_edge_detection - ValueError: max() iterable argument is empty
+====================== 5 failed, 15 deselected in 1.46s =======================

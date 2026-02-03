@@ -70,6 +70,7 @@ This document summarizes each Python file in the repository.
 - `menipy\gui\dialogs\physics_config_dialog.py`: Dialog for editing physics parameters with unit support.
 - `menipy\gui\dialogs\plugin_manager_dialog.py`: Dialog for managing and configuring plugins.
 - `menipy\gui\dialogs\preprocessing_config_dialog.py`: Dialog for preprocessing settings configuration.
+- `menipy\gui\dialogs\utilities_dialog.py`: Dialog for running image testing and analysis utilities.
 
 ## menipy\gui\helpers
 

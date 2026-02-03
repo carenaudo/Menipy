@@ -81,8 +81,19 @@ class CalibrationWizardDialog(QDialog):
             "substrate": True,
             "needle": True,
             "drop": True,
+            "contact": True,  # Contact points
             "roi": True,
         }
+        
+        # Drawing state for manual regions
+        self._drawing_mode = None  # None, "substrate", "needle", or "roi"
+        self._draw_start_point = None
+        self._draw_end_point = None
+        
+        # Legacy compatibility
+        self._drawing_substrate = False
+        self._substrate_start_point = None
+        self._substrate_end_point = None
         
         self._build_ui()
         self._wire_signals()
@@ -124,7 +135,6 @@ class CalibrationWizardDialog(QDialog):
         scroll.setWidget(self._preview_label)
         preview_layout.addWidget(scroll)
         
-        # Zoom controls
         zoom_layout = QHBoxLayout()
         self._fit_btn = QPushButton("Fit to Window")
         self._actual_btn = QPushButton("100%")
@@ -132,6 +142,12 @@ class CalibrationWizardDialog(QDialog):
         zoom_layout.addWidget(self._actual_btn)
         zoom_layout.addStretch()
         preview_layout.addLayout(zoom_layout)
+        
+        # Enable mouse tracking for drawing
+        self._preview_label.setMouseTracking(True)
+        self._preview_label.mousePressEvent = self._on_preview_mouse_press
+        self._preview_label.mouseMoveEvent = self._on_preview_mouse_move
+        self._preview_label.mouseReleaseEvent = self._on_preview_mouse_release
         
         content_layout.addWidget(preview_group, stretch=3)
         
@@ -146,6 +162,7 @@ class CalibrationWizardDialog(QDialog):
             ("substrate", "Substrate Line", self.SUBSTRATE_COLOR),
             ("needle", "Needle Region", self.NEEDLE_COLOR),
             ("drop", "Drop Contour", self.DROP_COLOR),
+            ("contact", "Contact Points", self.CONTACT_COLOR),
             ("roi", "ROI Rectangle", self.ROI_COLOR),
         ]
         
@@ -245,6 +262,39 @@ class CalibrationWizardDialog(QDialog):
         widget.checkbox = checkbox
         widget.status = status
         widget.color_label = color_label
+        widget.draw_btn = None  # Will be set for drawable regions
+        
+        # Add "Draw" button for drawable regions (substrate=line, needle=line, roi=rectangle)
+        drawable_regions = {
+            "substrate": ("✏ Draw", "Click to manually draw substrate line"),
+            "needle": ("✏ Draw", "Click to manually draw needle line"),
+            "roi": ("▢ Draw", "Click to manually draw ROI rectangle"),
+        }
+        
+        if region_id in drawable_regions:
+            btn_text, tooltip = drawable_regions[region_id]
+            draw_btn = QPushButton(btn_text)
+            draw_btn.setToolTip(tooltip)
+            draw_btn.setMaximumWidth(60)
+            draw_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #E0E0E0;
+                    border-radius: 3px;
+                    padding: 2px 6px;
+                }
+                QPushButton:hover {
+                    background-color: #FFD700;
+                }
+                QPushButton:checked {
+                    background-color: #FFD700;
+                    font-weight: bold;
+                }
+            """)
+            draw_btn.setCheckable(True)
+            draw_btn.setProperty("region_id", region_id)
+            draw_btn.clicked.connect(self._on_draw_region_clicked)
+            layout.insertWidget(3, draw_btn)  # Insert before status
+            widget.draw_btn = draw_btn
         
         return widget
     
@@ -300,12 +350,33 @@ class CalibrationWizardDialog(QDialog):
             self._preview_label.setPixmap(self._current_pixmap)
     
     def run_detection(self) -> None:
-        """Run automatic detection on the image."""
+        """Run automatic detection on the image.
+        
+        Preserves manually drawn regions (substrate, ROI, needle) and only
+        auto-detects regions that weren't manually specified.
+        """
         self._progress.show()
         self._detect_btn.setEnabled(False)
         
+        # Preserve manually set values before auto-detection
+        manual_substrate = None
+        manual_roi = None
+        manual_needle = None
+        
+        if self.result:
+            # Check if these were manually set (confidence = 1.0 indicates manual)
+            if self.result.substrate_line and self.result.confidence_scores.get("substrate", 0) >= 1.0:
+                manual_substrate = self.result.substrate_line
+                logger.info("Preserving manual substrate line")
+            if self.result.roi_rect and self.result.confidence_scores.get("roi", 0) >= 1.0:
+                manual_roi = self.result.roi_rect
+                logger.info("Preserving manual ROI")
+            if self.result.needle_rect and self.result.confidence_scores.get("needle", 0) >= 1.0:
+                manual_needle = self.result.needle_rect
+                logger.info("Preserving manual needle")
+        
         # Import here to avoid circular imports
-        from menipy.common.auto_calibrator import run_auto_calibration
+        from menipy.common.auto_calibrator import run_auto_calibration, AutoCalibrator
         
         try:
             logger.info(f"Running auto-calibration for {self.pipeline_name}...")
@@ -313,6 +384,44 @@ class CalibrationWizardDialog(QDialog):
                 self.original_image,
                 self.pipeline_name
             )
+            
+            # Restore manually set values
+            need_redetect_drop = False
+            
+            if manual_substrate:
+                self.result.substrate_line = manual_substrate
+                self.result.confidence_scores["substrate"] = 1.0
+                need_redetect_drop = True  # Need to re-detect drop with correct substrate
+            if manual_roi:
+                self.result.roi_rect = manual_roi
+                self.result.confidence_scores["roi"] = 1.0
+            if manual_needle:
+                self.result.needle_rect = manual_needle
+                self.result.confidence_scores["needle"] = 1.0
+                need_redetect_drop = True  # Need to re-detect drop with correct needle filter
+            
+            # Re-run drop detection if manual substrate/needle was set
+            # This ensures drop is detected relative to correct substrate line
+            if need_redetect_drop and manual_substrate:
+                logger.info("Re-running drop detection with manual substrate line...")
+                calibrator = AutoCalibrator(self.original_image, self.pipeline_name)
+                # Set the correct substrate_y from manual line
+                p1, p2 = manual_substrate
+                calibrator._substrate_y = (p1[1] + p2[1]) // 2
+                # Set needle rect if available
+                if manual_needle:
+                    calibrator._needle_rect = manual_needle
+                elif self.result.needle_rect:
+                    calibrator._needle_rect = self.result.needle_rect
+                # Segment and detect drop
+                calibrator._segment_image_adaptive()
+                drop_contour, contact_pts, drop_conf = calibrator._detect_drop_sessile()
+                if drop_contour is not None and len(drop_contour) > 0:
+                    self.result.drop_contour = drop_contour
+                    self.result.contact_points = contact_pts
+                    self.result.confidence_scores["drop"] = drop_conf
+                    logger.info(f"Drop re-detected with {len(drop_contour)} points")
+            
             self._show_results()
         except Exception as e:
             logger.exception("Auto-calibration failed")
@@ -384,12 +493,14 @@ class CalibrationWizardDialog(QDialog):
             if contour.ndim == 2:
                 contour = contour.reshape(-1, 1, 2)
             cv2.drawContours(overlay, [contour], -1, (0, 255, 0), 2)  # Green (BGR)
-            
-            # Draw contact points
-            if result.contact_points:
-                left, right = result.contact_points
-                cv2.circle(overlay, left, 5, (0, 0, 255), -1)  # Red
-                cv2.circle(overlay, right, 5, (0, 0, 255), -1)
+        
+        # Draw contact points (separate from drop contour for independent visibility)
+        if result.contact_points and self._region_enabled.get("contact", True):
+            left, right = result.contact_points
+            cv2.circle(overlay, left, 5, (0, 0, 255), -1)  # Red
+            cv2.circle(overlay, right, 5, (0, 0, 255), -1)
+            # Draw connecting line for visibility
+            cv2.line(overlay, left, right, (0, 0, 255), 1)
         
         # Draw ROI rectangle
         if result.roi_rect and self._region_enabled.get("roi", True):
@@ -429,6 +540,11 @@ class CalibrationWizardDialog(QDialog):
             "drop": (
                 "✓ Found" if self.result.drop_contour is not None else "✗ Not found",
                 self.result.confidence_scores.get("drop", 0.0)
+            ),
+            "contact": (
+                "✓ Found" if self.result.contact_points else "✗ Not found",
+                # Contact points share drop confidence as they're detected together
+                self.result.confidence_scores.get("drop", 0.0) if self.result.contact_points else 0.0
             ),
             "roi": (
                 "✓ Found" if self.result.roi_rect else "✗ Not found",
@@ -477,6 +593,201 @@ class CalibrationWizardDialog(QDialog):
     def get_result(self) -> Optional[CalibrationResult]:
         """Get the calibration result after dialog closes."""
         return self.result
+    
+    def _on_draw_region_clicked(self, checked: bool) -> None:
+        """Handle draw button click - enter/exit drawing mode for any region."""
+        sender = self.sender()
+        if not sender:
+            return
+        
+        region_id = sender.property("region_id")
+        
+        if checked:
+            # Uncheck any other draw buttons first
+            for rid, widget in self._region_widgets.items():
+                if widget.draw_btn and rid != region_id:
+                    widget.draw_btn.setChecked(False)
+            
+            self._drawing_mode = region_id
+            self._draw_start_point = None
+            self._draw_end_point = None
+            self._preview_label.setCursor(Qt.CrossCursor)
+            
+            shape = "rectangle" if region_id == "roi" else "line"
+            logger.info(f"Entering {region_id} drawing mode - click and drag to draw {shape}")
+        else:
+            self._drawing_mode = None
+            self._preview_label.setCursor(Qt.ArrowCursor)
+    
+    # Legacy compatibility
+    def _on_draw_substrate_clicked(self, checked: bool) -> None:
+        """Legacy handler - redirects to unified handler."""
+        widget = self._region_widgets.get("substrate")
+        if widget and widget.draw_btn:
+            widget.draw_btn.setChecked(checked)
+    
+    def _on_preview_mouse_press(self, event) -> None:
+        """Handle mouse press in preview - start drawing region."""
+        if not self._drawing_mode:
+            return
+        
+        pos = event.pos()
+        img_point = self._widget_to_image_coords(pos.x(), pos.y())
+        if img_point:
+            self._draw_start_point = img_point
+            self._draw_end_point = img_point
+    
+    def _on_preview_mouse_move(self, event) -> None:
+        """Handle mouse move in preview - update region endpoint."""
+        if not self._drawing_mode or self._draw_start_point is None:
+            return
+        
+        pos = event.pos()
+        img_point = self._widget_to_image_coords(pos.x(), pos.y())
+        if img_point:
+            self._draw_end_point = img_point
+            self._draw_region_preview()
+    
+    def _on_preview_mouse_release(self, event) -> None:
+        """Handle mouse release - finalize region."""
+        if not self._drawing_mode or self._draw_start_point is None:
+            return
+        
+        pos = event.pos()
+        img_point = self._widget_to_image_coords(pos.x(), pos.y())
+        if img_point:
+            self._draw_end_point = img_point
+        
+        # Validate and save the region
+        if self._draw_start_point and self._draw_end_point:
+            p1 = self._draw_start_point
+            p2 = self._draw_end_point
+            
+            from menipy.common.auto_calibrator import CalibrationResult
+            if self.result is None:
+                self.result = CalibrationResult(
+                    confidence_scores={"overall": 0.5}
+                )
+            
+            if self._drawing_mode == "substrate":
+                # Ensure left-to-right order for substrate line
+                if p1[0] > p2[0]:
+                    p1, p2 = p2, p1
+                self.result.substrate_line = (p1, p2)
+                self.result.confidence_scores["substrate"] = 1.0
+                logger.info(f"Manual substrate line set: {p1} -> {p2}")
+                
+            elif self._drawing_mode == "needle":
+                # Store needle as rect from line (x, y, width, height)
+                x = min(p1[0], p2[0])
+                y = min(p1[1], p2[1])
+                w = abs(p2[0] - p1[0])
+                h = abs(p2[1] - p1[1])
+                # Needle should be vertical, so ensure minimum width
+                if w < 10:
+                    w = 40
+                    x = x - 20
+                self.result.needle_rect = (x, y, w, h)
+                self.result.confidence_scores["needle"] = 1.0
+                logger.info(f"Manual needle rect set: ({x}, {y}, {w}, {h})")
+                
+            elif self._drawing_mode == "roi":
+                # Store ROI as rect (x, y, width, height)
+                x = min(p1[0], p2[0])
+                y = min(p1[1], p2[1])
+                w = abs(p2[0] - p1[0])
+                h = abs(p2[1] - p1[1])
+                self.result.roi_rect = (x, y, w, h)
+                self.result.confidence_scores["roi"] = 1.0
+                logger.info(f"Manual ROI rect set: ({x}, {y}, {w}, {h})")
+            
+            # Update UI
+            self._show_results()
+            self._apply_btn.setEnabled(True)
+        
+        # Exit drawing mode
+        current_mode = self._drawing_mode
+        self._drawing_mode = None
+        self._preview_label.setCursor(Qt.ArrowCursor)
+        
+        # Uncheck draw button
+        if current_mode:
+            widget = self._region_widgets.get(current_mode)
+            if widget and widget.draw_btn:
+                widget.draw_btn.setChecked(False)
+    
+    def _widget_to_image_coords(self, wx: int, wy: int) -> Optional[tuple]:
+        """Convert widget coordinates to image coordinates."""
+        if not hasattr(self, '_current_pixmap') or self._current_pixmap is None:
+            return None
+        
+        # Get the displayed pixmap (may be scaled)
+        displayed_pm = self._preview_label.pixmap()
+        if displayed_pm is None:
+            return None
+        
+        # Calculate offset (pixmap is centered in label)
+        label_size = self._preview_label.size()
+        pm_size = displayed_pm.size()
+        
+        offset_x = (label_size.width() - pm_size.width()) // 2
+        offset_y = (label_size.height() - pm_size.height()) // 2
+        
+        # Adjust for offset
+        px = wx - offset_x
+        py = wy - offset_y
+        
+        # Check bounds
+        if px < 0 or px >= pm_size.width() or py < 0 or py >= pm_size.height():
+            return None
+        
+        # Scale to original image size
+        orig_w = self.original_image.shape[1]
+        orig_h = self.original_image.shape[0]
+        
+        img_x = int(px * orig_w / pm_size.width())
+        img_y = int(py * orig_h / pm_size.height())
+        
+        return (img_x, img_y)
+    
+    def _draw_region_preview(self) -> None:
+        """Draw region preview during dragging."""
+        if self._draw_start_point is None or self._draw_end_point is None:
+            return
+        
+        # Draw on a copy of the current overlay
+        overlay = self.original_image.copy()
+        
+        # Draw existing detections (except the one being drawn)
+        if self.result:
+            overlay = self._draw_overlays()
+        
+        p1 = self._draw_start_point
+        p2 = self._draw_end_point
+        
+        if self._drawing_mode == "substrate":
+            # Draw line in magenta
+            cv2.line(overlay, p1, p2, (255, 0, 255), 2)
+            cv2.circle(overlay, p1, 4, (255, 0, 255), -1)
+            cv2.circle(overlay, p2, 4, (255, 0, 255), -1)
+            
+        elif self._drawing_mode == "needle":
+            # Draw line/rect in blue
+            cv2.line(overlay, p1, p2, (255, 0, 0), 2)
+            cv2.circle(overlay, p1, 4, (255, 0, 0), -1)
+            cv2.circle(overlay, p2, 4, (255, 0, 0), -1)
+            
+        elif self._drawing_mode == "roi":
+            # Draw rectangle in yellow
+            cv2.rectangle(overlay, p1, p2, (0, 255, 255), 2)
+        
+        # Display
+        self._display_image(overlay)
+    
+    # Legacy compatibility
+    def _draw_substrate_preview(self) -> None:
+        """Legacy handler - redirects to unified handler."""
+        self._draw_region_preview()
 
 
 # Standalone test

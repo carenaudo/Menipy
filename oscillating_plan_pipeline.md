@@ -28,7 +28,7 @@ This plan outlines the “oscillating” pipeline (processing + GUI), identifies
 
 ### 1.2 Data Flow
 
-- Acquisition → preprocessing → per-frame edge detection → geometry (per-frame radii and refs) → physics (params, fps) → solver (toy) → optimization (FFT-based `f0`) → outputs → overlay → validation.
+- Acquisition → preprocessing → per-frame contour_extraction → geometric_features (per-frame radii and refs) → physics (params, fps) → profile_fitting (toy) → compute_metrics (FFT-based `f0`) → overlay → validation.
 - Inputs: video frames or list of images, `fps` if not inferable, calibration (`px_per_mm`), densities.
 - Outputs: `f0_Hz` (dominant frequency), `R0_mm` (toy), optional series stored in geometry.
 
