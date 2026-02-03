@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-02-03
+
+### Added
+- **Calibration Wizard Contact Points**: Added dedicated UI support for "Contact Points" region in the calibration wizard, including a visibility toggle, status display, and visual overlay connecting the contact points.
+
+### Fixed
+- **Sessile Drop Detection Artifacts**: Fixed an issue where the drop contour was "cut" vertically at the corners. The detection algorithm now correctly includes reflection points near the substrate (clamped to the substrate line) to ensure a seamless, gap-free contour.
+- **Sessile Pipeline Regression**: Fixed a bug where the analysis pipeline ignored the high-quality contour detected during calibration and re-ran edge detection, leading to incorrect results. The pipeline now transparently uses the pre-detected contour and skips redundant refinement.
+
 ## [0.3.0] - 2026-01-30
 
 ### Added
