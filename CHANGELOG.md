@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-02-05
+
+### Added
+- **Detector Test Utility Improvements**:
+  - **Debug Mode**: Added a "Debug" checkbox to the Detector Test Dialog. When enabled, compatible detectors (like `Improved Snake`) return all candidate contours and debug information, which are visualized on the canvas with color-coded overlays and labels/scores.
+  - **Plugin Centralization**: Consolidated all edge detection logic into the plugin system. Core detectors (`Canny`, `Threshold`, etc.) are now implemented as plugins, ensuring a unified architecture.
+
+### Fixed
+- **Profile Fitting Crash**: Resolved a `TypeError` during Young-Laplace profile fitting caused by solvers not being correctly registered when the plugin loader's auto-registration was restricted. Explicit registration calls were added to solver plugins (`toy_young_laplace`, `young_laplace_adsa`, `parabola`).
+- **Circular Imports**: Fixed a circular dependency between `edge_detection` and `detection_helpers` by introducing a new shared utility module `menipy.common.image_utils`.
+
+### Refactored
+- **Edge Detector Deduplication**: Removed hardcoded edge detector classes from `src/menipy/common/edge_detection.py`. The core module now acts as a thin wrapper that delegates entirely to the `EDGE_DETECTORS` registry. All implementations (`Canny`, `Sobel`, `Laplacian`, `LegacySnake`, etc.) were moved to `plugins/edge_detectors.py`.
+
 ## [0.3.1] - 2026-02-03
 
 ### Added

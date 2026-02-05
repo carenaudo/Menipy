@@ -36,9 +36,20 @@ Menipy offers a configurable edge detection stage to accurately identify droplet
     *   `Threshold Value`: The value used to classify pixels.
     *   `Max Value`: The value assigned to pixels exceeding the threshold.
     *   `Type`: The type of thresholding (e.g., Binary, Binary Inverse, Truncate, To Zero, To Zero Inverse).
+-   **Otsu Thresholding**: Automatic threshold selection based on histogram bimodality. Useful for well-contrasted droplets.
+-   **Adaptive Thresholding**: Computes local thresholds for small image windows, making it robust to uneven illumination. Configurable `Block Size` and `C` constant.
 -   **Sobel/Scharr**: Gradient-based methods for detecting edges. Configurable `Kernel Size` for the Sobel operator.
 -   **Laplacian**: A second-order derivative operator for edge detection. Configurable `Kernel Size`.
--   **Active Contour (Snakes)**: An iterative method to refine contours to sub-pixel accuracy, often requiring an initial contour. The underlying implementation uses `skimage.segmentation.active_contour`.
+-   **LoG (Laplacian of Gaussian)**: Applies Gaussian blur before Laplacian to reduce noise sensitivity. Can be configured to use zero-crossing detection for thinner edges.
+-   **Improved Snake (Active Contour)**: An enhanced active contour model that uses multiple candidate sources (Otsu, Canny) and scores them based on area, position, and shape to select the best initial contour for refinement.
+-   **Legacy Snake (Active Contour)**: The classic iterative method to refine contours to sub-pixel accuracy. The underlying implementation uses `skimage.segmentation.active_contour`.
+
+### Debugging & Visualization
+
+To aid in selecting the best detector and parameters, Menipy includes a **Detector Test Dialog** accessible via the "Utilities" menu.
+
+- **Real-time Preview**: Test any registered edge detector on the current image.
+- **Debug Mode**: Some detectors (like `Improved Snake`) support a "Debug Mode". When enabled, the visualizer overlays **all candidate contours** (not just the final selection) with labels and scores. This helps investigate why a specific contour was chosen or rejected (e.g., "Otsu-scored: 950").
 
 ### Common Preprocessing:
 

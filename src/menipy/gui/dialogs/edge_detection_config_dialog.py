@@ -41,15 +41,53 @@ class EdgeDetectionConfigDialog(QDialog):
     previewRequested = Signal(object)
 
     def __init__(
-        self, settings: EdgeDetectionSettings, parent: Optional[QDialog] = None
+        self,
+        settings: EdgeDetectionSettings,
+        parent: Optional[QDialog] = None,
+        compact_mode: bool = False,
     ) -> None:
         super().__init__(parent)
         self.setWindowTitle("Edge Detection Configuration")
         self._settings = settings.model_copy(deep=True)
+        self._compact = compact_mode
 
         self._build_ui()
         self._load_settings()
         self._wire_signals()
+
+        if self._compact:
+            self._apply_compact_mode()
+
+    def _apply_compact_mode(self):
+        """Hide navigation and preview for focused editing."""
+        # Hide Sidebar
+        self.stage_list.parentWidget().hide()
+        # Hide Preview
+        self.preview_label.hide()
+        # Resize
+        self.resize(450, 300)
+        # Select correct page based on method
+        self._select_page_for_method(self._settings.method)
+
+    def _select_page_for_method(self, method: str):
+        """Switch stacked widget to the page relevant for the method."""
+        # Map method names to list widget items/pages
+        # Indices: 0=General, 1=Canny, 2=Threshold, 3=Sobel/etc, 4=Result?, 5=Refinement?, 6=Interface
+        # This is brittle relying on order, but _build_ui defines order.
+        # General=0, Canny=1, Threshold=2, Sobel=3, Active=4, Refinement=5, Interface=6
+        
+        if method == "canny":
+            self.pages.setCurrentIndex(1)
+        elif method == "threshold":
+            self.pages.setCurrentIndex(2)
+        elif method in ("sobel", "scharr", "laplacian"):
+            self.pages.setCurrentIndex(3)
+        elif method == "active_contour":
+            self.pages.setCurrentIndex(4)
+        else:
+            # Fallback or plugin page (which is usually added last if at all)
+            # If standard core method fallback to General (0)
+            self.pages.setCurrentIndex(0)
 
     # ------------------------------------------------------------------
     # UI construction
@@ -189,7 +227,7 @@ class EdgeDetectionConfigDialog(QDialog):
             self.method_combo.addItem(label)
             
         # Plugin methods
-        for name in EDGE_DETECTORS.list():
+        for name in EDGE_DETECTORS.keys():
             if name not in core_methods:
                 self.method_combo.addItem(name)
         form.addRow("Method", self.method_combo)
@@ -391,9 +429,9 @@ class EdgeDetectionConfigDialog(QDialog):
         self.sobel_kernel_size_spin.setValue(s.sobel_kernel_size)
         self.laplacian_kernel_size_spin.setValue(s.laplacian_kernel_size)
 
-        self.active_contour_iterations_spin.setValue(s.active_contour_iterations)
-        self.active_contour_alpha_spin.setValue(s.active_contour_alpha)
-        self.active_contour_beta_spin.setValue(s.active_contour_beta)
+        self.active_contour_iterations_spin.setValue(s.snake_iterations)
+        self.active_contour_alpha_spin.setValue(s.snake_alpha)
+        self.active_contour_beta_spin.setValue(s.snake_beta)
 
         self.min_contour_length_spin.setValue(s.min_contour_length)
         self.max_contour_length_spin.setValue(s.max_contour_length)
@@ -424,9 +462,9 @@ class EdgeDetectionConfigDialog(QDialog):
         s.sobel_kernel_size = self.sobel_kernel_size_spin.value()
         s.laplacian_kernel_size = self.laplacian_kernel_size_spin.value()
 
-        s.active_contour_iterations = self.active_contour_iterations_spin.value()
-        s.active_contour_alpha = self.active_contour_alpha_spin.value()
-        s.active_contour_beta = self.active_contour_beta_spin.value()
+        s.snake_iterations = self.active_contour_iterations_spin.value()
+        s.snake_alpha = self.active_contour_alpha_spin.value()
+        s.snake_beta = self.active_contour_beta_spin.value()
 
         s.min_contour_length = self.min_contour_length_spin.value()
         s.max_contour_length = self.max_contour_length_spin.value()

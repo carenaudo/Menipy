@@ -66,6 +66,26 @@ def my_detector(image):
     return np.column_stack([x, y])
 ```
 
+#### Debug Mode Support (Optional)
+
+Detectors can optionally support a "Debug Mode" to return intermediate candidates or scoring info. To support this:
+
+1.  Accept a `return_debug: bool = False` argument in your detect method.
+2.  If `True`, return a tuple: `(result_contour, debug_info_list)`.
+3.  `debug_info_list` should be a list of tuples: `(contour, score, label)`.
+
+```python
+def my_debuggable_detector(image, settings, return_debug=False):
+    # ... find candidates ...
+    best_contour = ...
+    candidates = [(cnt1, 0.8, "candidate A"), (cnt2, 0.5, "candidate B")]
+    
+    if return_debug:
+        return best_contour, candidates
+    return best_contour
+```
+```
+
 ### Step 3: Register the Plugin
 
 Now, you need to register your plugin so that Menipy can find it. As mentioned earlier, there are a few ways to do this. Here are three examples:

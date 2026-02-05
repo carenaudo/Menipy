@@ -625,7 +625,20 @@ class SessileDropWindow(BaseExperimentWindow):
                 if scale_factor > 0:
                     pipeline_kwargs["px_per_mm"] = scale_factor
             
-            ctx = pipeline.run(**pipeline_kwargs)
+            # Retrieve enabled stages via pipeline settings or fallback to all
+            enabled_stages = self._pipeline_settings.get("enabled_stages", None)
+            
+            # Extract other dynamic settings
+            if "physics" in self._pipeline_settings:
+                # Assuming pipeline accepts physics_params directly or we update existing model?
+                # Usually pipeline takes 'physics_params'
+                pipeline_kwargs["physics_params"] = self._pipeline_settings["physics"]
+            if "geometry_config" in self._pipeline_settings:
+                pipeline_kwargs["geometry_config"] = self._pipeline_settings["geometry_config"]
+            if "overlay_config" in self._pipeline_settings: 
+                pipeline_kwargs["overlay_config"] = self._pipeline_settings["overlay_config"]
+
+            ctx = pipeline.run(only=enabled_stages, **pipeline_kwargs)
             
             # 3. Handle Results
             if ctx.error:
