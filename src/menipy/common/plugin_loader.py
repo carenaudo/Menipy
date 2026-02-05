@@ -192,19 +192,20 @@ class PluginLoader:
                 continue
 
             # Register solvers (match laplace, solver in name)
-            if (
-                "solver" in name.lower()
-                or "laplace" in attr_name.lower()
-                or "solver" in attr_name.lower()
-            ):
-                if attr_name not in registry.SOLVERS:
-                    registry.SOLVERS.register(attr_name, attr)
-                    logger.debug("Registered solver: %s", attr_name)
-            # Register edge detectors
-            elif "edge" in name.lower() or "detector" in attr_name.lower():
-                if attr_name not in registry.EDGE_DETECTORS:
-                    registry.EDGE_DETECTORS.register(attr_name, attr)
-                    logger.debug("Registered edge detector: %s", attr_name)
+            # Register solvers (match laplace, solver in name)
+            # if (
+            #     "solver" in name.lower()
+            #     or "laplace" in attr_name.lower()
+            #     or "solver" in attr_name.lower()
+            # ):
+            #     if attr_name not in registry.SOLVERS:
+            #         registry.SOLVERS.register(attr_name, attr)
+            #         logger.debug("Registered solver: %s", attr_name)
+            # # Register edge detectors
+            # elif "edge" in name.lower() or "detector" in attr_name.lower():
+            #     if attr_name not in registry.EDGE_DETECTORS:
+            #         registry.EDGE_DETECTORS.register(attr_name, attr)
+            #         logger.debug("Registered edge detector: %s", attr_name)
 
     def get_module(self, name: str) -> Optional[Any]:
         """Get a loaded module by name."""

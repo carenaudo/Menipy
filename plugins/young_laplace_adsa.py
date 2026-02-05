@@ -15,7 +15,6 @@ import numpy as np
 from pydantic import BaseModel, Field, ConfigDict
 from menipy.common.plugin_settings import register_detector_settings, resolve_plugin_settings
 
-
 # -----------------------------------------------------------------------------
 # Configuration
 # -----------------------------------------------------------------------------
@@ -206,4 +205,9 @@ SOLVERS = {
 }
 
 # Register configuration
+# Register configuration
 register_detector_settings("young_laplace_adsa", YoungLaplaceSettings)
+
+# Explicit Registration
+from menipy.common.registry import SOLVERS
+SOLVERS.register("young_laplace_adsa", young_laplace_adsa)

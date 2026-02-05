@@ -55,9 +55,6 @@ def parabola_solver(params, physics=None, geometry=None, img=None):
 SOLVERS = {"parabola": parabola_solver}
 
 # Auto-register when imported
-try:
-    from menipy.common.registry import register_solver
-
-    register_solver("parabola", parabola_solver)
-except Exception:
-    pass
+# Auto-register when imported
+from menipy.common.registry import SOLVERS
+SOLVERS.register("parabola", parabola_solver)

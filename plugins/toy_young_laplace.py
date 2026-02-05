@@ -13,4 +13,7 @@ def toy_young_laplace(params, physics, geometry):
     return np.column_stack([r, z])
 
 
-SOLVERS = {"toy_young_laplace": toy_young_laplace}
+from menipy.common.registry import SOLVERS
+
+SOLVERS.register("toy_young_laplace", toy_young_laplace)
+

@@ -281,6 +281,11 @@ class ADSAMainWindow(QMainWindow):
         edge_comparison_action = QAction("🔍 Edge Detection Comparison", self)
         edge_comparison_action.triggered.connect(self._on_edge_comparison)
         utilities_menu.addAction(edge_comparison_action)
+
+        test_detectors_action = QAction("🧪 Test Detectors...", self)
+        test_detectors_action.triggered.connect(self._on_test_detectors)
+        utilities_menu.addAction(test_detectors_action)
+
         
         # === Help Menu ===
         help_menu = menubar.addMenu("&Help")
@@ -890,6 +895,12 @@ class ADSAMainWindow(QMainWindow):
             self._notification_manager.show(msg, "success")
         else:
             self._notification_manager.show("Edge comparison utility not registered", "warning")
+
+    def _on_test_detectors(self):
+        """Open detector test dialog."""
+        from menipy.gui.dialogs.detector_test_dialog import DetectorTestDialog
+        dlg = DetectorTestDialog(self)
+        dlg.exec()
 
     # ------------------------------------------------------------------
     # Project persistence

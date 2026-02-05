@@ -12,6 +12,8 @@ from typing import Optional, Tuple, Dict, Any
 
 import numpy as np
 
+from menipy.common.image_utils import ensure_gray, edges_to_xy
+
 logger = logging.getLogger(__name__)
 
 # Import detection plugins (registers them with the registry)
@@ -195,6 +197,20 @@ def adjust_coordinates_for_roi(
     """
     x, y, w, h = roi_rect
     adjusted = points.copy()
-    adjusted[:, 0] -= x
     adjusted[:, 1] -= y
     return adjusted
+
+
+# -----------------------------------------------------------------------------
+# Shared Edge Detection Helpers 
+# -----------------------------------------------------------------------------
+# Re-exporting from image_utils for backward compatibility if needed
+# (though ideally consumers should import from image_utils directly)
+__all__ = [
+    "ensure_gray",
+    "edges_to_xy",
+    "auto_detect_features",
+    "apply_roi_crop",
+    "adjust_coordinates_for_roi",
+    "plugins_available",
+]
