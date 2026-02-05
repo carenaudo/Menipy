@@ -7,9 +7,42 @@ enabling surface tension calculation via least-squares fitting.
 """
 from __future__ import annotations
 
+from typing import Optional, Dict, Any
+from enum import Enum
 import numpy as np
-from scipy.integrate import solve_ivp
+# NOTE: Heavy imports (scipy) moved inside for lazy load
 
+from pydantic import BaseModel, Field, ConfigDict
+from menipy.common.plugin_settings import register_detector_settings, resolve_plugin_settings
+
+
+# -----------------------------------------------------------------------------
+# Configuration
+# -----------------------------------------------------------------------------
+
+class SolverMethod(str, Enum):
+    """Available ODE solver methods."""
+    RK45 = "RK45"
+    RK23 = "RK23"
+    DOP853 = "DOP853"
+    Radau = "Radau"
+    BDF = "BDF"
+    LSODA = "LSODA"
+
+class YoungLaplaceSettings(BaseModel):
+    """Configuration for Young-Laplace drop profile generation."""
+    model_config = ConfigDict(extra='ignore')
+
+    s_max: float = Field(15.0, ge=1.0, description="Max normalized arc length")
+    n_points: int = Field(400, ge=50, description="Number of profile points")
+    solver_method: SolverMethod = Field(SolverMethod.RK45, description="ODE Solver method")
+    rtol: float = Field(1e-8, description="Relative tolerance for ODE solver")
+    atol: float = Field(1e-10, description="Absolute tolerance for ODE solver")
+
+
+# -----------------------------------------------------------------------------
+# Core Implementation
+# -----------------------------------------------------------------------------
 
 def _young_laplace_ode(s, y, beta):
     """
@@ -19,19 +52,6 @@ def _young_laplace_ode(s, y, beta):
     - x: radial coordinate (normalized by R0)
     - z: vertical coordinate (normalized by R0, positive downward from apex)
     - phi: tangent angle
-
-    The equation in dimensionless form:
-        d(phi)/ds = 2 + beta*z - sin(phi)/x
-        dx/ds = cos(phi)
-        dz/ds = sin(phi)
-
-    Args:
-        s: arc length (normalized)
-        y: state [x, z, phi]
-        beta: Bond number = (delta_rho * g * R0^2) / gamma
-
-    Returns:
-        dy/ds derivatives
     """
     x, z, phi = y
 
@@ -50,25 +70,20 @@ def _young_laplace_ode(s, y, beta):
 
 
 def integrate_profile(
-    R0_mm: float, beta: float, s_max: float = 15.0, n_points: int = 400
+    R0_mm: float, 
+    beta: float, 
+    settings: YoungLaplaceSettings
 ) -> np.ndarray:
     """
     Integrate the Young-Laplace ODE to generate a pendant drop profile.
-
-    Args:
-        R0_mm: Apex radius in mm
-        beta: Bond number (dimensionless)
-        s_max: Maximum arc length (normalized by R0)
-        n_points: Number of output points
-
-    Returns:
-        xy: (N, 2) array of (x, z) coordinates in mm
     """
+    from scipy.integrate import solve_ivp
+
     # Initial conditions at apex: x=0, z=0, phi=0
     y0 = [1e-8, 0.0, 0.0]  # small x to avoid singularity
 
-    s_span = (0.0, s_max)
-    s_eval = np.linspace(0.0, s_max, n_points)
+    s_span = (0.0, settings.s_max)
+    s_eval = np.linspace(0.0, settings.s_max, settings.n_points)
 
     # Stopping condition: drop detaches when x starts decreasing significantly
     # or when the profile goes too far
@@ -84,17 +99,17 @@ def integrate_profile(
         s_span,
         y0,
         args=(beta,),
-        method="RK45",
+        method=settings.solver_method,
         t_eval=s_eval,
         events=event_detach,
         dense_output=True,
-        rtol=1e-8,
-        atol=1e-10,
+        rtol=settings.rtol,
+        atol=settings.atol,
     )
 
     if not sol.success and sol.t.size < 10:
         # Integration failed early, return minimal profile
-        phi = np.linspace(0, np.pi, n_points)
+        phi = np.linspace(0, np.pi, settings.n_points)
         x = R0_mm * np.sin(phi)
         z = R0_mm * (1 - np.cos(phi))
         return np.column_stack([x, z])
@@ -112,7 +127,12 @@ def integrate_profile(
     return np.column_stack([x_mm, z_mm])
 
 
-def young_laplace_adsa(params, physics, geometry):
+def young_laplace_adsa(
+    params, 
+    physics, 
+    geometry,
+    **kwargs
+) -> np.ndarray:
     """
     Integrator function compatible with menipy's common solver.
 
@@ -120,6 +140,7 @@ def young_laplace_adsa(params, physics, geometry):
         params: [R0_mm, beta] - apex radius and Bond number
         physics: dict with 'rho1' (liquid), 'rho2' (ambient), 'g' (optional, default 9.80665)
         geometry: dict with apex/axis info (optional, used for alignment)
+        kwargs: plugin options (will be resolved against YoungLaplaceSettings)
 
     Returns:
         xy: (N, 2) model profile coordinates in mm
@@ -127,8 +148,20 @@ def young_laplace_adsa(params, physics, geometry):
     R0_mm = float(params[0])
     beta = float(params[1])
 
+    # Resolve settings
+    # We look for "plugin_settings" in kwargs (passed by solver usually) or use kwargs directly
+    plugin_settings_dict = kwargs.get("plugin_settings", {})
+    # also support direct kwargs override
+    
+    # We must match the key used in registration ("young_laplace_adsa")
+    # But since this function IS the plugin entry point, the solver might pass a specific dict key
+    # For now, let's assume 'young_laplace_adsa' key in plugin_settings
+    
+    raw_cfg = resolve_plugin_settings("young_laplace_adsa", plugin_settings_dict, **kwargs)
+    settings = YoungLaplaceSettings(**raw_cfg)
+
     # Generate profile
-    xy = integrate_profile(R0_mm, beta, s_max=12.0, n_points=400)
+    xy = integrate_profile(R0_mm, beta, settings)
 
     # Shift origin to align with observed contour if geometry provides apex
     if geometry and hasattr(geometry, "apex_xy") and geometry.apex_xy:
@@ -171,3 +204,6 @@ def calculate_surface_tension(
 SOLVERS = {
     "young_laplace_adsa": young_laplace_adsa,
 }
+
+# Register configuration
+register_detector_settings("young_laplace_adsa", YoungLaplaceSettings)

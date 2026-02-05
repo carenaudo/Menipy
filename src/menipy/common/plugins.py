@@ -60,11 +60,27 @@ def discover_into_db(db: PluginDB, plugin_dirs: Iterable[Path]) -> int:
         if not d.is_dir():
             continue
         for path in d.glob("*.py"):
-            # naive introspection: prefer filename as name; detect kind by filename prefix
+            # naive introspection: prefer filename as name
             name = path.stem
-            kind = (
-                "edge" if "edge" in name else ("solver" if "solver" in name else "edge")
-            )
+            
+            # Detect kind by filename keywords
+            if "solver" in name or "laplace" in name:
+                kind = "solver"
+            elif "needle" in name:
+                kind = "needle_detector"
+            elif "substrate" in name:
+                kind = "substrate_detector"
+            elif "roi" in name:
+                kind = "roi_detector"
+            elif "drop" in name and "detect" in name:
+                kind = "drop_detector"
+            elif "apex" in name:
+                 kind = "apex_detector"
+            elif "edge" in name:
+                kind = "edge"
+            else:
+                kind = "utility"
+
             db.upsert_plugin(
                 name=name,
                 kind=kind,
@@ -79,43 +95,38 @@ def discover_into_db(db: PluginDB, plugin_dirs: Iterable[Path]) -> int:
 
 def load_active_plugins(db: PluginDB) -> int:
     """
-    Load only ACTIVE plugins from SQLite and register them in the in-memory registry.
+    Load all ACTIVE plugins from SQLite and register them in the in-memory registry.
     """
     count = 0
+    
+    # helper to load a single plugin row
+    def _load_plugin(row):
+        name, kind, file_path, entry, _, _, _ = row
+        try:
+            if not file_path:
+                raise FileNotFoundError(f"no file_path recorded for plugin '{name}'")
+            p = Path(file_path)
+            if not p.exists():
+                p = p.resolve()
+            if not p.exists():
+                raise FileNotFoundError(str(p))
 
-    def _try_load(kind: str):
-        nonlocal count
-        for name, file_path, entry in db.active_of_kind(kind):
-            try:
-                if not file_path:
-                    raise FileNotFoundError(
-                        f"no file_path recorded for plugin '{name}'"
-                    )
-                p = Path(file_path)
-                if not p.exists():
-                    # try resolving relative to the current working dir
-                    p = p.resolve()
-                if not p.exists():
-                    raise FileNotFoundError(str(p))
+            mod_name = f"menipy_plugins.{name}" # Use consistent module naming
+            mod = _load_module_from_path(p, mod_name)
+            _register_from_module(mod)
+            return True
+        except Exception as exc:
+            logging.error(
+                "Failed to load %s plugin '%s' from %s: %s",
+                kind, name, file_path, exc,
+            )
+            return False
 
-                mod_name = f"adsa_plugins.{kind}_{name}"
-                mod = _load_module_from_path(p, mod_name)
-                _register_from_module(mod)
-                count += 1
-            except Exception as exc:  # pragma: no cover - report and continue
-                # Log a clear, actionable error but don't abort loading other plugins
-                logging.error(
-                    "Failed to load %s plugin '%s' from %s: %s",
-                    kind,
-                    name,
-                    file_path,
-                    exc,
-                )
-
-    # edges
-    _try_load("edge")
-    # solvers
-    _try_load("solver")
+    # Iterate over all active plugins
+    rows = db.list_plugins(only_active=True)
+    for row in rows:
+        if _load_plugin(row):
+            count += 1
 
     return count
 

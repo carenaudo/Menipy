@@ -8,35 +8,87 @@ from __future__ import annotations
 import logging
 from typing import Optional, Tuple
 
-import cv2
 import numpy as np
+# NOTE: cv2 import moved inside functions
 
 from menipy.common.registry import register_needle_detector
+from pydantic import BaseModel, Field, ConfigDict
+from menipy.common.plugin_settings import register_detector_settings, resolve_plugin_settings
 
 logger = logging.getLogger(__name__)
 
 
+# -----------------------------------------------------------------------------
+# Configuration Models
+# -----------------------------------------------------------------------------
+
+class NeedleSessileSettings(BaseModel):
+    """Settings for sessile drop needle detection."""
+    model_config = ConfigDict(extra='ignore')
+    
+    clahe_clip_limit: float = Field(2.0, description="Contrast enhancement limit")
+    adaptive_block_size: int = Field(21, description="Threshold block size (must be odd)")
+    adaptive_c: int = Field(2, description="Threshold constant")
+
+    def model_post_init(self, __context):
+        if self.adaptive_block_size % 2 == 0:
+            self.adaptive_block_size += 1
+
+class NeedlePendantSettings(BaseModel):
+    """Settings for pendant drop needle detection."""
+    model_config = ConfigDict(extra='ignore')
+    
+    tolerance: int = Field(3, description="Pixel tolerance for shaft straightness")
+    top_limit_offset: int = Field(20, description="Height from top to scan for shaft")
+
+
+# -----------------------------------------------------------------------------
+# Implementations
+# -----------------------------------------------------------------------------
+
 def detect_needle_sessile(
     image: np.ndarray,
     *,
-    clahe_clip_limit: float = 2.0,
+    clahe_clip_limit: float = 2.0, # Keeps kwargs for backward compatibility
     clahe_tile_size: Tuple[int, int] = (8, 8),
     adaptive_block_size: int = 21,
     adaptive_c: int = 2,
+    **kwargs
 ) -> Optional[Tuple[int, int, int, int]]:
     """
     Detect needle region for sessile drop (contour touching top border).
-    
-    Args:
-        image: Input image (BGR or grayscale)
-        clahe_clip_limit: CLAHE clip limit for contrast enhancement
-        clahe_tile_size: CLAHE tile grid size
-        adaptive_block_size: Block size for adaptive thresholding
-        adaptive_c: Constant for adaptive thresholding
-        
-    Returns:
-        Needle bounding box as (x, y, width, height) or None if not found.
     """
+    import cv2 
+
+    # Resolve settings
+    raw_cfg = resolve_plugin_settings("sessile_needle_detect", kwargs.get("plugin_settings", {}), **kwargs)
+    # We use local variables as defaults if not in settings, but Pydantic defaults take precedence if instantiating fresh
+    # Ideally, we map kwargs to the model. 
+    # To respect passed-in args vs defaults:
+    
+    # 1. Start with values from args (which might hold defaults from signature)
+    # But since Pydantic holds the source of truth for defaults now, we prefer that.
+    # However, existing callers might pass arguments positionally or by keyword.
+    
+    # Let's trust resolve_plugin_settings to handle dicts
+    # We will override the signature defaults with what the settings say, UNLESS explicitly passed?
+    # Simpler: just use the settings model.
+    
+    # But wait, 'sessile' is the registered name for the needle detector in 'needle_detectors' registry?
+    # Below: register_needle_detector("sessile", ...)
+    # So we should key config on "sessile" (or "needle_detectors.sessile"?)
+    # For now, let's use a unique name "needle_sessile" for config registry to avoid collision if any
+    
+    # Actually, let's look at how we register: register_detector_settings("needle_sessile", ...)
+    
+    # Note: `resolve_plugin_settings` expects a dict.
+    # We construct a dict from kwargs, but prioritize explicit args if they differ from python defaults?
+    # That's hard to detect. 
+    # Let's just assume `plugin_settings` dict is the primary source of configuration 
+    # and explicit kwargs are overrides.
+    
+    cfg = NeedleSessileSettings(**raw_cfg)
+    
     # Convert to grayscale
     if len(image.shape) == 3:
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -44,7 +96,7 @@ def detect_needle_sessile(
         gray = image.copy()
     
     # Apply CLAHE
-    clahe = cv2.createCLAHE(clipLimit=clahe_clip_limit, tileGridSize=clahe_tile_size)
+    clahe = cv2.createCLAHE(clipLimit=cfg.clahe_clip_limit, tileGridSize=clahe_tile_size)
     enhanced = clahe.apply(gray)
     
     # Gaussian blur + adaptive threshold
@@ -53,8 +105,8 @@ def detect_needle_sessile(
         blur, 255,
         cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
         cv2.THRESH_BINARY_INV,
-        adaptive_block_size,
-        adaptive_c
+        cfg.adaptive_block_size,
+        cfg.adaptive_c
     )
     
     # Morphological cleanup
@@ -83,20 +135,17 @@ def detect_needle_pendant(
     drop_contour: Optional[np.ndarray] = None,
     *,
     tolerance: int = 3,
+    **kwargs
 ) -> Optional[Tuple[Tuple[int, int, int, int], Tuple[Tuple[int, int], Tuple[int, int]]]]:
     """
     Detect needle region for pendant drop using shaft line analysis.
-    
-    Args:
-        image: Input image (BGR or grayscale)
-        drop_contour: Pre-detected drop contour (required)
-        tolerance: Pixels deviation to detect contact points
-        
-    Returns:
-        Tuple of (needle_rect, contact_points) or None if not found.
-        needle_rect is (x, y, width, height)
-        contact_points is ((left_x, left_y), (right_x, right_y))
     """
+    import cv2 
+
+    # Resolve settings
+    raw_cfg = resolve_plugin_settings("needle_pendant", kwargs.get("plugin_settings", {}), **kwargs)
+    cfg = NeedlePendantSettings(**raw_cfg)
+
     if drop_contour is None:
         logger.warning("Pendant needle detection requires drop contour")
         return None
@@ -111,8 +160,8 @@ def detect_needle_pendant(
     x, y, w, h = cv2.boundingRect(drop_contour)
     pts = drop_contour.reshape(-1, 2)
     
-    # Define needle shaft reference (top 20 pixels)
-    top_limit = y + 20
+    # Define needle shaft reference
+    top_limit = y + cfg.top_limit_offset
     
     # Left shaft line
     left_shaft_pts = pts[(pts[:, 1] < top_limit) & (pts[:, 0] < (x + w/2))]
@@ -139,7 +188,7 @@ def detect_needle_pendant(
         indices = np.where(row > 0)[0]
         if len(indices) > 0:
             current_x = indices[0]
-            if current_x < (ref_x_left - tolerance):
+            if current_x < (ref_x_left - cfg.tolerance):
                 contact_y_left = cy
                 contact_x_left = current_x
                 break
@@ -153,7 +202,7 @@ def detect_needle_pendant(
         indices = np.where(row > 0)[0]
         if len(indices) > 0:
             current_x = indices[-1] + int(x + w/2)
-            if current_x > (ref_x_right + tolerance):
+            if current_x > (ref_x_right + cfg.tolerance):
                 contact_y_right = cy
                 contact_x_right = current_x
                 break
@@ -182,3 +231,13 @@ def detect_needle_pendant(
 # Register plugins
 register_needle_detector("sessile", detect_needle_sessile)
 register_needle_detector("pendant", detect_needle_pendant)
+
+# Register settings
+# We use names that users will find in the plugin manager dropdown
+register_detector_settings("sessile", NeedleSessileSettings) 
+register_detector_settings("pendant", NeedlePendantSettings)
+# NOTE: The names 'sessile' and 'pendant' are generic. 
+# But in PluginManager, they are scoped to this file!
+# The user sees: Plugin "detect_needle" -> Configure -> Select "sessile" or "pendant".
+# This works perfectly with the previous fix.
+

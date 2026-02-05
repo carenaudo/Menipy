@@ -16,8 +16,8 @@ from __future__ import annotations
 import logging
 from typing import Optional, Tuple
 
-import cv2
 import numpy as np
+# NOTE: Heavy imports (cv2, skimage) are moved inside functions for lazy loading
 
 from pydantic import BaseModel, Field, ConfigDict
 from menipy.common.registry import EDGE_DETECTORS
@@ -37,6 +37,8 @@ def _edges_to_xy(
     max_len: int = 100000,
 ) -> np.ndarray:
     """Convert a binary edges mask to an (N,2) contour array (largest external contour)."""
+    import cv2 
+
     if edges is None:
         return np.empty((0, 2), float)
     
@@ -94,6 +96,8 @@ class OtsuEdgeDetector:
         img: np.ndarray,
         settings: EdgeDetectionSettings,
     ) -> np.ndarray:
+        import cv2
+
         if settings.gaussian_blur_before:
             ksize = settings.gaussian_kernel_size
             if ksize % 2 == 0:
@@ -131,6 +135,8 @@ class AdaptiveEdgeDetector:
         img: np.ndarray,
         settings: EdgeDetectionSettings,
     ) -> np.ndarray:
+        import cv2
+
         if settings.gaussian_blur_before:
             ksize = settings.gaussian_kernel_size
             if ksize % 2 == 0:
@@ -176,6 +182,8 @@ class LoGEdgeDetector:
         img: np.ndarray,
         settings: EdgeDetectionSettings,
     ) -> np.ndarray:
+        import cv2
+
         # Resolve settings
         raw_cfg = resolve_plugin_settings("log", getattr(settings, "plugin_settings", {}))
         cfg = LoGSettings(**raw_cfg)
@@ -231,6 +239,8 @@ class ImprovedSnakeDetector:
         substrate_y: Optional[int] = None,
         needle_rect: Optional[Tuple[int, int, int, int]] = None,
     ) -> np.ndarray:
+        import cv2
+
         try:
             from skimage.segmentation import active_contour
             from skimage.filters import gaussian as skimage_gaussian
@@ -301,6 +311,8 @@ class ImprovedSnakeDetector:
         needle_rect: Optional[Tuple[int, int, int, int]],
         substrate_y: Optional[int],
     ) -> float:
+        import cv2
+
         area = cv2.contourArea(cnt)
         if area < 50:
             return -1.0

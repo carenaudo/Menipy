@@ -8,13 +8,46 @@ from __future__ import annotations
 import logging
 from typing import Optional, Tuple
 
-import cv2
 import numpy as np
+# NOTE: cv2 import moved inside functions
 
 from menipy.common.registry import register_drop_detector
+from pydantic import BaseModel, Field, ConfigDict
+from menipy.common.plugin_settings import register_detector_settings, resolve_plugin_settings
 
 logger = logging.getLogger(__name__)
 
+
+# -----------------------------------------------------------------------------
+# Configuration Models
+# -----------------------------------------------------------------------------
+
+class DropSessileSettings(BaseModel):
+    """Settings for sessile drop detection."""
+    model_config = ConfigDict(extra='ignore')
+    
+    clahe_clip_limit: float = Field(2.0, description="Contrast enhancement limit")
+    adaptive_block_size: int = Field(21, description="Threshold block size (odd)")
+    adaptive_c: int = Field(2, description="Threshold constant")
+    min_area_fraction: float = Field(0.005, description="Min area as fraction of image")
+    substrate_touch_tolerance: int = Field(10, description="Max pixels from substrate to be considered touching")
+    rectangularity_threshold: float = Field(0.85, description="Max rectangularity to filter out ROI boxes")
+
+    def model_post_init(self, __context):
+        if self.adaptive_block_size % 2 == 0:
+            self.adaptive_block_size += 1
+
+class DropPendantSettings(BaseModel):
+    """Settings for pendant drop detection."""
+    model_config = ConfigDict(extra='ignore')
+    
+    min_area_fraction: float = Field(0.05, description="Min area as fraction of image")
+    centering_tolerance: float = Field(0.3, description="Max horizontal offset from center (fraction of width)")
+
+
+# -----------------------------------------------------------------------------
+# Implementations
+# -----------------------------------------------------------------------------
 
 def detect_drop_sessile(
     image: np.ndarray,
@@ -25,23 +58,16 @@ def detect_drop_sessile(
     adaptive_c: int = 2,
     substrate_y: Optional[int] = None,
     min_area_fraction: float = 0.005,
+    **kwargs
 ) -> Optional[Tuple[np.ndarray, Tuple[Tuple[int, int], Tuple[int, int]]]]:
     """
     Detect drop contour for sessile drop using adaptive thresholding.
-    
-    Args:
-        image: Input image (BGR or grayscale)
-        clahe_clip_limit: CLAHE clip limit
-        clahe_tile_size: CLAHE tile grid size
-        adaptive_block_size: Block size for adaptive thresholding
-        adaptive_c: Constant for adaptive thresholding
-        substrate_y: Y-coordinate of substrate line
-        min_area_fraction: Minimum contour area as fraction of image
-        
-    Returns:
-        Tuple of (drop_contour, contact_points) or None.
-        drop_contour is Nx2 array, contact_points is ((left), (right))
     """
+    import cv2 
+
+    raw_cfg = resolve_plugin_settings("sessile", kwargs.get("plugin_settings", {}), **kwargs)
+    cfg = DropSessileSettings(**raw_cfg)
+
     # Convert to grayscale
     if len(image.shape) == 3:
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -52,7 +78,7 @@ def detect_drop_sessile(
     image_area = height * width
     
     # Apply CLAHE
-    clahe = cv2.createCLAHE(clipLimit=clahe_clip_limit, tileGridSize=clahe_tile_size)
+    clahe = cv2.createCLAHE(clipLimit=cfg.clahe_clip_limit, tileGridSize=clahe_tile_size)
     enhanced = clahe.apply(gray)
     
     # Gaussian blur + adaptive threshold
@@ -61,8 +87,8 @@ def detect_drop_sessile(
         blur, 255,
         cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
         cv2.THRESH_BINARY_INV,
-        adaptive_block_size,
-        adaptive_c
+        cfg.adaptive_block_size,
+        cfg.adaptive_c
     )
     
     # Mask below substrate line
@@ -81,10 +107,7 @@ def detect_drop_sessile(
         return None
     
     center_x = width // 2
-    min_area = image_area * min_area_fraction
-    
-    # Substrate contact tolerance (pixels) - contour bottom must be within this distance
-    substrate_touch_tolerance = 10
+    min_area = image_area * cfg.min_area_fraction
     
     # Filter valid contours - separate into substrate-touching and non-touching
     substrate_contours = []  # Contours touching substrate (preferred)
@@ -104,8 +127,7 @@ def detect_drop_sessile(
         if rect_area > 0:
             rectangularity = area / rect_area
             # Perfect rectangle = 1.0, circle/ellipse ≈ 0.78 (pi/4)
-            # Skip if very rectangular (rectangularity > 0.85)
-            if rectangularity > 0.85:
+            if rectangularity > cfg.rectangularity_threshold:
                 continue
         
         # Filter by area and position
@@ -116,7 +138,7 @@ def detect_drop_sessile(
             # Check if contour touches substrate
             if substrate_y is not None:
                 distance_to_substrate = abs(bottom_y - substrate_y)
-                touches_substrate = distance_to_substrate <= substrate_touch_tolerance
+                touches_substrate = distance_to_substrate <= cfg.substrate_touch_tolerance
                 
                 if touches_substrate:
                     substrate_contours.append((cnt, area, distance_from_center, distance_to_substrate))
@@ -183,17 +205,16 @@ def detect_drop_pendant(
     image: np.ndarray,
     *,
     min_area_fraction: float = 0.05,
+    **kwargs
 ) -> Optional[np.ndarray]:
     """
     Detect drop contour for pendant drop using Otsu thresholding.
-    
-    Args:
-        image: Input image (BGR or grayscale)
-        min_area_fraction: Minimum contour area as fraction of image
-        
-    Returns:
-        Drop contour as OpenCV contour array or None.
     """
+    import cv2 
+
+    raw_cfg = resolve_plugin_settings("pendant", kwargs.get("plugin_settings", {}), **kwargs)
+    cfg = DropPendantSettings(**raw_cfg)
+
     # Convert to grayscale
     if len(image.shape) == 3:
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -218,7 +239,7 @@ def detect_drop_pendant(
         return None
     
     img_center_x = width // 2
-    min_area = image_area * min_area_fraction
+    min_area = image_area * cfg.min_area_fraction
     
     # Filter for valid contours
     valid_contours = []
@@ -231,7 +252,7 @@ def detect_drop_pendant(
         if M["m00"] != 0:
             cx = int(M["m10"] / M["m00"])
             # Must be roughly centered
-            if abs(cx - img_center_x) < (width * 0.3):
+            if abs(cx - img_center_x) < (width * cfg.centering_tolerance):
                 valid_contours.append((cnt, area))
     
     if not valid_contours:
@@ -247,3 +268,9 @@ def detect_drop_pendant(
 # Register plugins
 register_drop_detector("sessile", detect_drop_sessile)
 register_drop_detector("pendant", detect_drop_pendant)
+
+# Register settings
+# Reuse "sessile" and "pendant" keys within this file scope
+register_detector_settings("sessile", DropSessileSettings) 
+register_detector_settings("pendant", DropPendantSettings)
+

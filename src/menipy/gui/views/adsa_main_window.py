@@ -217,6 +217,12 @@ class ADSAMainWindow(QMainWindow):
         syringe_db_action.triggered.connect(self._on_syringe_database)
         tools_menu.addAction(syringe_db_action)
         
+        tools_menu.addSeparator()
+
+        plugins_action = QAction("🧩 Plugins...", self)
+        plugins_action.triggered.connect(self._on_plugin_manager)
+        tools_menu.addAction(plugins_action)
+        
         # === Analysis Menu ===
         analysis_menu = menubar.addMenu("&Analysis")
         
@@ -748,6 +754,20 @@ class ADSAMainWindow(QMainWindow):
         from menipy.gui.dialogs.material_dialog import MaterialDialog
         dialog = MaterialDialog(self, selection_mode=False, table_type="syringes")
         dialog.exec()
+    
+    def _on_plugin_manager(self):
+        """Open plugin manager dialog."""
+        from menipy.common.plugin_db import PluginDB
+        from menipy.gui.viewmodels.plugins_vm import PluginsViewModel
+        from menipy.gui.dialogs.plugin_manager_dialog import PluginManagerDialog
+        from menipy.gui.services.settings_service import AppSettings
+
+        db = PluginDB()
+        vm = PluginsViewModel(db)
+        settings = AppSettings.load()
+        
+        dlg = PluginManagerDialog(vm, settings, self)
+        dlg.exec()
     
     def _on_run_analysis(self):
         self.statusBar().showMessage("Running analysis...", 1500)

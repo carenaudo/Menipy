@@ -31,6 +31,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QImage, QPixmap
 
 from menipy.models.config import EdgeDetectionSettings
+from menipy.common.registry import EDGE_DETECTORS
+from menipy.gui.components.plugin_settings_widget import PluginSettingsWidget
 
 
 class EdgeDetectionConfigDialog(QDialog):
@@ -145,7 +147,10 @@ class EdgeDetectionConfigDialog(QDialog):
         self._build_sobel_laplacian_page()
         self._build_active_contour_page()
         self._build_refinement_page()
+        self._build_active_contour_page()
+        self._build_refinement_page()
         self._build_interface_page()
+        self._build_plugin_page()
 
         button_bar = QHBoxLayout()
         button_bar.setContentsMargins(0, 0, 0, 0)
@@ -176,15 +181,17 @@ class EdgeDetectionConfigDialog(QDialog):
         form.addRow(self.enabled_checkbox)
 
         self.method_combo = QComboBox(widget)
-        for label in (
-            "canny",
-            "sobel",
-            "scharr",
-            "laplacian",
-            "threshold",
-            "active_contour",
-        ):
+        # Core methods
+        core_methods = [
+            "canny", "sobel", "scharr", "laplacian", "threshold", "active_contour"
+        ]
+        for label in core_methods:
             self.method_combo.addItem(label)
+            
+        # Plugin methods
+        for name in EDGE_DETECTORS.list():
+            if name not in core_methods:
+                self.method_combo.addItem(name)
         form.addRow("Method", self.method_combo)
 
         self.gaussian_blur_checkbox = QCheckBox("Apply Gaussian Blur Before", widget)
@@ -335,6 +342,12 @@ class EdgeDetectionConfigDialog(QDialog):
 
         self.pages.addWidget(widget)
 
+    def _build_plugin_page(self) -> None:
+        """Page for dynamic plugin settings."""
+        self.plugin_settings_widget = PluginSettingsWidget(self)
+        self.plugin_settings_widget.settingsChanged.connect(self._on_plugin_settings_changed)
+        self.pages.addWidget(self.plugin_settings_widget)
+
     # ------------------------------------------------------------------
     # Data binding
     # ------------------------------------------------------------------
@@ -356,7 +369,15 @@ class EdgeDetectionConfigDialog(QDialog):
         self.method_combo.setCurrentText(s.method)
         self.gaussian_blur_checkbox.setChecked(s.gaussian_blur_before)
         self.gaussian_kernel_size_spin.setValue(s.gaussian_kernel_size)
+        self.gaussian_kernel_size_spin.setValue(s.gaussian_kernel_size)
         self.gaussian_sigma_x_spin.setValue(s.gaussian_sigma_x)
+
+        # Load plugin settings into widget if current method is a plugin
+        current_method = s.method
+        if current_method not in ["canny", "sobel", "scharr", "laplacian", "threshold", "active_contour"]:
+            # It's a plugin or unhandled
+            plugin_config = s.plugin_settings.get(current_method, {})
+            self.plugin_settings_widget.set_plugin(current_method, plugin_config)
 
         self.canny_threshold1_spin.setValue(s.canny_threshold1)
         self.canny_threshold2_spin.setValue(s.canny_threshold2)
@@ -518,6 +539,44 @@ class EdgeDetectionConfigDialog(QDialog):
         self.solid_interface_proximity_spin.setEnabled(
             enabled and self.detect_solid_interface_checkbox.isChecked()
         )
+        
+        # Check if we should switch to plugin page
+        core_methods = {"canny", "sobel", "scharr", "laplacian", "threshold", "active_contour"}
+        if method not in core_methods and enabled:
+             # It is a plugin
+             if self.pages.currentWidget() != self.plugin_settings_widget:
+                 self.pages.setCurrentWidget(self.plugin_settings_widget)
+                 # Also refresh the widget content if needed, though usually handled by load_settings or manual trigger
+                 # We trigger a reload of settings for this plugin
+                 current_config = self._settings.plugin_settings.get(method, {})
+                 self.plugin_settings_widget.set_plugin(method, current_config)
+             
+             # Disable other pages in list? Or just let stacked widget handle view.
+             # Ideally we highlight "Plugin Settings" in list if we added it, but we didn't add it to the list.
+             # Instead we are hijacking the view.
+             
+        elif enabled:
+            # If it's a core method, ensure we are not on plugin page (unless user clicked it?)
+            # The list widget drives the page, but we want method combo to ALSO drive the page?
+            # Existing specific pages (Canny, Threshold) seem to be manually selected by user via list.
+            # BUT _update_controls_enablement is called on combo change.
+            # Let's auto-switch to the relevant page for core methods too for better UX
+            pass
+
+    def _on_plugin_settings_changed(self, new_settings: dict):
+        """Update the internal settings model when plugin widget changes."""
+        method = self.method_combo.currentText()
+        if method:
+            # Update the specific plugin's settings in the dict
+            # We need to be careful not to overwrite other plugins' settings
+            # But here we are just updating the entry for 'method'
+            if self._settings.plugin_settings is None:
+                self._settings.plugin_settings = {}
+            self._settings.plugin_settings[method] = new_settings
+            
+            # Trigger preview if auto-preview is desired?
+            # self._on_preview() 
+
 
     # ------------------------------------------------------------------
     # Public accessors
