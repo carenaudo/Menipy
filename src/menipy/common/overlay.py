@@ -1,4 +1,4 @@
-# src/adsa/common/overlay.py
+# src/menipy/common/overlay.py
 """
 Overlay drawing utilities for visualizing analysis results on images.
 """

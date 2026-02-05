@@ -52,5 +52,8 @@ def _discover_pipelines_from_subdirs():
     return pipelines_map
 
 
+import logging
+logger = logging.getLogger(__name__)
+
 PIPELINE_MAP = _discover_pipelines_from_subdirs()
-print(f"[discover.py] Discovered pipelines: {PIPELINE_MAP}")
+logger.info(f"Discovered pipelines: {list(PIPELINE_MAP.keys())}")

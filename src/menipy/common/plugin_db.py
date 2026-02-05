@@ -7,7 +7,7 @@ import sqlite3
 from pathlib import Path
 from typing import Optional, Tuple
 
-# NOTE: relative imports come from your package layout; keep this file under adsa/common
+# NOTE: relative imports come from your package layout; keep this file under menipy/common
 DB_DEFAULT = Path("./menipy_plugins.sqlite")
 
 

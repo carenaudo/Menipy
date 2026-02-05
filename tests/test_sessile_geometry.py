@@ -2,6 +2,11 @@ import numpy as np
 import pytest
 from menipy.pipelines.sessile.geometry import clip_contour_to_substrate, _segment_intersection
 
+"""
+Tests for sessile drop geometry utilities.
+Includes tests for segment intersection and contour clipping logic.
+"""
+
 def test_segment_intersection():
     # Crossing lines
     p1 = np.array([0, 0])

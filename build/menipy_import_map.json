@@ -29,6 +29,10 @@
       "src/menipy/models/frame.py"
     ],
     "src/menipy/common/auto_calibrator.py": [],
+    "src/menipy/common/contour_smoothing.py": [
+      "src/menipy/models/config.py",
+      "src/menipy/models/context.py"
+    ],
     "src/menipy/common/detection_helpers.py": [
       "src/menipy/common/registry.py"
     ],
@@ -48,6 +52,9 @@
     "src/menipy/common/plugin_db.py": [],
     "src/menipy/common/plugin_loader.py": [
       "src/menipy/common/__init__.py"
+    ],
+    "src/menipy/common/plugin_settings.py": [
+      "src/menipy/common/registry.py"
     ],
     "src/menipy/common/plugins.py": [
       "src/menipy/common/plugin_db.py",
@@ -719,6 +726,7 @@
     ],
     "src/menipy/models/context.py": [
       "src/menipy/common/acquisition_stage.py",
+      "src/menipy/common/contour_smoothing.py",
       "src/menipy/common/preprocessing.py",
       "src/menipy/gui/controllers/edge_detection_controller.py",
       "src/menipy/gui/controllers/pipeline_controller.py",
@@ -752,16 +760,8 @@
       "src/menipy/pipelines/base.py",
       "src/menipy/pipelines/utils.py"
     ],
-    "src/menipy/common/registry.py": [
-      "src/menipy/common/detection_helpers.py",
-      "src/menipy/common/edge_detection.py",
-      "src/menipy/common/plugins.py",
-      "src/menipy/gui/dialogs/utilities_dialog.py",
-      "src/menipy/gui/views/adsa_main_window.py",
-      "src/menipy/pipelines/pendant/preprocessing.py",
-      "src/menipy/pipelines/sessile/preprocessing.py"
-    ],
     "src/menipy/models/config.py": [
+      "src/menipy/common/contour_smoothing.py",
       "src/menipy/common/edge_detection.py",
       "src/menipy/common/preprocessing.py",
       "src/menipy/common/preprocessing_helpers.py",
@@ -782,6 +782,16 @@
       "src/menipy/pipelines/runner.py",
       "src/menipy/pipelines/sessile/stages.py",
       "src/menipy/pipelines/utils.py"
+    ],
+    "src/menipy/common/registry.py": [
+      "src/menipy/common/detection_helpers.py",
+      "src/menipy/common/edge_detection.py",
+      "src/menipy/common/plugin_settings.py",
+      "src/menipy/common/plugins.py",
+      "src/menipy/gui/dialogs/utilities_dialog.py",
+      "src/menipy/gui/views/adsa_main_window.py",
+      "src/menipy/pipelines/pendant/preprocessing.py",
+      "src/menipy/pipelines/sessile/preprocessing.py"
     ],
     "src/menipy/models/geometry.py": [
       "src/menipy/common/edge_detection.py",

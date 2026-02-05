@@ -1,6 +1,11 @@
 import json
 from pathlib import Path
 
+"""
+Analyzes import data to identify orphan modules (unused code) and generate removal recommendations.
+Reads 'combined_import_analysis.json' and outputs 'removal_recommendations.md'.
+"""
+
 repo = Path(__file__).resolve().parents[1]
 build = repo / "build"
 combined = build / "combined_import_analysis.json"

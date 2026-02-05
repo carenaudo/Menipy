@@ -84,9 +84,14 @@ class SessilePipeline(PipelineBase):
         return super().do_contour_extraction(ctx)
 
     def do_contour_refinement(self, ctx: Context) -> Optional[Context]:
-        """Clip contour at substrate line and refine contact points."""
-        # If using pre-detected contour, skip refinement to preserve the closed polygon
+        """Clip contour at substrate line, refine contact points, and optionally smooth."""
+        # If using pre-detected contour, skip clipping to preserve the closed polygon
         if getattr(ctx, "drop_contour", None) is not None:
+            # Still apply smoothing if enabled
+            smoothing_settings = getattr(ctx, 'contour_smoothing_settings', None)
+            if smoothing_settings and smoothing_settings.enabled:
+                from menipy.common import contour_smoothing
+                ctx = contour_smoothing.run(ctx, smoothing_settings)
             return ctx
             
         xy = ensure_contour(ctx)
@@ -111,6 +116,12 @@ class SessilePipeline(PipelineBase):
         # Store refined contact points for use in geometric_features
         if refined_contact_points:
             ctx.contact_points = refined_contact_points
+        
+        # Apply optional contour smoothing
+        smoothing_settings = getattr(ctx, 'contour_smoothing_settings', None)
+        if smoothing_settings and smoothing_settings.enabled:
+            from menipy.common import contour_smoothing
+            ctx = contour_smoothing.run(ctx, smoothing_settings)
             
         return ctx
 

@@ -42,8 +42,14 @@ def from_file(paths: Sequence[str]) -> Sequence[np.ndarray]:
 
 
 def from_camera(device: int = 0, n_frames: int = 1) -> Sequence[np.ndarray]:
-    """Grab frames from a camera (placeholder)."""
-    # TODO: implement cv2.VideoCapture(device)
+    """
+    Grab frames from a camera.
+    
+    .. note::
+        This is currently a placeholder returning black frames.
+        Proper integration with `cv2.VideoCapture` is planned.
+    """
+    # TODO: Implement actual camera capture using cv2.VideoCapture(device)
     return [np.zeros((480, 640), dtype=np.uint8) for _ in range(n_frames)]
 
 

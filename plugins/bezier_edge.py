@@ -1,3 +1,6 @@
+"""
+Parametric Bezier-like curve generator for testing edge detection integration.
+"""
 import numpy as np
 
 

@@ -3,6 +3,12 @@ import ast
 from pathlib import Path
 
 
+"""
+Generates documentation markdown files summarizing Python source files and their imports.
+Creates PYTHONFILES.md and IMPORTED.md in the root directory.
+"""
+
+
 def get_docstring(filepath):
     try:
         with open(filepath, "r", encoding="utf-8") as f:

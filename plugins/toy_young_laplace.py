@@ -2,6 +2,10 @@ import numpy as np
 
 
 def toy_young_laplace(params, physics, geometry):
+    """
+    Toy solver generating a sinusoidal profile to mimic a pendant drop shape.
+    Used for testing solver integration without full physics overhead.
+    """
     R0 = float(params[0])
     phi = np.linspace(0.0, np.pi, 200)
     r = R0 * np.sin(phi)

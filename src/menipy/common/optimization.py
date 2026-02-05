@@ -1,4 +1,4 @@
-# src/adsa/common/optimization.py
+# src/menipy/common/optimization.py
 """
 Optimization stage utilities for refining solver results.
 """

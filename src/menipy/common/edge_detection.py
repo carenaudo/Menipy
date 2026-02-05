@@ -216,11 +216,47 @@ class LaplacianDetector(EdgeDetectorStrategy):
 
 class ActiveContourDetector(EdgeDetectorStrategy):
     def detect(self, img: np.ndarray, settings: EdgeDetectionSettings) -> np.ndarray:
-        # Placeholder for Active Contour implementation
-        logger.warning(
-            "Active contour method is not fully implemented yet. Using Canny fallback."
+        try:
+            from skimage.segmentation import active_contour
+            from skimage.filters import gaussian
+        except ImportError:
+            logger.error("ActiveContourDetector requires scikit-image.")
+            return _fallback_canny(img, settings)
+
+        # 1. Initial Contour using Canny/Otsu (reuse fallback logic or settings)
+        # We need a rough initial estimate. If generic Canny is good enough as seed:
+        initial_xy = _fallback_canny(img, settings)
+        
+        if initial_xy.size < 3:
+            return initial_xy
+
+        # 2. Masking (Reflection Prevention)
+        # We use the substrate position if available to mask the reflection.
+        # However, `detect` only sees the image and settings, not the full context/calibration.
+        # We might need to rely on settings or heuristics (e.g. bottom of image).
+        # For now, we proceed without explicit substrate masking unless passed in settings (TODO).
+        
+        img_smooth = gaussian(img, sigma=settings.gaussian_sigma_x)
+
+        # 3. Coordinate Swap (CRITICAL FIX)
+        # OpenCV contours are (x, y), skimage expects (row, col) -> (y, x)
+        init_snake_rc = initial_xy[:, ::-1]
+
+        # 4. Run Snake
+        snake_rc = active_contour(
+            img_smooth,
+            init_snake_rc,
+            alpha=settings.snake_alpha,
+            beta=settings.snake_beta,
+            gamma=settings.snake_gamma,
+            max_num_iter=settings.snake_iterations,
+            convergence=0.01  # Hardcoded or add to settings
         )
-        return _fallback_canny(img, settings)
+
+        # 5. Swap back
+        detected_xy = snake_rc[:, ::-1]
+        
+        return detected_xy
 
 
 # Register strategies

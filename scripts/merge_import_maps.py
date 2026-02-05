@@ -1,6 +1,11 @@
 from pathlib import Path
 import json
 
+"""
+Merges static and runtime import analysis data into a combined JSON report.
+Combines 'menipy_import_map.json' and 'import_all_report.json'.
+"""
+
 repo = Path(__file__).resolve().parents[1]
 build = repo / "build"
 jm = build / "menipy_import_map.json"

@@ -1,4 +1,4 @@
-# src/adsa/models/datatypes.py
+# src/menipy/models/datatypes.py
 """
 Common data types and structures for analysis records and preprocessing state.
 """

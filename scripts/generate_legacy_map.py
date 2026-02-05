@@ -1,6 +1,11 @@
 import ast
 from pathlib import Path
 
+"""
+Generates an HTML report mapping modules to their imports for legacy code analysis.
+Output is saved to docs/legacy_map.html.
+"""
+
 SRC_DIR = Path(__file__).resolve().parents[1] / "src"
 DOCS_DIR = Path(__file__).resolve().parents[1] / "docs"
 

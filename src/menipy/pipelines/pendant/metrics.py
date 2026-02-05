@@ -20,7 +20,15 @@ def compute_pendant_metrics(
     g: float = 9.80665,
     apex_window_px: int = 10,
 ) -> dict:
-    """Placeholder for pendant metrics computation."""
+    """
+    Compute metrics for a pendant drop including dimensions, surface tension, and volume.
+
+    Calculates:
+    - Height and Diameter (px and mm)
+    - Shape factor (S) and Beta parameter
+    - Surface Tension (using Jennings-Pallas method)
+    - Volume and Surface Area (using solid of revolution)
+    """
     height_px = 0.0
     diameter_px = 0.0
     diameter_line = ((0, 0), (0, 0))

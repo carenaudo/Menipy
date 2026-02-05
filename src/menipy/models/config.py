@@ -4,7 +4,7 @@ Configuration models for pipeline settings and physical parameters.
 
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Literal, Optional, Dict, Any
 
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 
@@ -89,6 +89,52 @@ class ContactLineSettings(BaseModel):
     dilation: int = Field(default=3, ge=1)
 
 
+class ContourSmoothingSettings(BaseModel):
+    """Configuration for optional Savitzky-Golay contour smoothing.
+    
+    When enabled, applies smoothing to the extracted contour to reduce noise
+    and computes tangent-based contact angles from the smoothed curve.
+    """
+
+    enabled: bool = Field(
+        default=False,
+        description="Enable Savitzky-Golay contour smoothing",
+    )
+    method: Literal["savgol"] = Field(
+        default="savgol",
+        description="Smoothing method (currently only savgol supported)",
+    )
+    window_length: int = Field(
+        default=21,
+        ge=5,
+        description="Length of the smoothing window (must be odd, >= polyorder + 2)",
+    )
+    polyorder: int = Field(
+        default=3,
+        ge=1,
+        description="Polynomial order for Savitzky-Golay filter",
+    )
+    filter_monotonic: bool = Field(
+        default=False,
+        description="Ensure contour is monotonic in X (one Y per X value)",
+    )
+    filter_below_substrate: bool = Field(
+        default=True,
+        description="Remove points below the substrate line before smoothing",
+    )
+    extrapolate_contact_points: bool = Field(
+        default=True,
+        description="Linearly extrapolate contact points to fix rounded corners (common in snake/active contours)",
+    )
+
+    @field_validator("window_length")
+    @classmethod
+    def _window_must_be_odd(cls, v: int) -> int:
+        if v % 2 == 0:
+            raise ValueError("Window length must be an odd number.")
+        return v
+
+
 class PreprocessingSettings(BaseModel):
     """Aggregated user-configurable preprocessing settings."""
 
@@ -146,7 +192,8 @@ class EdgeDetectionSettings(BaseModel):
 
     enabled: bool = Field(default=True)
     method: Literal[
-        "canny", "sobel", "scharr", "laplacian", "threshold", "active_contour"
+        "canny", "sobel", "scharr", "laplacian", "threshold", "active_contour",
+        "otsu", "adaptive", "log", "improved_snake"
     ] = Field(default="canny", description="Edge detection algorithm to use")
     # Common preprocessing for edge detection
     gaussian_blur_before: bool = Field(
@@ -210,15 +257,24 @@ class EdgeDetectionSettings(BaseModel):
         description="Kernel size for Laplacian (must be odd)",
     )
 
-    # Active Contour specific parameters (if implemented)
-    active_contour_iterations: int = Field(
-        default=100, ge=1, description="Number of iterations for active contour model"
+    # Active Contour specific parameters
+    # Note: These are core settings used by both standard and improved snake detectors.
+    snake_iterations: int = Field(
+        default=500, ge=1, description="Number of iterations for active contour model"
     )
-    active_contour_alpha: float = Field(
-        default=0.01, ge=0.0, description="Weight of the contour length term"
+    snake_alpha: float = Field(
+        default=0.015, ge=0.0, description="Snake length energy weight"
     )
-    active_contour_beta: float = Field(
-        default=0.1, ge=0.0, description="Weight of the contour smoothness term"
+    snake_beta: float = Field(
+        default=10.0, ge=0.0, description="Snake smoothness energy weight"
+    )
+    snake_gamma: float = Field(
+        default=0.001, ge=0.0, description="Snake time step"
+    )
+
+    plugin_settings: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Dictionary of plugin-specific settings.",
     )
 
     # Contour refinement and filtering

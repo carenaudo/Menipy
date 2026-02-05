@@ -1,4 +1,4 @@
-# src/adsa/common/outputs.py
+# src/menipy/common/outputs.py
 """
 Output formatting and normalization for pipeline results.
 """

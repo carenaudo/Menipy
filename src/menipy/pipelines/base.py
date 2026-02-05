@@ -1,4 +1,4 @@
-# src/menipy/pipeline/base.py
+# src/menipy/pipelines/base.py
 """
 Base pipeline class with template method pattern for stage-based execution.
 """

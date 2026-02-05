@@ -1,4 +1,4 @@
-# menipy/pipelines/pendant/stages.py (test-specific overrides)
+# src/menipy/pipelines/pendant/stages.py
 from __future__ import annotations
 
 from typing import Optional

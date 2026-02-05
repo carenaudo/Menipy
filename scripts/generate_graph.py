@@ -3,6 +3,11 @@ from pathlib import Path
 import shutil
 import subprocess
 
+"""
+Generates a Graphviz DOT file and PNG visualization of the module dependency graph.
+Requires 'menipy_import_map.json' in the build directory.
+"""
+
 repo = Path(__file__).resolve().parents[1]
 build = repo / "build"
 jm = build / "menipy_import_map.json"

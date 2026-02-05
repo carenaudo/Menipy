@@ -28,7 +28,7 @@ def _load_module_from_path(path: Path, module_name: str):
 def _register_from_module(mod) -> None:
     """
     Protocols supported:
-      1) register(adsa) -> calls registry functions
+      1) register(module) -> calls registry functions
       2) EDGE_DETECTORS / SOLVERS dicts
       3) get_edge_detectors() / get_solvers() returning name->callable
     """

@@ -2,6 +2,11 @@ import ast
 import json
 from pathlib import Path
 
+"""
+Tests for the import map generation script.
+Verifies that menipy files are found and imports are correctly resolved.
+"""
+
 
 def collect_menipy_files(menipy_root: Path):
     for p in sorted(menipy_root.rglob("*.py")):

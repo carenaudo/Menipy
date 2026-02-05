@@ -1,4 +1,4 @@
-# src/adsa/common/solver.py
+# src/menipy/common/solver.py
 """
 Solver stage utilities for fitting physical models to contours.
 """
@@ -84,10 +84,10 @@ def run(
     - Returns a normalized dict with params, residual metrics, and solver meta.
 
     Notes:
-      • Uses SciPy's `least_squares` with robust losses for outliers. :contentReference[oaicite:1]{index=1}
-      • Young–Laplace fitting against full silhouettes is standard in ADSA. :contentReference[oaicite:2]{index=2}
-      • Oscillating-drop frequency/damping ↔ γ, ν via Rayleigh–Lamb. :contentReference[oaicite:3]{index=3}
-      • Capillary rise (Jurin) relates h, γ, θ, and tube radius. :contentReference[oaicite:4]{index=4}
+      • Uses SciPy's `least_squares` with robust losses for outliers.
+      • Young–Laplace fitting against full silhouettes is standard in ADSA.
+      • Oscillating-drop frequency/damping ↔ γ, ν via Rayleigh–Lamb.
+      • Capillary rise (Jurin) relates h, γ, θ, and tube radius.
     """
     if least_squares is None:
         raise RuntimeError("SciPy is required for fitting. Please install scipy.")

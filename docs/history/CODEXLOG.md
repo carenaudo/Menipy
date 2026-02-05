@@ -915,3 +915,165 @@ initialization. All tests still pass (53 passed).
 **Task:** Print the `PIPELINE_MAP` variable to the console for debugging.
 
 **Summary:** Added a `print()` statement to `src/menipy/pipelines/discover.py` to output the contents of the `PIPELINE_MAP` immediately after it is populated. This will help diagnose why the pipeline list is appearing empty in the GUI.
+
+## Entry 153 - Fix sessile_viewer Border Usage
+
+**Task:** Resolve the Julia error `UndefVarError: Border not defined` raised when running the sessile viewer.
+
+**Summary:** Replaced the unsupported `Border(:replicate)` call with `imfilter(...; border="replicate")` in `scripts/playground/sessile_viewer.jl`, aligning with the ImageFiltering border API.
+
+## Entry 154 - Fix imfilter Border Keyword
+
+**Task:** Resolve the Julia error about `imfilter` not supporting the `border` keyword argument.
+
+**Summary:** Switched the `imfilter` call to use the positional border argument (`"replicate"`) in `scripts/playground/sessile_viewer.jl` to match the ImageFiltering method signature in this environment.
+
+## Entry 155 - Fix Contour Call Signature
+
+**Task:** Resolve the Julia error about `contours(::Matrix{Float32}, ::Float64)` having no matching method.
+
+**Summary:** Updated `largest_contour` in `scripts/playground/sessile_viewer.jl` to call `contours(x, y, z, level)` with explicit `x`/`y` axes, matching the Contour.jl API.
+
+## Entry 156 - Fix Contour Axes Compatibility
+
+**Task:** Resolve the Julia error about incompatible input axes when calling `contours`.
+
+**Summary:** Updated `largest_contour` in `scripts/playground/sessile_viewer.jl` to use row/column-aligned axes for Contour.jl and swap the resulting coordinates back to image `(x=col, y=row)` space.
+
+## Entry 157 - Fix Contour Levels Argument
+
+**Task:** Resolve the Julia error about `ContourCollection` construction when passing a scalar level to `contours`.
+
+**Summary:** Updated `largest_contour` in `scripts/playground/sessile_viewer.jl` to pass `[0.5]` as the levels array and iterate via `levels(cs)` to match the Contour.jl API.
+
+## Entry 158 - Qualify Contour Functions
+
+**Task:** Resolve the Julia error about `lines` being ambiguous between Contour and Makie.
+
+**Summary:** Qualified Contour APIs in `scripts/playground/sessile_viewer.jl` (`Contour.levels`, `Contour.lines`, `Contour.coordinates`) to avoid name clashes with Makie.
+
+## Entry 159 - Add Contour Fallbacks
+
+**Task:** Handle cases where no contour is found after masking.
+
+**Summary:** Added inverted-mask and alternate-detector fallbacks in `scripts/playground/sessile_viewer.jl` so the viewer tries additional detection strategies before failing with "No contour found."
+
+## Entry 160 - Fix Otsu Threshold Namespace
+
+**Task:** Resolve the Julia error about `otsu_threshold` not being defined in `ImageBinarization`.
+
+**Summary:** Switched the call to `Images.otsu_threshold` in `scripts/playground/sessile_viewer.jl` to match the available API in this environment.
+
+## Entry 161 - Fix Canny Call Signature
+
+**Task:** Resolve the Julia error about `canny` not supporting `high`/`low` keyword arguments.
+
+**Summary:** Updated the `canny` call in `scripts/playground/sessile_viewer.jl` to use the supported positional signature `canny(img, (upper, lower), sigma)` and return the boolean edge map directly.
+
+## Entry 162 - Fix Grayscale Conversion Shape
+
+**Task:** Resolve the Julia error caused by grayscale conversion producing a 1-pixel-wide image.
+
+**Summary:** Replaced the `channelview(...)[1, :, :]` approach with `Float32.(Gray.(img))` in `scripts/playground/sessile_viewer.jl` to keep the correct 2D image shape across grayscale and color inputs.
+
+## Entry 163 - Fix Geometry Dict Typing
+
+**Task:** Resolve the Julia error about converting a tuple to `Int64` when storing the apex in the geometry dictionary.
+
+**Summary:** Declared the geometry dictionary as `Dict{Symbol, Any}` in `scripts/playground/sessile_viewer.jl` to allow storing both numeric scalars and tuple coordinates without conversion errors.
+
+## Entry 164 - Add Local Savitzky-Golay Filter
+
+**Task:** Resolve the Julia error about `savgol_filter` not being defined.
+
+**Summary:** Added a small Savitzky-Golay implementation (`savgol_coeffs` and `savgol_filter`) to `scripts/playground/sessile_viewer.jl` and imported `LinearAlgebra` for the least-squares coefficients.
+
+## Entry 165 - Qualify Makie Axis
+
+**Task:** Resolve the Julia error about `Axis` being ambiguous between multiple packages.
+
+**Summary:** Qualified the axis constructor as `GLMakie.Axis` in `scripts/playground/sessile_viewer.jl` to avoid the name clash with Images/ImageAxes/AxisArrays.
+
+## Entry 166 - Fix Makie Node and Figure Size
+
+**Task:** Resolve the Julia error about `Node` not being defined and address the Makie resolution deprecation warning.
+
+**Summary:** Qualified observables as `GLMakie.Node` and replaced `Figure(resolution=...)` with `Figure(size=...)` in `scripts/playground/sessile_viewer.jl`.
+
+## Entry 167 - Use Makie Observable Instead of Node
+
+**Task:** Resolve the Julia error about `GLMakie.Node` not existing.
+
+**Summary:** Switched to `GLMakie.Observable` for the UI toggles in `scripts/playground/sessile_viewer.jl`.
+
+## Entry 168 - Fix Metrics Text Binding
+
+**Task:** Resolve the Julia error from passing a function as text content in Makie.
+
+**Summary:** Updated `text!` in `scripts/playground/sessile_viewer.jl` to pass the computed string `metrics_text()` instead of the function itself.
+
+## Entry 169 - Remove Unsupported Text Attributes
+
+**Task:** Resolve the Makie error about invalid `padding` and `backgroundcolor` attributes for `text!`.
+
+**Summary:** Removed the unsupported `padding` and `backgroundcolor` arguments from the `text!` call in `scripts/playground/sessile_viewer.jl`.
+
+## Entry 170 - Fix Checkbox Labels
+
+**Task:** Resolve the Makie error about invalid `label` attribute for `Checkbox`.
+
+**Summary:** Replaced labeled checkboxes with separate `Checkbox` and `Label` blocks in `scripts/playground/sessile_viewer.jl`.
+
+## Entry 171 - Use Checkbox checked/onchange
+
+**Task:** Resolve the Makie error about `Checkbox` lacking an `active` field.
+
+**Summary:** Updated `scripts/playground/sessile_viewer.jl` to use `cb.checked` for state and `cb.onchange` for callbacks instead of `cb.active`.
+
+## Entry 172 - Fix Makie Wait Call
+
+**Task:** Resolve the Julia error about calling `wait(display)`.
+
+**Summary:** Replaced the invalid `wait(display)` call with `GLMakie.wait(screen(fig))` after `display(fig)` in `scripts/playground/sessile_viewer.jl` to keep the window open.
+
+## Entry 173 - Wait on Figure Scene
+
+**Task:** Resolve the Julia error about `screen` not being defined when waiting.
+
+**Summary:** Switched to `GLMakie.wait(fig.scene)` after `display(fig)` in `scripts/playground/sessile_viewer.jl` to use a supported wait target.
+
+## Entry 174 - Fix Image Orientation and Checkbox Binding
+
+**Task:** Resolve the rotated image display and checkboxes not toggling overlays.
+
+**Summary:** Displayed the image with `permutedims` to align x/y axes and switched checkbox callbacks to use `cb.checked` in `scripts/playground/sessile_viewer.jl`, so overlay visibility updates correctly.
+
+## Entry 175 - Add Metrics Text Box Overlay
+
+**Task:** Restore the metrics text box overlay similar to the Python implementation.
+
+**Summary:** Added a `Box` + `Label` overlay in `scripts/playground/sessile_viewer.jl` that renders the metrics text with padding and a semi-transparent background, tied to the metrics visibility toggle.
+
+## Entry 176 - Use StagedFilters for Savitzky-Golay
+
+**Task:** Switch the Savitzky-Golay filter implementation to StagedFilters.jl.
+
+**Summary:** Added `StagedFilters` to the project, replaced the local Savitzky-Golay implementation with `StagedFilters.smooth!`, and approximated the derivative using central differences in `scripts/playground/sessile_viewer.jl`.
+
+## Entry 177 - True Savitzky-Golay Derivative
+
+**Task:** Implement a true Savitzky–Golay derivative instead of a finite difference approximation.
+
+**Summary:** Added explicit Savitzky–Golay derivative coefficients and applied them in `scripts/playground/sessile_viewer.jl`, using the same window and polynomial order.
+
+## Entry 178 - Expand Metrics Flags
+
+**Task:** Include additional flag states in the metrics overlay.
+
+**Summary:** Extended the metrics text in `scripts/playground/sessile_viewer.jl` to show `filter_monotonic`, `filter_substrate`, and Savitzky–Golay window/poly settings, and passed these options into the view.
+
+## Entry 179 - Fix Metrics Box Placement
+
+**Task:** Correct the metrics text box positioning and sizing.
+
+**Summary:** Moved the metrics overlay to a pixel-space annotation inside the axis and sized the background rectangle from the text bounding box in `scripts/playground/sessile_viewer.jl`.

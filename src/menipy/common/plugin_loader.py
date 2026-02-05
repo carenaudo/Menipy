@@ -225,5 +225,3 @@ def get_edge_detector(name: str, fallback: Optional[Callable[..., Any]] = None) 
     """Get an edge detector by name from the registry (ensures plugins are loaded first)."""
     PluginLoader.ensure_loaded()
     return registry.EDGE_DETECTORS.get(name, fallback)
-    PluginLoader.ensure_loaded()
-    return registry.EDGE_DETECTORS.get(name, fallback)
