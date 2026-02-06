@@ -1,3 +1,8 @@
+"""Tests for test overlay dialog.
+
+Unit tests."""
+
+
 import sys
 import pytest
 

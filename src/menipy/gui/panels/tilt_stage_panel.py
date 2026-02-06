@@ -17,7 +17,7 @@ class TiltStagePanel(QFrame):
     Panel for controlling the tilting stage angle.
     
     Shows:
-    - Current tilt angle
+        - Current tilt angle
     - Target angle input
     - Tilt sequence controls
     
@@ -32,6 +32,13 @@ class TiltStagePanel(QFrame):
     sequence_stopped = Signal()
     
     def __init__(self, parent=None):
+        """Initialize.
+
+        Parameters
+        ----------
+        parent : type
+        Description.
+        """
         super().__init__(parent)
         self.setObjectName("tiltStagePanel")
         

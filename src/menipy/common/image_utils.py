@@ -1,6 +1,4 @@
-"""
-Shared image processing utilities.
-"""
+"""Shared image processing utilities."""
 from __future__ import annotations
 import numpy as np
 

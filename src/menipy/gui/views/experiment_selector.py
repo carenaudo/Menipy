@@ -22,6 +22,17 @@ class RecentProjectItem(QListWidgetItem):
     """List item representing a recent project."""
     
     def __init__(self, filename: str, experiment_type: str, date_str: str):
+        """Initialize.
+
+        Parameters
+        ----------
+        filename : type
+            Description.
+        experiment_type : type
+            Description.
+        date_str : type
+            Description.
+        """
         super().__init__()
         self.filename = filename
         self.experiment_type = experiment_type
@@ -38,9 +49,7 @@ class RecentProjectItem(QListWidgetItem):
 
 
 class RecentProjectsPanel(QFrame):
-    """
-    Panel displaying recent projects with quick access.
-    """
+    """Panel displaying recent projects with quick access."""
     
     project_selected = Signal(str)  # Emits file path
     open_dialog_requested = Signal()

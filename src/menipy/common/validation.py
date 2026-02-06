@@ -1,7 +1,5 @@
 # src/menipy/common/validation.py
-"""
-Validation stage utilities for quality assurance of results.
-"""
+"""Validation stage utilities for quality assurance of results."""
 from __future__ import annotations
 
 

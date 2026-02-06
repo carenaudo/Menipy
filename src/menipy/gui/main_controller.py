@@ -1,6 +1,4 @@
-"""
-Main window controller coordinating GUI components.
-"""
+"""Main window controller coordinating GUI components."""
 
 # src/menipy/gui/controllers/main_controller.py
 from __future__ import annotations
@@ -40,6 +38,13 @@ class MainController(QObject):
     """Orchestrates the main application logic."""
 
     def __init__(self, window: MainWindow):
+        """Initialize.
+
+        Parameters
+        ----------
+        window : type
+        Description.
+        """
         super().__init__(window)
         self.window: MainWindow = window
         self.settings = window.settings

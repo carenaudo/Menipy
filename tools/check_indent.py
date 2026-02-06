@@ -1,3 +1,8 @@
+"""Check Indent.
+
+Module implementation."""
+
+
 import tokenize
 from pathlib import Path
 

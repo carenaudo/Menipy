@@ -32,6 +32,15 @@ class HelpDialog(QDialog):
     """Simple help viewer that lists markdown files and renders them as HTML."""
 
     def __init__(self, parent=None, docs_dir: Path | None = None):
+        """Initialize.
+
+        Parameters
+        ----------
+        parent : type
+        Description.
+        docs_dir : type
+        Description.
+        """
         super().__init__(parent)
         self.setWindowTitle("Help")
         self.resize(900, 600)
@@ -73,7 +82,7 @@ class HelpDialog(QDialog):
         if self._files:
             self.list_widget.setCurrentRow(0)
 
-    # ------------------------------------------------------------------ helpers
+        # ------------------------------------------------------------------ helpers
     def _find_markdown_files(self, root: Path) -> List[Path]:
         if not root.exists():
             return []

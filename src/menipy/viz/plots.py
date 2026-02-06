@@ -1,3 +1,1 @@
-"""
-Placeholder for plotting utilities.
-"""
+"""Placeholder for plotting utilities."""

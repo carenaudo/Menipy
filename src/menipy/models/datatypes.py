@@ -1,7 +1,5 @@
 # src/menipy/models/datatypes.py
-"""
-Common data types and structures for analysis records and preprocessing state.
-"""
+"""Common data types and structures for analysis records and preprocessing state."""
 from __future__ import annotations
 
 from typing import Any, Dict, List, Literal, Optional, Tuple, TYPE_CHECKING
@@ -61,10 +59,17 @@ class PreprocessingState(BaseModel):
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
     def clone(self) -> "PreprocessingState":
+        """clone.
+
+        Returns
+        -------
+        type
+        Description.
+        """
         return self.model_copy(deep=True)
 
 
-# ---- Aggregated analysis record --------------------------------------------
+        # ---- Aggregated analysis record --------------------------------------------
 
 
 class AnalysisRecord(BaseModel):

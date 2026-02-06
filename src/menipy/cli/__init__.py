@@ -81,14 +81,38 @@ def _patch_acquisition(
     cam_id = 0 if camera is None else int(camera)
 
     def do_acq_from_camera(ctx: Context):
+        """do acq from camera.
+
+        Parameters
+        ----------
+        ctx : type
+        Description.
+
+        Returns
+        -------
+        type
+        Description.
+        """
         ctx.frames = acq.from_camera(device=cam_id, n_frames=frames)
 
         return ctx
 
-    p.do_acquisition = do_acq_from_camera  # type: ignore[attr-defined]
+        p.do_acquisition = do_acq_from_camera  # type: ignore[attr-defined]
 
 
 def main(argv: Optional[list[str]] = None) -> int:
+    """Entry point.
+
+    Parameters
+    ----------
+    argv : type
+        Description.
+
+    Returns
+    -------
+    type
+        Description.
+    """
     ap = argparse.ArgumentParser(prog="adsa", description="Run ADSA pipelines (CLI)")
     ap.add_argument(
         "--pipeline",

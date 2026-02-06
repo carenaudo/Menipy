@@ -1,3 +1,8 @@
+"""Test Sessile Geometry.
+
+Test module."""
+
+
 import numpy as np
 import pytest
 from menipy.pipelines.sessile.geometry import clip_contour_to_substrate, _segment_intersection
@@ -8,6 +13,8 @@ Includes tests for segment intersection and contour clipping logic.
 """
 
 def test_segment_intersection():
+    """segment intersection.
+    """
     # Crossing lines
     p1 = np.array([0, 0])
     p2 = np.array([2, 2])
@@ -41,6 +48,8 @@ def test_segment_intersection():
     assert inter is None # (2,2) is outside p1-p2
 
 def test_clip_contour_simple():
+    """clip contour simple.
+    """
     # Square contour crossing y=0
     # Points: (-1, 2), (-1, -1), (1, -1), (1, 2)
     # Substrate line: y=0
@@ -89,6 +98,8 @@ def test_clip_contour_simple():
     assert np.all(refined[:, 1] >= -1e-5)
 
 def test_clip_contour_tilted():
+    """clip contour tilted.
+    """
     # Tilted line y = x
     # Apex at (0, 1) (above line)
     # Contour is circle-ish
@@ -136,6 +147,8 @@ def test_clip_contour_tilted():
         assert p[1] >= p[0] - 1e-5
 
 def test_no_clipping_needed():
+    """no clipping needed.
+    """
     # All points above line
     contour = np.array([[0, 1], [1, 1], [0.5, 2]])
     substrate = ((-1, 0), (2, 0))

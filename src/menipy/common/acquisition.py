@@ -1,7 +1,5 @@
 # src/menipy/common/acquisition.py
-"""
-Common acquisition utilities for loading images from files or cameras.
-"""
+"""Common acquisition utilities for loading images from files or cameras."""
 from __future__ import annotations
 
 from typing import Sequence

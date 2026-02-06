@@ -1,6 +1,4 @@
-"""
-Dialog for testing and visualizing detector plugins.
-"""
+"""Dialog for testing and visualizing detector plugins."""
 from pathlib import Path
 import cv2
 import numpy as np
@@ -18,10 +16,15 @@ from menipy.common.registry import (
 from menipy.models.config import EdgeDetectionSettings
 
 class DetectorTestCanvas(QWidget):
-    """
-    Canvas widget to display image and detection results.
-    """
+    """Canvas widget to display image and detection results."""
     def __init__(self, parent=None):
+        """Initialize.
+
+        Parameters
+        ----------
+        parent : type
+        Description.
+        """
         super().__init__(parent)
         self.image = None
         self.result = None
@@ -156,9 +159,7 @@ class DetectorTestCanvas(QWidget):
 
 
 class DetectorTestDialog(QDialog):
-    """
-    Dialog to test detector plugins.
-    """
+    """Dialog to test detector plugins."""
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Detector Test Utility")
@@ -240,6 +241,7 @@ class DetectorTestDialog(QDialog):
         self._on_category_changed(self.combo_category.currentText())
 
     def _on_category_changed(self, category_name):
+        """_on_category_changed."""
         self.combo_algo.clear()
         registry = self.detector_categories.get(category_name)
         if registry:
@@ -250,6 +252,7 @@ class DetectorTestDialog(QDialog):
             self.combo_algo.addItems(items)
 
     def _on_load_image(self):
+        """_on_load_image."""
         path, _ = QFileDialog.getOpenFileName(
             self, "Open Test Image", "", 
             "Images (*.png *.jpg *.jpeg *.tiff *.bmp);;All Files (*)"
@@ -258,6 +261,7 @@ class DetectorTestDialog(QDialog):
             self._load_image_file(path)
 
     def _load_image_file(self, path):
+        """_load_image_file."""
         # Read using cv2
         img = cv2.imread(path)
         if img is None:
@@ -270,6 +274,7 @@ class DetectorTestDialog(QDialog):
         self.lbl_status.setText(f"Loaded: {path} ({img.shape[1]}x{img.shape[0]})")
 
     def _on_run_detector(self):
+        """_on_run_detector."""
         if self.image is None:
             QMessageBox.warning(self, "Warning", "Please load an image first.")
             return
@@ -378,5 +383,6 @@ class DetectorTestDialog(QDialog):
             self.lbl_status.setText(f"Error: {e}")
 
     def _on_toggle_overlay(self, checked):
+        """_on_toggle_overlay."""
         self.canvas.show_overlay = checked
         self.canvas.repaint()

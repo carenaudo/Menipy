@@ -22,7 +22,7 @@ class ADSAMainWindow(QMainWindow):
     Main application window for ADSA.
     
     Uses a QStackedWidget to switch between:
-    - Experiment Selector screen (index 0)
+        - Experiment Selector screen (index 0)
     - Experiment-specific windows (indices 1+)
     
     Signals:
@@ -36,6 +36,8 @@ class ADSAMainWindow(QMainWindow):
     INDEX_EXPERIMENT = 1
     
     def __init__(self):
+        """Initialize.
+        """
         super().__init__()
         self.setWindowTitle("ADSA - Automated Drop Shape Analysis")
         self.setMinimumSize(theme.MIN_WINDOW_WIDTH, theme.MIN_WINDOW_HEIGHT)
@@ -710,19 +712,23 @@ class ADSAMainWindow(QMainWindow):
             window._on_zoom_in()
     
     def _on_zoom_out(self):
+        """_on_zoom_out."""
         window = self.get_current_experiment_window()
         if hasattr(window, "_on_zoom_out"):
             window._on_zoom_out()
     
     def _on_fit_view(self):
+        """_on_fit_view."""
         window = self.get_current_experiment_window()
         if hasattr(window, "_on_fit_view"):
             window._on_fit_view()
     
     def _on_actual_size(self):
+        """_on_actual_size."""
         self.statusBar().showMessage("Actual size view", 1500)
     
     def _on_toggle_fullscreen(self):
+        """_on_toggle_fullscreen."""
         if self.isFullScreen():
             self.showNormal()
         else:
@@ -775,15 +781,19 @@ class ADSAMainWindow(QMainWindow):
         dlg.exec()
     
     def _on_run_analysis(self):
+        """_on_run_analysis."""
         self.statusBar().showMessage("Running analysis...", 1500)
     
     def _on_pause_analysis(self):
+        """_on_pause_analysis."""
         self.statusBar().showMessage("Analysis paused", 1500)
     
     def _on_stop_analysis(self):
+        """_on_stop_analysis."""
         self.statusBar().showMessage("Analysis stopped", 1500)
     
     def _on_analysis_settings(self):
+        """_on_analysis_settings."""
         from menipy.gui.dialogs.analysis_settings_dialog import AnalysisSettingsDialog
         from menipy.models.config import PreprocessingSettings, EdgeDetectionSettings
 
@@ -816,12 +826,15 @@ class ADSAMainWindow(QMainWindow):
             self.statusBar().showMessage("Analysis settings saved", 2000)
     
     def _on_batch_process(self):
+        """_on_batch_process."""
         self.statusBar().showMessage("Batch processing not implemented yet", 3000)
     
     def _on_process_video(self):
+        """_on_process_video."""
         self.statusBar().showMessage("Video processing not implemented yet", 3000)
     
     def _on_clear_results(self):
+        """_on_clear_results."""
         reply = QMessageBox.question(
             self,
             "Clear All Results",
@@ -955,6 +968,7 @@ class ADSAMainWindow(QMainWindow):
         }
         Path(path).write_text(json.dumps(payload, indent=2), encoding="utf-8")
     def _on_help(self):
+        """_on_help."""
         from pathlib import Path
         from menipy.gui.dialogs.help_dialog import HelpDialog
 
@@ -963,6 +977,7 @@ class ADSAMainWindow(QMainWindow):
         dlg.exec()
     
     def _on_about(self):
+        """_on_about."""
         QMessageBox.about(
             self,
             "About ADSA",

@@ -1,6 +1,4 @@
-"""
-Dialog for configuring plugin settings based on Pydantic models.
-"""
+"""Dialog for configuring plugin settings based on Pydantic models."""
 from typing import Type, Any, Dict, get_origin, get_args
 from enum import Enum
 from pydantic import BaseModel
@@ -124,6 +122,13 @@ class PluginConfigDialog(QDialog):
         return None
 
     def get_settings(self) -> Dict[str, Any]:
+        """Get settings.
+
+        Returns
+        -------
+        type
+        Description.
+        """
         data = {}
         for name, widget in self._inputs.items():
             if isinstance(widget, QSpinBox):

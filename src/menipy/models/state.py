@@ -59,10 +59,17 @@ class PreprocessingState(BaseModel):
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
     def clone(self) -> "PreprocessingState":
+        """clone.
+
+        Returns
+        -------
+        type
+        Description.
+        """
         return self.model_copy(deep=True)
 
 
-# Convenience constructors (migrated)
+        # Convenience constructors (migrated)
 def make_frame(
     image: np.ndarray,
     timestamp: Optional[datetime] = None,

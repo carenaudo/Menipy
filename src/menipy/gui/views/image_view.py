@@ -1,6 +1,4 @@
-"""
-Custom image viewer widget.
-"""
+"""Custom image viewer widget."""
 
 # type: ignore
 from __future__ import annotations
@@ -109,6 +107,7 @@ class ImageView(QGraphicsView):
         self.setDragMode(QGraphicsView.NoDrag if mode else QGraphicsView.ScrollHandDrag)
 
     def clear_overlays(self) -> None:
+        """clear_overlays."""
         for item in list(self._overlays):
             if not item:
                 continue
@@ -388,6 +387,7 @@ class ImageView(QGraphicsView):
         self._zoom_by(factor)
 
     def actual_size(self) -> None:
+        """actual_size."""
         if not self._pix_item:
             return
         self.setTransform(QTransform())  # identity
@@ -395,14 +395,16 @@ class ImageView(QGraphicsView):
         self._mode = "actual"
 
     def fit_to_window(self) -> None:
+        """fit_to_window."""
         if not self._pix_item:
             return
         self.resetTransform()
         self.fitInView(self._pix_item, Qt.AspectRatioMode.KeepAspectRatio)
         self._mode = "fit"
 
-    # --------------------- events & helpers ---------------------
+        # --------------------- events & helpers ---------------------
     def wheelEvent(self, event):
+        """wheel event."""
         # Require Ctrl only if configured
         if self._wheel_zoom_requires_ctrl and not (
             event.modifiers() & Qt.KeyboardModifier.ControlModifier
@@ -416,6 +418,7 @@ class ImageView(QGraphicsView):
         event.accept()
 
     def resizeEvent(self, event):
+        """resize event."""
         super().resizeEvent(event)
         # Keep fit behavior on resize
         if getattr(self, "_mode", None) == "fit":
@@ -437,6 +440,7 @@ class ImageView(QGraphicsView):
         return (width <= viewport_width) and (height <= viewport_height)
 
     def _remove_overlay_item(self, item) -> None:
+        """_remove_overlay_item."""
         try:
             scene = item.scene()
         except RuntimeError:
@@ -494,6 +498,7 @@ class ImageView(QGraphicsView):
 
     # ---------------- Mouse handling for drawing ----------------
     def mousePressEvent(self, event):
+        """Mouse press event."""
         scene_pos = None
         if event.button() == Qt.LeftButton and self.scene():
             candidate = self.mapToScene(event.pos())
@@ -562,6 +567,7 @@ class ImageView(QGraphicsView):
         super().mousePressEvent(event)
 
     def mouseDoubleClickEvent(self, event):
+        """Mouse double click event."""
         if event.button() == Qt.LeftButton and self.scene():
             candidate = self.mapToScene(event.pos())
             rect = self._scene.sceneRect() if self._scene else None
@@ -576,6 +582,7 @@ class ImageView(QGraphicsView):
         super().mouseDoubleClickEvent(event)
 
     def mouseMoveEvent(self, event):
+        """Mouse move event."""
         if (
             self._draw_mode
             and self._tmp_item
@@ -597,6 +604,13 @@ class ImageView(QGraphicsView):
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
+        """mouseReleaseEvent.
+
+        Parameters
+        ----------
+        event : type
+        Description.
+        """
         if self._draw_mode and event.button() == Qt.LeftButton and self.scene():
             if self._tmp_item:
                 if self._draw_mode == DRAW_RECT and isinstance(

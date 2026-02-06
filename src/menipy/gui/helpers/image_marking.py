@@ -1,6 +1,4 @@
-"""
-Interactive image marking and annotation tools.
-"""
+"""Interactive image marking and annotation tools."""
 
 from __future__ import annotations
 
@@ -40,6 +38,17 @@ class ImageMarkerHelper(QObject):
         controller: PreprocessingPipelineController,
         parent: Optional[QObject] = None,
     ) -> None:
+        """Initialize.
+
+        Parameters
+        ----------
+        preview_panel : PreviewPanel
+            Preview panel widget.
+        controller : PreprocessingPipelineController
+            Preprocessing pipeline controller.
+        parent : QObject, optional
+            Parent object.
+        """
         super().__init__(parent or preview_panel.panel)
         self._panel = preview_panel
         self._controller = controller
@@ -58,9 +67,9 @@ class ImageMarkerHelper(QObject):
         controller.stateChanged.connect(self._on_state_changed)
         self._sync_overlays()
 
-    # ------------------------------------------------------------------
-    # Slots
-    # ------------------------------------------------------------------
+        # ------------------------------------------------------------------
+        # Slots
+        # ------------------------------------------------------------------
     def _on_point_clicked(self, point: QPointF, button: int, modifiers: int) -> None:
         if self._view is None:
             return

@@ -1,6 +1,4 @@
-"""
-Widgets package for ADSA UI.
-"""
+"""Widgets package for ADSA UI."""
 from menipy.gui.widgets.experiment_card import (
     ExperimentCard,
     EXPERIMENT_DEFINITIONS,

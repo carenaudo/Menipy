@@ -15,6 +15,13 @@ from menipy.common.registry import PREPROCESSORS
 
 class MockContext:
     def __init__(self, pipeline_name):
+    """Initialize.
+
+    Parameters
+    ----------
+    pipeline_name : type
+        Description.
+    """
         self.pipeline_name = pipeline_name
         self.auto_detect_features = True
 

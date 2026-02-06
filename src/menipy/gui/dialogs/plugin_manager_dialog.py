@@ -1,6 +1,4 @@
-"""
-Dialog for managing and configuring plugins.
-"""
+"""Dialog for managing and configuring plugins."""
 
 from __future__ import annotations
 import json
@@ -98,6 +96,8 @@ class PluginManagerDialog(QDialog):
     # --------------------------- actions -------------------------------------
 
     def refresh(self):
+        """refresh.
+        """
         self._updating = True
         rows = self.vm.rows()  # list of tuples from DB
         t = self.ui.pluginsTable

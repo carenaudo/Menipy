@@ -358,7 +358,7 @@ class AutoCalibrator:
         """Detect drop contour and contact points for sessile.
         
         For sessile drops, the contour must:
-        - Be well below the needle (50px gap minimum)
+            - Be well below the needle (50px gap minimum)
         - Touch the substrate line
         - Not be rectangular (ROI boundaries)
         """
@@ -525,7 +525,7 @@ class AutoCalibrator:
                 dome_points = sorted(dome_points, key=lambda p: p[0])
                 
                 # Build a closed polygon:
-                # 1. Start at left contact point (on substrate)
+                    # 1. Start at left contact point (on substrate)
                 # 2. Trace dome contour from left to right
                 # 3. End at right contact point (on substrate)
                 # 4. Close back to left contact point (the baseline)

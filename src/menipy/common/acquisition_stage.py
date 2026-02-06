@@ -21,7 +21,7 @@ def do_acquisition(ctx: Context, logger: logging.Logger) -> Context:
     
     Handles image loading from multiple sources with consistent behavior:
     
-    1. Return early if frames already exist
+        1. Return early if frames already exist
     2. Wrap numpy array in Frame if ctx.image is ndarray
     3. Load from ctx.image if it's a string path
     4. Load from ctx.image_path if provided

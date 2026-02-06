@@ -32,6 +32,15 @@ class UtilitiesDialog(QDialog):
     utility_run = Signal(str, dict)  # utility_name, results
     
     def __init__(self, image: np.ndarray | None = None, parent=None):
+        """Initialize.
+
+        Parameters
+        ----------
+        image : type
+        Description.
+        parent : type
+        Description.
+        """
         super().__init__(parent)
         self.setWindowTitle("🔧 Utilities")
         self.setMinimumSize(700, 500)

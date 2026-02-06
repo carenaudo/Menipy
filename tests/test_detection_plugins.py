@@ -88,6 +88,7 @@ class TestPluginRegistration:
         assert "pendant" in DROP_DETECTORS
     
     def test_apex_detectors_registered(self):
+        """test_apex_detectors_registered."""
         assert "sessile" in APEX_DETECTORS
         assert "pendant" in APEX_DETECTORS
         assert "auto" in APEX_DETECTORS
@@ -97,6 +98,7 @@ class TestNeedleDetector:
     """Tests for needle detection plugin."""
     
     def test_sessile_needle_detection(self):
+        """test_sessile_needle_detection."""
         image = create_sessile_test_image()
         detector = NEEDLE_DETECTORS["sessile"]
         
@@ -108,6 +110,7 @@ class TestNeedleDetector:
         assert w > 0 and h > 0
     
     def test_sessile_no_needle(self):
+        """test_sessile_no_needle."""
         # Image with no needle (just drop)
         image = np.full((480, 640, 3), 200, dtype=np.uint8)
         cv2.ellipse(image, (320, 350), (80, 50), 0, 0, 360, (50, 50, 50), -1)
@@ -125,6 +128,7 @@ class TestSubstrateDetector:
     """Tests for substrate detection plugin."""
     
     def test_gradient_detection(self):
+        """test_gradient_detection."""
         image = create_sessile_test_image(substrate_y=380)
         detector = SUBSTRATE_DETECTORS["gradient"]
         
@@ -143,6 +147,7 @@ class TestDropDetector:
     """Tests for drop detection plugin."""
     
     def test_sessile_drop_detection(self):
+        """test_sessile_drop_detection."""
         image = create_sessile_test_image()
         detector = DROP_DETECTORS["sessile"]
         
@@ -155,6 +160,7 @@ class TestDropDetector:
             assert len(contour) > 0
     
     def test_pendant_drop_detection(self):
+        """Test_pendant_drop_detection."""
         image = create_pendant_test_image()
         detector = DROP_DETECTORS["pendant"]
         
@@ -206,6 +212,7 @@ class TestApexDetector:
     """Tests for apex detection plugin."""
     
     def test_pendant_apex(self):
+        """Test_pendant_apex."""
         # Create simple contour
         contour = np.array([
             [320, 100],  # Top
@@ -222,6 +229,7 @@ class TestApexDetector:
         assert y == 350  # Bottom point
     
     def test_sessile_apex(self):
+        """Test_sessile_apex."""
         # Create simple dome contour
         contour = np.array([
             [240, 400],  # Left base
@@ -243,6 +251,7 @@ class TestROIDetector:
     """Tests for ROI detection plugin."""
     
     def test_sessile_roi_with_data(self):
+        """Test_sessile_roi_with_data."""
         image = create_sessile_test_image()
         drop_contour = np.array([
             [240, 350], [320, 300], [400, 350], [320, 400]
@@ -261,6 +270,7 @@ class TestROIDetector:
         assert w > 0 and h > 0
     
     def test_pendant_roi_with_data(self):
+        """Test_pendant_roi_with_data."""
         image = create_pendant_test_image()
         drop_contour = np.array([
             [280, 100], [360, 100], [360, 320], [280, 320]

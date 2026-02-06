@@ -20,12 +20,12 @@ class BaseExperimentWindow(QWidget):
     Abstract base class for experiment analysis windows.
     
     Provides a consistent three-panel layout:
-    - Left panel (300px): Setup and control
+        - Left panel (300px): Setup and control
     - Center panel (flexible): Visualization
     - Right panel (350px): Results
     
     Subclasses must implement:
-    - _create_left_panel_content()
+        - _create_left_panel_content()
     - _create_center_panel_content()
     - _create_right_panel_content()
     - get_experiment_type()
@@ -43,6 +43,13 @@ class BaseExperimentWindow(QWidget):
     notification_requested = Signal(str, str)  # message, type
     
     def __init__(self, parent=None):
+        """Initialize.
+
+        Parameters
+        ----------
+        parent : type
+        Description.
+        """
         super().__init__(parent)
         self.setObjectName("experimentWindow")
         self._setup_ui()

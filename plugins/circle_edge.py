@@ -12,6 +12,22 @@ except Exception:
 
 
 def _fallback_circle(h, w, points=200):
+    """Generate a parametric circle contour.
+    
+    Parameters
+    ----------
+    h : int
+        Image height.
+    w : int
+        Image width.
+    points : int, optional
+        Number of points to generate on the circle. Default is 200.
+    
+    Returns
+    -------
+    ndarray
+        Circle contour as (N, 2) array of (x, y) coordinates.
+    """
     r = min(h, w) * 0.25
     t = np.linspace(0.0, 2 * np.pi, points)
     return np.column_stack([w / 2 + r * np.cos(t), h / 2 + r * np.sin(t)])

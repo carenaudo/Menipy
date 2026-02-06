@@ -66,6 +66,22 @@ def find_contact_intersections(
     d = y - substrate_y
 
     def locate_contact(x_arr, d_arr, from_left=True):
+        """locate contact.
+
+        Parameters
+        ----------
+        x_arr : type
+        Description.
+        d_arr : type
+        Description.
+        from_left : type
+        Description.
+
+        Returns
+        -------
+        type
+        Description.
+        """
         if not from_left:
             x_arr = x_arr[::-1]
             d_arr = d_arr[::-1]
@@ -88,10 +104,11 @@ def find_contact_intersections(
             
         x_c = x_arr[i] + t * (x_arr[i+1] - x_arr[i])
         return np.array([x_c, substrate_y])
+    # locate_contact end
 
     left_cp = locate_contact(x, d, from_left=True)
     right_cp = locate_contact(x, d, from_left=False)
-    
+
     return left_cp, right_cp
 
 
@@ -116,7 +133,7 @@ def smooth_contour(
         
     Returns:
         Dictionary with smoothing results:
-        - x_smooth, y_smooth: Smoothed coordinates
+            - x_smooth, y_smooth: Smoothed coordinates
         - apex: (x, y) tuple of the apex point
         - left_contact, right_contact: Contact points (or None)
         - left_slope, right_slope: Tangent slopes at contacts

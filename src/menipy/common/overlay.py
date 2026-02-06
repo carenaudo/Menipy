@@ -1,7 +1,5 @@
 # src/menipy/common/overlay.py
-"""
-Overlay drawing utilities for visualizing analysis results on images.
-"""
+"""Overlay drawing utilities for visualizing analysis results on images."""
 from __future__ import annotations
 from typing import Iterable, Tuple, Union, Dict, Any
 import numpy as np
@@ -49,9 +47,7 @@ def _require_cv2():
 
 
 def _as_ndarray(img_like: Any) -> np.ndarray:
-    """
-    Accept either a raw numpy image or a Frame-like object with an `.image` attribute.
-    """
+    """Accept either a raw numpy image or a Frame-like object with an `.image` attribute."""
     try:
         if hasattr(img_like, "image"):
             return img_like.image  # type: ignore[return-value]

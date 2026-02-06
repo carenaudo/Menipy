@@ -1,6 +1,4 @@
-"""
-Dialog for overlay visualization settings.
-"""
+"""Dialog for overlay visualization settings."""
 
 from __future__ import annotations
 
@@ -237,6 +235,7 @@ class OverlayConfigDialog(QDialog):
             pass
 
     def get_config(self) -> Dict[str, Any]:
+        """Get_config."""
         return {
             "contour_visible": bool(self.contour_visible.isChecked()),
             "contour_color": getattr(self, "_contour_color", QColor("red")).name(),
@@ -253,6 +252,13 @@ class OverlayConfigDialog(QDialog):
         }
 
     def set_config(self, cfg: Optional[Dict[str, Any]]) -> None:
+        """Set config.
+
+        Parameters
+        ----------
+        cfg : type
+        Description.
+        """
         if not cfg:
             return
         try:

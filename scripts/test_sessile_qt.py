@@ -291,6 +291,7 @@ class BenchResult:
     samples_ms: list[float] = field(default_factory=list)
 
     def stats(self) -> dict[str, float]:
+    """stats."""
         if not self.samples_ms:
             return {}
         return {
@@ -718,26 +719,32 @@ class TestViewerWindow(QMainWindow):
         controls_layout.addStretch()
 
     def toggle_contours(self, checked):
+    """toggle_contours."""
         self.viewer.show_contours = checked
         self.viewer.repaint()
 
     def toggle_savgol(self, checked):
+            """Toggle_savgol."""
         self.viewer.show_savgol = checked
         self.viewer.repaint()
 
     def toggle_contacts(self, checked):
+            """Toggle_contacts."""
         self.viewer.show_contacts = checked
         self.viewer.repaint()
 
     def toggle_text(self, checked):
+            """Toggle_text."""
         self.viewer.show_text = checked
         self.viewer.repaint()
 
     def toggle_tangents(self, checked):
+            """Toggle_tangents."""
         self.viewer.show_tangents = checked
         self.viewer.repaint()
 
     def toggle_all_contours(self, checked):
+            """Toggle_all_contours."""
         self.viewer.show_all_contours = checked
         self.viewer.repaint()
 
@@ -1004,6 +1011,18 @@ def find_contact_points(x, y, substrate_y, apex_idx=None):
          apex_idx = len(x) // 2
 
     def locate_contact(indices):
+    """locate contact.
+
+    Parameters
+    ----------
+    indices : type
+        Description.
+
+    Returns
+    -------
+    type
+        Description.
+    """
         # Scan indices in order. Look for sign change.
         # d[i] * d[i+1] < 0
         

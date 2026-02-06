@@ -1,6 +1,4 @@
-"""
-Simple runner for executing pipelines non-interactively.
-"""
+"""Simple runner for executing pipelines non-interactively."""
 
 from __future__ import annotations
 
@@ -28,6 +26,17 @@ class PipelineRunner:
         preprocessing_settings: Optional[PreprocessingSettings] = None,
         edge_detection_settings: Optional[EdgeDetectionSettings] = None,
     ):
+        """Initialize.
+
+        Parameters
+        ----------
+        pipeline_name : str
+            Name of the pipeline to create.
+        preprocessing_settings : PreprocessingSettings, optional
+            Preprocessing settings.
+        edge_detection_settings : EdgeDetectionSettings, optional
+            Edge detection settings.
+        """
         pipeline_cls = PIPELINE_MAP.get(pipeline_name.lower())
         if not pipeline_cls:
             raise PipelineError(f"Unknown pipeline '{pipeline_name}'")

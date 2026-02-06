@@ -1,6 +1,4 @@
-"""
-Dialog for configuring image acquisition settings.
-"""
+"""Dialog for configuring image acquisition settings."""
 
 from __future__ import annotations
 
@@ -42,4 +40,11 @@ class AcquisitionConfigDialog(QDialog):
 
     @property
     def contact_line_required(self) -> bool:
+        """contact line required.
+
+        Returns
+        -------
+        type
+        Description.
+        """
         return self._contact_line_checkbox.isChecked()

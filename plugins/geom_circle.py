@@ -3,9 +3,7 @@ import numpy as np
 
 
 def geom_circle(ctx):
-    """
-    Geometry plugin that estimates a bounding circle center from contour points.
-    """
+    """Geometry plugin that estimates a bounding circle center from contour points."""
     # attach a simple geometry approximation if contour present
     contour = getattr(ctx, "contour", None)
     if contour is not None:

@@ -18,7 +18,7 @@ class PendantResultsWidget(QFrame):
     Widget showing pendant drop measurement results.
     
     Displays:
-    - Surface/Interfacial tension (primary result)
+        - Surface/Interfacial tension (primary result)
     - Bond number
     - Drop shape parameters (De, Ds, apex radius)
     - Confidence indicator
@@ -246,6 +246,20 @@ class PendantResultsWidget(QFrame):
         self._reset_display()
 
         def fmt(val, pattern):
+            """fmt.
+
+            Parameters
+            ----------
+            val : type
+            Description.
+            pattern : type
+            Description.
+
+            Returns
+            -------
+            type
+            Description.
+            """
             try:
                 if val is None:
                     return None
@@ -255,9 +269,9 @@ class PendantResultsWidget(QFrame):
             except Exception:
                 return None
 
-        # Surface tension
-        if "surface_tension" in results:
-            st = results["surface_tension"]
+            # Surface tension
+            if "surface_tension" in results:
+                st = results["surface_tension"]
             if isinstance(st, (int, float)) and math.isfinite(st):
                 self._surface_tension_label.setText(f"γ = {st:.2f} mN/m")
             else:
@@ -267,32 +281,32 @@ class PendantResultsWidget(QFrame):
                 unc = results["surface_tension_uncertainty"]
                 self._st_uncertainty_label.setText(f"± {unc:.2f} mN/m")
         
-        # Shape parameters
-        if val := fmt(results.get("de"), "{:.3f} mm"):
-            self._de_label.setText(val)
-        if val := fmt(results.get("ds"), "{:.3f} mm"):
-            self._ds_label.setText(val)
-        if val := fmt(results.get("apex_radius"), "{:.3f} mm"):
-            self._apex_label.setText(val)
-        if val := fmt(results.get("bond_number"), "{:.4f}"):
-            self._bond_label.setText(val)
+            # Shape parameters
+            if val := fmt(results.get("de"), "{:.3f} mm"):
+                self._de_label.setText(val)
+            if val := fmt(results.get("ds"), "{:.3f} mm"):
+                self._ds_label.setText(val)
+            if val := fmt(results.get("apex_radius"), "{:.3f} mm"):
+                self._apex_label.setText(val)
+            if val := fmt(results.get("bond_number"), "{:.4f}"):
+                self._bond_label.setText(val)
         
-        # Physical properties
-        if val := fmt(results.get("volume"), "{:.2f} μL"):
-            self._volume_label.setText(val)
-        if val := fmt(results.get("surface_area"), "{:.2f} mm²"):
-            self._area_label.setText(val)
-        if val := fmt(results.get("density_diff"), "{:.1f} kg/m³"):
-            self._density_diff_label.setText(val)
+            # Physical properties
+            if val := fmt(results.get("volume"), "{:.2f} μL"):
+                self._volume_label.setText(val)
+            if val := fmt(results.get("surface_area"), "{:.2f} mm²"):
+                self._area_label.setText(val)
+            if val := fmt(results.get("density_diff"), "{:.1f} kg/m³"):
+                self._density_diff_label.setText(val)
         
-        # Fit quality
-        if val := fmt(results.get("rmse"), "{:.4f}"):
-            self._rmse_label.setText(val)
-        if val := fmt(results.get("iterations"), "{}"):
-            self._iterations_label.setText(val)
+            # Fit quality
+            if val := fmt(results.get("rmse"), "{:.4f}"):
+                self._rmse_label.setText(val)
+            if val := fmt(results.get("iterations"), "{}"):
+                self._iterations_label.setText(val)
         
-        # Confidence
-        self._set_confidence(results.get("confidence"))
+            # Confidence
+            self._set_confidence(results.get("confidence"))
     
     def clear(self):
         """Clear all displayed results."""

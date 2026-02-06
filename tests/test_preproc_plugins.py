@@ -65,9 +65,11 @@ class TestPluginRegistration:
         assert "detect_drop" in PREPROCESSORS
     
     def test_detect_roi_registered(self):
+        """test_detect_roi_registered."""
         assert "detect_roi" in PREPROCESSORS
     
     def test_auto_detect_registered(self):
+        """test_auto_detect_registered."""
         assert "auto_detect" in PREPROCESSORS
 
 
@@ -75,6 +77,7 @@ class TestSubstratePreprocessor:
     """Tests for substrate detection preprocessor."""
     
     def test_detects_substrate_line(self):
+        """test_detects_substrate_line."""
         ctx = MockContext()
         ctx.image = create_sessile_test_image(substrate_y=380)
         
@@ -91,6 +94,7 @@ class TestNeedlePreprocessor:
     """Tests for needle detection preprocessor."""
     
     def test_detects_sessile_needle(self):
+        """test_detects_sessile_needle."""
         ctx = MockContext("sessile")
         ctx.image = create_sessile_test_image()
         
@@ -106,6 +110,7 @@ class TestDropPreprocessor:
     """Tests for drop detection preprocessor."""
     
     def test_detects_sessile_drop(self):
+        """test_detects_sessile_drop."""
         ctx = MockContext("sessile")
         ctx.image = create_sessile_test_image()
         ctx.substrate_line = ((0, 400), (640, 400))
@@ -116,6 +121,7 @@ class TestDropPreprocessor:
         assert ctx.detected_contour is not None
     
     def test_detects_pendant_drop(self):
+        """Test_detects_pendant_drop."""
         ctx = MockContext("pendant")
         ctx.image = create_pendant_test_image()
         
@@ -129,6 +135,7 @@ class TestROIPreprocessor:
     """Tests for ROI detection preprocessor."""
     
     def test_computes_sessile_roi(self):
+        """Test_computes_sessile_roi."""
         ctx = MockContext("sessile")
         ctx.image = create_sessile_test_image()
         ctx.substrate_line = ((0, 400), (640, 400))
@@ -148,6 +155,7 @@ class TestAutoDetectPreprocessor:
     """Tests for combined auto_detect preprocessor."""
     
     def test_sessile_full_detection(self):
+        """Test_sessile_full_detection."""
         ctx = MockContext("sessile")
         ctx.image = create_sessile_test_image()
         
@@ -158,6 +166,7 @@ class TestAutoDetectPreprocessor:
         assert hasattr(ctx, "detected_roi")
     
     def test_pendant_full_detection(self):
+        """Test_pendant_full_detection."""
         ctx = MockContext("pendant")
         ctx.image = create_pendant_test_image()
         
@@ -167,6 +176,7 @@ class TestAutoDetectPreprocessor:
         assert hasattr(ctx, "detected_roi")
     
     def test_respects_auto_detect_flag(self):
+        """Test_respects_auto_detect_flag."""
         ctx = MockContext("sessile")
         ctx.image = create_sessile_test_image()
         ctx.auto_detect_features = False

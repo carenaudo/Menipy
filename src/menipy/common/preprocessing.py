@@ -1,6 +1,4 @@
-"""
-Preprocessing pipeline stage implementation.
-"""
+"""Preprocessing pipeline stage implementation."""
 
 from __future__ import annotations
 

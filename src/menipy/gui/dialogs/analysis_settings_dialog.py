@@ -462,6 +462,7 @@ class AnalysisSettingsDialog(QDialog):
         self._geometry_summary.setText(f"Detector: {self._geometry_config.get('detector')}")
 
     def _open_overlay_dialog(self):
+        """_open_overlay_dialog."""
         dlg = OverlayConfigDialog(parent=self)
         dlg.set_config(self._overlay_config)
         dlg.configApplied.connect(lambda cfg: setattr(self, '_overlay_config', cfg))
@@ -471,12 +472,14 @@ class AnalysisSettingsDialog(QDialog):
 
 
     def _preproc_summary(self) -> str:
+        """_preproc_summary."""
         ad = "on" if self._preproc.auto_detect.enabled else "off"
         filt = self._preproc.filtering.method
         return f"Auto-detect: {ad} • Filter: {filt} • Resize: {self._preproc.resize.target_width or 'auto'}"
 
     # ------------------------------------------------------------------ persistence
     def _load_saved(self) -> dict:
+        """_load_saved."""
         key = f"analysis/{self._pipeline_name}"
         raw = self._settings_store.value(key)
         if not raw:
@@ -506,14 +509,23 @@ class AnalysisSettingsDialog(QDialog):
 
     # ------------------------------------------------------------------ results
     def preprocessing_settings(self) -> PreprocessingSettings:
+        """Preprocessing_settings."""
         return self._preproc
 
     def edge_settings(self) -> EdgeDetectionSettings:
+        """Edge_settings."""
         # settings are updated via configuration dialog or internal state
         self._edge.method = self._edge_method.currentText()
         return self._edge
 
     def pipeline_settings(self) -> Optional[dict]:
+        """pipeline settings.
+
+        Returns
+        -------
+        type
+        Description.
+        """
         settings = {}
         if self._pipeline_widget and hasattr(self._pipeline_widget, "get_settings"):
             settings = self._pipeline_widget.get_settings() or {}

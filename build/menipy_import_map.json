@@ -34,15 +34,18 @@
       "src/menipy/models/context.py"
     ],
     "src/menipy/common/detection_helpers.py": [
+      "src/menipy/common/image_utils.py",
       "src/menipy/common/registry.py"
     ],
     "src/menipy/common/edge_detection.py": [
       "src/menipy/common/__init__.py",
+      "src/menipy/common/image_utils.py",
       "src/menipy/common/registry.py",
       "src/menipy/models/config.py",
       "src/menipy/models/geometry.py"
     ],
     "src/menipy/common/geometry.py": [],
+    "src/menipy/common/image_utils.py": [],
     "src/menipy/common/material_db.py": [],
     "src/menipy/common/metrics.py": [],
     "src/menipy/common/optimization.py": [],
@@ -90,6 +93,10 @@
     ],
     "src/menipy/gui/app.py": [
       "src/menipy/gui/main_window.py"
+    ],
+    "src/menipy/gui/components/plugin_settings_widget.py": [
+      "src/menipy/common/plugin_settings.py",
+      "src/menipy/gui/dialogs/plugin_config_dialog.py"
     ],
     "src/menipy/gui/controllers/camera_manager.py": [
       "src/menipy/gui/controllers/setup_panel_controller.py",
@@ -165,8 +172,16 @@
       "src/menipy/common/__init__.py"
     ],
     "src/menipy/gui/dialogs/analysis_settings_dialog.py": [
+      "src/menipy/common/plugin_settings.py",
+      "src/menipy/common/registry.py",
+      "src/menipy/gui/dialogs/edge_detection_config_dialog.py",
+      "src/menipy/gui/dialogs/geometry_config_dialog.py",
+      "src/menipy/gui/dialogs/overlay_config_dialog.py",
+      "src/menipy/gui/dialogs/physics_config_dialog.py",
+      "src/menipy/gui/dialogs/plugin_config_dialog.py",
       "src/menipy/gui/dialogs/preprocessing_config_dialog.py",
-      "src/menipy/models/config.py"
+      "src/menipy/models/config.py",
+      "src/menipy/pipelines/discover.py"
     ],
     "src/menipy/gui/dialogs/calibration_wizard.py": [
       "src/menipy/common/auto_calibrator.py",
@@ -178,7 +193,13 @@
     "src/menipy/gui/dialogs/calibration_wizard_dialog.py": [
       "src/menipy/common/auto_calibrator.py"
     ],
+    "src/menipy/gui/dialogs/detector_test_dialog.py": [
+      "src/menipy/common/registry.py",
+      "src/menipy/models/config.py"
+    ],
     "src/menipy/gui/dialogs/edge_detection_config_dialog.py": [
+      "src/menipy/common/registry.py",
+      "src/menipy/gui/components/plugin_settings_widget.py",
       "src/menipy/models/config.py"
     ],
     "src/menipy/gui/dialogs/geometry_config_dialog.py": [],
@@ -193,7 +214,10 @@
     "src/menipy/gui/dialogs/physics_config_dialog.py": [
       "src/menipy/models/config.py"
     ],
+    "src/menipy/gui/dialogs/plugin_config_dialog.py": [],
     "src/menipy/gui/dialogs/plugin_manager_dialog.py": [
+      "src/menipy/common/plugin_settings.py",
+      "src/menipy/gui/dialogs/plugin_config_dialog.py",
       "src/menipy/gui/services/settings_service.py",
       "src/menipy/gui/viewmodels/plugins_vm.py"
     ],
@@ -323,13 +347,18 @@
       "src/menipy/gui/views/tilted_sessile_window.py"
     ],
     "src/menipy/gui/views/adsa_main_window.py": [
+      "src/menipy/common/plugin_db.py",
       "src/menipy/common/registry.py",
       "src/menipy/gui/__init__.py",
       "src/menipy/gui/dialogs/analysis_settings_dialog.py",
+      "src/menipy/gui/dialogs/detector_test_dialog.py",
       "src/menipy/gui/dialogs/help_dialog.py",
       "src/menipy/gui/dialogs/material_dialog.py",
+      "src/menipy/gui/dialogs/plugin_manager_dialog.py",
       "src/menipy/gui/dialogs/settings_dialog.py",
       "src/menipy/gui/dialogs/utilities_dialog.py",
+      "src/menipy/gui/services/settings_service.py",
+      "src/menipy/gui/viewmodels/plugins_vm.py",
       "src/menipy/gui/views/experiment_selector.py",
       "src/menipy/gui/views/pendant_drop_window.py",
       "src/menipy/gui/views/sessile_drop_window.py",
@@ -686,7 +715,8 @@
       "src/menipy/cli/__init__.py",
       "src/menipy/common/plugins.py",
       "src/menipy/gui/controllers/pipeline_ui_manager.py",
-      "src/menipy/gui/services/plugin_service.py"
+      "src/menipy/gui/services/plugin_service.py",
+      "src/menipy/gui/views/adsa_main_window.py"
     ],
     "src/menipy/common/plugins.py": [
       "src/menipy/cli.py",
@@ -713,6 +743,7 @@
       "src/menipy/gui/controllers/pipeline_controller.py",
       "src/menipy/gui/controllers/pipeline_ui_manager.py",
       "src/menipy/gui/controllers/setup_panel_controller.py",
+      "src/menipy/gui/dialogs/analysis_settings_dialog.py",
       "src/menipy/gui/main_window.py",
       "src/menipy/gui/panels/setup_panel.py",
       "src/menipy/gui/services/pipeline_runner.py",
@@ -770,6 +801,7 @@
       "src/menipy/gui/controllers/pipeline_controller.py",
       "src/menipy/gui/controllers/preprocessing_controller.py",
       "src/menipy/gui/dialogs/analysis_settings_dialog.py",
+      "src/menipy/gui/dialogs/detector_test_dialog.py",
       "src/menipy/gui/dialogs/edge_detection_config_dialog.py",
       "src/menipy/gui/dialogs/physics_config_dialog.py",
       "src/menipy/gui/dialogs/preprocessing_config_dialog.py",
@@ -783,11 +815,18 @@
       "src/menipy/pipelines/sessile/stages.py",
       "src/menipy/pipelines/utils.py"
     ],
+    "src/menipy/common/image_utils.py": [
+      "src/menipy/common/detection_helpers.py",
+      "src/menipy/common/edge_detection.py"
+    ],
     "src/menipy/common/registry.py": [
       "src/menipy/common/detection_helpers.py",
       "src/menipy/common/edge_detection.py",
       "src/menipy/common/plugin_settings.py",
       "src/menipy/common/plugins.py",
+      "src/menipy/gui/dialogs/analysis_settings_dialog.py",
+      "src/menipy/gui/dialogs/detector_test_dialog.py",
+      "src/menipy/gui/dialogs/edge_detection_config_dialog.py",
       "src/menipy/gui/dialogs/utilities_dialog.py",
       "src/menipy/gui/views/adsa_main_window.py",
       "src/menipy/pipelines/pendant/preprocessing.py",
@@ -859,6 +898,16 @@
       "src/menipy/gui/controllers/image_manager.py",
       "src/menipy/gui/main_controller.py"
     ],
+    "src/menipy/common/plugin_settings.py": [
+      "src/menipy/gui/components/plugin_settings_widget.py",
+      "src/menipy/gui/dialogs/analysis_settings_dialog.py",
+      "src/menipy/gui/dialogs/plugin_manager_dialog.py"
+    ],
+    "src/menipy/gui/dialogs/plugin_config_dialog.py": [
+      "src/menipy/gui/components/plugin_settings_widget.py",
+      "src/menipy/gui/dialogs/analysis_settings_dialog.py",
+      "src/menipy/gui/dialogs/plugin_manager_dialog.py"
+    ],
     "src/menipy/gui/controllers/setup_panel_controller.py": [
       "src/menipy/gui/controllers/camera_manager.py",
       "src/menipy/gui/controllers/image_manager.py",
@@ -893,16 +942,20 @@
       "src/menipy/gui/controllers/dialog_coordinator.py"
     ],
     "src/menipy/gui/dialogs/edge_detection_config_dialog.py": [
-      "src/menipy/gui/controllers/dialog_coordinator.py"
+      "src/menipy/gui/controllers/dialog_coordinator.py",
+      "src/menipy/gui/dialogs/analysis_settings_dialog.py"
     ],
     "src/menipy/gui/dialogs/geometry_config_dialog.py": [
-      "src/menipy/gui/controllers/dialog_coordinator.py"
+      "src/menipy/gui/controllers/dialog_coordinator.py",
+      "src/menipy/gui/dialogs/analysis_settings_dialog.py"
     ],
     "src/menipy/gui/dialogs/overlay_config_dialog.py": [
-      "src/menipy/gui/controllers/dialog_coordinator.py"
+      "src/menipy/gui/controllers/dialog_coordinator.py",
+      "src/menipy/gui/dialogs/analysis_settings_dialog.py"
     ],
     "src/menipy/gui/dialogs/physics_config_dialog.py": [
-      "src/menipy/gui/controllers/dialog_coordinator.py"
+      "src/menipy/gui/controllers/dialog_coordinator.py",
+      "src/menipy/gui/dialogs/analysis_settings_dialog.py"
     ],
     "src/menipy/gui/dialogs/preprocessing_config_dialog.py": [
       "src/menipy/gui/controllers/dialog_coordinator.py",
@@ -928,11 +981,13 @@
       "src/menipy/gui/panels/results_panel.py"
     ],
     "src/menipy/gui/dialogs/plugin_manager_dialog.py": [
-      "src/menipy/gui/controllers/plugins_controller.py"
+      "src/menipy/gui/controllers/plugins_controller.py",
+      "src/menipy/gui/views/adsa_main_window.py"
     ],
     "src/menipy/gui/viewmodels/plugins_vm.py": [
       "src/menipy/gui/controllers/plugins_controller.py",
-      "src/menipy/gui/dialogs/plugin_manager_dialog.py"
+      "src/menipy/gui/dialogs/plugin_manager_dialog.py",
+      "src/menipy/gui/views/adsa_main_window.py"
     ],
     "src/menipy/gui/controllers/sop_controller.py": [
       "src/menipy/gui/controllers/setup_panel_controller.py",
@@ -958,12 +1013,16 @@
       "src/menipy/gui/dialogs/calibration_wizard.py",
       "src/menipy/gui/views/sessile_drop_window.py"
     ],
+    "src/menipy/gui/components/plugin_settings_widget.py": [
+      "src/menipy/gui/dialogs/edge_detection_config_dialog.py"
+    ],
     "src/menipy/common/material_db.py": [
       "src/menipy/gui/dialogs/material_dialog.py"
     ],
     "src/menipy/gui/services/settings_service.py": [
       "src/menipy/gui/dialogs/plugin_manager_dialog.py",
-      "src/menipy/gui/main_window.py"
+      "src/menipy/gui/main_window.py",
+      "src/menipy/gui/views/adsa_main_window.py"
     ],
     "src/menipy/gui/controllers/camera_manager.py": [
       "src/menipy/gui/main_controller.py"
@@ -1070,6 +1129,9 @@
       "src/menipy/gui/views/adsa_main_window.py"
     ],
     "src/menipy/gui/dialogs/analysis_settings_dialog.py": [
+      "src/menipy/gui/views/adsa_main_window.py"
+    ],
+    "src/menipy/gui/dialogs/detector_test_dialog.py": [
       "src/menipy/gui/views/adsa_main_window.py"
     ],
     "src/menipy/gui/dialogs/help_dialog.py": [

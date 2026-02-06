@@ -86,6 +86,8 @@ class SopController:
         return included
 
     def on_add_sop(self) -> None:
+        """Add on  sop.
+        """
         if not self.sops:
             QMessageBox.warning(self.window, "SOP", "SOP service is not available.")
             return
@@ -116,9 +118,9 @@ class SopController:
         except Exception:
             pass
 
-    # ------------------------------------------------------------------
-    # Internal helpers
-    # ------------------------------------------------------------------
+        # ------------------------------------------------------------------
+        # Internal helpers
+        # ------------------------------------------------------------------
 
     def _populate_steps_list(self) -> None:
         self._step_widgets.clear()

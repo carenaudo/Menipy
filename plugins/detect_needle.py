@@ -23,7 +23,12 @@ logger = logging.getLogger(__name__)
 # -----------------------------------------------------------------------------
 
 class NeedleSessileSettings(BaseModel):
-    """Settings for sessile drop needle detection."""
+    """Settings for sessile drop needle detection.
+    
+    Configuration parameters for controlling the adaptive thresholding-based
+    needle detection algorithm for sessile drops.
+    """
+
     model_config = ConfigDict(extra='ignore')
     
     clahe_clip_limit: float = Field(2.0, description="Contrast enhancement limit")
@@ -31,11 +36,17 @@ class NeedleSessileSettings(BaseModel):
     adaptive_c: int = Field(2, description="Threshold constant")
 
     def model_post_init(self, __context):
+        """Ensure adaptive block size is odd for cv2.adaptiveThreshold."""
         if self.adaptive_block_size % 2 == 0:
             self.adaptive_block_size += 1
 
 class NeedlePendantSettings(BaseModel):
-    """Settings for pendant drop needle detection."""
+    """Settings for pendant drop needle detection.
+    
+    Configuration parameters for controlling the shaft line analysis-based
+    needle detection algorithm for pendant drops.
+    """
+
     model_config = ConfigDict(extra='ignore')
     
     tolerance: int = Field(3, description="Pixel tolerance for shaft straightness")
@@ -55,8 +66,52 @@ def detect_needle_sessile(
     adaptive_c: int = 2,
     **kwargs
 ) -> Optional[Tuple[int, int, int, int]]:
-    """
-    Detect needle region for sessile drop (contour touching top border).
+    """Detect needle region in sessile drop images as contour touching top.
+    
+    This function detects the needle in sessile drop images by identifying
+    the contour that touches the top border of the image. The detection uses
+    adaptive thresholding with contrast-limited histogram equalization (CLAHE)
+    to enhance needle visibility.
+    
+    Parameters
+    ----------
+    image : np.ndarray
+        Input image as a 2D array (grayscale) or 3D array (BGR color).
+        If color image is provided, it is automatically converted to grayscale.
+    clahe_clip_limit : float, optional
+        CLAHE clip limit for contrast enhancement. Default is 2.0.
+    clahe_tile_size : Tuple[int, int], optional
+        CLAHE tile grid size as (height, width). Default is (8, 8).
+    adaptive_block_size : int, optional
+        Threshold block size for adaptive thresholding (must be odd).
+        Default is 21.
+    adaptive_c : int, optional
+        Threshold constant for adaptive thresholding. Default is 2.
+    **kwargs : dict
+        Additional keyword arguments including plugin_settings dictionary.
+    
+    Returns
+    -------
+    Optional[Tuple[int, int, int, int]]
+        Needle bounding box as (x, y, width, height) where the contour
+        touches the top border of the image. Returns None if no such
+        contour is detected.
+    
+    Raises
+    ------
+    None
+        Returns None instead of raising exceptions for invalid input.
+    
+    Notes
+    -----
+    The needle is identified as the first contour found in the filtered binary
+    image that has y-coordinate (top edge) less than 5 pixels from the image
+    top border. Morphological operations are applied to clean the binary image
+    before contour detection.
+    
+    See Also
+    --------
+    detect_needle_pendant : Detects needle for pendant drops
     """
     import cv2 
 
@@ -137,8 +192,58 @@ def detect_needle_pendant(
     tolerance: int = 3,
     **kwargs
 ) -> Optional[Tuple[Tuple[int, int, int, int], Tuple[Tuple[int, int], Tuple[int, int]]]]:
-    """
-    Detect needle region for pendant drop using shaft line analysis.
+    """Detect needle region and contact points for pendant drops.
+    
+    This function analyzes the pendant drop contour to locate the needle
+    shaft and determine the contact points where the drop touches the needle.
+    The detection is based on analyzing vertical contour positions within
+    defined tolerance limits to identify where the drop boundary deviates
+    from a straight needle shaft.
+    
+    Parameters
+    ----------
+    image : np.ndarray
+        Input image as a 2D array (grayscale) or 3D array (BGR color).
+        Used for contour visualization and validation.
+    drop_contour : Optional[np.ndarray], optional
+        Pre-detected drop contour from drop detection stage. Required for
+        identifying the needle shaft location from the drop extension.
+        Default is None.
+    tolerance : int, optional
+        Pixel tolerance for detecting deviation from the straight shaft.
+        Points within this tolerance are considered part of the shaft.
+        Default is 3 pixels.
+    **kwargs : dict
+        Additional keyword arguments, including:
+        - plugin_settings : dict, optional
+            Configuration dictionary with detector settings.
+    
+    Returns
+    -------
+    Optional[Tuple[Tuple[int, int, int, int], Tuple[Tuple[int, int], Tuple[int, int]]]]
+        Tuple containing:
+        - Needle bounding box as (x, y, width, height)
+        - Contact points as ((x_left, y_left), (x_right, y_right))
+        Returns None if drop_contour is missing or analysis fails.
+    
+    Raises
+    ------
+    None
+        Returns None instead of raising exceptions for invalid input.
+    
+    Notes
+    -----
+    The needle shaft is located by analyzing the upper portion of the drop
+    contour (first top_limit_offset pixels) and finding the median x-position
+    on each side. Contact points are identified where the drop extends beyond
+    the expected shaft width at each vertical level.
+    
+    The function returns both the needle bounding box for use in ROI detection
+    and the precise contact points for interfacial tension calculations.
+    
+    See Also
+    --------
+    detect_needle_sessile : Detects needle for sessile drops
     """
     import cv2 
 

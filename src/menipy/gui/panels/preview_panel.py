@@ -1,6 +1,4 @@
-"""
-Live preview panel for image display and interaction.
-"""
+"""Live preview panel for image display and interaction."""
 
 from __future__ import annotations
 
@@ -129,15 +127,19 @@ class PreviewPanel:
             self._on_line_drawn(line)
 
     def has_roi(self) -> bool:
+        """has_roi."""
         return self.roi_rect() is not None
 
     def has_needle(self) -> bool:
+        """has_needle."""
         return self.needle_rect() is not None
 
     def has_contact_line(self) -> bool:
+        """has_contact_line."""
         return self.contact_line_segment() is not None
 
     def roi_rect(self) -> tuple[int, int, int, int] | None:
+        """roi_rect."""
         rect = self._overlay_rect("roi")
         if rect is None:
             return None
@@ -154,6 +156,7 @@ class PreviewPanel:
         )
 
     def needle_rect(self) -> tuple[int, int, int, int] | None:
+        """needle_rect."""
         rect = self._overlay_rect("needle")
         if rect is None:
             return None
@@ -170,6 +173,13 @@ class PreviewPanel:
         )
 
     def contact_line_segment(self) -> tuple[tuple[int, int], tuple[int, int]] | None:
+        """contact line segment.
+
+        Returns
+        -------
+        type
+        Description.
+        """
         line = self._overlay_line("contact_line")
         if line is None:
             return None
@@ -197,6 +207,7 @@ class PreviewPanel:
     # ------------------------------------------------------------------
 
     def _configure_image_view(self) -> None:
+        """_configure_image_view."""
         try:
             self.image_view.set_auto_policy("preserve")
         except Exception:
@@ -207,6 +218,7 @@ class PreviewPanel:
             pass
 
     def _wire_buttons(self) -> None:
+        """_wire_buttons."""
         def _find_button(name: str) -> Optional[QToolButton | QPushButton]:
             button = self.panel.findChild(QToolButton, name)
             if button:

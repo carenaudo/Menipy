@@ -1,6 +1,4 @@
-"""
-Overlay management logic extracted from MainController.
-"""
+"""Overlay management logic extracted from MainController."""
 from __future__ import annotations
 
 import logging
@@ -20,6 +18,15 @@ class OverlayManager:
     """Manages drawing of overlays on the ImageView."""
 
     def __init__(self, image_view: ImageView, settings: Any):
+        """Initialize.
+
+        Parameters
+        ----------
+        image_view : type
+        Description.
+        settings : type
+        Description.
+        """
         self.image_view = image_view
         self.settings = settings
 
@@ -176,11 +183,11 @@ class OverlayManager:
             if right_pt is not None:
                 color = QColor(p_cfg.get('point_color', '#ff0000')) # Original code had red for right?
                 # Actually original code:
-                # Left: #00ff00 (Green)
+                    # Left: #00ff00 (Green)
                 # Right: #ff0000 (Red)
                 # But it read from config 'point_color' for both? 
                 # Original code:
-                # left: p_color = QColor(p_cfg.get('point_color', '#00ff00'))
+                    # left: p_color = QColor(p_cfg.get('point_color', '#00ff00'))
                 # right: p_color = QColor(p_cfg.get('point_color', '#ff0000'))
                 # This suggests if 'point_color' is in config, it overrides BOTH to the same color?
                 # Or maybe the default is different if key missing.

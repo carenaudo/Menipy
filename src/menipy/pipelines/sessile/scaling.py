@@ -9,6 +9,18 @@ from typing import Optional
 
 
 def run(ctx: Context) -> Optional[Context]:
+    """Run.
+
+    Parameters
+    ----------
+    ctx : type
+        Description.
+
+    Returns
+    -------
+    type
+        Description.
+    """
     # If a scale is already defined, keep it.
     ctx.scale = ctx.scale or {}
     if "px_per_mm" not in ctx.scale:

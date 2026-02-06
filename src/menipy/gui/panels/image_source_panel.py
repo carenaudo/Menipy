@@ -20,7 +20,7 @@ class ImageSourcePanel(QFrame):
     Panel for selecting and managing image sources.
     
     Supports three modes:
-    - Single File: Load individual images
+        - Single File: Load individual images
     - Batch Folder: Load all images from a folder
     - Live Camera: Stream from connected camera
     
@@ -39,6 +39,13 @@ class ImageSourcePanel(QFrame):
     MODE_CAMERA = "camera"
     
     def __init__(self, parent=None):
+        """Initialize.
+
+        Parameters
+        ----------
+        parent : type
+        Description.
+        """
         super().__init__(parent)
         self.setObjectName("imageSourcePanel")
         

@@ -1,3 +1,8 @@
+"""Tests for test gui resources.
+
+Unit tests."""
+
+
 import pytest
 from pathlib import Path
 

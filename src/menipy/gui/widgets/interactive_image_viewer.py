@@ -18,7 +18,7 @@ class InteractiveImageViewer(QWidget):
     Image viewer that supports zoom, pan, and interactive drawing tools.
     
     Tools:
-    - None: Navigation only (pan/zoom)
+        - None: Navigation only (pan/zoom)
     - Line: Draw a line (click point A, drag/click point B)
     - Rect: Draw a rectangle (not yet implemented)
     
@@ -195,6 +195,13 @@ class InteractiveImageViewer(QWidget):
             self.update()
             
     def mouseReleaseEvent(self, event: QMouseEvent):
+        """mouseReleaseEvent.
+
+        Parameters
+        ----------
+        event : type
+        Description.
+        """
         if event.button() == Qt.MouseButton.LeftButton:
             if self._is_drawing and self._tool == self.TOOL_LINE:
                 self._is_drawing = False

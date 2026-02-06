@@ -1,3 +1,8 @@
+"""Sessile Detections.
+
+Experimental implementation."""
+
+
 import cv2
 import os
 import numpy as np
@@ -1220,6 +1225,18 @@ def sessile_drop_adaptive(image_path):
     right_strip = enhanced_gray[:, width-margin_px:width]
 
     def find_horizon_median(strip_gray):
+    """Find horizon median.
+
+    Parameters
+    ----------
+    strip_gray : type
+        Description.
+
+    Returns
+    -------
+    type
+        Description.
+    """
         detected_ys = []
         h, w = strip_gray.shape
         min_limit, max_limit = int(h * 0.05), int(h * 0.95)

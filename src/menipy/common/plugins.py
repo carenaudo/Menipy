@@ -1,6 +1,4 @@
-"""
-Plugin discovery, loading, and management utilities.
-"""
+"""Plugin discovery, loading, and management utilities."""
 
 from __future__ import annotations
 import sys
@@ -94,13 +92,12 @@ def discover_into_db(db: PluginDB, plugin_dirs: Iterable[Path]) -> int:
 
 
 def load_active_plugins(db: PluginDB) -> int:
-    """
-    Load all ACTIVE plugins from SQLite and register them in the in-memory registry.
-    """
+    """Load all ACTIVE plugins from SQLite and register them in the in-memory registry."""
     count = 0
     
     # helper to load a single plugin row
     def _load_plugin(row):
+        """_load_plugin."""
         name, kind, file_path, entry, _, _, _ = row
         try:
             if not file_path:
@@ -134,6 +131,15 @@ def load_active_plugins(db: PluginDB) -> int:
 def discover_and_load_from_db(
     db: PluginDB, *, settings_key: str = "plugin_dirs"
 ) -> int:
+    """Placeholder docstring for discover_and_load_from_db.
+    
+    TODO: Complete docstring with full description.
+    
+    Returns
+    -------
+    type
+        Description of return value.
+    """
     """Read configured plugin directories from the DB settings and discover+load.
 
     The settings value is expected to be a separator-separated list (':' or ';').

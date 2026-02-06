@@ -1,3 +1,1 @@
-"""
-View model for results display.
-"""
+"""View model for results display."""

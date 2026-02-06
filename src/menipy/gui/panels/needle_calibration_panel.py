@@ -17,7 +17,7 @@ class NeedleCalibrationPanel(QFrame):
     Panel for needle calibration in pendant drop experiments.
     
     Shows:
-    - Needle diameter input (with common presets)
+        - Needle diameter input (with common presets)
     - Detection status
     - Calibration method selection
     
@@ -45,6 +45,13 @@ class NeedleCalibrationPanel(QFrame):
     ]
     
     def __init__(self, parent=None):
+        """Initialize.
+
+        Parameters
+        ----------
+        parent : type
+        Description.
+        """
         super().__init__(parent)
         self.setObjectName("needleCalibrationPanel")
         

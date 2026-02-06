@@ -38,3 +38,10 @@ repos:
         # Only run on src directory, exclude GUI
         files: ^src/
         exclude: ^src/menipy/gui/
+  - repo: https://github.com/PyCQA/pydocstyle
+    rev: 6.3.0
+    hooks:
+      - id: pydocstyle
+        args: ["--convention=numpy", "--add-ignore=D104,D105"]
+        # Skip test files and GUI
+        exclude: ^(tests/|src/menipy/gui/|pruebas/|scripts/playground/)

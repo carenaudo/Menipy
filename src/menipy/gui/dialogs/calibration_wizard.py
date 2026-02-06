@@ -21,7 +21,7 @@ class CalibrationWizard(QDialog):
     Wizard for calibrating spatial scale.
     
     Stages:
-    1. Select Image (skip if provided)
+        1. Select Image (skip if provided)
     2. Measure Reference (draw line)
     3. Enter Dimension
     4. Result & Apply
@@ -33,6 +33,17 @@ class CalibrationWizard(QDialog):
     calibration_completed = Signal(float)
     
     def __init__(self, parent=None, pixmap: QPixmap = None, image_data: np.ndarray = None):
+        """Initialize.
+
+        Parameters
+        ----------
+        parent : type
+        Description.
+        pixmap : type
+        Description.
+        image_data : type
+        Description.
+        """
         super().__init__(parent)
         self.setWindowTitle("Calibration Wizard")
         self.resize(900, 700)

@@ -1,3 +1,8 @@
+"""Tests for test plugin config dialog.
+
+Unit tests."""
+
+
 import pytest
 from pydantic import BaseModel
 from menipy.gui.dialogs.plugin_config_dialog import PluginConfigDialog

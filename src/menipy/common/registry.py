@@ -1,7 +1,5 @@
 # src/menipy/common/registry.py
-"""
-Central registry for pipeline components and plugins.
-"""
+"""Central registry for pipeline components and plugins."""
 from __future__ import annotations
 from typing import Callable, Dict, Any, Optional, Iterator
 
@@ -32,18 +30,29 @@ class Registry:
         return name in self._items
 
     def __iter__(self) -> Iterator[str]:
+        """__iter__."""
         return iter(self._items)
 
     def __len__(self) -> int:
+        """__len__."""
         return len(self._items)
 
     def items(self):
+        """Items."""
         return self._items.items()
 
     def keys(self):
+        """Keys."""
         return self._items.keys()
 
     def values(self):
+        """values.
+
+        Returns
+        -------
+        type
+        Description.
+        """
         return self._items.values()
 
 
@@ -75,46 +84,145 @@ APEX_DETECTORS = Registry("apex_detectors")
 
 # Legacy wrapper functions for backward compatibility
 def register_edge(name: str, fn: Callable[..., Any]) -> None:
+    """register edge.
+
+    Parameters
+    ----------
+    name : type
+        Description.
+    fn : type
+        Description.
+    """
     EDGE_DETECTORS.register(name, fn)
 
 
 def register_solver(name: str, fn: Callable[..., Any]) -> None:
+    """register solver.
+
+    Parameters
+    ----------
+    name : type
+        Description.
+    fn : type
+        Description.
+    """
     SOLVERS.register(name, fn)
 
 
 def register_acquisition(name: str, fn: Callable[..., Any]) -> None:
+    """register acquisition.
+
+    Parameters
+    ----------
+    name : type
+        Description.
+    fn : type
+        Description.
+    """
     ACQUISITIONS.register(name, fn)
 
 
 def register_preprocessor(name: str, fn: Callable[..., Any]) -> None:
+    """Process register preor.
+
+    Parameters
+    ----------
+    name : type
+        Description.
+    fn : type
+        Description.
+    """
     PREPROCESSORS.register(name, fn)
 
 
 def register_geometry(name: str, fn: Callable[..., Any]) -> None:
+    """register geometry.
+
+    Parameters
+    ----------
+    name : type
+        Description.
+    fn : type
+        Description.
+    """
     GEOMETRIES.register(name, fn)
 
 
 def register_scaler(name: str, fn: Callable[..., Any]) -> None:
+    """register scaler.
+
+    Parameters
+    ----------
+    name : type
+        Description.
+    fn : type
+        Description.
+    """
     SCALERS.register(name, fn)
 
 
 def register_physics(name: str, fn: Callable[..., Any]) -> None:
+    """register physics.
+
+    Parameters
+    ----------
+    name : type
+        Description.
+    fn : type
+        Description.
+    """
     PHYSICS.register(name, fn)
 
 
 def register_optimizer(name: str, fn: Callable[..., Any]) -> None:
+    """register optimizer.
+
+    Parameters
+    ----------
+    name : type
+        Description.
+    fn : type
+        Description.
+    """
     OPTIMIZERS.register(name, fn)
 
 
 def register_output(name: str, fn: Callable[..., Any]) -> None:
+    """register output.
+
+    Parameters
+    ----------
+    name : type
+        Description.
+    fn : type
+        Description.
+    """
     OUTPUTS.register(name, fn)
 
 
 def register_overlayer(name: str, fn: Callable[..., Any]) -> None:
+    """register overlayer.
+
+    Parameters
+    ----------
+    name : type
+        Description.
+    fn : type
+        Description.
+    """
     OVERLAYERS.register(name, fn)
 
 
 def register_validator(name: str, fn: Callable[..., Any]) -> None:
+    """register validator.
+
+    Parameters
+    ----------
+    name : type
+        Description.
+    fn : type
+        Description.
+    """
     VALIDATORS.register(name, fn)
 
 
@@ -124,18 +232,63 @@ def register_utility(name: str, fn: Callable[..., Any]) -> None:
 
 # Detector registration functions
 def register_needle_detector(name: str, fn: Callable[..., Any]) -> None:
+    """Detect register needle or.
+
+    Parameters
+    ----------
+    name : type
+        Description.
+    fn : type
+        Description.
+    """
     NEEDLE_DETECTORS.register(name, fn)
 
 def register_roi_detector(name: str, fn: Callable[..., Any]) -> None:
+    """Detect register roi or.
+
+    Parameters
+    ----------
+    name : type
+        Description.
+    fn : type
+        Description.
+    """
     ROI_DETECTORS.register(name, fn)
 
 def register_substrate_detector(name: str, fn: Callable[..., Any]) -> None:
+    """Detect register substrate or.
+
+    Parameters
+    ----------
+    name : type
+        Description.
+    fn : type
+        Description.
+    """
     SUBSTRATE_DETECTORS.register(name, fn)
 
 def register_drop_detector(name: str, fn: Callable[..., Any]) -> None:
+    """Detect register drop or.
+
+    Parameters
+    ----------
+    name : type
+        Description.
+    fn : type
+        Description.
+    """
     DROP_DETECTORS.register(name, fn)
 
 def register_apex_detector(name: str, fn: Callable[..., Any]) -> None:
+    """Detect register apex or.
+
+    Parameters
+    ----------
+    name : type
+        Description.
+    fn : type
+        Description.
+    """
     APEX_DETECTORS.register(name, fn)
 
 

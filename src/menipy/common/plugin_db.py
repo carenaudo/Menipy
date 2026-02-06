@@ -1,6 +1,4 @@
-"""
-Database abstraction for managing plugins.
-"""
+"""Database abstraction for managing plugins."""
 
 from __future__ import annotations
 import sqlite3
@@ -120,9 +118,7 @@ class PluginDB:
         with self.connect() as con:
             return list(
                 con.execute(
-                    """
-            SELECT name, file_path, entry FROM plugins WHERE kind=? AND is_active=1
-            """,
+                    """SELECT name, file_path, entry FROM plugins WHERE kind=? AND is_active=1""",
                     (kind,),
                 )
             )
@@ -217,12 +213,24 @@ class PluginDB:
             ) = row
 
             def safe_json_load(json_str):
+                """Load safe json.
+
+                Parameters
+                ----------
+                json_str : type
+                Description.
+
+                Returns
+                -------
+                type
+                Description.
+                """
                 try:
                     return json.loads(json_str) if json_str else None
                 except (json.JSONDecodeError, TypeError):
                     return None
 
-            return {
+                return {
                 "pipeline_name": pipeline_name,
                 "display_name": display_name,
                 "icon": icon,
@@ -230,7 +238,7 @@ class PluginDB:
                 "stages": safe_json_load(stages_json),
                 "calibration_params": safe_json_load(calibration_json),
                 "primary_metrics": safe_json_load(primary_metrics_json),
-            }
+                }
 
     def list_pipeline_metadata(self) -> list[dict]:
         """Get all pipeline UI metadata."""

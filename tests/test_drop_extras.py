@@ -1,3 +1,8 @@
+"""Tests for test drop extras.
+
+Unit tests."""
+
+
 import numpy as np
 import pytest
 

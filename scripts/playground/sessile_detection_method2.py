@@ -1,3 +1,8 @@
+"""Sessile Detection Method2.
+
+Experimental implementation."""
+
+
 import cv2
 import numpy as np
 

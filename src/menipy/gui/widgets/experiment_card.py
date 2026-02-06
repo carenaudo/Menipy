@@ -30,6 +30,21 @@ class ExperimentCard(QFrame):
         icon: str = "💧",
         parent=None
     ):
+        """Initialize.
+
+        Parameters
+        ----------
+        experiment_type : str
+            Experiment type identifier.
+        title : str
+            Card title text.
+        description : str
+            Card description text.
+        icon : str
+            Unicode icon character.
+        parent : QWidget, optional
+            Parent widget.
+        """
         super().__init__(parent)
         self.experiment_type = experiment_type
         self._hover = False

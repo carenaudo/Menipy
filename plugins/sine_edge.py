@@ -10,6 +10,26 @@ except Exception:
 
 
 def _fallback_sine(h, w, waves=4, amplitude=0.07, points=300):
+    """Generate a sine-modulated circular contour.
+    
+    Parameters
+    ----------
+    h : int
+        Image height.
+    w : int
+        Image width.
+    waves : int, optional
+        Number of sine wave cycles. Default is 4.
+    amplitude : float, optional
+        Amplitude of the sine modulation (0.0-1.0). Default is 0.07.
+    points : int, optional
+        Number of points to generate. Default is 300.
+    
+    Returns
+    -------
+    ndarray
+        Contour as (N, 2) array of (x, y) coordinates.
+    """
     base_r = min(h, w) * 0.22
     t = np.linspace(0.0, 2 * np.pi, points)
     r = base_r * (1.0 + amplitude * np.sin(waves * t))

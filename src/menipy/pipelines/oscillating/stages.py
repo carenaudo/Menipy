@@ -1,3 +1,8 @@
+"""Stages.
+
+Module implementation."""
+
+
 # pipeline/pendant/stages.py (test-specific overrides)
 from __future__ import annotations
 
@@ -252,6 +257,18 @@ class OscillatingPipeline(PipelineBase):
         return ovl.run(ctx, commands=cmds, alpha=0.6)
 
     def do_validation(self, ctx: Context) -> Optional[Context]:
+        """do validation.
+
+        Parameters
+        ----------
+        ctx : type
+        Description.
+
+        Returns
+        -------
+        type
+        Description.
+        """
         ok = bool(ctx.fit and ctx.fit.get("solver", {}).get("success", False))
         ctx.qa = {"ok": ok}
         return ctx

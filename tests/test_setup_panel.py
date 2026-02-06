@@ -1,3 +1,8 @@
+"""Tests for test setup panel.
+
+Unit tests."""
+
+
 import pytest
 from menipy.gui.mainwindow import MainWindow
 from menipy.gui.controllers.setup_panel_controller import SetupPanelController

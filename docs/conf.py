@@ -1,3 +1,8 @@
+"""Conf.
+
+Module implementation."""
+
+
 import os
 import sys
 

@@ -1,3 +1,8 @@
+"""Tests for test models.
+
+Unit tests."""
+
+
 import numpy as np
 
 from menipy.common.geometry import fit_circle, horizontal_intersections

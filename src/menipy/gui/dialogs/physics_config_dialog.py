@@ -21,6 +21,15 @@ class PhysicsConfigDialog(QDialog):
     """A dialog to configure PhysicsParams with unit-aware inputs."""
 
     def __init__(self, initial_params: PhysicsParams, parent=None):
+        """Initialize.
+
+        Parameters
+        ----------
+        initial_params : type
+        Description.
+        parent : type
+        Description.
+        """
         super().__init__(parent)
         self.setWindowTitle("Configure Physics Parameters")
 

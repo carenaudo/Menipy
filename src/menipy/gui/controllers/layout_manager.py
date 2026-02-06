@@ -20,6 +20,15 @@ class LayoutManager:
     """Manages saving and restoring window layout."""
 
     def __init__(self, window: QMainWindow, settings):
+        """Initialize.
+
+        Parameters
+        ----------
+        window : type
+        Description.
+        settings : type
+        Description.
+        """
         self.window = window
         self.settings = settings
 

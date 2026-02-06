@@ -77,6 +77,8 @@ def add_gui_docstring(filepath: Path, description: str):
 
 
 def main():
+    """Entry point.
+    """
     src_root = Path("src")
     count = 0
 

@@ -1,6 +1,4 @@
-"""
-Configuration models for pipeline settings and physical parameters.
-"""
+"""Configuration models for pipeline settings and physical parameters."""
 
 from __future__ import annotations
 
@@ -45,6 +43,13 @@ class ResizeSettings(BaseModel):
 
     @property
     def has_target(self) -> bool:
+        """Check if has target.
+
+        Returns
+        -------
+        type
+        Description.
+        """
         return (self.target_width or self.target_height) is not None
 
 

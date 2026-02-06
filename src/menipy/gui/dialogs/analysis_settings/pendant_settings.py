@@ -1,6 +1,4 @@
-"""
-Pipeline-specific settings panel for the pendant drop pipeline.
-"""
+"""Pipeline-specific settings panel for the pendant drop pipeline."""
 from __future__ import annotations
 
 from PySide6.QtWidgets import QWidget, QFormLayout, QDoubleSpinBox, QTextEdit, QVBoxLayout, QComboBox, QCheckBox
@@ -101,6 +99,13 @@ class PipelineSettingsWidget(QWidget):
         layout.addStretch(1)
 
     def get_settings(self) -> dict:
+        """Get settings.
+
+        Returns
+        -------
+        type
+        Description.
+        """
         return {
             "rho1": float(self._rho1.value()),
             "rho2": float(self._rho2.value()),

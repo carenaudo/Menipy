@@ -1,3 +1,1 @@
-"""
-Panel discovery and registration utilities.
-"""
+"""Panel discovery and registration utilities."""

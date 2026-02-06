@@ -1,6 +1,4 @@
-"""
-GUI package initialization.
-"""
+"""GUI package initialization."""
 
 # src/menipy/gui/__main__.py
 from .app import main

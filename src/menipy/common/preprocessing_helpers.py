@@ -1,3 +1,8 @@
+"""Preprocessing Helpers.
+
+Module implementation."""
+
+
 from __future__ import annotations
 
 """Helper utilities for Menipy preprocessing pipeline."""
@@ -43,6 +48,7 @@ class PreprocessingContext:
     state: PreprocessingState = field(default_factory=PreprocessingState)
 
     def __post_init__(self) -> None:
+        """__post_init__."""
         height, width = self.source_image.shape[:2]
         if self.roi_bounds is None:
             self.roi_bounds = (0, 0, width, height)
@@ -57,14 +63,17 @@ class PreprocessingContext:
 
     @property
     def mask(self) -> Optional[np.ndarray]:
+        """mask."""
         return self.state.roi_mask
 
     @property
     def active_mask(self) -> Optional[np.ndarray]:
+        """active_mask."""
         return self.state.roi_mask if self.settings.work_on_roi_mask else None
 
     @property
     def current_image(self) -> np.ndarray:
+        """current_image."""
         for name in ("normalized_roi", "filtered_roi", "working_roi", "raw_roi"):
             img = getattr(self.state, name)
             if img is not None:
@@ -82,12 +91,19 @@ class PreprocessingContext:
         self.state.filtered_roi = array
 
     def set_normalized(self, array: np.ndarray) -> None:
+        """Set normalized.
+
+        Parameters
+        ----------
+        array : type
+        Description.
+        """
         self.state.normalized_roi = array
 
 
-# ---------------------------------------------------------------------------
-# Stage helpers
-# ---------------------------------------------------------------------------
+        # ---------------------------------------------------------------------------
+        # Stage helpers
+        # ---------------------------------------------------------------------------
 
 
 def convert_to_grayscale(context: PreprocessingContext) -> None:

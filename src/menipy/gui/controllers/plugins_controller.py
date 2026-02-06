@@ -56,6 +56,7 @@ class PluginsController:
     # -------------------------- setup helpers --------------------------
 
     def _build_plugin_dock(self) -> None:
+        """_build_plugin_dock."""
         if not PluginDB:
             return
         try:
@@ -84,6 +85,7 @@ class PluginsController:
             self.dock = None
 
     def _add_toggle_to_view_menu(self) -> None:
+        """_add_toggle_to_view_menu."""
         if not self.dock:
             return
         menu_view: Optional[QMenu] = self.window.findChild(QMenu, "menuView")
@@ -98,6 +100,7 @@ class PluginsController:
         self.action_toggle = action
 
     def _ensure_plugins_menu(self) -> None:
+        """_ensure_plugins_menu."""
         menubar = getattr(self.window, "menuBar", lambda: None)()
         if not isinstance(menubar, QMenuBar) or not PluginManagerDialog:
             return
@@ -121,6 +124,7 @@ class PluginsController:
     # -------------------------- menu actions --------------------------
 
     def _open_plugin_manager(self) -> None:
+        """_open_plugin_manager."""
         if not PluginManagerDialog or not PluginDB or not self.db:
             QMessageBox.information(
                 self.window,
@@ -162,6 +166,7 @@ class PluginsController:
             QMessageBox.critical(self.window, "Plugin Manager", str(exc))
 
     def _add_plugin_folder(self) -> None:
+        """_add_plugin_folder."""
         if not PluginDB or not self.db:
             QMessageBox.information(
                 self.window,

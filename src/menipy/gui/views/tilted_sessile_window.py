@@ -115,7 +115,7 @@ class TiltedSessileWindow(BaseExperimentWindow):
     Window for tilted sessile drop contact angle analysis.
     
     Provides controls for:
-    - Image loading
+        - Image loading
     - Tilt stage control
     - Advancing/receding angle measurement
     - Tilt sequence automation
@@ -129,6 +129,13 @@ class TiltedSessileWindow(BaseExperimentWindow):
         return theme.EXPERIMENT_TILTED_SESSILE
     
     def get_experiment_title(self) -> str:
+        """Get experiment title.
+
+        Returns
+        -------
+        type
+        Description.
+        """
         return "Tilted Sessile"
     
     def _create_left_panel_content(self) -> QWidget:

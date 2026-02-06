@@ -9,6 +9,18 @@ from menipy.models.context import Context
 
 
 def run(ctx: Context) -> Optional[Context]:
+    """Run.
+
+    Parameters
+    ----------
+    ctx : type
+        Description.
+
+    Returns
+    -------
+    type
+        Description.
+    """
     # Consolidate fit params if present
     if getattr(ctx, "fit", None):
         names = ctx.fit.get("param_names", [])

@@ -70,6 +70,13 @@ class FitConfig:
     param_names: Optional[list[str]] = None
 
     def to_solver_args(self) -> dict:
+        """to solver args.
+
+        Returns
+        -------
+        type
+        Description.
+        """
         # Helper to convert to args expected by common/solver.run
         return {
             "x0": self.x0,

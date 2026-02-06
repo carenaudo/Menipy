@@ -19,7 +19,7 @@ class ParametersPanel(QFrame):
     Panel for configuring measurement parameters.
     
     For sessile drop analysis:
-    - Liquid density
+        - Liquid density
     - Surrounding fluid density
     - Surface tension (optional)
     - Contact angle method
@@ -35,6 +35,13 @@ class ParametersPanel(QFrame):
     material_database_requested = Signal(str)  # field name
     
     def __init__(self, parent=None):
+        """Initialize.
+
+        Parameters
+        ----------
+        parent : type
+        Description.
+        """
         super().__init__(parent)
         self.setObjectName("parametersPanel")
         self._setup_ui()

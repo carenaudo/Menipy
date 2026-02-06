@@ -1,3 +1,1 @@
-"""
-Placeholder for Jurin's law (capillary rise) calculations.
-"""
+"""Placeholder for Jurin's law (capillary rise) calculations."""

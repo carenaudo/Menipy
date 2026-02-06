@@ -309,6 +309,13 @@ class SetupPanelController(QObject):
             self._apply_mode(self.MODE_SINGLE)
 
     def collect_included_stages(self) -> list[str]:
+        """collect included stages.
+
+        Returns
+        -------
+        type
+        Description.
+        """
         if hasattr(self, "sop_ctrl"):
             return self.sop_ctrl.collect_included_stages()
         return list(self.stage_order)
@@ -426,6 +433,7 @@ class SetupPanelController(QObject):
                 button.setStyleSheet(style)
 
     def _populate_pipeline_combo(self) -> None:
+        """_populate_pipeline_combo."""
         combo = self.testCombo or self.pipelineCombo
         if not combo:
             return
@@ -437,6 +445,7 @@ class SetupPanelController(QObject):
         combo.blockSignals(False)
 
     def _restore_settings(self) -> None:
+        """_restore_settings."""
         if self.imagePathEdit and getattr(self.settings, "last_image_path", None):
             self.imagePathEdit.setText(self.settings.last_image_path)
         selected = getattr(self.settings, "selected_pipeline", None)
@@ -447,6 +456,7 @@ class SetupPanelController(QObject):
                 combo.setCurrentIndex(index)
 
     def _wire_controls(self) -> None:
+        """_wire_controls."""
         if self.browseBtn:
             self.browseBtn.clicked.connect(self.browse_requested.emit)
         if self.batchBrowseBtn:
@@ -588,6 +598,7 @@ class SetupPanelController(QObject):
                 needle_spin.setRange(0.1, 100.0)  # Needle lengths
 
     def _initial_pipeline_refresh(self) -> None:
+        """_initial_pipeline_refresh."""
         # Set default pipeline button (sessile) if no selection
         if self.sessileBtn and not any(
             btn.isChecked()
@@ -629,6 +640,7 @@ class SetupPanelController(QObject):
         self._refresh_source_items()
 
     def _update_widget_states(self) -> None:
+        """_update_widget_states."""
         single = self._mode == self.MODE_SINGLE
         batch = self._mode == self.MODE_BATCH
         camera = self._mode == self.MODE_CAMERA
@@ -647,6 +659,7 @@ class SetupPanelController(QObject):
             self.sourceIdCombo.setEnabled(camera or single or batch)
 
     def _refresh_source_items(self) -> None:
+        """_refresh_source_items."""
         if self._mode == self.MODE_SINGLE:
             self._populate_single_selection()
         elif self._mode == self.MODE_BATCH:
@@ -655,6 +668,7 @@ class SetupPanelController(QObject):
             self._populate_camera_selection()
 
     def _populate_single_selection(self) -> None:
+        """_populate_single_selection."""
         path = self.image_path()
         items = []
         if path:
@@ -663,6 +677,7 @@ class SetupPanelController(QObject):
         self._set_combo_items(items)
 
     def _populate_batch_selection(self) -> None:
+        """_populate_batch_selection."""
         folder = self.batch_path()
         items = []
         if folder and Path(folder).is_dir():
@@ -672,6 +687,7 @@ class SetupPanelController(QObject):
         self._set_combo_items(items)
 
     def _populate_camera_selection(self) -> None:
+        """_populate_camera_selection."""
         if not self.sourceIdCombo:
             return
         combo = self.sourceIdCombo
@@ -697,6 +713,7 @@ class SetupPanelController(QObject):
         combo.blockSignals(False)
 
     def _selected_source_value(self) -> Optional[str]:
+        """_selected_source_value."""
         if not self.sourceIdCombo:
             return None
         data = self.sourceIdCombo.currentData()

@@ -1,6 +1,4 @@
-"""
-Frame model for representing images with metadata, calibration, and timing information.
-"""
+"""Frame model for representing images with metadata, calibration, and timing information."""
 
 from __future__ import annotations
 

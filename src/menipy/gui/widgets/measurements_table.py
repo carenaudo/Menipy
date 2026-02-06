@@ -12,11 +12,16 @@ from menipy.gui import theme
 
 
 class MeasurementsTableWidget(QWidget):
-    """
-    Table widget for displaying measurement results.
-    """
+    """Table widget for displaying measurement results."""
     
     def __init__(self, parent=None):
+        """Initialize.
+
+        Parameters
+        ----------
+        parent : type
+        Description.
+        """
         super().__init__(parent)
         self._setup_ui()
         

@@ -1,6 +1,4 @@
-"""
-Pipeline-specific settings panel for the sessile drop pipeline.
-"""
+"""Pipeline-specific settings panel for the sessile drop pipeline."""
 from __future__ import annotations
 
 from PySide6.QtWidgets import (
@@ -103,6 +101,13 @@ class PipelineSettingsWidget(QWidget):
         layout.addStretch(1)
 
     def get_settings(self) -> dict:
+        """Get settings.
+
+        Returns
+        -------
+        type
+        Description.
+        """
         return {
             "contact_angle_method": self._contact_method.currentText(),
             "rho1": float(self._rho1.value()),

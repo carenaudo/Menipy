@@ -17,7 +17,7 @@ class CalibrationPanel(QFrame):
     Panel displaying calibration status and controls.
     
     Shows:
-    - Calibration status (calibrated/not calibrated)
+        - Calibration status (calibrated/not calibrated)
     - Scale factor (px/mm)
     - Reference file info
     - Calibration date
@@ -33,6 +33,13 @@ class CalibrationPanel(QFrame):
     details_requested = Signal()
     
     def __init__(self, parent=None):
+        """Initialize.
+
+        Parameters
+        ----------
+        parent : type
+        Description.
+        """
         super().__init__(parent)
         self.setObjectName("calibrationPanel")
         

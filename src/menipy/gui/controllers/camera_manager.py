@@ -35,6 +35,21 @@ class CameraManager(QObject):
         window: QMainWindow,
         parent: Optional[QObject] = None,
     ):
+        """Initialize.
+
+        Parameters
+        ----------
+        camera_ctrl : CameraController, optional
+            Camera controller instance.
+        setup_ctrl : SetupPanelController
+            Setup panel controller.
+        preview_panel : PreviewPanel
+            Preview panel widget.
+        window : QMainWindow
+            Main window.
+        parent : QObject, optional
+            Parent object.
+        """
         super().__init__(parent)
         self.camera_ctrl = camera_ctrl
         self.setup_ctrl = setup_ctrl

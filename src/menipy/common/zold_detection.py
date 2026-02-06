@@ -1,3 +1,1 @@
-"""
-Deprecated/Empty file.
-"""
+"""Deprecated/Empty file."""

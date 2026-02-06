@@ -152,6 +152,8 @@ See {pipeline_name}_plan_pipeline.md for implementation details.
 
 
 def main():
+    """Entry point.
+    """
     src_root = Path("src/menipy/pipelines")
 
     for pipeline_name, stages in PIPELINE_STUBS.items():

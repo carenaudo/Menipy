@@ -1,8 +1,20 @@
+"""Pendant Detections.
+
+Module implementation."""
+
+
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 # Example Usage
 def analyze_pendant_contact_points(image_path):
+    """analyze pendant contact points.
+
+    Parameters
+    ----------
+    image_path : type
+        Description.
+    """
     # 1. Load Image
     img = cv2.imread(image_path)
     if img is None:

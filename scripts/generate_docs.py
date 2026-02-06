@@ -1,3 +1,8 @@
+"""Generate Docs.
+
+Utility script."""
+
+
 import os
 import ast
 from pathlib import Path
@@ -10,6 +15,18 @@ Creates PYTHONFILES.md and IMPORTED.md in the root directory.
 
 
 def get_docstring(filepath):
+    """Get docstring.
+
+    Parameters
+    ----------
+    filepath : type
+        Description.
+
+    Returns
+    -------
+    type
+        Description.
+    """
     try:
         with open(filepath, "r", encoding="utf-8") as f:
             tree = ast.parse(f.read())
@@ -19,6 +36,18 @@ def get_docstring(filepath):
 
 
 def get_imports(filepath):
+    """Get imports.
+
+    Parameters
+    ----------
+    filepath : type
+        Description.
+
+    Returns
+    -------
+    type
+        Description.
+    """
     imports = []
     try:
         with open(filepath, "r", encoding="utf-8") as f:
@@ -39,6 +68,15 @@ def get_imports(filepath):
 
 
 def generate_pythonfiles_md(root_dir, output_file):
+    """Generate pythonfiles md.
+
+    Parameters
+    ----------
+    root_dir : type
+        Description.
+    output_file : type
+        Description.
+    """
     lines = [
         "# Python Files Overview\n\nThis document summarizes each Python file in the repository.\n"
     ]
@@ -66,6 +104,15 @@ def generate_pythonfiles_md(root_dir, output_file):
 
 
 def generate_imported_md(root_dir, output_file):
+    """Generate imported md.
+
+    Parameters
+    ----------
+    root_dir : type
+        Description.
+    output_file : type
+        Description.
+    """
     lines = ["# Imported modules per Python file\n"]
 
     for dirpath, _, filenames in os.walk(root_dir):

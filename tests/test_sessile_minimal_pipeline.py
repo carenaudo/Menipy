@@ -1,3 +1,8 @@
+"""Tests for test sessile minimal pipeline.
+
+Unit tests."""
+
+
 import numpy as np
 from menipy.models.context import Context
 from menipy.pipelines.sessile.preprocessing import run as preprocessing_run

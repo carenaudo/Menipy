@@ -1,7 +1,5 @@
 # src/menipy/common/units.py
-"""
-Unit registry configuration using Pint.
-"""
+"""Unit registry configuration using Pint."""
 from pint import UnitRegistry
 from pydantic_pint import set_registry
 

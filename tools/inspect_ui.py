@@ -1,3 +1,8 @@
+"""Inspect Ui.
+
+Module implementation."""
+
+
 from importlib import import_module
 from PySide6.QtWidgets import QApplication, QWidget
 import sys

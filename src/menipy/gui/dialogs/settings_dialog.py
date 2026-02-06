@@ -14,11 +14,16 @@ from menipy.gui import theme
 
 
 class SettingsDialog(QDialog):
-    """
-    Global settings dialog.
-    """
+    """Global settings dialog."""
     
     def __init__(self, parent=None):
+        """Initialize.
+
+        Parameters
+        ----------
+        parent : type
+        Description.
+        """
         super().__init__(parent)
         self.setWindowTitle("Settings")
         self.resize(600, 500)

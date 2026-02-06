@@ -1,6 +1,4 @@
-"""
-Service for running pipelines in the GUI context.
-"""
+"""Service for running pipelines in the GUI context."""
 
 # src/adsa/gui/services/pipeline_runner.py
 from __future__ import annotations
@@ -64,9 +62,9 @@ class _Job(QRunnable):
 
             # patch acquisition - DISABLED to allow pipeline class method to run (and use logging)
             # if self.image:
-            #     p.do_acquisition = (lambda ctx: setattr(ctx, "frames", acq.from_file([self.image])) or ctx)  # type: ignore
+                #     p.do_acquisition = (lambda ctx: setattr(ctx, "frames", acq.from_file([self.image])) or ctx)  # type: ignore
             # else:
-            #     p.do_acquisition = (lambda ctx: setattr(ctx, "frames", acq.from_camera(device=self.camera or 0, n_frames=self.frames)) or ctx)  # type: ignore
+                #     p.do_acquisition = (lambda ctx: setattr(ctx, "frames", acq.from_camera(device=self.camera or 0, n_frames=self.frames)) or ctx)  # type: ignore
             run_kwargs = {
                 "roi": self.roi,
                 "needle_rect": self.needle_rect,
@@ -128,6 +126,23 @@ class PipelineRunner(QObject):
         frames: int = 1,
         **overlays,
     ) -> None:
+        """Run subset of pipeline.
+
+        Parameters
+        ----------
+        pipeline : str
+            Pipeline name.
+        only : list[str]
+            List of stage names to run.
+        image : str, optional
+            Image path.
+        camera : int, optional
+            Camera index.
+        frames : int, optional
+            Number of frames. Default is 1.
+        **overlays
+            Additional overlay settings.
+        """
         pipeline_cls = _pick(pipeline)
         job = _Job(
             pipeline_cls,

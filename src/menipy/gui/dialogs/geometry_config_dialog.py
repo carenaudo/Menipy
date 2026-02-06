@@ -219,6 +219,13 @@ class GeometryConfigDialog(QDialog):
                 pass
 
     def set_info(self, text: str) -> None:
+        """Set info.
+
+        Parameters
+        ----------
+        text : type
+        Description.
+        """
         self.infoLabel.setText(text)
 
     def _on_preview_image_ready(self, image: np.ndarray, metadata: dict) -> None:

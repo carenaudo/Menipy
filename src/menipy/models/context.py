@@ -1,6 +1,4 @@
-"""
-Context model for sharing state between pipeline stages.
-"""
+"""Context model for sharing state between pipeline stages."""
 
 from __future__ import annotations
 
@@ -119,4 +117,13 @@ class Context(BaseModel):
         self.log.append(message)
 
     def time(self, stage: str, ms: float) -> None:
+        """time.
+
+        Parameters
+        ----------
+        stage : type
+        Description.
+        ms : type
+        Description.
+        """
         self.timings_ms[stage] = ms

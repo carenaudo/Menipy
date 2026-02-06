@@ -38,6 +38,13 @@ class _DummySetupController(QObject):
     MODE_CAMERA = "camera"
 
     def __init__(self, parent: QWidget):
+        """Initialize.
+
+        Parameters
+        ----------
+        parent : type
+        Description.
+        """
         super().__init__(parent)
         # Widgets
         self.singleModeRadio = QRadioButton("Single", parent)

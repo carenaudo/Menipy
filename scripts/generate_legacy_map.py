@@ -1,3 +1,8 @@
+"""Generate Legacy Map.
+
+Utility script."""
+
+
 import ast
 from pathlib import Path
 
@@ -11,11 +16,35 @@ DOCS_DIR = Path(__file__).resolve().parents[1] / "docs"
 
 
 def module_name_from_path(path: Path) -> str:
+    """module name from path.
+
+    Parameters
+    ----------
+    path : type
+        Description.
+
+    Returns
+    -------
+    type
+        Description.
+    """
     rel = path.relative_to(SRC_DIR)
     return ".".join(rel.with_suffix("").parts)
 
 
 def parse_imports(path: Path) -> list[str]:
+    """Parse imports.
+
+    Parameters
+    ----------
+    path : type
+        Description.
+
+    Returns
+    -------
+    type
+        Description.
+    """
     try:
         tree = ast.parse(path.read_text())
     except SyntaxError:
@@ -32,6 +61,18 @@ def parse_imports(path: Path) -> list[str]:
 
 
 def build_graph(src_dir: Path) -> dict[str, list[str]]:
+    """build graph.
+
+    Parameters
+    ----------
+    src_dir : type
+        Description.
+
+    Returns
+    -------
+    type
+        Description.
+    """
     modules: dict[str, list[str]] = {}
     for py_file in src_dir.rglob("*.py"):
         mod = module_name_from_path(py_file)
@@ -40,6 +81,18 @@ def build_graph(src_dir: Path) -> dict[str, list[str]]:
 
 
 def to_html(graph: dict[str, list[str]]) -> str:
+    """to html.
+
+    Parameters
+    ----------
+    graph : type
+        Description.
+
+    Returns
+    -------
+    type
+        Description.
+    """
     html_lines = [
         "<html>",
         '<head><meta charset="utf-8"><title>Legacy Module Map</title></head>',
@@ -56,6 +109,8 @@ def to_html(graph: dict[str, list[str]]) -> str:
 
 
 def main() -> None:
+    """Entry point.
+    """
     graph = build_graph(SRC_DIR)
     html_content = to_html(graph)
     DOCS_DIR.mkdir(exist_ok=True)

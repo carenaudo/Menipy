@@ -1,0 +1,6774 @@
+[
+  {
+    "path": "D:/programacion/Menipy/batch_document_medium.py",
+    "metrics": {},
+    "parsing_error": "unterminated f-string literal (detected at line 105) (<unknown>, line 105)"
+  },
+  {
+    "path": "D:/programacion/Menipy/plugins/edge_detectors.py",
+    "metrics": {},
+    "parsing_error": "unindent does not match any outer indentation level (<unknown>, line 88)"
+  },
+  {
+    "path": "D:/programacion/Menipy/plugins/young_laplace_adsa.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 96 (<unknown>, line 97)"
+  },
+  {
+    "path": "D:/programacion/Menipy/scripts/playground/prueba.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 188 (<unknown>, line 189)"
+  },
+  {
+    "path": "D:/programacion/Menipy/scripts/playground/prueba2.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 386 (<unknown>, line 387)"
+  },
+  {
+    "path": "D:/programacion/Menipy/scripts/playground/sessile_calculations.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 143 (<unknown>, line 144)"
+  },
+  {
+    "path": "D:/programacion/Menipy/scripts/playground/sessile_calculations2.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 297 (<unknown>, line 298)"
+  },
+  {
+    "path": "D:/programacion/Menipy/scripts/playground/sessile_calculations3.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 331 (<unknown>, line 332)"
+  },
+  {
+    "path": "D:/programacion/Menipy/scripts/playground/sessile_detections.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 1227 (<unknown>, line 1228)"
+  },
+  {
+    "path": "D:/programacion/Menipy/scripts/playground/synth_gen.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 73 (<unknown>, line 74)"
+  },
+  {
+    "path": "D:/programacion/Menipy/scripts/playground/test_real_images.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 17 (<unknown>, line 18)"
+  },
+  {
+    "path": "D:/programacion/Menipy/scripts/test_sessile_qt.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 293 (<unknown>, line 294)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/cli.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 99 (<unknown>, line 100)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/cli/__init__.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 83 (<unknown>, line 84)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/common/contour_smoothing.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 68 (<unknown>, line 69)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/common/material_db.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 227 (<unknown>, line 228)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/common/plugin_db.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 215 (<unknown>, line 216)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/common/plugin_loader.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 30 (<unknown>, line 31)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/common/plugins.py",
+    "metrics": {},
+    "parsing_error": "unindent does not match any outer indentation level (<unknown>, line 101)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/common/preprocessing_helpers.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 50 (<unknown>, line 51)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/common/registry.py",
+    "metrics": {},
+    "parsing_error": "unindent does not match any outer indentation level (<unknown>, line 34)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/common/solver.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 112 (<unknown>, line 113)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/components/plugin_settings_widget.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 218 (<unknown>, line 219)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/controllers/camera_manager.py",
+    "metrics": {},
+    "parsing_error": "invalid syntax (<unknown>, line 31)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/controllers/dialog_coordinator.py",
+    "metrics": {},
+    "parsing_error": "invalid syntax (<unknown>, line 37)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/controllers/edge_detection_controller.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 115 (<unknown>, line 116)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/controllers/image_manager.py",
+    "metrics": {},
+    "parsing_error": "invalid syntax (<unknown>, line 30)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/controllers/layout_manager.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 22 (<unknown>, line 23)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/controllers/overlay_manager.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 20 (<unknown>, line 21)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/controllers/pipeline_controller.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 753 (<unknown>, line 754)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/controllers/pipeline_ui_manager.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 19 (<unknown>, line 20)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/controllers/plugins_controller.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 58 (<unknown>, line 59)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/controllers/preprocessing_controller.py",
+    "metrics": {},
+    "parsing_error": "unindent does not match any outer indentation level (<unknown>, line 117)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/controllers/setup_panel_controller.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 288 (<unknown>, line 289)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/controllers/sop_controller.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 88 (<unknown>, line 89)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/dialogs/acquisition_config_dialog.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 42 (<unknown>, line 43)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/dialogs/analysis_settings/captive_bubble_settings.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 56 (<unknown>, line 57)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/dialogs/analysis_settings/pendant_settings.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 101 (<unknown>, line 102)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/dialogs/analysis_settings/sessile_settings.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 103 (<unknown>, line 104)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/dialogs/analysis_settings_dialog.py",
+    "metrics": {},
+    "parsing_error": "unindent does not match any outer indentation level (<unknown>, line 466)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/dialogs/calibration_wizard.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 35 (<unknown>, line 36)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/dialogs/detector_test_dialog.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 20 (<unknown>, line 21)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/dialogs/edge_detection_config_dialog.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 313 (<unknown>, line 314)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/dialogs/geometry_config_dialog.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 221 (<unknown>, line 222)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/dialogs/help_dialog.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 34 (<unknown>, line 35)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/dialogs/material_dialog.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 319 (<unknown>, line 320)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/dialogs/overlay_config_dialog.py",
+    "metrics": {},
+    "parsing_error": "unindent does not match any outer indentation level (<unknown>, line 239)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/dialogs/physics_config_dialog.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 23 (<unknown>, line 24)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/dialogs/plugin_config_dialog.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 124 (<unknown>, line 125)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/dialogs/plugin_manager_dialog.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 98 (<unknown>, line 99)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/dialogs/preprocessing_config_dialog.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 482 (<unknown>, line 483)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/dialogs/settings_dialog.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 19 (<unknown>, line 20)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/dialogs/utilities_dialog.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 34 (<unknown>, line 35)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/helpers/image_marking.py",
+    "metrics": {},
+    "parsing_error": "invalid syntax (<unknown>, line 36)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/logging_bridge.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 25 (<unknown>, line 26)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/main_controller.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 40 (<unknown>, line 41)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/main_window.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 113 (<unknown>, line 114)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/mainwindow.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 40 (<unknown>, line 41)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/panels/action_panel.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 36 (<unknown>, line 37)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/panels/calibration_panel.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 35 (<unknown>, line 36)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/panels/image_source_panel.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 41 (<unknown>, line 42)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/panels/needle_calibration_panel.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 47 (<unknown>, line 48)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/panels/parameters_panel.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 37 (<unknown>, line 38)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/panels/preview_panel.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 129 (<unknown>, line 130)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/panels/results_panel.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 49 (<unknown>, line 50)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/panels/setup_panel.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 311 (<unknown>, line 312)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/panels/tilt_stage_panel.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 34 (<unknown>, line 35)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/services/camera_service.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 135 (<unknown>, line 136)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/services/pipeline_runner.py",
+    "metrics": {},
+    "parsing_error": "invalid syntax (<unknown>, line 120)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/services/plugin_service.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 24 (<unknown>, line 25)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/services/settings_service.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 49 (<unknown>, line 50)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/services/sop_service.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 80 (<unknown>, line 81)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/viewmodels/plugins_vm.py",
+    "metrics": {},
+    "parsing_error": "unindent does not match any outer indentation level (<unknown>, line 15)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/viewmodels/run_vm.py",
+    "metrics": {},
+    "parsing_error": "invalid syntax (<unknown>, line 34)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/views/adsa_main_window.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 38 (<unknown>, line 39)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/views/base_experiment_window.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 45 (<unknown>, line 46)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/views/experiment_selector.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 24 (<unknown>, line 25)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/views/image_view.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 109 (<unknown>, line 110)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/views/pendant_drop_window.py",
+    "metrics": {},
+    "parsing_error": "invalid syntax (<unknown>, line 407)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/views/sessile_drop_window.py",
+    "metrics": {},
+    "parsing_error": "unindent does not match any outer indentation level (<unknown>, line 716)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/views/step_item_widget.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 96 (<unknown>, line 97)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/views/tilted_sessile_window.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 131 (<unknown>, line 132)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/views/ui_main_window.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 269 (<unknown>, line 270)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/widgets/experiment_card.py",
+    "metrics": {},
+    "parsing_error": "invalid syntax (<unknown>, line 26)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/widgets/interactive_image_viewer.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 197 (<unknown>, line 198)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/widgets/measurements_table.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 17 (<unknown>, line 18)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/widgets/notification.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 23 (<unknown>, line 24)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/widgets/pendant_results_widget.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 248 (<unknown>, line 249)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/widgets/quick_stats_widget.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 26 (<unknown>, line 27)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/gui/widgets/tilted_sessile_results_widget.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 27 (<unknown>, line 28)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/models/config.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 45 (<unknown>, line 46)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/models/context.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 119 (<unknown>, line 120)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/models/datatypes.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 61 (<unknown>, line 62)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/models/fit.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 72 (<unknown>, line 73)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/models/results.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 26 (<unknown>, line 27)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/models/state.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 61 (<unknown>, line 62)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/pipelines/base.py",
+    "metrics": {},
+    "parsing_error": "invalid syntax (<unknown>, line 477)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/pipelines/capillary_rise/stages.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 152 (<unknown>, line 153)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/pipelines/captive_bubble/stages.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 199 (<unknown>, line 200)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/pipelines/oscillating/stages.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 259 (<unknown>, line 260)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/pipelines/pendant/preprocessing.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 63 (<unknown>, line 64)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/pipelines/pendant/stages.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 296 (<unknown>, line 297)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/pipelines/runner.py",
+    "metrics": {},
+    "parsing_error": "invalid syntax (<unknown>, line 23)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/pipelines/sessile/geometry.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 74 (<unknown>, line 75)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/pipelines/sessile/preprocessing.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 64 (<unknown>, line 65)"
+  },
+  {
+    "path": "D:/programacion/Menipy/src/menipy/pipelines/sessile/stages.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 379 (<unknown>, line 380)"
+  },
+  {
+    "path": "D:/programacion/Menipy/tests/test_detection_plugins.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 90 (<unknown>, line 91)"
+  },
+  {
+    "path": "D:/programacion/Menipy/tests/test_preproc_plugins.py",
+    "metrics": {},
+    "parsing_error": "expected an indented block after function definition on line 67 (<unknown>, line 68)"
+  },
+  {
+    "path": "FINAL_VERIFICATION_CHECKLIST.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 161,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "PHASE_3_COMPLETION_REPORT.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 155,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "analyze_low_files.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 55,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "analyze_medium_files.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 35,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "analyze_phase2.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 55,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "auto_add_stubs.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 146,
+      "functions": [
+        {
+          "name": "get_function_signature",
+          "line": 14,
+          "has_docstring": true
+        },
+        {
+          "name": "add_docstring_stub",
+          "line": 32,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 3
+    }
+  },
+  {
+    "path": "batch_add_150docstrings.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 234,
+      "functions": [
+        {
+          "name": "extract_function_locations",
+          "line": 15,
+          "has_docstring": true
+        },
+        {
+          "name": "generate_short_docstring",
+          "line": 62,
+          "has_docstring": true
+        },
+        {
+          "name": "add_docstring_to_function",
+          "line": 83,
+          "has_docstring": true
+        },
+        {
+          "name": "process_file",
+          "line": 121,
+          "has_docstring": true
+        },
+        {
+          "name": "main",
+          "line": 156,
+          "has_docstring": true
+        },
+        {
+          "name": "sort_key",
+          "line": 182,
+          "has_docstring": false
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 6
+    }
+  },
+  {
+    "path": "batch_add_remaining_45.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 165,
+      "functions": [
+        {
+          "name": "extract_functions_missing_docs",
+          "line": 12,
+          "has_docstring": true
+        },
+        {
+          "name": "add_simple_docstring",
+          "line": 44,
+          "has_docstring": true
+        },
+        {
+          "name": "process_more_files",
+          "line": 73,
+          "has_docstring": true
+        },
+        {
+          "name": "sort_key",
+          "line": 94,
+          "has_docstring": false
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 4
+    }
+  },
+  {
+    "path": "batch_process.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 192,
+      "functions": [
+        {
+          "name": "get_indent",
+          "line": 16,
+          "has_docstring": true
+        },
+        {
+          "name": "has_module_docstring",
+          "line": 21,
+          "has_docstring": true
+        },
+        {
+          "name": "create_module_docstring",
+          "line": 38,
+          "has_docstring": true
+        },
+        {
+          "name": "add_module_docstring_to_file",
+          "line": 52,
+          "has_docstring": true
+        },
+        {
+          "name": "extract_function_info",
+          "line": 80,
+          "has_docstring": true
+        },
+        {
+          "name": "process_file",
+          "line": 100,
+          "has_docstring": true
+        },
+        {
+          "name": "main",
+          "line": 137,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 8
+    }
+  },
+  {
+    "path": "batch_process_low.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 143,
+      "functions": [
+        {
+          "name": "get_indent",
+          "line": 13,
+          "has_docstring": true
+        },
+        {
+          "name": "has_module_docstring",
+          "line": 18,
+          "has_docstring": true
+        },
+        {
+          "name": "create_module_docstring",
+          "line": 32,
+          "has_docstring": true
+        },
+        {
+          "name": "add_module_docstring",
+          "line": 44,
+          "has_docstring": true
+        },
+        {
+          "name": "process_file_low",
+          "line": 71,
+          "has_docstring": true
+        },
+        {
+          "name": "main",
+          "line": 99,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 7
+    }
+  },
+  {
+    "path": "batch_process_v3.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 298,
+      "functions": [
+        {
+          "name": "create_function_purpose",
+          "line": 16,
+          "has_docstring": true
+        },
+        {
+          "name": "get_function_params",
+          "line": 64,
+          "has_docstring": true
+        },
+        {
+          "name": "generate_function_docstring",
+          "line": 80,
+          "has_docstring": true
+        },
+        {
+          "name": "extract_functions_needing_docs",
+          "line": 114,
+          "has_docstring": true
+        },
+        {
+          "name": "add_function_docstrings",
+          "line": 135,
+          "has_docstring": true
+        },
+        {
+          "name": "process_file_enhanced",
+          "line": 192,
+          "has_docstring": true
+        },
+        {
+          "name": "main",
+          "line": 248,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 8
+    }
+  },
+  {
+    "path": "check_audit.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 37,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "docs/conf.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 14,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "examples/detection_plugins_example.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 201,
+      "functions": [
+        {
+          "name": "create_sample_sessile_image",
+          "line": 38,
+          "has_docstring": true
+        },
+        {
+          "name": "create_sample_pendant_image",
+          "line": 54,
+          "has_docstring": true
+        },
+        {
+          "name": "example_individual_detectors",
+          "line": 67,
+          "has_docstring": true
+        },
+        {
+          "name": "example_auto_detect",
+          "line": 119,
+          "has_docstring": true
+        },
+        {
+          "name": "example_visualize_results",
+          "line": 148,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 6
+    }
+  },
+  {
+    "path": "find_no_docs.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 24,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "geometry.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 23,
+      "functions": [
+        {
+          "name": "extract_external_contour",
+          "line": 9,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "list_phase2_changes.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 50,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "pendant_detections.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 207,
+      "functions": [
+        {
+          "name": "analyze_pendant_contact_points",
+          "line": 10,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "phase2_report.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 73,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "plugins/acq_file.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 35,
+      "functions": [
+        {
+          "name": "acquire_from_file",
+          "line": 12,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": false,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "plugins/auto_adaptive_edge.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 260,
+      "functions": [
+        {
+          "name": "calculate_otsu_variance_ratio",
+          "line": 27,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_illumination_uniformity",
+          "line": 63,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_gradient_strength",
+          "line": 83,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_edge_quality",
+          "line": 91,
+          "has_docstring": true
+        },
+        {
+          "name": "_edges_to_contour",
+          "line": 118,
+          "has_docstring": true
+        },
+        {
+          "name": "_binary_to_contour",
+          "line": 132,
+          "has_docstring": true
+        },
+        {
+          "name": "auto_adaptive_detect",
+          "line": 150,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 8
+    }
+  },
+  {
+    "path": "plugins/bezier_edge.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 38,
+      "functions": [
+        {
+          "name": "bezier_like",
+          "line": 5,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "plugins/circle_edge.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 77,
+      "functions": [
+        {
+          "name": "_fallback_circle",
+          "line": 14,
+          "has_docstring": true
+        },
+        {
+          "name": "circle_like",
+          "line": 36,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": false,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "plugins/detect_apex.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 209,
+      "functions": [
+        {
+          "name": "detect_apex_pendant",
+          "line": 18,
+          "has_docstring": true
+        },
+        {
+          "name": "detect_apex_sessile",
+          "line": 78,
+          "has_docstring": true
+        },
+        {
+          "name": "detect_apex_auto",
+          "line": 151,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 4
+    }
+  },
+  {
+    "path": "plugins/detect_drop.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 384,
+      "functions": [
+        {
+          "name": "detect_drop_sessile",
+          "line": 63,
+          "has_docstring": true
+        },
+        {
+          "name": "detect_drop_pendant",
+          "line": 269,
+          "has_docstring": true
+        },
+        {
+          "name": "model_post_init",
+          "line": 41,
+          "has_docstring": true
+        }
+      ],
+      "classes": [
+        {
+          "name": "DropSessileSettings",
+          "line": 25,
+          "has_docstring": true
+        },
+        {
+          "name": "DropPendantSettings",
+          "line": 46,
+          "has_docstring": true
+        }
+      ],
+      "module_docstring": true,
+      "docstrings": 6
+    }
+  },
+  {
+    "path": "plugins/detect_needle.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 348,
+      "functions": [
+        {
+          "name": "detect_needle_sessile",
+          "line": 60,
+          "has_docstring": true
+        },
+        {
+          "name": "detect_needle_pendant",
+          "line": 188,
+          "has_docstring": true
+        },
+        {
+          "name": "model_post_init",
+          "line": 38,
+          "has_docstring": true
+        }
+      ],
+      "classes": [
+        {
+          "name": "NeedleSessileSettings",
+          "line": 25,
+          "has_docstring": true
+        },
+        {
+          "name": "NeedlePendantSettings",
+          "line": 43,
+          "has_docstring": true
+        }
+      ],
+      "module_docstring": true,
+      "docstrings": 6
+    }
+  },
+  {
+    "path": "plugins/detect_roi.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 283,
+      "functions": [
+        {
+          "name": "detect_roi_sessile",
+          "line": 19,
+          "has_docstring": true
+        },
+        {
+          "name": "detect_roi_pendant",
+          "line": 130,
+          "has_docstring": true
+        },
+        {
+          "name": "detect_roi_auto",
+          "line": 222,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 4
+    }
+  },
+  {
+    "path": "plugins/detect_substrate.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 241,
+      "functions": [
+        {
+          "name": "detect_substrate_gradient",
+          "line": 19,
+          "has_docstring": true
+        },
+        {
+          "name": "_find_horizon_median",
+          "line": 110,
+          "has_docstring": true
+        },
+        {
+          "name": "detect_substrate_hough",
+          "line": 135,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 4
+    }
+  },
+  {
+    "path": "plugins/geom_circle.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 17,
+      "functions": [
+        {
+          "name": "geom_circle",
+          "line": 5,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": false,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "plugins/image_analysis_utilities.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 212,
+      "functions": [
+        {
+          "name": "image_quality",
+          "line": 24,
+          "has_docstring": true
+        },
+        {
+          "name": "edge_comparison",
+          "line": 137,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 3
+    }
+  },
+  {
+    "path": "plugins/optimizer_dummy.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 11,
+      "functions": [
+        {
+          "name": "noop_optimizer",
+          "line": 4,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": false,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "plugins/output_json.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 42,
+      "functions": [
+        {
+          "name": "output_results_json",
+          "line": 9,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "plugins/overlayer_simple.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 41,
+      "functions": [
+        {
+          "name": "add_simple_overlay",
+          "line": 8,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "plugins/physics_dummy.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 40,
+      "functions": [
+        {
+          "name": "dummy_physics",
+          "line": 8,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "plugins/preproc_auto_detect.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 106,
+      "functions": [
+        {
+          "name": "auto_detect_preprocessor",
+          "line": 21,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "plugins/preproc_blur.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 51,
+      "functions": [
+        {
+          "name": "blur_preprocessor",
+          "line": 14,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "plugins/preproc_detect_drop.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 299,
+      "functions": [
+        {
+          "name": "detect_drop_preprocessor",
+          "line": 24,
+          "has_docstring": true
+        },
+        {
+          "name": "_detect_drop_sessile",
+          "line": 74,
+          "has_docstring": true
+        },
+        {
+          "name": "_detect_drop_pendant",
+          "line": 251,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 4
+    }
+  },
+  {
+    "path": "plugins/preproc_detect_needle.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 193,
+      "functions": [
+        {
+          "name": "detect_needle_preprocessor",
+          "line": 24,
+          "has_docstring": true
+        },
+        {
+          "name": "_detect_needle_sessile",
+          "line": 71,
+          "has_docstring": true
+        },
+        {
+          "name": "_detect_needle_pendant",
+          "line": 106,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 4
+    }
+  },
+  {
+    "path": "plugins/preproc_detect_roi.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 153,
+      "functions": [
+        {
+          "name": "detect_roi_preprocessor",
+          "line": 24,
+          "has_docstring": true
+        },
+        {
+          "name": "_compute_roi_sessile",
+          "line": 66,
+          "has_docstring": true
+        },
+        {
+          "name": "_compute_roi_pendant",
+          "line": 118,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 4
+    }
+  },
+  {
+    "path": "plugins/preproc_detect_substrate.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 115,
+      "functions": [
+        {
+          "name": "_find_horizon_median",
+          "line": 24,
+          "has_docstring": true
+        },
+        {
+          "name": "detect_substrate_preprocessor",
+          "line": 48,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 3
+    }
+  },
+  {
+    "path": "plugins/scaler_identity.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 41,
+      "functions": [
+        {
+          "name": "identity_scaler",
+          "line": 8,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "plugins/simple_solver.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 60,
+      "functions": [
+        {
+          "name": "_estimate_scale_from_image",
+          "line": 12,
+          "has_docstring": true
+        },
+        {
+          "name": "parabola_solver",
+          "line": 39,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": false,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "plugins/sine_edge.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 76,
+      "functions": [
+        {
+          "name": "_fallback_sine",
+          "line": 12,
+          "has_docstring": true
+        },
+        {
+          "name": "sine_like",
+          "line": 39,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": false,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "plugins/toy_young_laplace.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 19,
+      "functions": [
+        {
+          "name": "toy_young_laplace",
+          "line": 4,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": false,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "plugins/validator_basic.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 41,
+      "functions": [
+        {
+          "name": "basic_validator",
+          "line": 8,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "pruebas/data/generate_data.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 40,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "pruebas/drop_analysis_script.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 177,
+      "functions": [
+        {
+          "name": "edge_func_scalar",
+          "line": 144,
+          "has_docstring": false
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "pruebas/drop_analysis_script_v3.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 219,
+      "functions": [
+        {
+          "name": "edge_func_scalar",
+          "line": 186,
+          "has_docstring": false
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "pruebas/droplet_analysis.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 512,
+      "functions": [
+        {
+          "name": "visualize_analysis",
+          "line": 413,
+          "has_docstring": true
+        },
+        {
+          "name": "__init__",
+          "line": 18,
+          "has_docstring": true
+        },
+        {
+          "name": "clean_contour_near_baseline",
+          "line": 31,
+          "has_docstring": true
+        },
+        {
+          "name": "find_contact_points",
+          "line": 80,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_contact_angle_methods",
+          "line": 106,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_drop_volume_methods",
+          "line": 211,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_areas",
+          "line": 278,
+          "has_docstring": true
+        },
+        {
+          "name": "find_apex_point",
+          "line": 317,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_dimensions",
+          "line": 349,
+          "has_docstring": true
+        },
+        {
+          "name": "analyze_droplet_complete",
+          "line": 381,
+          "has_docstring": true
+        },
+        {
+          "name": "fit_tangent_angle",
+          "line": 117,
+          "has_docstring": false
+        },
+        {
+          "name": "fit_circle_near_contact",
+          "line": 166,
+          "has_docstring": false
+        },
+        {
+          "name": "calc_radius",
+          "line": 176,
+          "has_docstring": false
+        }
+      ],
+      "classes": [
+        {
+          "name": "DropletAnalyzer",
+          "line": 12,
+          "has_docstring": true
+        }
+      ],
+      "module_docstring": true,
+      "docstrings": 12
+    }
+  },
+  {
+    "path": "pruebas/droplet_analysis_v2.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 905,
+      "functions": [
+        {
+          "name": "visualize_analysis",
+          "line": 611,
+          "has_docstring": true
+        },
+        {
+          "name": "create_detailed_comparison_plot",
+          "line": 777,
+          "has_docstring": true
+        },
+        {
+          "name": "__init__",
+          "line": 19,
+          "has_docstring": true
+        },
+        {
+          "name": "clean_contour_near_baseline",
+          "line": 32,
+          "has_docstring": true
+        },
+        {
+          "name": "find_contact_points",
+          "line": 81,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_contact_angle_methods",
+          "line": 107,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_drop_volume_methods",
+          "line": 409,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_areas",
+          "line": 476,
+          "has_docstring": true
+        },
+        {
+          "name": "find_apex_point",
+          "line": 515,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_dimensions",
+          "line": 547,
+          "has_docstring": true
+        },
+        {
+          "name": "analyze_droplet_complete",
+          "line": 579,
+          "has_docstring": true
+        },
+        {
+          "name": "fit_tangent_angle",
+          "line": 118,
+          "has_docstring": false
+        },
+        {
+          "name": "fit_circle_near_contact",
+          "line": 167,
+          "has_docstring": false
+        },
+        {
+          "name": "fit_polynomial_angle",
+          "line": 211,
+          "has_docstring": true
+        },
+        {
+          "name": "fit_young_laplace",
+          "line": 276,
+          "has_docstring": true
+        },
+        {
+          "name": "calc_radius",
+          "line": 177,
+          "has_docstring": false
+        },
+        {
+          "name": "young_laplace_ode",
+          "line": 308,
+          "has_docstring": true
+        },
+        {
+          "name": "fit_bond_number",
+          "line": 319,
+          "has_docstring": true
+        }
+      ],
+      "classes": [
+        {
+          "name": "DropletAnalyzer",
+          "line": 13,
+          "has_docstring": true
+        }
+      ],
+      "module_docstring": true,
+      "docstrings": 17
+    }
+  },
+  {
+    "path": "pruebas/droplet_analysis_v3.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 1571,
+      "functions": [
+        {
+          "name": "create_comprehensive_report",
+          "line": 16,
+          "has_docstring": true
+        },
+        {
+          "name": "export_results_to_csv",
+          "line": 107,
+          "has_docstring": true
+        },
+        {
+          "name": "contact_angle_from_slope",
+          "line": 180,
+          "has_docstring": true
+        },
+        {
+          "name": "_yl_ode_right",
+          "line": 189,
+          "has_docstring": false
+        },
+        {
+          "name": "_yl_ode_left",
+          "line": 196,
+          "has_docstring": false
+        },
+        {
+          "name": "_integrate_to_baseline_right",
+          "line": 203,
+          "has_docstring": false
+        },
+        {
+          "name": "_integrate_to_baseline_left",
+          "line": 211,
+          "has_docstring": false
+        },
+        {
+          "name": "_slope_at_y",
+          "line": 219,
+          "has_docstring": false
+        },
+        {
+          "name": "generate_synthetic_droplet_YL",
+          "line": 245,
+          "has_docstring": false
+        },
+        {
+          "name": "visualize_analysis",
+          "line": 1205,
+          "has_docstring": true
+        },
+        {
+          "name": "create_detailed_comparison_plot",
+          "line": 1400,
+          "has_docstring": true
+        },
+        {
+          "name": "get_nested",
+          "line": 123,
+          "has_docstring": false
+        },
+        {
+          "name": "ev",
+          "line": 205,
+          "has_docstring": false
+        },
+        {
+          "name": "ev",
+          "line": 213,
+          "has_docstring": false
+        },
+        {
+          "name": "__init__",
+          "line": 357,
+          "has_docstring": true
+        },
+        {
+          "name": "clean_contour_near_baseline",
+          "line": 370,
+          "has_docstring": true
+        },
+        {
+          "name": "find_contact_points",
+          "line": 419,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_contact_angle_methods",
+          "line": 445,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_drop_volume_methods",
+          "line": 793,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_areas",
+          "line": 860,
+          "has_docstring": true
+        },
+        {
+          "name": "find_apex_point",
+          "line": 900,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_dimensions",
+          "line": 932,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_advanced_parameters",
+          "line": 964,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_fitting_quality_metrics",
+          "line": 1040,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_uncertainty_estimates",
+          "line": 1118,
+          "has_docstring": true
+        },
+        {
+          "name": "analyze_droplet_complete",
+          "line": 1173,
+          "has_docstring": true
+        },
+        {
+          "name": "angle_at_contact_right",
+          "line": 267,
+          "has_docstring": false
+        },
+        {
+          "name": "fit_tangent_angle",
+          "line": 456,
+          "has_docstring": true
+        },
+        {
+          "name": "fit_circle_near_contact",
+          "line": 500,
+          "has_docstring": false
+        },
+        {
+          "name": "fit_polynomial_angle",
+          "line": 553,
+          "has_docstring": true
+        },
+        {
+          "name": "fit_young_laplace",
+          "line": 598,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_r_squared",
+          "line": 1052,
+          "has_docstring": true
+        },
+        {
+          "name": "estimate_contour_noise",
+          "line": 1133,
+          "has_docstring": false
+        },
+        {
+          "name": "obj",
+          "line": 286,
+          "has_docstring": false
+        },
+        {
+          "name": "cost_function",
+          "line": 511,
+          "has_docstring": false
+        },
+        {
+          "name": "yl_ode_right",
+          "line": 641,
+          "has_docstring": false
+        },
+        {
+          "name": "yl_ode_left",
+          "line": 650,
+          "has_docstring": false
+        },
+        {
+          "name": "initial_states",
+          "line": 660,
+          "has_docstring": false
+        },
+        {
+          "name": "integrate_branches",
+          "line": 666,
+          "has_docstring": false
+        },
+        {
+          "name": "cross_x",
+          "line": 676,
+          "has_docstring": false
+        },
+        {
+          "name": "objective",
+          "line": 688,
+          "has_docstring": false
+        },
+        {
+          "name": "ev_baseline",
+          "line": 732,
+          "has_docstring": false
+        },
+        {
+          "name": "reached",
+          "line": 739,
+          "has_docstring": false
+        }
+      ],
+      "classes": [
+        {
+          "name": "DropletAnalyzer",
+          "line": 351,
+          "has_docstring": true
+        }
+      ],
+      "module_docstring": true,
+      "docstrings": 23
+    }
+  },
+  {
+    "path": "pruebas/script.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 182,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "pruebas/sessile_analysis_v1.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 1772,
+      "functions": [
+        {
+          "name": "create_comprehensive_report",
+          "line": 16,
+          "has_docstring": true
+        },
+        {
+          "name": "export_results_to_csv",
+          "line": 107,
+          "has_docstring": true
+        },
+        {
+          "name": "contact_angle_from_slope",
+          "line": 180,
+          "has_docstring": true
+        },
+        {
+          "name": "_yl_ode_right",
+          "line": 189,
+          "has_docstring": false
+        },
+        {
+          "name": "_yl_ode_left",
+          "line": 196,
+          "has_docstring": false
+        },
+        {
+          "name": "_integrate_to_baseline_right",
+          "line": 203,
+          "has_docstring": false
+        },
+        {
+          "name": "_integrate_to_baseline_left",
+          "line": 211,
+          "has_docstring": false
+        },
+        {
+          "name": "_slope_at_y",
+          "line": 219,
+          "has_docstring": false
+        },
+        {
+          "name": "generate_synthetic_droplet_YL",
+          "line": 245,
+          "has_docstring": false
+        },
+        {
+          "name": "visualize_analysis",
+          "line": 1205,
+          "has_docstring": true
+        },
+        {
+          "name": "create_detailed_comparison_plot",
+          "line": 1400,
+          "has_docstring": true
+        },
+        {
+          "name": "get_nested",
+          "line": 123,
+          "has_docstring": false
+        },
+        {
+          "name": "ev",
+          "line": 205,
+          "has_docstring": false
+        },
+        {
+          "name": "ev",
+          "line": 213,
+          "has_docstring": false
+        },
+        {
+          "name": "__init__",
+          "line": 357,
+          "has_docstring": true
+        },
+        {
+          "name": "clean_contour_near_baseline",
+          "line": 370,
+          "has_docstring": true
+        },
+        {
+          "name": "find_contact_points",
+          "line": 419,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_contact_angle_methods",
+          "line": 445,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_drop_volume_methods",
+          "line": 793,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_areas",
+          "line": 860,
+          "has_docstring": true
+        },
+        {
+          "name": "find_apex_point",
+          "line": 900,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_dimensions",
+          "line": 932,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_advanced_parameters",
+          "line": 964,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_fitting_quality_metrics",
+          "line": 1040,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_uncertainty_estimates",
+          "line": 1118,
+          "has_docstring": true
+        },
+        {
+          "name": "analyze_droplet_complete",
+          "line": 1173,
+          "has_docstring": true
+        },
+        {
+          "name": "__init__",
+          "line": 1513,
+          "has_docstring": false
+        },
+        {
+          "name": "__set_name__",
+          "line": 1519,
+          "has_docstring": false
+        },
+        {
+          "name": "__get__",
+          "line": 1522,
+          "has_docstring": false
+        },
+        {
+          "name": "cleaned",
+          "line": 1541,
+          "has_docstring": true
+        },
+        {
+          "name": "contacts",
+          "line": 1546,
+          "has_docstring": true
+        },
+        {
+          "name": "find_contact_points",
+          "line": 1566,
+          "has_docstring": false
+        },
+        {
+          "name": "contact_width_px",
+          "line": 1570,
+          "has_docstring": false
+        },
+        {
+          "name": "center_x_px",
+          "line": 1575,
+          "has_docstring": false
+        },
+        {
+          "name": "apex_point_cached",
+          "line": 1580,
+          "has_docstring": true
+        },
+        {
+          "name": "find_apex_point",
+          "line": 1594,
+          "has_docstring": false
+        },
+        {
+          "name": "height_px",
+          "line": 1598,
+          "has_docstring": false
+        },
+        {
+          "name": "diameter_px",
+          "line": 1602,
+          "has_docstring": false
+        },
+        {
+          "name": "contour_area_px2",
+          "line": 1606,
+          "has_docstring": false
+        },
+        {
+          "name": "calculate_dimensions",
+          "line": 1612,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_areas",
+          "line": 1625,
+          "has_docstring": false
+        },
+        {
+          "name": "calculate_drop_volume_methods",
+          "line": 1638,
+          "has_docstring": false
+        },
+        {
+          "name": "calculate_contact_angle_methods",
+          "line": 1676,
+          "has_docstring": true
+        },
+        {
+          "name": "cache_profile",
+          "line": 1685,
+          "has_docstring": true
+        },
+        {
+          "name": "angle_at_contact_right",
+          "line": 267,
+          "has_docstring": false
+        },
+        {
+          "name": "fit_tangent_angle",
+          "line": 456,
+          "has_docstring": true
+        },
+        {
+          "name": "fit_circle_near_contact",
+          "line": 500,
+          "has_docstring": false
+        },
+        {
+          "name": "fit_polynomial_angle",
+          "line": 553,
+          "has_docstring": true
+        },
+        {
+          "name": "fit_young_laplace",
+          "line": 598,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_r_squared",
+          "line": 1052,
+          "has_docstring": true
+        },
+        {
+          "name": "estimate_contour_noise",
+          "line": 1133,
+          "has_docstring": false
+        },
+        {
+          "name": "obj",
+          "line": 286,
+          "has_docstring": false
+        },
+        {
+          "name": "cost_function",
+          "line": 511,
+          "has_docstring": false
+        },
+        {
+          "name": "yl_ode_right",
+          "line": 641,
+          "has_docstring": false
+        },
+        {
+          "name": "yl_ode_left",
+          "line": 650,
+          "has_docstring": false
+        },
+        {
+          "name": "initial_states",
+          "line": 660,
+          "has_docstring": false
+        },
+        {
+          "name": "integrate_branches",
+          "line": 666,
+          "has_docstring": false
+        },
+        {
+          "name": "cross_x",
+          "line": 676,
+          "has_docstring": false
+        },
+        {
+          "name": "objective",
+          "line": 688,
+          "has_docstring": false
+        },
+        {
+          "name": "ev_baseline",
+          "line": 732,
+          "has_docstring": false
+        },
+        {
+          "name": "reached",
+          "line": 739,
+          "has_docstring": false
+        }
+      ],
+      "classes": [
+        {
+          "name": "_BaseDropletAnalyzer",
+          "line": 351,
+          "has_docstring": true
+        },
+        {
+          "name": "_counted_cached_property",
+          "line": 1512,
+          "has_docstring": false
+        },
+        {
+          "name": "DropletAnalyzer",
+          "line": 1533,
+          "has_docstring": true
+        }
+      ],
+      "module_docstring": true,
+      "docstrings": 30
+    }
+  },
+  {
+    "path": "pruebas/test_geometry_helper_run.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 29,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "scripts/add_gui_docstrings.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 100,
+      "functions": [
+        {
+          "name": "add_gui_docstring",
+          "line": 52,
+          "has_docstring": true
+        },
+        {
+          "name": "main",
+          "line": 79,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 3
+    }
+  },
+  {
+    "path": "scripts/add_stub_docstrings.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 178,
+      "functions": [
+        {
+          "name": "add_stub_docstring",
+          "line": 97,
+          "has_docstring": true
+        },
+        {
+          "name": "main",
+          "line": 154,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 3
+    }
+  },
+  {
+    "path": "scripts/find_unreferenced.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 186,
+      "functions": [
+        {
+          "name": "module_name_for",
+          "line": 23,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "scripts/generate_docs.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 145,
+      "functions": [
+        {
+          "name": "get_docstring",
+          "line": 17,
+          "has_docstring": true
+        },
+        {
+          "name": "get_imports",
+          "line": 38,
+          "has_docstring": true
+        },
+        {
+          "name": "generate_pythonfiles_md",
+          "line": 70,
+          "has_docstring": true
+        },
+        {
+          "name": "generate_imported_md",
+          "line": 106,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 5
+    }
+  },
+  {
+    "path": "scripts/generate_graph.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 47,
+      "functions": [],
+      "classes": [],
+      "module_docstring": false,
+      "docstrings": 0
+    }
+  },
+  {
+    "path": "scripts/generate_legacy_map.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 123,
+      "functions": [
+        {
+          "name": "module_name_from_path",
+          "line": 18,
+          "has_docstring": true
+        },
+        {
+          "name": "parse_imports",
+          "line": 35,
+          "has_docstring": true
+        },
+        {
+          "name": "build_graph",
+          "line": 63,
+          "has_docstring": true
+        },
+        {
+          "name": "to_html",
+          "line": 83,
+          "has_docstring": true
+        },
+        {
+          "name": "main",
+          "line": 111,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 6
+    }
+  },
+  {
+    "path": "scripts/generate_recommendations.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 64,
+      "functions": [],
+      "classes": [],
+      "module_docstring": false,
+      "docstrings": 0
+    }
+  },
+  {
+    "path": "scripts/import_all_menipy.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 75,
+      "functions": [
+        {
+          "name": "module_name_for",
+          "line": 32,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "scripts/introspect_menipy.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 38,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "scripts/merge_import_maps.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 70,
+      "functions": [],
+      "classes": [],
+      "module_docstring": false,
+      "docstrings": 0
+    }
+  },
+  {
+    "path": "scripts/playground/droplet_analysis_skimage.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 267,
+      "functions": [
+        {
+          "name": "load_or_create_droplet",
+          "line": 14,
+          "has_docstring": true
+        },
+        {
+          "name": "detect_droplets_simple",
+          "line": 41,
+          "has_docstring": true
+        },
+        {
+          "name": "init_snake_from_contour",
+          "line": 59,
+          "has_docstring": true
+        },
+        {
+          "name": "analyze_droplet_comprehensive",
+          "line": 77,
+          "has_docstring": true
+        },
+        {
+          "name": "process_image_with_active_contours",
+          "line": 130,
+          "has_docstring": true
+        },
+        {
+          "name": "classify_droplet_shape",
+          "line": 232,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 7
+    }
+  },
+  {
+    "path": "scripts/playground/droplet_snake_analysis.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 262,
+      "functions": [
+        {
+          "name": "create_synthetic_droplet",
+          "line": 12,
+          "has_docstring": true
+        },
+        {
+          "name": "initialize_snake_circle",
+          "line": 31,
+          "has_docstring": true
+        },
+        {
+          "name": "compute_external_energy",
+          "line": 39,
+          "has_docstring": true
+        },
+        {
+          "name": "active_contour_evolution",
+          "line": 58,
+          "has_docstring": true
+        },
+        {
+          "name": "analyze_droplet",
+          "line": 125,
+          "has_docstring": true
+        },
+        {
+          "name": "visualize_results",
+          "line": 166,
+          "has_docstring": true
+        },
+        {
+          "name": "main",
+          "line": 214,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 8
+    }
+  },
+  {
+    "path": "scripts/playground/sessile_detection_method.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 244,
+      "functions": [
+        {
+          "name": "calculate_otsu_variance_ratio",
+          "line": 9,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_illumination_uniformity",
+          "line": 69,
+          "has_docstring": true
+        },
+        {
+          "name": "auto_select_threshold_method",
+          "line": 101,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 4
+    }
+  },
+  {
+    "path": "scripts/playground/sessile_detection_method2.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 338,
+      "functions": [
+        {
+          "name": "calculate_otsu_variance_ratio",
+          "line": 9,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_illumination_uniformity",
+          "line": 45,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_edge_quality",
+          "line": 65,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_gradient_strength",
+          "line": 92,
+          "has_docstring": true
+        },
+        {
+          "name": "auto_select_method_with_canny",
+          "line": 112,
+          "has_docstring": true
+        },
+        {
+          "name": "compare_all_methods",
+          "line": 227,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 7
+    }
+  },
+  {
+    "path": "scripts/playground/sessile_preprocessing_tests.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 477,
+      "functions": [
+        {
+          "name": "visualize_preprocessing",
+          "line": 400,
+          "has_docstring": true
+        },
+        {
+          "name": "__init__",
+          "line": 13,
+          "has_docstring": true
+        },
+        {
+          "name": "analyze_noise",
+          "line": 24,
+          "has_docstring": true
+        },
+        {
+          "name": "analyze_contrast",
+          "line": 69,
+          "has_docstring": true
+        },
+        {
+          "name": "analyze_brightness",
+          "line": 112,
+          "has_docstring": true
+        },
+        {
+          "name": "analyze_sharpness",
+          "line": 139,
+          "has_docstring": true
+        },
+        {
+          "name": "analyze_illumination_uniformity",
+          "line": 160,
+          "has_docstring": true
+        },
+        {
+          "name": "detect_artifacts",
+          "line": 195,
+          "has_docstring": true
+        },
+        {
+          "name": "analyze_background_complexity",
+          "line": 228,
+          "has_docstring": true
+        },
+        {
+          "name": "detect_reflections_glare",
+          "line": 250,
+          "has_docstring": true
+        },
+        {
+          "name": "analyze_all",
+          "line": 283,
+          "has_docstring": true
+        },
+        {
+          "name": "apply_recommended_preprocessing",
+          "line": 340,
+          "has_docstring": true
+        }
+      ],
+      "classes": [
+        {
+          "name": "ImageQualityAnalyzer",
+          "line": 10,
+          "has_docstring": true
+        }
+      ],
+      "module_docstring": true,
+      "docstrings": 14
+    }
+  },
+  {
+    "path": "scripts/playground/synth_scripts.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 24,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "scripts/playground/synth_val.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 535,
+      "functions": [
+        {
+          "name": "demo_validation",
+          "line": 476,
+          "has_docstring": true
+        },
+        {
+          "name": "absolute_error",
+          "line": 17,
+          "has_docstring": true
+        },
+        {
+          "name": "relative_error",
+          "line": 22,
+          "has_docstring": true
+        },
+        {
+          "name": "mean_absolute_error",
+          "line": 29,
+          "has_docstring": true
+        },
+        {
+          "name": "rmse",
+          "line": 34,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_all_metrics",
+          "line": 41,
+          "has_docstring": true
+        },
+        {
+          "name": "__init__",
+          "line": 57,
+          "has_docstring": true
+        },
+        {
+          "name": "test_single_image",
+          "line": 70,
+          "has_docstring": true
+        },
+        {
+          "name": "test_dataset",
+          "line": 190,
+          "has_docstring": true
+        },
+        {
+          "name": "_generate_report",
+          "line": 242,
+          "has_docstring": true
+        },
+        {
+          "name": "_report_sessile_metrics",
+          "line": 277,
+          "has_docstring": true
+        },
+        {
+          "name": "_report_pendant_metrics",
+          "line": 305,
+          "has_docstring": true
+        },
+        {
+          "name": "_report_capillary_metrics",
+          "line": 316,
+          "has_docstring": true
+        },
+        {
+          "name": "_report_captive_metrics",
+          "line": 325,
+          "has_docstring": true
+        },
+        {
+          "name": "plot_results",
+          "line": 331,
+          "has_docstring": true
+        },
+        {
+          "name": "export_results",
+          "line": 469,
+          "has_docstring": true
+        }
+      ],
+      "classes": [
+        {
+          "name": "ValidationMetrics",
+          "line": 13,
+          "has_docstring": true
+        },
+        {
+          "name": "ASDATester",
+          "line": 54,
+          "has_docstring": true
+        }
+      ],
+      "module_docstring": true,
+      "docstrings": 19
+    }
+  },
+  {
+    "path": "scripts/playground/validation_script.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 149,
+      "functions": [
+        {
+          "name": "test_physics_params_validation",
+          "line": 18,
+          "has_docstring": true
+        },
+        {
+          "name": "test_round_trip_serialization",
+          "line": 56,
+          "has_docstring": true
+        },
+        {
+          "name": "main",
+          "line": 136,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 4
+    }
+  },
+  {
+    "path": "show_audit_summary.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 44,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "show_undocumented.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 42,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/__init__.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 5,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/__main__.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 6,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/__init__.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 12,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/__main__.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 6,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/common/__init__.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 0,
+      "functions": [],
+      "classes": [],
+      "module_docstring": false,
+      "docstrings": 0
+    }
+  },
+  {
+    "path": "src/menipy/common/acquisition.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 58,
+      "functions": [
+        {
+          "name": "_load_image",
+          "line": 14,
+          "has_docstring": true
+        },
+        {
+          "name": "from_file",
+          "line": 34,
+          "has_docstring": true
+        },
+        {
+          "name": "from_camera",
+          "line": 42,
+          "has_docstring": true
+        },
+        {
+          "name": "from_camera_or_file",
+          "line": 54,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 5
+    }
+  },
+  {
+    "path": "src/menipy/common/acquisition_stage.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 94,
+      "functions": [
+        {
+          "name": "do_acquisition",
+          "line": 19,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "src/menipy/common/auto_calibrator.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 812,
+      "functions": [
+        {
+          "name": "run_auto_calibration",
+          "line": 795,
+          "has_docstring": true
+        },
+        {
+          "name": "__init__",
+          "line": 60,
+          "has_docstring": true
+        },
+        {
+          "name": "detect_all",
+          "line": 122,
+          "has_docstring": true
+        },
+        {
+          "name": "_detect_sessile",
+          "line": 136,
+          "has_docstring": true
+        },
+        {
+          "name": "_detect_pendant",
+          "line": 180,
+          "has_docstring": true
+        },
+        {
+          "name": "_segment_image_adaptive",
+          "line": 235,
+          "has_docstring": true
+        },
+        {
+          "name": "_segment_image_otsu",
+          "line": 258,
+          "has_docstring": true
+        },
+        {
+          "name": "_detect_substrate",
+          "line": 275,
+          "has_docstring": true
+        },
+        {
+          "name": "_find_horizon_median",
+          "line": 304,
+          "has_docstring": true
+        },
+        {
+          "name": "_detect_needle_sessile",
+          "line": 327,
+          "has_docstring": true
+        },
+        {
+          "name": "_detect_drop_sessile",
+          "line": 357,
+          "has_docstring": true
+        },
+        {
+          "name": "_find_pendant_drop_contour",
+          "line": 563,
+          "has_docstring": true
+        },
+        {
+          "name": "_detect_needle_pendant",
+          "line": 607,
+          "has_docstring": true
+        },
+        {
+          "name": "_detect_apex_pendant",
+          "line": 693,
+          "has_docstring": true
+        },
+        {
+          "name": "_compute_roi_pendant",
+          "line": 706,
+          "has_docstring": true
+        },
+        {
+          "name": "_compute_roi",
+          "line": 740,
+          "has_docstring": true
+        }
+      ],
+      "classes": [
+        {
+          "name": "CalibrationResult",
+          "line": 21,
+          "has_docstring": true
+        },
+        {
+          "name": "AutoCalibrator",
+          "line": 52,
+          "has_docstring": true
+        }
+      ],
+      "module_docstring": true,
+      "docstrings": 19
+    }
+  },
+  {
+    "path": "src/menipy/common/detection_helpers.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 216,
+      "functions": [
+        {
+          "name": "plugins_available",
+          "line": 46,
+          "has_docstring": true
+        },
+        {
+          "name": "auto_detect_features",
+          "line": 51,
+          "has_docstring": true
+        },
+        {
+          "name": "apply_roi_crop",
+          "line": 166,
+          "has_docstring": true
+        },
+        {
+          "name": "adjust_coordinates_for_roi",
+          "line": 184,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 5
+    }
+  },
+  {
+    "path": "src/menipy/common/edge_detection.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 385,
+      "functions": [
+        {
+          "name": "_load_plugin",
+          "line": 26,
+          "has_docstring": true
+        },
+        {
+          "name": "_fallback_canny",
+          "line": 51,
+          "has_docstring": true
+        },
+        {
+          "name": "get_contour_detector",
+          "line": 89,
+          "has_docstring": true
+        },
+        {
+          "name": "extract_external_contour",
+          "line": 108,
+          "has_docstring": true
+        },
+        {
+          "name": "run",
+          "line": 127,
+          "has_docstring": true
+        },
+        {
+          "name": "_parse_roi",
+          "line": 234,
+          "has_docstring": false
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 6
+    }
+  },
+  {
+    "path": "src/menipy/common/geometry.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 583,
+      "functions": [
+        {
+          "name": "fit_circle",
+          "line": 10,
+          "has_docstring": true
+        },
+        {
+          "name": "horizontal_intersections",
+          "line": 35,
+          "has_docstring": true
+        },
+        {
+          "name": "point_to_segment_distance",
+          "line": 50,
+          "has_docstring": true
+        },
+        {
+          "name": "curvature_estimates",
+          "line": 66,
+          "has_docstring": true
+        },
+        {
+          "name": "find_contact_points_from_contour",
+          "line": 100,
+          "has_docstring": true
+        },
+        {
+          "name": "detect_baseline_ransac",
+          "line": 182,
+          "has_docstring": true
+        },
+        {
+          "name": "refine_apex_curvature",
+          "line": 252,
+          "has_docstring": true
+        },
+        {
+          "name": "estimate_contact_angle_tangent",
+          "line": 361,
+          "has_docstring": true
+        },
+        {
+          "name": "estimate_contact_angle_circle_fit",
+          "line": 457,
+          "has_docstring": true
+        },
+        {
+          "name": "tangent_angle_at_point",
+          "line": 524,
+          "has_docstring": true
+        },
+        {
+          "name": "circle_fit_angle_at_point",
+          "line": 555,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 12
+    }
+  },
+  {
+    "path": "src/menipy/common/image_utils.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 57,
+      "functions": [
+        {
+          "name": "ensure_gray",
+          "line": 11,
+          "has_docstring": true
+        },
+        {
+          "name": "edges_to_xy",
+          "line": 28,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 3
+    }
+  },
+  {
+    "path": "src/menipy/common/metrics.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 39,
+      "functions": [
+        {
+          "name": "compute_drop_metrics",
+          "line": 6,
+          "has_docstring": true
+        },
+        {
+          "name": "find_apex_index",
+          "line": 28,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 3
+    }
+  },
+  {
+    "path": "src/menipy/common/optimization.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 12,
+      "functions": [
+        {
+          "name": "run",
+          "line": 6,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "src/menipy/common/outputs.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 15,
+      "functions": [
+        {
+          "name": "run",
+          "line": 6,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "src/menipy/common/overlay.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 162,
+      "functions": [
+        {
+          "name": "_bgr",
+          "line": 28,
+          "has_docstring": false
+        },
+        {
+          "name": "_ensure_bgr",
+          "line": 34,
+          "has_docstring": false
+        },
+        {
+          "name": "_require_cv2",
+          "line": 42,
+          "has_docstring": false
+        },
+        {
+          "name": "_as_ndarray",
+          "line": 49,
+          "has_docstring": true
+        },
+        {
+          "name": "draw_overlay",
+          "line": 64,
+          "has_docstring": true
+        },
+        {
+          "name": "run",
+          "line": 149,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 4
+    }
+  },
+  {
+    "path": "src/menipy/common/physics.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 17,
+      "functions": [
+        {
+          "name": "run",
+          "line": 6,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "src/menipy/common/plugin_settings.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 63,
+      "functions": [
+        {
+          "name": "register_detector_settings",
+          "line": 19,
+          "has_docstring": true
+        },
+        {
+          "name": "get_detector_settings_model",
+          "line": 24,
+          "has_docstring": true
+        },
+        {
+          "name": "resolve_plugin_settings",
+          "line": 29,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 4
+    }
+  },
+  {
+    "path": "src/menipy/common/preprocessing.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 241,
+      "functions": [
+        {
+          "name": "run",
+          "line": 35,
+          "has_docstring": true
+        },
+        {
+          "name": "_resolve_source_image",
+          "line": 125,
+          "has_docstring": false
+        },
+        {
+          "name": "_resolve_settings",
+          "line": 157,
+          "has_docstring": false
+        },
+        {
+          "name": "_resolve_markers",
+          "line": 174,
+          "has_docstring": false
+        },
+        {
+          "name": "_compose_full_image",
+          "line": 186,
+          "has_docstring": false
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "src/menipy/common/scaling.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 10,
+      "functions": [
+        {
+          "name": "run",
+          "line": 6,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "src/menipy/common/units.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 11,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/common/validation.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [
+        {
+          "name": "run",
+          "line": 6,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "src/menipy/common/zold_detection.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 1,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/gui/__init__.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 7,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/gui/__main__.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 7,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/gui/adsa_app.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 69,
+      "functions": [
+        {
+          "name": "main",
+          "line": 18,
+          "has_docstring": true
+        },
+        {
+          "name": "_qt_msg_filter",
+          "line": 28,
+          "has_docstring": false
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "src/menipy/gui/app.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 153,
+      "functions": [
+        {
+          "name": "_register_qrc",
+          "line": 41,
+          "has_docstring": false
+        },
+        {
+          "name": "_install_exception_hook",
+          "line": 71,
+          "has_docstring": false
+        },
+        {
+          "name": "_configure_qt",
+          "line": 92,
+          "has_docstring": false
+        },
+        {
+          "name": "main",
+          "line": 101,
+          "has_docstring": true
+        },
+        {
+          "name": "_qt_msg_handler",
+          "line": 18,
+          "has_docstring": false
+        },
+        {
+          "name": "_hook",
+          "line": 72,
+          "has_docstring": false
+        },
+        {
+          "name": "_on_quit",
+          "line": 134,
+          "has_docstring": false
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "src/menipy/gui/dialogs/analysis_settings/__init__.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 1,
+      "functions": [],
+      "classes": [],
+      "module_docstring": false,
+      "docstrings": 0
+    }
+  },
+  {
+    "path": "src/menipy/gui/dialogs/calibration_wizard_dialog.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 816,
+      "functions": [
+        {
+          "name": "__init__",
+          "line": 56,
+          "has_docstring": true
+        },
+        {
+          "name": "_build_ui",
+          "line": 101,
+          "has_docstring": true
+        },
+        {
+          "name": "_create_region_widget",
+          "line": 233,
+          "has_docstring": true
+        },
+        {
+          "name": "_wire_signals",
+          "line": 301,
+          "has_docstring": true
+        },
+        {
+          "name": "_show_original_image",
+          "line": 313,
+          "has_docstring": true
+        },
+        {
+          "name": "_display_image",
+          "line": 317,
+          "has_docstring": true
+        },
+        {
+          "name": "_fit_preview",
+          "line": 337,
+          "has_docstring": true
+        },
+        {
+          "name": "_actual_preview",
+          "line": 347,
+          "has_docstring": true
+        },
+        {
+          "name": "run_detection",
+          "line": 352,
+          "has_docstring": true
+        },
+        {
+          "name": "_show_results",
+          "line": 433,
+          "has_docstring": true
+        },
+        {
+          "name": "_draw_overlays",
+          "line": 452,
+          "has_docstring": true
+        },
+        {
+          "name": "_update_region_statuses",
+          "line": 526,
+          "has_docstring": true
+        },
+        {
+          "name": "_on_region_toggled",
+          "line": 561,
+          "has_docstring": true
+        },
+        {
+          "name": "_on_apply",
+          "line": 573,
+          "has_docstring": true
+        },
+        {
+          "name": "get_result",
+          "line": 593,
+          "has_docstring": true
+        },
+        {
+          "name": "_on_draw_region_clicked",
+          "line": 597,
+          "has_docstring": true
+        },
+        {
+          "name": "_on_draw_substrate_clicked",
+          "line": 623,
+          "has_docstring": true
+        },
+        {
+          "name": "_on_preview_mouse_press",
+          "line": 629,
+          "has_docstring": true
+        },
+        {
+          "name": "_on_preview_mouse_move",
+          "line": 640,
+          "has_docstring": true
+        },
+        {
+          "name": "_on_preview_mouse_release",
+          "line": 651,
+          "has_docstring": true
+        },
+        {
+          "name": "_widget_to_image_coords",
+          "line": 719,
+          "has_docstring": true
+        },
+        {
+          "name": "_draw_region_preview",
+          "line": 753,
+          "has_docstring": true
+        },
+        {
+          "name": "_draw_substrate_preview",
+          "line": 788,
+          "has_docstring": true
+        }
+      ],
+      "classes": [
+        {
+          "name": "CalibrationWizardDialog",
+          "line": 38,
+          "has_docstring": true
+        }
+      ],
+      "module_docstring": true,
+      "docstrings": 25
+    }
+  },
+  {
+    "path": "src/menipy/gui/overlay.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 120,
+      "functions": [
+        {
+          "name": "draw_analysis_overlay",
+          "line": 8,
+          "has_docstring": true
+        },
+        {
+          "name": "draw_drop_overlay",
+          "line": 42,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 3
+    }
+  },
+  {
+    "path": "src/menipy/gui/panels/__init__.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 21,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/gui/panels/discover.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 1,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/gui/resources/menipy_icons_rc.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 199,
+      "functions": [
+        {
+          "name": "qInitResources",
+          "line": 183,
+          "has_docstring": true
+        },
+        {
+          "name": "qCleanupResources",
+          "line": 191,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 3
+    }
+  },
+  {
+    "path": "src/menipy/gui/services/image_convert.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 27,
+      "functions": [
+        {
+          "name": "to_pixmap",
+          "line": 8,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "src/menipy/gui/theme.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 519,
+      "functions": [
+        {
+          "name": "get_stylesheet",
+          "line": 86,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "src/menipy/gui/viewmodels/results_vm.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 1,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/gui/views/__init__.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 20,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/gui/widgets/__init__.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 18,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/gui/zold_drawing_alt.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 1,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/math/jurin.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 1,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/math/rayleigh_lamb.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 1,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/math/young_laplace.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 1,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/models/__init__.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 41,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/models/drop_extras.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 60,
+      "functions": [
+        {
+          "name": "vmax_uL",
+          "line": 8,
+          "has_docstring": true
+        },
+        {
+          "name": "worthington_number",
+          "line": 17,
+          "has_docstring": true
+        },
+        {
+          "name": "apex_curvature_m_inv",
+          "line": 23,
+          "has_docstring": true
+        },
+        {
+          "name": "projected_area_mm2",
+          "line": 30,
+          "has_docstring": true
+        },
+        {
+          "name": "surface_area_mm2",
+          "line": 36,
+          "has_docstring": true
+        },
+        {
+          "name": "apparent_weight_mN",
+          "line": 57,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 7
+    }
+  },
+  {
+    "path": "src/menipy/models/frame.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 76,
+      "functions": [
+        {
+          "name": "_invertible_scale",
+          "line": 44,
+          "has_docstring": false
+        },
+        {
+          "name": "_check_image_shape_dtype",
+          "line": 65,
+          "has_docstring": false
+        }
+      ],
+      "classes": [
+        {
+          "name": "CameraMeta",
+          "line": 17,
+          "has_docstring": true
+        },
+        {
+          "name": "Calibration",
+          "line": 30,
+          "has_docstring": true
+        },
+        {
+          "name": "Frame",
+          "line": 51,
+          "has_docstring": true
+        }
+      ],
+      "module_docstring": true,
+      "docstrings": 4
+    }
+  },
+  {
+    "path": "src/menipy/models/geometry.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 90,
+      "functions": [
+        {
+          "name": "_check_xy",
+          "line": 62,
+          "has_docstring": false
+        }
+      ],
+      "classes": [
+        {
+          "name": "Point",
+          "line": 12,
+          "has_docstring": true
+        },
+        {
+          "name": "ROI",
+          "line": 19,
+          "has_docstring": true
+        },
+        {
+          "name": "Needle",
+          "line": 28,
+          "has_docstring": true
+        },
+        {
+          "name": "ContactLine",
+          "line": 37,
+          "has_docstring": true
+        },
+        {
+          "name": "Contour",
+          "line": 46,
+          "has_docstring": true
+        },
+        {
+          "name": "Geometry",
+          "line": 72,
+          "has_docstring": true
+        },
+        {
+          "name": "CaptiveBubbleGeometry",
+          "line": 82,
+          "has_docstring": true
+        }
+      ],
+      "module_docstring": true,
+      "docstrings": 8
+    }
+  },
+  {
+    "path": "src/menipy/models/physics.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 20,
+      "functions": [
+        {
+          "name": "young_laplace_ode",
+          "line": 7,
+          "has_docstring": true
+        },
+        {
+          "name": "solve_young_laplace",
+          "line": 15,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 3
+    }
+  },
+  {
+    "path": "src/menipy/models/properties.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 126,
+      "functions": [
+        {
+          "name": "droplet_volume",
+          "line": 16,
+          "has_docstring": true
+        },
+        {
+          "name": "estimate_surface_tension",
+          "line": 60,
+          "has_docstring": true
+        },
+        {
+          "name": "contact_angle_from_mask",
+          "line": 113,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 4
+    }
+  },
+  {
+    "path": "src/menipy/models/result.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 86,
+      "functions": [
+        {
+          "name": "_validate_kind",
+          "line": 85,
+          "has_docstring": false
+        }
+      ],
+      "classes": [
+        {
+          "name": "YoungLaplaceFit",
+          "line": 18,
+          "has_docstring": true
+        },
+        {
+          "name": "OscillationFit",
+          "line": 34,
+          "has_docstring": true
+        },
+        {
+          "name": "CapillaryRiseFit",
+          "line": 48,
+          "has_docstring": true
+        },
+        {
+          "name": "AnalysisRecord",
+          "line": 63,
+          "has_docstring": true
+        }
+      ],
+      "module_docstring": true,
+      "docstrings": 5
+    }
+  },
+  {
+    "path": "src/menipy/models/surface_tension.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 64,
+      "functions": [
+        {
+          "name": "jennings_pallas_beta",
+          "line": 13,
+          "has_docstring": true
+        },
+        {
+          "name": "surface_tension",
+          "line": 29,
+          "has_docstring": true
+        },
+        {
+          "name": "bond_number",
+          "line": 38,
+          "has_docstring": true
+        },
+        {
+          "name": "volume_from_contour",
+          "line": 47,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 5
+    }
+  },
+  {
+    "path": "src/menipy/models/typing.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 21,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/models/unit_types.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 10,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/__init__.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 1,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/capillary_rise/__init__.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 3,
+      "functions": [],
+      "classes": [],
+      "module_docstring": false,
+      "docstrings": 0
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/capillary_rise/acquisition.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/capillary_rise/edge_detection.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/capillary_rise/geometry.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/capillary_rise/optimization.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/capillary_rise/outputs.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/capillary_rise/overlay.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/capillary_rise/physics.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/capillary_rise/preprocessing.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/capillary_rise/scaling.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/capillary_rise/solver.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/capillary_rise/validation.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/captive_bubble/__init__.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 3,
+      "functions": [],
+      "classes": [],
+      "module_docstring": false,
+      "docstrings": 0
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/captive_bubble/acquisition.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/captive_bubble/edge_detection.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/captive_bubble/geometry.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/captive_bubble/optimization.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/captive_bubble/outputs.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/captive_bubble/overlay.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/captive_bubble/physics.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/captive_bubble/preprocessing.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/captive_bubble/scaling.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/captive_bubble/solver.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/captive_bubble/validation.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/discover.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 59,
+      "functions": [
+        {
+          "name": "_discover_pipelines_from_subdirs",
+          "line": 14,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/oscillating/__init__.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 3,
+      "functions": [],
+      "classes": [],
+      "module_docstring": false,
+      "docstrings": 0
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/oscillating/acquisition.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/oscillating/edge_detection.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/oscillating/geometry.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/oscillating/optimization.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/oscillating/outputs.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/oscillating/overlay.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/oscillating/physics.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/oscillating/preprocessing.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/oscillating/scaling.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/oscillating/solver.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/oscillating/validation.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/pendant/__init__.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 4,
+      "functions": [],
+      "classes": [],
+      "module_docstring": false,
+      "docstrings": 0
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/pendant/acquisition.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/pendant/drawing.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 26,
+      "functions": [
+        {
+          "name": "draw_pendant_overlay",
+          "line": 21,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/pendant/edge_detection.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/pendant/geometry.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 66,
+      "functions": [
+        {
+          "name": "analyze",
+          "line": 36,
+          "has_docstring": true
+        }
+      ],
+      "classes": [
+        {
+          "name": "HelperBundle",
+          "line": 18,
+          "has_docstring": false
+        },
+        {
+          "name": "PendantMetrics",
+          "line": 27,
+          "has_docstring": false
+        },
+        {
+          "name": "PendantPipeline",
+          "line": 60,
+          "has_docstring": true
+        }
+      ],
+      "module_docstring": true,
+      "docstrings": 3
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/pendant/metrics.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 122,
+      "functions": [
+        {
+          "name": "compute_pendant_metrics",
+          "line": 19,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/pendant/optimization.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/pendant/outputs.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 33,
+      "functions": [
+        {
+          "name": "run",
+          "line": 11,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/pendant/overlay.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/pendant/physics.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 28,
+      "functions": [
+        {
+          "name": "run",
+          "line": 11,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/pendant/scaling.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 26,
+      "functions": [
+        {
+          "name": "run",
+          "line": 11,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/pendant/solver.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/pendant/validation.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 30,
+      "functions": [
+        {
+          "name": "run",
+          "line": 11,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/sessile/__init__.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 3,
+      "functions": [],
+      "classes": [],
+      "module_docstring": false,
+      "docstrings": 0
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/sessile/acquisition.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/sessile/drawing.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 26,
+      "functions": [
+        {
+          "name": "draw_sessile_overlay",
+          "line": 21,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/sessile/edge_detection.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/sessile/metrics.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 242,
+      "functions": [
+        {
+          "name": "compute_sessile_metrics",
+          "line": 23,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/sessile/optimization.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/sessile/outputs.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 35,
+      "functions": [
+        {
+          "name": "run",
+          "line": 11,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/sessile/overlay.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/sessile/physics.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 28,
+      "functions": [
+        {
+          "name": "run",
+          "line": 11,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/sessile/scaling.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 29,
+      "functions": [
+        {
+          "name": "run",
+          "line": 11,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/sessile/solver.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 13,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/sessile/validation.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 30,
+      "functions": [
+        {
+          "name": "run",
+          "line": 11,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "src/menipy/pipelines/utils.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 84,
+      "functions": [
+        {
+          "name": "ensure_contour",
+          "line": 12,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "src/menipy/viz/plots.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 1,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "test_sample.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 28,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "tests/__init__.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 0,
+      "functions": [],
+      "classes": [],
+      "module_docstring": false,
+      "docstrings": 0
+    }
+  },
+  {
+    "path": "tests/conftest.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 7,
+      "functions": [],
+      "classes": [],
+      "module_docstring": false,
+      "docstrings": 0
+    }
+  },
+  {
+    "path": "tests/test_alt_workflow.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 75,
+      "functions": [
+        {
+          "name": "_circle_contour",
+          "line": 17,
+          "has_docstring": false
+        },
+        {
+          "name": "test_find_contact_points_from_contour_circle",
+          "line": 24,
+          "has_docstring": false
+        },
+        {
+          "name": "test_detect_baseline_ransac_bottom_aligns",
+          "line": 35,
+          "has_docstring": false
+        },
+        {
+          "name": "test_refine_apex_curvature_on_circle",
+          "line": 47,
+          "has_docstring": false
+        },
+        {
+          "name": "test_compute_sessile_metrics_circle",
+          "line": 55,
+          "has_docstring": false
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "tests/test_auto_calibrator.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 387,
+      "functions": [
+        {
+          "name": "create_test_image_sessile",
+          "line": 14,
+          "has_docstring": true
+        },
+        {
+          "name": "test_init",
+          "line": 69,
+          "has_docstring": true
+        },
+        {
+          "name": "test_init_grayscale_image",
+          "line": 79,
+          "has_docstring": true
+        },
+        {
+          "name": "test_detect_all_returns_calibration_result",
+          "line": 87,
+          "has_docstring": true
+        },
+        {
+          "name": "test_detect_substrate_horizontal",
+          "line": 97,
+          "has_docstring": true
+        },
+        {
+          "name": "test_detect_needle_from_top",
+          "line": 112,
+          "has_docstring": true
+        },
+        {
+          "name": "test_detect_drop_contour",
+          "line": 125,
+          "has_docstring": true
+        },
+        {
+          "name": "test_compute_roi",
+          "line": 135,
+          "has_docstring": true
+        },
+        {
+          "name": "test_confidence_scores",
+          "line": 149,
+          "has_docstring": true
+        },
+        {
+          "name": "test_contact_points_at_substrate",
+          "line": 160,
+          "has_docstring": true
+        },
+        {
+          "name": "test_low_contrast_image",
+          "line": 175,
+          "has_docstring": true
+        },
+        {
+          "name": "test_default_values",
+          "line": 194,
+          "has_docstring": true
+        },
+        {
+          "name": "test_with_values",
+          "line": 205,
+          "has_docstring": true
+        },
+        {
+          "name": "test_run_auto_calibration",
+          "line": 221,
+          "has_docstring": true
+        },
+        {
+          "name": "test_custom_parameters",
+          "line": 230,
+          "has_docstring": true
+        },
+        {
+          "name": "create_pendant_image",
+          "line": 248,
+          "has_docstring": true
+        },
+        {
+          "name": "test_pendant_detection_runs",
+          "line": 289,
+          "has_docstring": true
+        },
+        {
+          "name": "test_pendant_drop_contour_detected",
+          "line": 298,
+          "has_docstring": true
+        },
+        {
+          "name": "test_pendant_needle_detected",
+          "line": 307,
+          "has_docstring": true
+        },
+        {
+          "name": "test_pendant_apex_detected",
+          "line": 319,
+          "has_docstring": true
+        },
+        {
+          "name": "test_pendant_contact_points",
+          "line": 330,
+          "has_docstring": true
+        },
+        {
+          "name": "test_pendant_roi_computed",
+          "line": 341,
+          "has_docstring": true
+        },
+        {
+          "name": "test_pendant_confidence_scores",
+          "line": 351,
+          "has_docstring": true
+        },
+        {
+          "name": "test_blank_image",
+          "line": 364,
+          "has_docstring": true
+        },
+        {
+          "name": "test_very_small_image",
+          "line": 373,
+          "has_docstring": true
+        },
+        {
+          "name": "test_single_channel_image",
+          "line": 381,
+          "has_docstring": true
+        }
+      ],
+      "classes": [
+        {
+          "name": "TestAutoCalibrator",
+          "line": 66,
+          "has_docstring": true
+        },
+        {
+          "name": "TestCalibrationResult",
+          "line": 191,
+          "has_docstring": true
+        },
+        {
+          "name": "TestRunAutoCalibration",
+          "line": 218,
+          "has_docstring": true
+        },
+        {
+          "name": "TestPendantDetection",
+          "line": 244,
+          "has_docstring": true
+        },
+        {
+          "name": "TestEdgeCases",
+          "line": 361,
+          "has_docstring": true
+        }
+      ],
+      "module_docstring": true,
+      "docstrings": 32
+    }
+  },
+  {
+    "path": "tests/test_common_geometry_contact.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 34,
+      "functions": [
+        {
+          "name": "test_find_contact_points_circle",
+          "line": 10,
+          "has_docstring": false
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "tests/test_contour_smoothing.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 231,
+      "functions": [
+        {
+          "name": "test_already_monotonic",
+          "line": 20,
+          "has_docstring": true
+        },
+        {
+          "name": "test_duplicate_x_keeps_min_y",
+          "line": 28,
+          "has_docstring": true
+        },
+        {
+          "name": "test_empty_array",
+          "line": 44,
+          "has_docstring": true
+        },
+        {
+          "name": "test_simple_curve_crossings",
+          "line": 54,
+          "has_docstring": true
+        },
+        {
+          "name": "test_no_crossing",
+          "line": 72,
+          "has_docstring": true
+        },
+        {
+          "name": "test_touching_substrate",
+          "line": 83,
+          "has_docstring": true
+        },
+        {
+          "name": "test_semicircle_contour",
+          "line": 99,
+          "has_docstring": true
+        },
+        {
+          "name": "test_too_few_points",
+          "line": 129,
+          "has_docstring": true
+        },
+        {
+          "name": "test_noisy_contour_smoothing",
+          "line": 139,
+          "has_docstring": true
+        },
+        {
+          "name": "test_run_with_enabled_settings",
+          "line": 166,
+          "has_docstring": true
+        },
+        {
+          "name": "test_run_with_disabled_settings",
+          "line": 185,
+          "has_docstring": true
+        },
+        {
+          "name": "test_run_without_contour",
+          "line": 201,
+          "has_docstring": true
+        },
+        {
+          "name": "test_default_values",
+          "line": 215,
+          "has_docstring": true
+        },
+        {
+          "name": "test_window_must_be_odd",
+          "line": 223,
+          "has_docstring": true
+        },
+        {
+          "name": "test_valid_odd_window",
+          "line": 228,
+          "has_docstring": true
+        }
+      ],
+      "classes": [
+        {
+          "name": "TestFilterMonotonicContour",
+          "line": 17,
+          "has_docstring": true
+        },
+        {
+          "name": "TestFindContactIntersections",
+          "line": 51,
+          "has_docstring": true
+        },
+        {
+          "name": "TestSmoothContour",
+          "line": 96,
+          "has_docstring": true
+        },
+        {
+          "name": "TestIntegration",
+          "line": 163,
+          "has_docstring": true
+        },
+        {
+          "name": "TestContourSmoothingSettings",
+          "line": 212,
+          "has_docstring": true
+        }
+      ],
+      "module_docstring": true,
+      "docstrings": 21
+    }
+  },
+  {
+    "path": "tests/test_drop_extras.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 36,
+      "functions": [
+        {
+          "name": "test_worthington_number_unity",
+          "line": 17,
+          "has_docstring": false
+        },
+        {
+          "name": "test_apex_curvature",
+          "line": 23,
+          "has_docstring": false
+        },
+        {
+          "name": "test_surface_area_sphere",
+          "line": 28,
+          "has_docstring": false
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "tests/test_edge_detectors_plugin.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 291,
+      "functions": [
+        {
+          "name": "create_synthetic_drop_image",
+          "line": 23,
+          "has_docstring": true
+        },
+        {
+          "name": "create_noisy_drop_image",
+          "line": 40,
+          "has_docstring": true
+        },
+        {
+          "name": "test_otsu_registered",
+          "line": 51,
+          "has_docstring": false
+        },
+        {
+          "name": "test_adaptive_registered",
+          "line": 54,
+          "has_docstring": false
+        },
+        {
+          "name": "test_log_registered",
+          "line": 57,
+          "has_docstring": false
+        },
+        {
+          "name": "test_improved_snake_registered",
+          "line": 60,
+          "has_docstring": false
+        },
+        {
+          "name": "test_detects_contour",
+          "line": 67,
+          "has_docstring": false
+        },
+        {
+          "name": "test_handles_noisy_image",
+          "line": 78,
+          "has_docstring": false
+        },
+        {
+          "name": "test_detects_contour",
+          "line": 92,
+          "has_docstring": false
+        },
+        {
+          "name": "test_with_different_block_sizes",
+          "line": 109,
+          "has_docstring": false
+        },
+        {
+          "name": "test_detects_contour_standard_mode",
+          "line": 128,
+          "has_docstring": false
+        },
+        {
+          "name": "test_detects_contour_zero_crossing_mode",
+          "line": 145,
+          "has_docstring": false
+        },
+        {
+          "name": "test_sigma_variations",
+          "line": 163,
+          "has_docstring": false
+        },
+        {
+          "name": "test_detects_contour",
+          "line": 181,
+          "has_docstring": false
+        },
+        {
+          "name": "test_with_substrate_masking",
+          "line": 197,
+          "has_docstring": true
+        },
+        {
+          "name": "test_contour_is_closed_loop",
+          "line": 219,
+          "has_docstring": true
+        },
+        {
+          "name": "test_contour_bounds_within_image",
+          "line": 237,
+          "has_docstring": true
+        },
+        {
+          "name": "test_new_methods_accepted",
+          "line": 256,
+          "has_docstring": false
+        },
+        {
+          "name": "test_log_settings_defaults",
+          "line": 262,
+          "has_docstring": false
+        },
+        {
+          "name": "test_adaptive_settings_defaults",
+          "line": 274,
+          "has_docstring": false
+        },
+        {
+          "name": "test_adaptive_block_size_must_be_odd",
+          "line": 284,
+          "has_docstring": false
+        }
+      ],
+      "classes": [
+        {
+          "name": "TestPluginRegistration",
+          "line": 48,
+          "has_docstring": true
+        },
+        {
+          "name": "TestOtsuDetector",
+          "line": 64,
+          "has_docstring": true
+        },
+        {
+          "name": "TestAdaptiveDetector",
+          "line": 89,
+          "has_docstring": true
+        },
+        {
+          "name": "TestLoGDetector",
+          "line": 125,
+          "has_docstring": true
+        },
+        {
+          "name": "TestImprovedSnakeDetector",
+          "line": 178,
+          "has_docstring": true
+        },
+        {
+          "name": "TestContourValidity",
+          "line": 215,
+          "has_docstring": true
+        },
+        {
+          "name": "TestEdgeDetectionSettings",
+          "line": 253,
+          "has_docstring": true
+        }
+      ],
+      "module_docstring": true,
+      "docstrings": 13
+    }
+  },
+  {
+    "path": "tests/test_gui_resources.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 41,
+      "functions": [
+        {
+          "name": "test_register_qrc_no_rcc",
+          "line": 12,
+          "has_docstring": false
+        },
+        {
+          "name": "test_register_qrc_with_rcc",
+          "line": 22,
+          "has_docstring": false
+        },
+        {
+          "name": "fake_register",
+          "line": 29,
+          "has_docstring": false
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "tests/test_import_health.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 17,
+      "functions": [
+        {
+          "name": "test_core_package_imports",
+          "line": 1,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": false,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "tests/test_import_map.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 142,
+      "functions": [
+        {
+          "name": "collect_menipy_files",
+          "line": 16,
+          "has_docstring": false
+        },
+        {
+          "name": "module_name_for",
+          "line": 24,
+          "has_docstring": false
+        },
+        {
+          "name": "resolve_from",
+          "line": 31,
+          "has_docstring": false
+        },
+        {
+          "name": "module_to_path",
+          "line": 46,
+          "has_docstring": false
+        },
+        {
+          "name": "test_generate_import_map",
+          "line": 68,
+          "has_docstring": false
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "tests/test_imports.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 6,
+      "functions": [
+        {
+          "name": "test_import_menipy",
+          "line": 1,
+          "has_docstring": false
+        }
+      ],
+      "classes": [],
+      "module_docstring": false,
+      "docstrings": 0
+    }
+  },
+  {
+    "path": "tests/test_models.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 49,
+      "functions": [
+        {
+          "name": "test_fit_circle",
+          "line": 16,
+          "has_docstring": false
+        },
+        {
+          "name": "test_droplet_volume",
+          "line": 26,
+          "has_docstring": false
+        },
+        {
+          "name": "test_estimate_surface_tension_and_contact_angle",
+          "line": 35,
+          "has_docstring": false
+        },
+        {
+          "name": "test_horizontal_intersections",
+          "line": 45,
+          "has_docstring": false
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "tests/test_overlay_dialog.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 35,
+      "functions": [
+        {
+          "name": "qapp",
+          "line": 15,
+          "has_docstring": false
+        },
+        {
+          "name": "test_get_set_config_roundtrip",
+          "line": 20,
+          "has_docstring": false
+        },
+        {
+          "name": "test_signals_present",
+          "line": 31,
+          "has_docstring": false
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "tests/test_pendant_minimal_pipeline.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 59,
+      "functions": [
+        {
+          "name": "make_dummy_image",
+          "line": 15,
+          "has_docstring": false
+        },
+        {
+          "name": "test_preprocessing_sets_fields",
+          "line": 26,
+          "has_docstring": false
+        },
+        {
+          "name": "test_scaling_defaults",
+          "line": 34,
+          "has_docstring": false
+        },
+        {
+          "name": "test_physics_defaults",
+          "line": 40,
+          "has_docstring": false
+        },
+        {
+          "name": "test_validation_and_outputs",
+          "line": 47,
+          "has_docstring": false
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "tests/test_pipeline_runner.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 23,
+      "functions": [
+        {
+          "name": "test_discover_pipelines_not_empty",
+          "line": 7,
+          "has_docstring": true
+        },
+        {
+          "name": "test_pick_known_pipelines",
+          "line": 18,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": false,
+      "docstrings": 2
+    }
+  },
+  {
+    "path": "tests/test_plugin_config_dialog.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 43,
+      "functions": [
+        {
+          "name": "test_plugin_config_dialog_structure",
+          "line": 15,
+          "has_docstring": false
+        },
+        {
+          "name": "test_get_settings",
+          "line": 32,
+          "has_docstring": false
+        }
+      ],
+      "classes": [
+        {
+          "name": "DummyModel",
+          "line": 11,
+          "has_docstring": false
+        }
+      ],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "tests/test_preprocessing_compose.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 25,
+      "functions": [
+        {
+          "name": "test_compose_grayscale_into_color",
+          "line": 11,
+          "has_docstring": false
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "tests/test_preprocessing_helpers.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 133,
+      "functions": [
+        {
+          "name": "make_image",
+          "line": 23,
+          "has_docstring": false
+        },
+        {
+          "name": "test_crop_to_roi_generates_mask_and_raw_state",
+          "line": 28,
+          "has_docstring": false
+        },
+        {
+          "name": "test_rescale_roi_updates_scale_and_mask",
+          "line": 41,
+          "has_docstring": false
+        },
+        {
+          "name": "test_apply_filter_respects_mask",
+          "line": 61,
+          "has_docstring": false
+        },
+        {
+          "name": "test_background_subtraction_uses_strength",
+          "line": 87,
+          "has_docstring": false
+        },
+        {
+          "name": "test_normalization_records_state",
+          "line": 103,
+          "has_docstring": false
+        },
+        {
+          "name": "test_preprocessing_run_populates_context",
+          "line": 118,
+          "has_docstring": false
+        },
+        {
+          "name": "fake_blur",
+          "line": 75,
+          "has_docstring": false
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "tests/test_project_loading.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 112,
+      "functions": [
+        {
+          "name": "mock_settings",
+          "line": 15,
+          "has_docstring": true
+        },
+        {
+          "name": "window",
+          "line": 32,
+          "has_docstring": true
+        },
+        {
+          "name": "test_record_recent_adds_item",
+          "line": 43,
+          "has_docstring": true
+        },
+        {
+          "name": "test_record_recent_deduplication",
+          "line": 62,
+          "has_docstring": true
+        },
+        {
+          "name": "test_open_project_file_success",
+          "line": 84,
+          "has_docstring": true
+        },
+        {
+          "name": "get_val",
+          "line": 21,
+          "has_docstring": false
+        },
+        {
+          "name": "set_val",
+          "line": 24,
+          "has_docstring": false
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 6
+    }
+  },
+  {
+    "path": "tests/test_sessile_auto_detection.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 154,
+      "functions": [
+        {
+          "name": "test_horizontal_baseline",
+          "line": 12,
+          "has_docstring": true
+        },
+        {
+          "name": "test_tilted_baseline",
+          "line": 26,
+          "has_docstring": true
+        },
+        {
+          "name": "test_insufficient_points",
+          "line": 45,
+          "has_docstring": true
+        },
+        {
+          "name": "test_synthetic_drop",
+          "line": 57,
+          "has_docstring": true
+        },
+        {
+          "name": "test_flat_contour",
+          "line": 72,
+          "has_docstring": true
+        },
+        {
+          "name": "test_auto_baseline_detection",
+          "line": 86,
+          "has_docstring": true
+        },
+        {
+          "name": "test_manual_vs_auto_consistency",
+          "line": 108,
+          "has_docstring": true
+        },
+        {
+          "name": "test_tilt_correction",
+          "line": 133,
+          "has_docstring": true
+        }
+      ],
+      "classes": [
+        {
+          "name": "TestDetectBaselineRansac",
+          "line": 9,
+          "has_docstring": true
+        },
+        {
+          "name": "TestRefineApexCurvature",
+          "line": 54,
+          "has_docstring": true
+        },
+        {
+          "name": "TestComputeSessileMetrics",
+          "line": 83,
+          "has_docstring": true
+        }
+      ],
+      "module_docstring": true,
+      "docstrings": 12
+    }
+  },
+  {
+    "path": "tests/test_sessile_contact_angles.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 212,
+      "functions": [
+        {
+          "name": "test_estimate_contact_angle_tangent",
+          "line": 14,
+          "has_docstring": true
+        },
+        {
+          "name": "test_estimate_contact_angle_circle_fit",
+          "line": 34,
+          "has_docstring": true
+        },
+        {
+          "name": "test_compute_sessile_metrics_tangent_method",
+          "line": 56,
+          "has_docstring": true
+        },
+        {
+          "name": "test_compute_sessile_metrics_circle_fit_method",
+          "line": 85,
+          "has_docstring": true
+        },
+        {
+          "name": "test_compute_sessile_metrics_spherical_cap_method",
+          "line": 114,
+          "has_docstring": true
+        },
+        {
+          "name": "test_contact_angle_uncertainty_estimation",
+          "line": 148,
+          "has_docstring": true
+        },
+        {
+          "name": "test_tangent_angle_at_point",
+          "line": 173,
+          "has_docstring": true
+        },
+        {
+          "name": "test_circle_fit_angle_at_point",
+          "line": 193,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 9
+    }
+  },
+  {
+    "path": "tests/test_sessile_geometry.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 160,
+      "functions": [
+        {
+          "name": "test_segment_intersection",
+          "line": 15,
+          "has_docstring": true
+        },
+        {
+          "name": "test_clip_contour_simple",
+          "line": 50,
+          "has_docstring": true
+        },
+        {
+          "name": "test_clip_contour_tilted",
+          "line": 100,
+          "has_docstring": true
+        },
+        {
+          "name": "test_no_clipping_needed",
+          "line": 149,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 5
+    }
+  },
+  {
+    "path": "tests/test_sessile_minimal_pipeline.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 70,
+      "functions": [
+        {
+          "name": "make_dummy_image",
+          "line": 15,
+          "has_docstring": false
+        },
+        {
+          "name": "test_preprocessing_sets_fields",
+          "line": 33,
+          "has_docstring": false
+        },
+        {
+          "name": "test_scaling_defaults",
+          "line": 41,
+          "has_docstring": false
+        },
+        {
+          "name": "test_physics_defaults",
+          "line": 48,
+          "has_docstring": false
+        },
+        {
+          "name": "test_validation_and_outputs",
+          "line": 55,
+          "has_docstring": false
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "tests/test_setup_panel.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 186,
+      "functions": [
+        {
+          "name": "main_window",
+          "line": 15,
+          "has_docstring": false
+        },
+        {
+          "name": "setup_panel_controller",
+          "line": 22,
+          "has_docstring": false
+        },
+        {
+          "name": "test_radio_button_toggles_mode",
+          "line": 26,
+          "has_docstring": false
+        },
+        {
+          "name": "test_browse_button_emits_signal",
+          "line": 58,
+          "has_docstring": false
+        },
+        {
+          "name": "test_batch_browse_button_emits_signal",
+          "line": 68,
+          "has_docstring": false
+        },
+        {
+          "name": "test_preview_button_emits_signal",
+          "line": 78,
+          "has_docstring": false
+        },
+        {
+          "name": "test_draw_mode_buttons_emit_signal",
+          "line": 88,
+          "has_docstring": false
+        },
+        {
+          "name": "test_clear_overlay_button_emits_signal",
+          "line": 110,
+          "has_docstring": false
+        },
+        {
+          "name": "test_run_all_button_emits_signal",
+          "line": 120,
+          "has_docstring": false
+        },
+        {
+          "name": "test_pipeline_combo_changes_pipeline",
+          "line": 130,
+          "has_docstring": false
+        },
+        {
+          "name": "test_image_path_edit_refreshes_source_items",
+          "line": 146,
+          "has_docstring": false
+        },
+        {
+          "name": "test_batch_path_edit_refreshes_source_items",
+          "line": 163,
+          "has_docstring": false
+        },
+        {
+          "name": "test_add_sop_button_calls_sop_controller",
+          "line": 180,
+          "has_docstring": false
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "tests/test_smoke_controller_flows.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 586,
+      "functions": [
+        {
+          "name": "mock_window",
+          "line": 26,
+          "has_docstring": true
+        },
+        {
+          "name": "mock_panels",
+          "line": 36,
+          "has_docstring": true
+        },
+        {
+          "name": "mock_dialogs",
+          "line": 67,
+          "has_docstring": true
+        },
+        {
+          "name": "controller",
+          "line": 83,
+          "has_docstring": true
+        },
+        {
+          "name": "test_run_simple_analysis_sessile_unified_path",
+          "line": 100,
+          "has_docstring": true
+        },
+        {
+          "name": "test_run_full_pipeline_sessile",
+          "line": 130,
+          "has_docstring": true
+        },
+        {
+          "name": "test_run_stage_acquisition",
+          "line": 163,
+          "has_docstring": true
+        },
+        {
+          "name": "test_run_stage_geometry",
+          "line": 188,
+          "has_docstring": true
+        },
+        {
+          "name": "test_run_stage_edge_detection",
+          "line": 215,
+          "has_docstring": true
+        },
+        {
+          "name": "test_run_stage_physics",
+          "line": 236,
+          "has_docstring": true
+        },
+        {
+          "name": "test_pipeline_error_handling",
+          "line": 257,
+          "has_docstring": true
+        },
+        {
+          "name": "test_pipeline_error_handling_invalid_pipeline",
+          "line": 266,
+          "has_docstring": true
+        },
+        {
+          "name": "test_pipeline_error_handling_acquisition_failure",
+          "line": 279,
+          "has_docstring": true
+        },
+        {
+          "name": "test_pipeline_error_handling_stage_failure",
+          "line": 297,
+          "has_docstring": true
+        },
+        {
+          "name": "test_context_population_for_staged_run",
+          "line": 320,
+          "has_docstring": true
+        },
+        {
+          "name": "test_results_panel_update_on_success",
+          "line": 372,
+          "has_docstring": true
+        },
+        {
+          "name": "test_overlay_display_on_success",
+          "line": 407,
+          "has_docstring": true
+        },
+        {
+          "name": "test_batch_run_with_multiple_stages",
+          "line": 435,
+          "has_docstring": true
+        },
+        {
+          "name": "test_batch_run_with_sop_workflow",
+          "line": 479,
+          "has_docstring": true
+        },
+        {
+          "name": "test_calibration_and_scale_integration",
+          "line": 501,
+          "has_docstring": true
+        },
+        {
+          "name": "test_calibration_with_physics_params",
+          "line": 542,
+          "has_docstring": true
+        }
+      ],
+      "classes": [
+        {
+          "name": "TestSessileControllerFlows",
+          "line": 22,
+          "has_docstring": true
+        }
+      ],
+      "module_docstring": true,
+      "docstrings": 23
+    }
+  },
+  {
+    "path": "tests/test_surface_tension.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 39,
+      "functions": [
+        {
+          "name": "test_jennings_pallas_beta_edges",
+          "line": 17,
+          "has_docstring": false
+        },
+        {
+          "name": "test_surface_tension_and_bond_number",
+          "line": 24,
+          "has_docstring": false
+        },
+        {
+          "name": "test_volume_from_contour_circle",
+          "line": 32,
+          "has_docstring": false
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "tools/audit_docstrings.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 334,
+      "functions": [
+        {
+          "name": "count_docstrings_in_file",
+          "line": 23,
+          "has_docstring": true
+        },
+        {
+          "name": "analyze_julia_file",
+          "line": 139,
+          "has_docstring": true
+        },
+        {
+          "name": "audit_repo",
+          "line": 176,
+          "has_docstring": true
+        },
+        {
+          "name": "generate_csv_summary",
+          "line": 255,
+          "has_docstring": true
+        },
+        {
+          "name": "main",
+          "line": 302,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 6
+    }
+  },
+  {
+    "path": "tools/auto_fix_d200.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 61,
+      "functions": [
+        {
+          "name": "fix_text",
+          "line": 17,
+          "has_docstring": false
+        },
+        {
+          "name": "main",
+          "line": 45,
+          "has_docstring": false
+        },
+        {
+          "name": "_repl",
+          "line": 19,
+          "has_docstring": false
+        },
+        {
+          "name": "_repl2",
+          "line": 31,
+          "has_docstring": false
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "tools/build_resources.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 50,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "tools/check_and_filter_tests.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 43,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "tools/check_indent.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 21,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "tools/generate_detailed_guide.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 185,
+      "functions": [
+        {
+          "name": "extract_function_args",
+          "line": 17,
+          "has_docstring": true
+        },
+        {
+          "name": "load_file_content",
+          "line": 37,
+          "has_docstring": true
+        },
+        {
+          "name": "generate_remediation_guide",
+          "line": 45,
+          "has_docstring": true
+        },
+        {
+          "name": "main",
+          "line": 173,
+          "has_docstring": false
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 4
+    }
+  },
+  {
+    "path": "tools/generate_pydocstyle_report.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 53,
+      "functions": [
+        {
+          "name": "run_pydocstyle",
+          "line": 11,
+          "has_docstring": false
+        },
+        {
+          "name": "parse_output",
+          "line": 17,
+          "has_docstring": false
+        },
+        {
+          "name": "main",
+          "line": 42,
+          "has_docstring": false
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "tools/generate_remediation_plan.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 236,
+      "functions": [
+        {
+          "name": "classify_priority",
+          "line": 46,
+          "has_docstring": true
+        },
+        {
+          "name": "calculate_remediation_effort",
+          "line": 55,
+          "has_docstring": true
+        },
+        {
+          "name": "generate_remediation_plan",
+          "line": 94,
+          "has_docstring": true
+        },
+        {
+          "name": "render_remediation_report",
+          "line": 132,
+          "has_docstring": true
+        },
+        {
+          "name": "main",
+          "line": 196,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 6
+    }
+  },
+  {
+    "path": "tools/inspect_ui.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 54,
+      "functions": [],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "tools/migrate_datatypes_imports.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 310,
+      "functions": [
+        {
+          "name": "collect_multiline_imports",
+          "line": 73,
+          "has_docstring": true
+        },
+        {
+          "name": "find_py_files",
+          "line": 99,
+          "has_docstring": true
+        },
+        {
+          "name": "parse_imports",
+          "line": 120,
+          "has_docstring": true
+        },
+        {
+          "name": "plan_rewrites",
+          "line": 148,
+          "has_docstring": true
+        },
+        {
+          "name": "apply_rewrites",
+          "line": 230,
+          "has_docstring": true
+        },
+        {
+          "name": "main",
+          "line": 246,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 7
+    }
+  },
+  {
+    "path": "tools/normalize_audit_json.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 89,
+      "functions": [
+        {
+          "name": "normalize_path",
+          "line": 14,
+          "has_docstring": false
+        },
+        {
+          "name": "main",
+          "line": 33,
+          "has_docstring": false
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "tools/reconcile_audit_baseline.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 126,
+      "functions": [
+        {
+          "name": "should_skip",
+          "line": 16,
+          "has_docstring": true
+        },
+        {
+          "name": "analyze_file",
+          "line": 23,
+          "has_docstring": true
+        },
+        {
+          "name": "main",
+          "line": 72,
+          "has_docstring": false
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 3
+    }
+  },
+  {
+    "path": "tools/regenerate_audit_json.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 67,
+      "functions": [
+        {
+          "name": "analyze_file",
+          "line": 13,
+          "has_docstring": false
+        },
+        {
+          "name": "main",
+          "line": 48,
+          "has_docstring": false
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 1
+    }
+  },
+  {
+    "path": "validate_phase3.py",
+    "priority": "LOW",
+    "metrics": {
+      "lines": 201,
+      "functions": [
+        {
+          "name": "get_coverage_stats",
+          "line": 9,
+          "has_docstring": true
+        },
+        {
+          "name": "validate_detect_files",
+          "line": 46,
+          "has_docstring": true
+        },
+        {
+          "name": "validate_contributing_md",
+          "line": 71,
+          "has_docstring": true
+        },
+        {
+          "name": "validate_pre_commit_config",
+          "line": 102,
+          "has_docstring": true
+        },
+        {
+          "name": "main",
+          "line": 127,
+          "has_docstring": true
+        }
+      ],
+      "classes": [],
+      "module_docstring": true,
+      "docstrings": 6
+    }
+  }
+]

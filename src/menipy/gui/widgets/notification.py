@@ -21,6 +21,19 @@ class NotificationToast(QWidget):
     TYPE_ERROR = "error"
     
     def __init__(self, parent=None, text="", n_type="info", duration=3000):
+        """Initialize.
+
+        Parameters
+        ----------
+        parent : type
+        Description.
+        text : type
+        Description.
+        n_type : type
+        Description.
+        duration : type
+        Description.
+        """
         super().__init__(parent)
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.SubWindow)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)

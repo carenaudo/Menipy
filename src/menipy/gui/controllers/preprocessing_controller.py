@@ -1,6 +1,4 @@
-"""
-Controller for preprocessing stage configuration.
-"""
+"""Controller for preprocessing stage configuration."""
 
 from __future__ import annotations
 
@@ -115,9 +113,11 @@ class PreprocessingPipelineController(QObject):
             self._state = None
 
     def has_source(self) -> bool:
+        """Has_source."""
         return self._image is not None
 
     def run(self) -> Optional[PreprocessingState]:
+        """Run."""
         if self._image is None:
             self.errorOccurred.emit("No source image available for preprocessing")
             return None
@@ -173,6 +173,7 @@ class PreprocessingPipelineController(QObject):
         return self._state
 
     def undo(self) -> Optional[PreprocessingState]:
+        """Undo."""
         if len(self._history) <= 1:
             return None
         latest = self._history.pop()
@@ -183,6 +184,7 @@ class PreprocessingPipelineController(QObject):
         return self._state
 
     def redo(self) -> Optional[PreprocessingState]:
+        """Redo."""
         if not self._redo:
             return None
         state = self._redo.pop()
@@ -193,12 +195,20 @@ class PreprocessingPipelineController(QObject):
         return self._state
 
     def current_state(self) -> Optional[PreprocessingState]:
+        """current state.
+
+        Returns
+        -------
+        type
+        Description.
+        """
         return self._state
 
-    # ------------------------------------------------------------------
-    # Internal helpers
-    # ------------------------------------------------------------------
+        # ------------------------------------------------------------------
+        # Internal helpers
+        # ------------------------------------------------------------------
     def _emit_preview_from_state(self) -> None:
+        """_emit_preview_from_state."""
         if self._image is None or self._state is None:
             return
         roi = self._state.roi_bounds

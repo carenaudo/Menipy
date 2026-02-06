@@ -71,6 +71,20 @@ class YoungLaplaceIntegrator:
         # dφ/ds = 2/R0 - sin(φ)/x - Bo·z/R0
 
         def ode_system(y, s):
+    """ode system.
+
+    Parameters
+    ----------
+    y : type
+        Description.
+    s : type
+        Description.
+
+    Returns
+    -------
+    type
+        Description.
+    """
             x, z, phi = y
             if x < 1e-10:  # Avoid singularity at apex
                 x = 1e-10

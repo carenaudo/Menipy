@@ -388,9 +388,7 @@ class PendantParametersPanel(QFrame):
             spin.setValue(value)
 
 class PendantDropWindow(BaseExperimentWindow):
-    """
-    Window for pendant drop surface tension analysis.
-    """
+    """Window for pendant drop surface tension analysis."""
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -411,6 +409,17 @@ class PendantDropWindow(BaseExperimentWindow):
         edge: EdgeDetectionSettings,
         pipeline_settings: dict | None = None,
     ):
+        """Check if apply analysis settings.
+
+        Parameters
+        ----------
+        pre : PreprocessingSettings
+            Preprocessing settings.
+        edge : EdgeDetectionSettings
+            Edge detection settings.
+        pipeline_settings : dict, optional
+            Pipeline settings dictionary.
+        """
         self._preprocessing_settings = pre
         self._edge_settings = edge
         self._pipeline_settings = pipeline_settings or {}
@@ -419,9 +428,11 @@ class PendantDropWindow(BaseExperimentWindow):
             self._image_viewer.set_overlay_visibility(overlay=self._pipeline_settings["overlay_visible"])
     
     def get_experiment_type(self) -> str:
+        """Get_experiment_type."""
         return theme.EXPERIMENT_PENDANT
     
     def get_experiment_title(self) -> str:
+        """Get_experiment_title."""
         return "Pendant Drop"
     
     def _create_left_panel_content(self) -> QWidget:
@@ -795,6 +806,7 @@ class PendantDropWindow(BaseExperimentWindow):
             self.set_status(f"Selected material: {data['name']} ({density} kg/m³)")
             
     def _on_needle_db_requested(self):
+        """_on_needle_db_requested."""
         # CalibrationPanel might not emit this, but if we add it later:
         pass
 
@@ -805,15 +817,19 @@ class PendantDropWindow(BaseExperimentWindow):
     # -------------------------------------------------------------------------
     
     def _on_zoom_in(self):
+        """_on_zoom_in."""
         self._image_viewer.zoom_in()
     
     def _on_zoom_out(self):
+        """_on_zoom_out."""
         self._image_viewer.zoom_out()
     
     def _on_fit_view(self):
+        """_on_fit_view."""
         self._image_viewer.fit_to_view()
     
     def _on_reset_view(self):
+        """_on_reset_view."""
         self._image_viewer.reset_view()
 
     # ------------------------------------------------------------------

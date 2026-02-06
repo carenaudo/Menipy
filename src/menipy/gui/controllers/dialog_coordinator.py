@@ -42,6 +42,23 @@ class DialogCoordinator(QObject):
         image_loader: Optional[callable] = None,
         parent: Optional[QObject] = None,
     ):
+        """Initialize.
+
+        Parameters
+        ----------
+        window : QMainWindow
+            Main window.
+        settings : object
+            Settings object.
+        preprocessing_ctrl : PreprocessingController, optional
+            Preprocessing controller.
+        edge_detection_ctrl : EdgeDetectionController, optional
+            Edge detection controller.
+        image_loader : callable, optional
+            Image loader callable.
+        parent : QObject, optional
+            Parent object.
+        """
         super().__init__(parent)
         self.window = window
         self.settings = settings

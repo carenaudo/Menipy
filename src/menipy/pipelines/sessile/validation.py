@@ -9,6 +9,18 @@ from menipy.models.context import Context
 
 
 def run(ctx: Context) -> Optional[Context]:
+    """Run.
+
+    Parameters
+    ----------
+    ctx : type
+        Description.
+
+    Returns
+    -------
+    type
+        Description.
+    """
     ok = False
     if getattr(ctx, "fit", None) and ctx.fit.get("solver", {}).get("success", False):
         ok = True

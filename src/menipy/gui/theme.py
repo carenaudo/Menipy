@@ -84,9 +84,7 @@ FONT_SIZE_TITLE = 24
 
 
 def get_stylesheet() -> str:
-    """
-    Returns the complete QSS stylesheet for the ADSA application.
-    """
+    """Returns the complete QSS stylesheet for the ADSA application."""
     return f"""
     /* =================================================================== */
     /* Main Window and Base Widgets                                        */

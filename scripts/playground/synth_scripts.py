@@ -1,3 +1,8 @@
+"""Synth Scripts.
+
+Experimental implementation."""
+
+
 from synth_gen import SyntheticImageGenerator
 import cv2
 

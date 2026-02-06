@@ -17,7 +17,7 @@ class TiltedSessileResultsWidget(QFrame):
     Widget showing tilted sessile measurement results.
     
     Displays:
-    - Advancing contact angle (θA)
+        - Advancing contact angle (θA)
     - Receding contact angle (θR)
     - Contact angle hysteresis (θA - θR)
     - Roll-off angle
@@ -25,6 +25,13 @@ class TiltedSessileResultsWidget(QFrame):
     """
     
     def __init__(self, parent=None):
+        """Initialize.
+
+        Parameters
+        ----------
+        parent : type
+        Description.
+        """
         super().__init__(parent)
         self.setObjectName("tiltedSessileResultsWidget")
         self._setup_ui()

@@ -1,6 +1,4 @@
-"""
-Standard Operating Procedure (SOP) management service.
-"""
+"""Standard Operating Procedure (SOP) management service."""
 
 from __future__ import annotations
 from dataclasses import dataclass, asdict
@@ -80,4 +78,11 @@ class SopService:
             )
 
     def default_name(self) -> str:
+        """default name.
+
+        Returns
+        -------
+        type
+        Description.
+        """
         return "__default__"

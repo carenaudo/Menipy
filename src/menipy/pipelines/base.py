@@ -1,7 +1,5 @@
 # src/menipy/pipelines/base.py
-"""
-Base pipeline class with template method pattern for stage-based execution.
-"""
+"""Base pipeline class with template method pattern for stage-based execution."""
 from __future__ import annotations
 
 import logging
@@ -113,7 +111,7 @@ class PipelineBase:
         """Refine the extracted contour by clipping, smoothing, or filtering.
         
         Operations may include:
-        - Clipping contour at substrate line
+            - Clipping contour at substrate line
         - Removing noise points
         - Smoothing contour path
         - Interpolating missing segments
@@ -132,7 +130,7 @@ class PipelineBase:
         """Extract geometric features from the contour.
         
         Previously named 'geometry'. Calculates:
-        - Axis of symmetry
+            - Axis of symmetry
         - Apex point location
         - Baseline/substrate line
         - Tilt angle
@@ -157,7 +155,7 @@ class PipelineBase:
         """Aggregate and compute final measurement results.
         
         Previously named 'outputs'. Computes derived metrics like:
-        - Surface tension (from fit parameters)
+            - Surface tension (from fit parameters)
         - Volume (disk integration)
         - Diameter, height
         - Contact angles
@@ -173,7 +171,7 @@ class PipelineBase:
         
         This stage should verify:
         
-        1. RESIDUAL MAGNITUDES
+            1. RESIDUAL MAGNITUDES
            - Check if fit residuals are within acceptable bounds
            - Flag results with high residual RMS (> threshold)
            - Compute goodness-of-fit metrics (R², chi-squared)
@@ -482,6 +480,22 @@ class PipelineBase:
         include_prereqs: bool = True,
         **kwargs: Any,
     ) -> Context:
+        """Run with plan.
+
+        Parameters
+        ----------
+        only : list[str], optional
+            List of stage names to run.
+        include_prereqs : bool, optional
+            Whether to include prerequisite stages. Default is True.
+        **kwargs : Any
+            Additional keyword arguments.
+
+        Returns
+        -------
+        Context
+            The result context from the pipeline execution.
+        """
         ctx = Context()
         ctx = self._prime_ctx(ctx, **kwargs)
         for name, fn in self.build_plan(only=only, include_prereqs=include_prereqs):

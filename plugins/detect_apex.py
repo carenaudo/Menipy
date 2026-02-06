@@ -18,17 +18,41 @@ logger = logging.getLogger(__name__)
 def detect_apex_pendant(
     drop_contour: np.ndarray,
 ) -> Optional[Tuple[int, int]]:
-    """
-    Detect apex point for pendant drop (bottom of drop).
+    """Detect the apex point for pendant drops as the lowest point.
     
-    The apex is defined as the point with maximum Y coordinate
-    (lowest point in the image coordinate system).
+    The apex is defined as the point with maximum Y coordinate,
+    which represents the lowest point in the image coordinate system.
+    This point is critical for pendant drop analysis as it defines
+    the reference for drop geometry calculations.
     
-    Args:
-        drop_contour: Drop contour as Nx2 or Nx1x2 array
-        
-    Returns:
-        Apex point as (x, y) or None if contour is invalid.
+    Parameters
+    ----------
+    drop_contour : np.ndarray
+        Drop contour array as Nx2 or Nx1x2 shape, where N is the number
+        of contour points and columns represent x and y coordinates.
+    
+    Returns
+    -------
+    Optional[Tuple[int, int]]
+        Apex point as (x, y) tuple with integer coordinates, or None if
+        the contour is invalid or empty.
+    
+    Raises
+    ------
+    None
+        Returns None instead of raising exceptions for invalid input.
+    
+    Examples
+    --------
+    >>> contour = np.array([[10, 20], [15, 30], [20, 25]])
+    >>> apex = detect_apex_pendant(contour)
+    >>> print(apex)
+    (15, 30)
+    
+    Notes
+    -----
+    The function automatically reshapes Nx1x2 contours to Nx2 format.
+    Empty contours return None with a warning log message.
     """
     if drop_contour is None or len(drop_contour) == 0:
         logger.warning("Apex detection requires drop contour")
@@ -55,19 +79,47 @@ def detect_apex_sessile(
     drop_contour: np.ndarray,
     substrate_y: Optional[int] = None,
 ) -> Optional[Tuple[int, int]]:
-    """
-    Detect apex point for sessile drop (top of drop dome).
+    """Detect the apex point for sessile drops as the highest point.
     
-    The apex is defined as the point with minimum Y coordinate
-    (highest point in the image coordinate system), excluding
-    points near the substrate.
+    The apex is defined as the point with minimum Y coordinate, which
+    represents the highest point in the image coordinate system. This
+    corresponds to the top of the drop dome and is essential for
+    contact angle calculations. Points near the substrate are excluded
+    to ensure the apex is not at the three-phase contact line.
     
-    Args:
-        drop_contour: Drop contour as Nx2 or Nx1x2 array
-        substrate_y: Y-coordinate of substrate (to exclude base points)
-        
-    Returns:
-        Apex point as (x, y) or None if contour is invalid.
+    Parameters
+    ----------
+    drop_contour : np.ndarray
+        Drop contour array as Nx2 or Nx1x2 shape, where N is the number
+        of contour points and columns represent x and y coordinates.
+    substrate_y : Optional[int], optional
+        Y-coordinate of the substrate line. If provided, points within
+        5 pixels of the substrate are excluded from apex detection.
+        Default is None (no substrate filtering).
+    
+    Returns
+    -------
+    Optional[Tuple[int, int]]
+        Apex point as (x, y) tuple with integer coordinates, or None if
+        the contour is invalid, empty, or all points are near substrate.
+    
+    Raises
+    ------
+    None
+        Returns None instead of raising exceptions for invalid input.
+    
+    Examples
+    --------
+    >>> contour = np.array([[15, 10], [20, 5], [25, 10]])
+    >>> apex = detect_apex_sessile(contour)
+    >>> print(apex)
+    (20, 5)
+    
+    Notes
+    -----
+    The function automatically reshapes Nx1x2 contours to Nx2 format.
+    When substrate_y is provided, contour points are filtered to exclude
+    y-coordinates >= substrate_y - 5 pixels.
     """
     if drop_contour is None or len(drop_contour) == 0:
         logger.warning("Apex detection requires drop contour")
@@ -101,16 +153,49 @@ def detect_apex_auto(
     pipeline: str = "sessile",
     **kwargs
 ) -> Optional[Tuple[int, int]]:
-    """
-    Auto-detect apex based on pipeline type.
+    """Auto-detect apex based on the analysis pipeline type.
     
-    Args:
-        drop_contour: Drop contour array
-        pipeline: Pipeline name ("sessile" or "pendant")
-        **kwargs: Additional parameters
-        
-    Returns:
-        Apex point as (x, y) or None.
+    This function serves as a dispatcher that calls the appropriate
+    apex detection function (pendant or sessile) based on the specified
+    pipeline parameter. It provides a unified interface for apex detection
+    across different drop analysis modes.
+    
+    Parameters
+    ----------
+    drop_contour : np.ndarray
+        Drop contour array as Nx2 or Nx1x2 shape, where N is the number
+        of contour points and columns represent x and y coordinates.
+    pipeline : str, optional
+        Pipeline type to determine detection method. Must be one of:
+        - "pendant": Uses detect_apex_pendant (apex is lowest point)
+        - "sessile" or any other value: Uses detect_apex_sessile
+          (apex is highest point after substrate filtering)
+        Default is "sessile".
+    **kwargs : dict
+        Additional keyword arguments passed to the selected detection
+        function. For sessile detection, may include substrate_y.
+    
+    Returns
+    -------
+    Optional[Tuple[int, int]]
+        Apex point as (x, y) tuple with integer coordinates, or None if
+        apex detection fails for the selected pipeline.
+    
+    Raises
+    ------
+    None
+        Returns None instead of raising exceptions.
+    
+    Examples
+    --------
+    >>> contour = np.array([[10, 20], [15, 30], [20, 25]])
+    >>> apex_pendant = detect_apex_auto(contour, pipeline="pendant")
+    >>> apex_sessile = detect_apex_auto(contour, pipeline="sessile")
+    
+    See Also
+    --------
+    detect_apex_pendant : Detects apex for pendant drops
+    detect_apex_sessile : Detects apex for sessile drops
     """
     if pipeline.lower() == "pendant":
         return detect_apex_pendant(drop_contour)

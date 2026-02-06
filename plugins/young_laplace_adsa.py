@@ -73,9 +73,16 @@ def integrate_profile(
     beta: float, 
     settings: YoungLaplaceSettings
 ) -> np.ndarray:
+    """Placeholder docstring for integrate_profile.
+    
+    TODO: Complete docstring with full description.
+    
+    Returns
+    -------
+    type
+        Description of return value.
     """
-    Integrate the Young-Laplace ODE to generate a pendant drop profile.
-    """
+    """Integrate the Young-Laplace ODE to generate a pendant drop profile."""
     from scipy.integrate import solve_ivp
 
     # Initial conditions at apex: x=0, z=0, phi=0
@@ -87,8 +94,12 @@ def integrate_profile(
     # Stopping condition: drop detaches when x starts decreasing significantly
     # or when the profile goes too far
     def event_detach(s, y, beta):
-        # Stop if x becomes negative or angle > 170 degrees
-        return y[2] - np.pi * 0.95  # phi approaching pi
+        """Event: stop integration when the drop angle approaches detachment.
+
+        Returns a value that crosses zero when phi (y[2]) approaches ~0.95*pi.
+        """
+        # Stop if angle approaches ~171 degrees (phi -> pi)
+        return y[2] - (np.pi * 0.95)
 
     event_detach.terminal = True
     event_detach.direction = 1
@@ -98,7 +109,7 @@ def integrate_profile(
         s_span,
         y0,
         args=(beta,),
-        method=settings.solver_method,
+        method=str(settings.solver_method.value),
         t_eval=s_eval,
         events=event_detach,
         dense_output=True,
@@ -132,6 +143,15 @@ def young_laplace_adsa(
     geometry,
     **kwargs
 ) -> np.ndarray:
+    """Placeholder docstring for young_laplace_adsa.
+    
+    TODO: Complete docstring with full description.
+    
+    Returns
+    -------
+    type
+        Description of return value.
+    """
     """
     Integrator function compatible with menipy's common solver.
 
@@ -175,6 +195,15 @@ def young_laplace_adsa(
 def calculate_surface_tension(
     R0_mm: float, beta: float, delta_rho_kg_m3: float, g: float = 9.80665
 ) -> float:
+    """Placeholder docstring for calculate_surface_tension.
+    
+    TODO: Complete docstring with full description.
+    
+    Returns
+    -------
+    type
+        Description of return value.
+    """
     """
     Calculate surface tension from fitted parameters.
 

@@ -17,13 +17,20 @@ class QuickStatsWidget(QFrame):
     Card widget showing current measurement results.
     
     Displays:
-    - Contact angles (left, right, mean with uncertainty)
+        - Contact angles (left, right, mean with uncertainty)
     - Drop properties (volume, diameter, height, base width)
     - Surface tension
     - Confidence indicator
     """
     
     def __init__(self, parent=None):
+        """Initialize.
+
+        Parameters
+        ----------
+        parent : type
+        Description.
+        """
         super().__init__(parent)
         self.setObjectName("quickStatsWidget")
         self._setup_ui()

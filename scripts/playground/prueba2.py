@@ -1,3 +1,8 @@
+"""Prueba2.
+
+Experimental implementation."""
+
+
 import cv2
 import numpy as np
 from dataclasses import dataclass
@@ -379,6 +384,7 @@ class DropAnalyzer:
             return {"found": False, "bbox": None, "centerline_x": None, "lines": []}
 
         def score(v):
+    """score."""
             x1, y1, x2, y2, length = v
             xm = 0.5 * (x1 + x2)
             ym = 0.5 * (y1 + y2)
@@ -887,6 +893,18 @@ class DropAnalyzer:
 
     def _result_to_dict(self, r: DropResult) -> Dict[str, Any]:
         def conv(o):
+    """conv.
+
+    Parameters
+    ----------
+    o : type
+        Description.
+
+    Returns
+    -------
+    type
+        Description.
+    """
             if isinstance(o, np.ndarray):
                 return o.tolist()
             if isinstance(o, (tuple, list)):

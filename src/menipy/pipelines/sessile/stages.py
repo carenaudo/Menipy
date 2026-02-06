@@ -1,3 +1,8 @@
+"""Stages.
+
+Module implementation."""
+
+
 from __future__ import annotations
 
 import logging
@@ -372,6 +377,18 @@ class SessilePipeline(PipelineBase):
         return ctx
 
     def do_validation(self, ctx: Context) -> Optional[Context]:
+        """do validation.
+
+        Parameters
+        ----------
+        ctx : type
+        Description.
+
+        Returns
+        -------
+        type
+        Description.
+        """
         ok = bool(ctx.fit and ctx.fit.get("solver", {}).get("success", False))
         ctx.qa = {"ok": ok}
         return ctx

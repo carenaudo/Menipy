@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+"""Ui Main Window.
+
+Module implementation."""
+
+
 
 ################################################################################
 ## Form generated from reading UI file 'main_window_split.ui'
@@ -262,66 +267,73 @@ class Ui_MainWindow(object):
     # setupUi
 
     def retranslateUi(self, MainWindow):
+        """retranslateUi.
+
+        Parameters
+        ----------
+        MainWindow : type
+        Description.
+        """
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"Menipy ADSA", None))
         self.actionOpenImage.setText(QCoreApplication.translate("MainWindow", u"Open &Image\u2026", None))
-#if QT_CONFIG(shortcut)
+        #if QT_CONFIG(shortcut)
         self.actionOpenImage.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+O", None))
-#endif // QT_CONFIG(shortcut)
+        #endif // QT_CONFIG(shortcut)
         self.actionPreview.setText(QCoreApplication.translate("MainWindow", u"&Preview", None))
-#if QT_CONFIG(shortcut)
+        #if QT_CONFIG(shortcut)
         self.actionPreview.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+P", None))
-#endif // QT_CONFIG(shortcut)
+        #endif // QT_CONFIG(shortcut)
         self.actionExportCsv.setText(QCoreApplication.translate("MainWindow", u"Export &CSV\u2026", None))
         self.actionOpenCamera.setText(QCoreApplication.translate("MainWindow", u"Open &Camera", None))
         self.actionRunFull.setText(QCoreApplication.translate("MainWindow", u"Run &Full", None))
-#if QT_CONFIG(shortcut)
+        #if QT_CONFIG(shortcut)
         self.actionRunFull.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+R", None))
-#endif // QT_CONFIG(shortcut)
+        #endif // QT_CONFIG(shortcut)
         self.actionRunSelected.setText(QCoreApplication.translate("MainWindow", u"Run &Selected", None))
-#if QT_CONFIG(shortcut)
+        #if QT_CONFIG(shortcut)
         self.actionRunSelected.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+Shift+R", None))
-#endif // QT_CONFIG(shortcut)
+        #endif // QT_CONFIG(shortcut)
         self.actionStop.setText(QCoreApplication.translate("MainWindow", u"&Stop", None))
         self.actionQuit.setText(QCoreApplication.translate("MainWindow", u"&Quit", None))
-#if QT_CONFIG(shortcut)
+        #if QT_CONFIG(shortcut)
         self.actionQuit.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+Q", None))
-#endif // QT_CONFIG(shortcut)
+        #endif // QT_CONFIG(shortcut)
         self.actionAbout.setText(QCoreApplication.translate("MainWindow", u"&About", None))
         self.actionOverlay.setText(QCoreApplication.translate("MainWindow", u"&Overlay\u2026", None))
-#if QT_CONFIG(shortcut)
+        #if QT_CONFIG(shortcut)
         self.actionOverlay.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+Shift+O", None))
-#endif // QT_CONFIG(shortcut)
-#if QT_CONFIG(tooltip)
+        #endif // QT_CONFIG(shortcut)
+        #if QT_CONFIG(tooltip)
         self.actionOverlay.setToolTip(QCoreApplication.translate("MainWindow", u"Open overlay configuration and preview overlay styling", None))
-#endif // QT_CONFIG(tooltip)
-#if QT_CONFIG(statustip)
+        #endif // QT_CONFIG(tooltip)
+        #if QT_CONFIG(statustip)
         self.actionOverlay.setStatusTip(QCoreApplication.translate("MainWindow", u"Configure overlay appearance", None))
-#endif // QT_CONFIG(statustip)
+        #endif // QT_CONFIG(statustip)
         self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"&File", None))
         self.menuView.setTitle(QCoreApplication.translate("MainWindow", u"&View", None))
         self.menuRun.setTitle(QCoreApplication.translate("MainWindow", u"&Run", None))
         self.menuHelp.setTitle(QCoreApplication.translate("MainWindow", u"&Help", None))
         self.layoutLabel.setText(QCoreApplication.translate("MainWindow", u"Layout", None))
         self.layoutAnalysisBtn.setText(QCoreApplication.translate("MainWindow", u"Analysis", None))
-#if QT_CONFIG(tooltip)
+        #if QT_CONFIG(tooltip)
         self.layoutAnalysisBtn.setToolTip(QCoreApplication.translate("MainWindow", u"Focus on the image canvas", None))
-#endif // QT_CONFIG(tooltip)
+        #endif // QT_CONFIG(tooltip)
         self.layoutSetupBtn.setText(QCoreApplication.translate("MainWindow", u"Setup", None))
-#if QT_CONFIG(tooltip)
+        #if QT_CONFIG(tooltip)
         self.layoutSetupBtn.setToolTip(QCoreApplication.translate("MainWindow", u"Show setup and preview panels", None))
-#endif // QT_CONFIG(tooltip)
+        #endif // QT_CONFIG(tooltip)
         self.layoutReviewBtn.setText(QCoreApplication.translate("MainWindow", u"Review", None))
-#if QT_CONFIG(tooltip)
+        #if QT_CONFIG(tooltip)
         self.layoutReviewBtn.setToolTip(QCoreApplication.translate("MainWindow", u"Show setup, preview, and inspector panels", None))
-#endif // QT_CONFIG(tooltip)
+        #endif // QT_CONFIG(tooltip)
         self.toggleSetupBtn.setText(QCoreApplication.translate("MainWindow", u"Setup Panel", None))
-#if QT_CONFIG(tooltip)
+        #if QT_CONFIG(tooltip)
         self.toggleSetupBtn.setToolTip(QCoreApplication.translate("MainWindow", u"Show or hide the setup panel", None))
-#endif // QT_CONFIG(tooltip)
+        #endif // QT_CONFIG(tooltip)
         self.toggleInspectBtn.setText(QCoreApplication.translate("MainWindow", u"Inspector", None))
-#if QT_CONFIG(tooltip)
+        #if QT_CONFIG(tooltip)
         self.toggleInspectBtn.setToolTip(QCoreApplication.translate("MainWindow", u"Show or hide the results inspector", None))
-#endif // QT_CONFIG(tooltip)
+        #endif // QT_CONFIG(tooltip)
         self.inspectTabs.setTabText(self.inspectTabs.indexOf(self.resultsTab), QCoreApplication.translate("MainWindow", u"Results", None))
         self.inspectTabs.setTabText(self.inspectTabs.indexOf(self.residualsTab), QCoreApplication.translate("MainWindow", u"Residuals", None))
         self.inspectTabs.setTabText(self.inspectTabs.indexOf(self.timingsTab), QCoreApplication.translate("MainWindow", u"Timings", None))
@@ -334,5 +346,5 @@ class Ui_MainWindow(object):
         self.actionStopBtn.setText(QCoreApplication.translate("MainWindow", u"Stop", None))
         self.exportLabel.setText(QCoreApplication.translate("MainWindow", u"Export", None))
         self.actionExportCsvBtn.setText(QCoreApplication.translate("MainWindow", u"Export CSV", None))
-    # retranslateUi
+        # retranslateUi
 

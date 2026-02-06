@@ -16,7 +16,7 @@ class ActionPanel(QFrame):
     Panel with the main analyze button and progress indicator.
     
     States:
-    - Ready: Show "Analyze" button
+        - Ready: Show "Analyze" button
     - Processing: Show progress bar with cancel button
     - Complete: Show "Analyze" button again
     
@@ -34,6 +34,13 @@ class ActionPanel(QFrame):
     STATE_COMPLETE = "complete"
     
     def __init__(self, parent=None):
+        """Initialize.
+
+        Parameters
+        ----------
+        parent : type
+        Description.
+        """
         super().__init__(parent)
         self.setObjectName("actionPanel")
         self._state = self.STATE_READY

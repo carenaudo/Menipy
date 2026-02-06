@@ -1,3 +1,1 @@
-"""
-Placeholder for Young-Laplace equation solver implementation.
-"""
+"""Placeholder for Young-Laplace equation solver implementation."""

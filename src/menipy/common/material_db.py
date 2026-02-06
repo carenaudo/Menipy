@@ -18,7 +18,7 @@ class MaterialDB:
     Database for storing material properties and equipment specifications.
     
     Tables:
-    - materials: Liquids, gases, solids with density and other properties
+        - materials: Liquids, gases, solids with density and other properties
     - needles: Needle specifications (gauge, diameter)
     - syringes: Syringe specifications (volume, diameter)
     """
@@ -225,6 +225,13 @@ class MaterialDB:
     # -------------------------------------------------------------------------
     
     def list_syringes(self) -> List[Dict[str, Any]]:
+        """list syringes.
+
+        Returns
+        -------
+        type
+        Description.
+        """
         with self.connect() as con:
             rows = con.execute("SELECT * FROM syringes ORDER BY volume_ul").fetchall()
             return [dict(row) for row in rows]

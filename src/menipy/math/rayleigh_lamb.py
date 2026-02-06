@@ -1,3 +1,1 @@
-"""
-Placeholder for Rayleigh-Lamb oscillation frequency calculations.
-"""
+"""Placeholder for Rayleigh-Lamb oscillation frequency calculations."""

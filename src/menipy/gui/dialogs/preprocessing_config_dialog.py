@@ -1,6 +1,4 @@
-"""
-Dialog for preprocessing settings configuration.
-"""
+"""Dialog for preprocessing settings configuration."""
 
 from __future__ import annotations
 
@@ -482,6 +480,7 @@ class PreprocessingConfigDialog(QDialog):
         self._update_norm_controls()
 
     def _collect_settings(self) -> PreprocessingSettings:
+        """_collect_settings."""
         s = self._settings.model_copy(deep=True)
         
         if hasattr(s, "auto_detect"):
@@ -543,24 +542,28 @@ class PreprocessingConfigDialog(QDialog):
         self._settings = s
         return s
 
-    # ------------------------------------------------------------------
-    # Slots
-    # ------------------------------------------------------------------
+        # ------------------------------------------------------------------
+        # Slots
+        # ------------------------------------------------------------------
     def _on_preview(self) -> None:
+        """_on_preview."""
         settings = self._collect_settings()
         self.previewRequested.emit(settings)
 
     def _on_reset(self) -> None:
+        """_on_reset."""
         self._settings = PreprocessingSettings()
         self._load_settings()
 
     def _on_accept(self) -> None:
+        """_on_accept."""
         self._collect_settings()
         self.accept()
 
-    # Control enablement helpers
-    # ------------------------------------------------------------------
+        # Control enablement helpers
+        # ------------------------------------------------------------------
     def _update_auto_detect_controls(self) -> None:
+        """_update_auto_detect_controls."""
         enabled = self.auto_enable.isChecked()
         self.auto_detect_roi.setEnabled(enabled)
         self.auto_detect_needle.setEnabled(enabled)
@@ -568,6 +571,7 @@ class PreprocessingConfigDialog(QDialog):
         self.btn_run_auto.setEnabled(enabled)
 
     def _update_resize_controls(self) -> None:
+        """_update_resize_controls."""
         enabled = self.resize_enable.isChecked()
         for widget in (
             self.resize_width,
@@ -578,6 +582,7 @@ class PreprocessingConfigDialog(QDialog):
             widget.setEnabled(enabled)
 
     def _update_filter_controls(self) -> None:
+        """_update_filter_controls."""
         enabled = self.filter_enable.isChecked()
         method = self.filter_method.currentText()
         self.filter_method.setEnabled(enabled)
@@ -589,6 +594,7 @@ class PreprocessingConfigDialog(QDialog):
         self.filter_sigma_space.setEnabled(bilateral_enabled)
 
     def _update_background_controls(self) -> None:
+        """_update_background_controls."""
         enabled = self.bg_enable.isChecked()
         self.bg_mode.setEnabled(enabled)
         self.bg_strength.setEnabled(enabled)
@@ -597,6 +603,7 @@ class PreprocessingConfigDialog(QDialog):
         )
 
     def _update_norm_controls(self) -> None:
+        """_update_norm_controls."""
         enabled = self.norm_enable.isChecked()
         self.norm_method.setEnabled(enabled)
         clahe = enabled and self.norm_method.currentText() == "clahe"
@@ -604,6 +611,7 @@ class PreprocessingConfigDialog(QDialog):
         self.norm_grid.setEnabled(enabled)
 
     def _update_fill_controls(self) -> None:
+        """_update_fill_controls."""
         enabled = getattr(self, "fill_enable", None) and self.fill_enable.isChecked()
         for widget in (
             self.fill_max_area,
@@ -616,6 +624,7 @@ class PreprocessingConfigDialog(QDialog):
     # Public accessors
     # ------------------------------------------------------------------
     def settings(self) -> PreprocessingSettings:
+        """Settings."""
         return self._settings
 
     @Slot(object, dict)
@@ -661,45 +670,58 @@ class PreprocessingConfigDialog(QDialog):
                 offset_x, offset_y = roi[0], roi[1]
 
             def to_local_rect(r):
+                """To_local_rect."""
                 if not r: return None
                 return (r[0] - offset_x, r[1] - offset_y, r[2], r[3])
                 
             def to_local_line(l):
+                """to local line.
+
+                Parameters
+                ----------
+                l : type
+                Description.
+
+                Returns
+                -------
+                type
+                Description.
+                """
                 if not l: return None
                 p1, p2 = l
                 return ((p1[0] - offset_x, p1[1] - offset_y), (p2[0] - offset_x, p2[1] - offset_y))
 
-            # Draw ROI (if not cropped, or if we want to show it anyway - if cropped it's the border)
-            if roi:
-                rx, ry, rw, rh = to_local_rect(roi)
+                # Draw ROI (if not cropped, or if we want to show it anyway - if cropped it's the border)
+                if roi:
+                    rx, ry, rw, rh = to_local_rect(roi)
                 pen = QPen(QColor(255, 255, 0)) # Yellow
                 pen.setWidth(2)
                 pen.setStyle(Qt.DashLine)
                 painter.setPen(pen)
                 painter.drawRect(rx, ry, rw, rh)
 
-            # Draw Needle
-            needle = metadata.get("needle_rect")
-            if needle:
-                nx, ny, nw, nh = to_local_rect(needle)
+                # Draw Needle
+                needle = metadata.get("needle_rect")
+                if needle:
+                    nx, ny, nw, nh = to_local_rect(needle)
                 pen = QPen(QColor(0, 255, 255)) # Cyan
                 pen.setWidth(2)
                 painter.setPen(pen)
                 painter.drawRect(nx, ny, nw, nh)
 
-            # Draw Substrate
-            sub = metadata.get("substrate_line")
-            if sub:
-                (x1, y1), (x2, y2) = to_local_line(sub)
+                # Draw Substrate
+                sub = metadata.get("substrate_line")
+                if sub:
+                    (x1, y1), (x2, y2) = to_local_line(sub)
                 pen = QPen(QColor(255, 0, 255)) # Magenta
                 pen.setWidth(2)
                 painter.setPen(pen)
                 painter.drawLine(x1, y1, x2, y2)
 
-            painter.end()
+                painter.end()
 
-        self.preview_label.setPixmap(
-            pixmap.scaled(
+                self.preview_label.setPixmap(
+                pixmap.scaled(
                 self.preview_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation
-            )
-        )
+                )
+                )

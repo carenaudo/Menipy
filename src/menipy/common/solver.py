@@ -1,7 +1,5 @@
 # src/menipy/common/solver.py
-"""
-Solver stage utilities for fitting physical models to contours.
-"""
+"""Solver stage utilities for fitting physical models to contours."""
 from __future__ import annotations
 
 from typing import Callable
@@ -112,6 +110,18 @@ def run(
 
     # Build LSQ fun(params) -> residual vector
     def fun(x: np.ndarray) -> np.ndarray:
+        """fun.
+
+        Parameters
+        ----------
+        x : type
+        Description.
+
+        Returns
+        -------
+        type
+        Description.
+        """
         model_xy = np.asarray(integrator(x, physics, geometry), dtype=float)
         r = residual_fn(obs_xy, model_xy)
         if weights is None:
@@ -127,8 +137,8 @@ def run(
             rr[m:] *= weights[-1]  # last weight for any tail
         return rr
 
-    # Solve
-    res = least_squares(
+        # Solve
+        res = least_squares(
         fun,
         x0=np.asarray(config.x0, dtype=float),
         bounds=(
@@ -140,14 +150,14 @@ def run(
         max_nfev=config.max_nfev,
         verbose=config.verbose,
         method="trf",
-    )
+        )
 
-    # Collect outputs
-    r_vec = res.fun
-    rmse = float(math.sqrt(np.mean(r_vec**2))) if r_vec.size else float("nan")
-    max_abs = float(np.max(np.abs(r_vec))) if r_vec.size else float("nan")
+        # Collect outputs
+        r_vec = res.fun
+        rmse = float(math.sqrt(np.mean(r_vec**2))) if r_vec.size else float("nan")
+        max_abs = float(np.max(np.abs(r_vec))) if r_vec.size else float("nan")
 
-    fit = {
+        fit = {
         "params": res.x.tolist(),
         "param_names": list(config.param_names) if config.param_names else None,
         "residuals": {
@@ -163,12 +173,12 @@ def run(
             "success": bool(res.success),
             "message": str(res.message),
         },
-    }
+        }
 
-    # Convenience: if one of the params is gamma, propagate it to a top-level field
-    if fit["param_names"] and "gamma_mN_per_m" in fit["param_names"]:
-        j = fit["param_names"].index("gamma_mN_per_m")
+        # Convenience: if one of the params is gamma, propagate it to a top-level field
+        if fit["param_names"] and "gamma_mN_per_m" in fit["param_names"]:
+            j = fit["param_names"].index("gamma_mN_per_m")
         fit["gamma_mN_per_m"] = float(fit["params"][j])
 
-    ctx.fit = fit
-    return fit
+        ctx.fit = fit
+        return fit

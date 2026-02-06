@@ -113,7 +113,7 @@ class SessileDropWindow(BaseExperimentWindow):
     Window for sessile drop contact angle analysis.
     
     Provides controls for:
-    - Image loading (single, batch, camera)
+        - Image loading (single, batch, camera)
     - Calibration setup
     - Measurement parameters
     - Analysis execution
@@ -711,10 +711,11 @@ class SessileDropWindow(BaseExperimentWindow):
             return QPointF(vx, vy)
             
         def to_view_rect(rect_obj):
-             # rect_obj has x, y, width, height
-             p1 = to_view(rect_obj.x, rect_obj.y)
-             p2 = to_view(rect_obj.x + rect_obj.width, rect_obj.y + rect_obj.height)
-             return QRectF(p1, p2)
+            """To_view_rect."""
+            # rect_obj has x, y, width, height
+            p1 = to_view(rect_obj.x, rect_obj.y)
+            p2 = to_view(rect_obj.x + rect_obj.width, rect_obj.y + rect_obj.height)
+            return QRectF(p1, p2)
 
         # 1. Draw ROI (Yellow)
         if ctx.roi:
@@ -826,15 +827,19 @@ class SessileDropWindow(BaseExperimentWindow):
     # -------------------------------------------------------------------------
     
     def _on_zoom_in(self):
+        """_on_zoom_in."""
         self._image_viewer.zoom_in()
     
     def _on_zoom_out(self):
+        """_on_zoom_out."""
         self._image_viewer.zoom_out()
     
     def _on_fit_view(self):
+        """_on_fit_view."""
         self._image_viewer.fit_to_view()
     
     def _on_reset_view(self):
+        """_on_reset_view."""
         self._image_viewer.reset_view()
 
     # ------------------------------------------------------------------
@@ -846,6 +851,17 @@ class SessileDropWindow(BaseExperimentWindow):
         edge: EdgeDetectionSettings,
         pipeline_settings: dict | None = None,
     ):
+        """Check if apply analysis settings.
+
+        Parameters
+        ----------
+        pre : PreprocessingSettings
+            Preprocessing settings.
+        edge : EdgeDetectionSettings
+            Edge detection settings.
+        pipeline_settings : dict, optional
+            Pipeline settings dictionary.
+        """
         self._preprocessing_settings = pre
         self._edge_settings = edge
         self._pipeline_settings = pipeline_settings or {}

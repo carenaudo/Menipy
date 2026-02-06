@@ -21,6 +21,18 @@ py_files = [p for p in package_root.rglob("*.py")]
 
 # Map file path -> module name (menipy....)
 def module_name_for(path: Path):
+    """module name for.
+
+    Parameters
+    ----------
+    path : type
+        Description.
+
+    Returns
+    -------
+    type
+        Description.
+    """
     rel = path.relative_to(src_root)
     parts = list(rel.with_suffix("").parts)
     # remove trailing __init__ part

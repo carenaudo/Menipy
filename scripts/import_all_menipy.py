@@ -30,6 +30,18 @@ py_files = sorted(package_root.rglob("*.py"))
 
 # build module names
 def module_name_for(path: Path):
+    """module name for.
+
+    Parameters
+    ----------
+    path : type
+        Description.
+
+    Returns
+    -------
+    type
+        Description.
+    """
     rel = path.relative_to(src_root)
     parts = list(rel.with_suffix("").parts)
     if parts[-1] == "__init__":

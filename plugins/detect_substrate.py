@@ -23,20 +23,49 @@ def detect_substrate_gradient(
     clahe_tile_size: Tuple[int, int] = (8, 8),
     margin_fraction: float = 0.05,
 ) -> Optional[Tuple[Tuple[int, int], Tuple[int, int]]]:
-    """
-    Detect substrate baseline using gradient analysis on image margins.
+    """Detect substrate baseline using gradient analysis on image margins.
     
     Finds the strongest negative gradient (dark-to-light transition) in the
-    left and right margins of the image.
+    left and right margins of the image. This method is robust to varying
+    substrate textures and works well with images where the substrate has
+    distinct edge contrast.
     
-    Args:
-        image: Input image (BGR or grayscale)
-        clahe_clip_limit: CLAHE clip limit for contrast enhancement
-        clahe_tile_size: CLAHE tile grid size
-        margin_fraction: Fraction of image width for margin analysis
-        
-    Returns:
-        Substrate line as ((x1, y1), (x2, y2)) or None if not found.
+    Parameters
+    ----------
+    image : np.ndarray
+        Input image as a 2D array (grayscale) or 3D array (BGR color).
+        If color image is provided, it is automatically converted to grayscale.
+    clahe_clip_limit : float, optional
+        CLAHE clip limit for contrast enhancement. Default is 2.0.
+    clahe_tile_size : Tuple[int, int], optional
+        CLAHE tile grid size as (height, width). Default is (8, 8).
+    margin_fraction : float, optional
+        Fraction of image width to analyze as left and right margins.
+        Default is 0.05 (5% of width).
+    
+    Returns
+    -------
+    Optional[Tuple[Tuple[int, int], Tuple[int, int]]]
+        Substrate line as ((x1, y1), (x2, y2)) representing the detected
+        baseline, or None if detection fails. If detection fails, returns
+        a fallback line at 80% image height.
+    
+    Raises
+    ------
+    None
+        Returns fallback substrate line instead of raising exceptions.
+    
+    Notes
+    -----
+    The algorithm:
+    1. Extracts left and right margin strips from the image
+    2. Computes gradient in each column
+    3. Finds strongest negative gradient (dark-to-light transition)
+    4. Returns median y-coordinate from both strips as substrate position
+    
+    See Also
+    --------
+    detect_substrate_hough : Detects substrate using Hough line transform
     """
     # Convert to grayscale
     if len(image.shape) == 3:
@@ -111,20 +140,57 @@ def detect_substrate_hough(
     hough_threshold: int = 100,
     angle_tolerance: float = 5.0,
 ) -> Optional[Tuple[Tuple[int, int], Tuple[int, int]]]:
-    """
-    Detect substrate baseline using Hough line transform.
+    """Detect substrate baseline using Hough line transform.
     
-    Finds horizontal lines near the bottom of the image.
+    This function detects the substrate/baseline in sessile drop images
+    using the Hough line transform. It focuses on the bottom half of the
+    image to identify horizontal lines that represent the substrate surface.
+    This method is particularly robust for detecting straight substrate
+    surfaces even under challenging illumination conditions.
     
-    Args:
-        image: Input image (BGR or grayscale)
-        canny_low: Canny edge detection low threshold
-        canny_high: Canny edge detection high threshold
-        hough_threshold: Hough accumulator threshold
-        angle_tolerance: Angle tolerance from horizontal (degrees)
-        
-    Returns:
-        Substrate line as ((x1, y1), (x2, y2)) or None if not found.
+    Parameters
+    ----------
+    image : np.ndarray
+        Input image as a 2D array (grayscale) or 3D array (BGR color).
+        If color image is provided, it is automatically converted to grayscale.
+    canny_low : int, optional
+        Low threshold for Canny edge detection. Values below this threshold
+        are discarded. Default is 50.
+    canny_high : int, optional
+        High threshold for Canny edge detection. Values above this threshold
+        are automatically accepted. Default is 150.
+    hough_threshold : int, optional
+        Minimum number of edge points required to form a line in the Hough
+        accumulator. Lower values detect fainter lines. Default is 100.
+    angle_tolerance : float, optional
+        Maximum angle deviation from horizontal in degrees. Lines within
+        this tolerance are considered candidate substrate lines.
+        Default is 5.0 degrees.
+    
+    Returns
+    -------
+    Optional[Tuple[Tuple[int, int], Tuple[int, int]]]
+        Substrate line as ((x1, y1), (x2, y2)) representing the detected
+        horizontal line, or None if no valid horizontal line is detected.
+    
+    Raises
+    ------
+    None
+        Returns None instead of raising exceptions for invalid input.
+    
+    Notes
+    -----
+    The function analyzes only the bottom half of the image to reduce false
+    positives from drop features. All detected lines are filtered to enforce
+    near-horizontal orientation based on angle_tolerance. If multiple lines
+    are detected, the one closest to the image bottom is selected (lowest y).
+    
+    This method is complementary to detect_substrate_gradient and typically
+    provides better results when substrate edge contrast is high.
+    
+    See Also
+    --------
+    detect_substrate_gradient : Detects substrate using gradient analysis
     """
     # Convert to grayscale
     if len(image.shape) == 3:

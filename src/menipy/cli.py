@@ -1,6 +1,4 @@
-"""
-Command-line interface for running Menipy pipelines.
-"""
+"""Command-line interface for running Menipy pipelines."""
 
 from __future__ import annotations
 import argparse
@@ -99,13 +97,37 @@ def _patch_acquisition(p, *, image: Optional[Path], camera: Optional[int], frame
     cam_id = 0 if camera is None else int(camera)
 
     def do_acq(ctx: Context):
+        """do acq.
+
+        Parameters
+        ----------
+        ctx : type
+        Description.
+
+        Returns
+        -------
+        type
+        Description.
+        """
         ctx.frames = acq.from_camera(device=cam_id, n_frames=frames)
         return ctx
 
-    p.do_acquisition = do_acq  # type: ignore[attr-defined]
+        p.do_acquisition = do_acq  # type: ignore[attr-defined]
 
 
 def main(argv: Optional[list[str]] = None) -> int:
+    """Entry point.
+
+    Parameters
+    ----------
+    argv : type
+        Description.
+
+    Returns
+    -------
+    type
+        Description.
+    """
     ap = argparse.ArgumentParser(
         prog="adsa",
         description=(

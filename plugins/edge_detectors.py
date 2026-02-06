@@ -70,143 +70,144 @@ def _fallback_canny_plugin(img: np.ndarray, settings: EdgeDetectionSettings) -> 
 
 class CannyDetector:
     def detect(self, img: np.ndarray, settings: EdgeDetectionSettings) -> np.ndarray:
-        import cv2
+        """Detect edges using Canny (with local fallback)."""
+        try:
+            import cv2
+        except Exception:
+            cv2 = None
+
         if cv2 is None:
             return _fallback_canny_plugin(img, settings)
+
+        g = ensure_gray(img)
         edges = cv2.Canny(
-            img,
+            g,
             settings.canny_threshold1,
             settings.canny_threshold2,
             apertureSize=settings.canny_aperture_size,
             L2gradient=settings.canny_L2_gradient,
         )
-        return edges_to_xy(
-            edges, settings.min_contour_length, settings.max_contour_length
-        )
+        return edges_to_xy(edges, settings.min_contour_length, settings.max_contour_length)
 
 
 class ThresholdDetector:
     def detect(self, img: np.ndarray, settings: EdgeDetectionSettings) -> np.ndarray:
-        import cv2
-        if cv2 is None:
-            # Simple threshold fallback
-            edges = (img > settings.threshold_value).astype(np.uint8) * 255
-            return edges_to_xy(
-                edges, settings.min_contour_length, settings.max_contour_length
-            )
+        """Detect edges using simple/global threshold or OpenCV threshold."""
+        try:
+            import cv2
+        except Exception:
+            cv2 = None
 
-        thresh_type = getattr(
-            cv2, f"THRESH_{settings.threshold_type.upper()}", cv2.THRESH_BINARY
-        )
-        _, edges = cv2.threshold(
-            img, settings.threshold_value, settings.threshold_max_value, thresh_type
-        )
-        return edges_to_xy(
-            edges, settings.min_contour_length, settings.max_contour_length
-        )
+        g = ensure_gray(img)
+
+        if cv2 is None:
+            edges = (g > settings.threshold_value).astype(np.uint8) * 255
+            return edges_to_xy(edges, settings.min_contour_length, settings.max_contour_length)
+
+        thresh_type = getattr(cv2, f"THRESH_{settings.threshold_type.upper()}", cv2.THRESH_BINARY)
+        _, edges = cv2.threshold(g, settings.threshold_value, settings.threshold_max_value, thresh_type)
+        return edges_to_xy(edges, settings.min_contour_length, settings.max_contour_length)
 
 
 class SobelDetector:
     def detect(self, img: np.ndarray, settings: EdgeDetectionSettings) -> np.ndarray:
-        import cv2
+        """Detect edges using Sobel gradients (or fallback)."""
+        try:
+            import cv2
+        except Exception:
+            cv2 = None
+
+        g = ensure_gray(img)
+
         if cv2 is None:
             return _fallback_canny_plugin(img, settings)
-        grad_x = cv2.Sobel(img, cv2.CV_64F, 1, 0, ksize=settings.sobel_kernel_size)
-        grad_y = cv2.Sobel(img, cv2.CV_64F, 0, 1, ksize=settings.sobel_kernel_size)
+
+        grad_x = cv2.Sobel(g, cv2.CV_64F, 1, 0, ksize=settings.sobel_kernel_size)
+        grad_y = cv2.Sobel(g, cv2.CV_64F, 0, 1, ksize=settings.sobel_kernel_size)
         magnitude = cv2.magnitude(grad_x, grad_y)
-        magnitude = cv2.normalize(magnitude, None, 0, 255, cv2.NORM_MINMAX).astype(
-            np.uint8
-        )
-        _, edges = cv2.threshold(
-            magnitude,
-            settings.threshold_value,
-            settings.threshold_max_value,
-            cv2.THRESH_BINARY,
-        )
-        return edges_to_xy(
-            edges, settings.min_contour_length, settings.max_contour_length
-        )
+        magnitude = cv2.normalize(magnitude, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+        _, edges = cv2.threshold(magnitude, settings.threshold_value, settings.threshold_max_value, cv2.THRESH_BINARY)
+        return edges_to_xy(edges, settings.min_contour_length, settings.max_contour_length)
 
 
 class ScharrDetector:
     def detect(self, img: np.ndarray, settings: EdgeDetectionSettings) -> np.ndarray:
-        import cv2
+        """Detect edges using Scharr operator (or fallback)."""
+        try:
+            import cv2
+        except Exception:
+            cv2 = None
+
+        g = ensure_gray(img)
+
         if cv2 is None:
             return _fallback_canny_plugin(img, settings)
-        grad_x = cv2.Scharr(img, cv2.CV_64F, 1, 0)
-        grad_y = cv2.Scharr(img, cv2.CV_64F, 0, 1)
+
+        grad_x = cv2.Scharr(g, cv2.CV_64F, 1, 0)
+        grad_y = cv2.Scharr(g, cv2.CV_64F, 0, 1)
         magnitude = cv2.magnitude(grad_x, grad_y)
-        magnitude = cv2.normalize(magnitude, None, 0, 255, cv2.NORM_MINMAX).astype(
-            np.uint8
-        )
-        _, edges = cv2.threshold(
-            magnitude,
-            settings.threshold_value,
-            settings.threshold_max_value,
-            cv2.THRESH_BINARY,
-        )
-        return edges_to_xy(
-            edges, settings.min_contour_length, settings.max_contour_length
-        )
+        magnitude = cv2.normalize(magnitude, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+        _, edges = cv2.threshold(magnitude, settings.threshold_value, settings.threshold_max_value, cv2.THRESH_BINARY)
+        return edges_to_xy(edges, settings.min_contour_length, settings.max_contour_length)
 
 
 class LaplacianBasicDetector:
     def detect(self, img: np.ndarray, settings: EdgeDetectionSettings) -> np.ndarray:
-        import cv2
+        """Detect edges using the Laplacian operator (or fallback)."""
+        try:
+            import cv2
+        except Exception:
+            cv2 = None
+
+        g = ensure_gray(img)
+
         if cv2 is None:
             return _fallback_canny_plugin(img, settings)
-        laplacian = cv2.Laplacian(img, cv2.CV_64F, ksize=settings.laplacian_kernel_size)
-        laplacian = cv2.normalize(laplacian, None, 0, 255, cv2.NORM_MINMAX).astype(
-            np.uint8
-        )
-        _, edges = cv2.threshold(
-            laplacian,
-            settings.threshold_value,
-            settings.threshold_max_value,
-            cv2.THRESH_BINARY,
-        )
-        return _edges_to_xy(
-            edges, settings.min_contour_length, settings.max_contour_length
-        )
+
+        laplacian = cv2.Laplacian(g, cv2.CV_64F, ksize=getattr(settings, 'laplacian_kernel_size', 3))
+        laplacian = cv2.normalize(laplacian, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+        _, edges = cv2.threshold(laplacian, settings.threshold_value, settings.threshold_max_value, cv2.THRESH_BINARY)
+        return _edges_to_xy(edges, settings.min_contour_length, settings.max_contour_length)
 
 
 class LegacySnakeDetector:
     """Old 'ActiveContourDetector' from core."""
     def detect(self, img: np.ndarray, settings: EdgeDetectionSettings) -> np.ndarray:
+        """Run legacy active-contour (snake) refinement if scikit-image is available."""
         try:
             from skimage.segmentation import active_contour
             from skimage.filters import gaussian
-        except ImportError:
+        except Exception:
             logger.error("LegacySnakeDetector requires scikit-image.")
             return _fallback_canny_plugin(img, settings)
 
-        # 1. Initial Contour using Canny/Otsu 
+        # 1. Initial Contour using Canny/Otsu
         initial_xy = _fallback_canny_plugin(img, settings)
-        
+
         if initial_xy.size < 3:
             return initial_xy
 
-        img_smooth = gaussian(img, sigma=settings.gaussian_sigma_x)
+        img_smooth = gaussian(img, sigma=getattr(settings, 'gaussian_sigma_x', 1.0))
 
-        # 3. Coordinate Swap
+        # 3. Coordinate Swap (x,y) -> (row,col)
         init_snake_rc = initial_xy[:, ::-1]
 
-        # 4. Run Snake
-        snake_rc = active_contour(
-            img_smooth,
-            init_snake_rc,
-            alpha=settings.snake_alpha,
-            beta=settings.snake_beta,
-            gamma=settings.snake_gamma,
-            max_num_iter=settings.snake_iterations,
-            convergence=0.01 
-        )
+        # 4. Run Snake (use conservative defaults if settings missing)
+        try:
+            snake_rc = active_contour(
+                img_smooth,
+                init_snake_rc,
+                alpha=getattr(settings, 'snake_alpha', 0.015),
+                beta=getattr(settings, 'snake_beta', 10.0),
+                gamma=getattr(settings, 'snake_gamma', 0.001),
+                max_iterations=int(getattr(settings, 'snake_max_iter', 2500)),
+            )
+        except Exception:
+            return initial_xy
 
-        # 5. Swap back
-        detected_xy = snake_rc[:, ::-1]
-        
-        return detected_xy
-
+        # Convert back to (x,y) coordinates and return
+        snake_xy = snake_rc[:, ::-1]
+        return snake_xy
 
 # -----------------------------------------------------------------------------
 # Advanced/Custom Detectors
@@ -216,9 +217,7 @@ def _zero_crossing_detection(
     laplacian: np.ndarray,
     min_gradient: float = 5.0,
 ) -> np.ndarray:
-    """
-    Detect zero crossings in a Laplacian image.
-    """
+    """Detect zero crossings in a Laplacian image."""
     abs_lap = np.abs(laplacian)
     sign_img = np.sign(laplacian)
     
@@ -278,6 +277,7 @@ class AdaptiveSettings(BaseModel):
     adaptive_c: int = Field(2, description="Constant subtracted from mean")
 
     def model_post_init(self, __context):
+        """Model_post_init."""
         if self.adaptive_block_size % 2 == 0:
             self.adaptive_block_size += 1
 

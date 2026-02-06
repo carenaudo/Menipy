@@ -9,6 +9,18 @@ from menipy.models.context import Context
 
 
 def run(ctx: Context) -> Optional[Context]:
+    """Run.
+
+    Parameters
+    ----------
+    ctx : type
+        Description.
+
+    Returns
+    -------
+    type
+        Description.
+    """
     ctx.physics = ctx.physics or {}
     ctx.physics.setdefault("rho1", 1000.0)  # liquid density kg/m3
     ctx.physics.setdefault("rho2", 1.2)  # ambient gas density kg/m3

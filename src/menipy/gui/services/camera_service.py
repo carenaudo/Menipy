@@ -133,6 +133,8 @@ class CameraController(QObject):
         self._stop_requested.emit()
 
     def shutdown(self) -> None:
+        """shutdown.
+        """
         self.stop()
         self._thread.quit()
         self._thread.wait(1000)

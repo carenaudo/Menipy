@@ -1,7 +1,5 @@
 # src/menipy/common/scaling.py
-"""
-Scaling stage utilities for pixel-to-mm conversion.
-"""
+"""Scaling stage utilities for pixel-to-mm conversion."""
 from __future__ import annotations
 
 

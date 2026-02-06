@@ -16,9 +16,7 @@ from datetime import datetime
 
 
 class YoungLaplaceFit(BaseModel):
-    """
-    Outputs for pendant/sessile ADSA (profile matched to Young–Laplace).
-    """
+    """Outputs for pendant/sessile ADSA (profile matched to Young–Laplace)."""
 
     gamma_mN_per_m: float = Field(ge=0, description="surface/interfacial tension")
     contact_angle_deg: Optional[float] = Field(default=None, ge=0, le=180)
@@ -34,9 +32,7 @@ class YoungLaplaceFit(BaseModel):
 
 
 class OscillationFit(BaseModel):
-    """
-    Outputs for oscillating-drop analysis (Rayleigh–Lamb small-amplitude).
-    """
+    """Outputs for oscillating-drop analysis (Rayleigh–Lamb small-amplitude)."""
 
     gamma_mN_per_m: float = Field(ge=0)
     kinematic_viscosity_mm2_per_s: Optional[float] = Field(default=None, ge=0)
@@ -50,9 +46,7 @@ class OscillationFit(BaseModel):
 
 
 class CapillaryRiseFit(BaseModel):
-    """
-    Outputs for capillary rise (static/dynamic Jurin models).
-    """
+    """Outputs for capillary rise (static/dynamic Jurin models)."""
 
     gamma_mN_per_m: float = Field(ge=0)
     contact_angle_deg: Optional[float] = Field(default=None, ge=0, le=180)

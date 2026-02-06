@@ -87,9 +87,7 @@ class PluginSettingsWidget(QWidget):
         self._inputs.clear()
 
     def set_plugin(self, method_name: str, current_settings: Dict[str, Any] = None):
-        """
-        Build the settings form for the given plugin method.
-        """
+        """Build the settings form for the given plugin method."""
         self._current_method = method_name
         self._current_model = get_detector_settings_model(method_name)
         
@@ -218,6 +216,13 @@ class PluginSettingsWidget(QWidget):
         self.settingsChanged.emit(self.get_current_settings())
 
     def get_current_settings(self) -> Dict[str, Any]:
+        """Get current settings.
+
+        Returns
+        -------
+        type
+        Description.
+        """
         data = {}
         for name, widget in self._inputs.items():
             if isinstance(widget, QSpinBox):

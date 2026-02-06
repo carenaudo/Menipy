@@ -261,9 +261,7 @@ class PipelineController:
     # Slots wired by MainWindow
     # ------------------------------------------------------------------
     def run_simple_analysis(self):
-        """
-        Runs a staged pipeline analysis for the current view, unifying the execution path.
-        """
+        """Runs a staged pipeline analysis for the current view, unifying the execution path."""
         mode = self.setup_ctrl.current_pipeline_name()
         if not mode:
             QMessageBox.warning(
@@ -753,6 +751,13 @@ class PipelineController:
             pass
 
     def on_pipeline_error(self, message: str) -> None:
+        """on pipeline error.
+
+        Parameters
+        ----------
+        message : type
+        Description.
+        """
         # Use a None parent to avoid PySide runtime type-checking issues when
         # the tests patch window with a Mock (which is not a QWidget).
         QMessageBox.critical(None, "Pipeline Error", message)

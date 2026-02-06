@@ -24,6 +24,13 @@ class ResultsHistory:
     """Manages historical measurement results with persistence."""
 
     def __init__(self, max_history: int = 100):
+        """Initialize.
+
+        Parameters
+        ----------
+        max_history : type
+        Description.
+        """
         self.measurements: List[MeasurementResult] = []
         self.max_history = max_history
         self._data_dir = Path.home() / ".menipy"

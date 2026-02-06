@@ -28,12 +28,24 @@ def _wrap_chain(first: Callable, second: Callable) -> Callable:
     """
 
     def wrapped(ctx):
+        """wrapped.
+
+        Parameters
+        ----------
+        ctx : type
+        Description.
+
+        Returns
+        -------
+        type
+        Description.
+        """
         c = first(ctx)
         if c is None:
             c = ctx
         return second(c) or c
 
-    return wrapped
+        return wrapped
 
 
 def apply_registered_stages(pipeline, merge_strategy: str = "override") -> None:
@@ -198,12 +210,12 @@ class PluginLoader:
             #     or "laplace" in attr_name.lower()
             #     or "solver" in attr_name.lower()
             # ):
-            #     if attr_name not in registry.SOLVERS:
+                #     if attr_name not in registry.SOLVERS:
             #         registry.SOLVERS.register(attr_name, attr)
             #         logger.debug("Registered solver: %s", attr_name)
             # # Register edge detectors
             # elif "edge" in name.lower() or "detector" in attr_name.lower():
-            #     if attr_name not in registry.EDGE_DETECTORS:
+                #     if attr_name not in registry.EDGE_DETECTORS:
             #         registry.EDGE_DETECTORS.register(attr_name, attr)
             #         logger.debug("Registered edge detector: %s", attr_name)
 

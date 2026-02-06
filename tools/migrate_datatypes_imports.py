@@ -97,6 +97,18 @@ def collect_multiline_imports(text: str) -> List[Tuple[int, str]]:
 
 
 def find_py_files(root: Path) -> List[Path]:
+    """Find py files.
+
+    Parameters
+    ----------
+    root : type
+        Description.
+
+    Returns
+    -------
+    type
+        Description.
+    """
     files: List[Path] = []
     for p in root.rglob("*.py"):
         if any(part in EXCLUDE_DIRS for part in p.parts):
@@ -106,6 +118,18 @@ def find_py_files(root: Path) -> List[Path]:
 
 
 def parse_imports(line: str) -> Optional[List[str]]:
+    """Parse imports.
+
+    Parameters
+    ----------
+    line : type
+        Description.
+
+    Returns
+    -------
+    type
+        Description.
+    """
     m = IMPORT_RE.search(line)
     if not m:
         return None
@@ -204,6 +228,13 @@ def plan_rewrites(
 
 
 def apply_rewrites(planned: Dict[Path, List[Tuple[str, str, str]]]) -> None:
+    """apply rewrites.
+
+    Parameters
+    ----------
+    planned : type
+        Description.
+    """
     for f, changes in planned.items():
         text = f.read_text(encoding="utf8")
         for original_line, old_stmt, new_stmt in changes:
@@ -213,6 +244,8 @@ def apply_rewrites(planned: Dict[Path, List[Tuple[str, str, str]]]) -> None:
 
 
 def main() -> None:
+    """Entry point.
+    """
     parser = argparse.ArgumentParser(
         description="Migrate imports from menipy.models.datatypes to new model modules"
     )

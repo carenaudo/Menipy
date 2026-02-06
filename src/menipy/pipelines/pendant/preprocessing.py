@@ -19,7 +19,7 @@ def do_preprocessing(ctx: Context) -> Optional[Context]:
     Preprocess image for pendant drop analysis.
     
     Uses the auto_detect preprocessor plugin to run:
-    1. Drop contour detection
+        1. Drop contour detection
     2. Needle detection (shaft line analysis)
     3. ROI computation
     
@@ -61,6 +61,13 @@ def do_preprocessing(ctx: Context) -> Optional[Context]:
                 
                 @property
                 def frames(self):
+                    """frames.
+
+                    Returns
+                    -------
+                    type
+                    Description.
+                    """
                     return getattr(self._ctx, "frames", None)
                 
                 def __getattr__(self, name):
@@ -99,4 +106,16 @@ def do_preprocessing(ctx: Context) -> Optional[Context]:
 
 # Backward-compatible alias expected by older tests
 def run(ctx: Context) -> Optional[Context]:
+    """Run.
+
+    Parameters
+    ----------
+    ctx : type
+        Description.
+
+    Returns
+    -------
+    type
+        Description.
+    """
     return do_preprocessing(ctx)

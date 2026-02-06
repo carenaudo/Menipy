@@ -1,6 +1,4 @@
-"""
-Geometric models for contours, geometry landmarks, and spatial features.
-"""
+"""Geometric models for contours, geometry landmarks, and spatial features."""
 
 from __future__ import annotations
 
@@ -72,9 +70,7 @@ class Contour(BaseModel):
 
 
 class Geometry(BaseModel):
-    """
-    Geometric landmarks required by solvers.
-    """
+    """Geometric landmarks required by solvers."""
 
     apex_xy: Optional[Tuple[float, float]] = None  # pendant/sessile
     axis_x: Optional[float] = None  # symmetry axis x (px or mm)

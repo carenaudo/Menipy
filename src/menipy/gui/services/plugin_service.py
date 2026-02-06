@@ -1,6 +1,4 @@
-"""
-Plugin management service for GUI.
-"""
+"""Plugin management service for GUI."""
 
 # src/adsa/gui/services/plugin_service.py
 from __future__ import annotations
@@ -24,4 +22,11 @@ class PluginService:
         self.db.set_active(name, kind, active)
 
     def load_active(self) -> int:
+        """Load active.
+
+        Returns
+        -------
+        type
+        Description.
+        """
         return load_active_plugins(self.db)

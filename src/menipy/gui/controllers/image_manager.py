@@ -1,6 +1,4 @@
-"""
-Image lifecycle and loading management.
-"""
+"""Image lifecycle and loading management."""
 from __future__ import annotations
 
 import logging
@@ -36,6 +34,21 @@ class ImageManager(QObject):
         preprocessing_ctrl=None,
         parent: Optional[QObject] = None,
     ):
+        """Initialize.
+
+        Parameters
+        ----------
+        window : MainWindow
+            Main window.
+        setup_ctrl : SetupPanelController
+            Setup panel controller.
+        preview_panel : PreviewPanel
+            Preview panel widget.
+        preprocessing_ctrl : object, optional
+            Preprocessing controller.
+        parent : QObject, optional
+            Parent object.
+        """
         super().__init__(parent)
         self.window = window
         self.settings = window.settings

@@ -17,6 +17,13 @@ class PipelineUIManager:
     """Manages dynamic pipeline UI generation and configuration based on plugin metadata."""
 
     def __init__(self, plugin_db: Optional[PluginDB] = None):
+        """Initialize.
+
+        Parameters
+        ----------
+        plugin_db : type
+        Description.
+        """
         self.plugin_db = plugin_db or PluginDB()
         self._pipeline_metadata_cache: Dict[str, dict] = {}
         self._refresh_metadata_cache()

@@ -68,7 +68,7 @@ def auto_detect_features(
         
     Returns:
         Dictionary with detected features:
-        - needle_rect: (x, y, w, h) or None
+            - needle_rect: (x, y, w, h) or None
         - substrate_line: ((x1, y1), (x2, y2)) or None  
         - drop_contour: Nx2 array or None
         - contact_points: ((left), (right)) or None

@@ -1,6 +1,4 @@
-"""
-Edge detection utilities and pipeline stage logic.
-"""
+"""Edge detection utilities and pipeline stage logic."""
 
 from __future__ import annotations
 from typing import Callable, Optional
@@ -127,9 +125,7 @@ def extract_external_contour(image: np.ndarray) -> np.ndarray:
 
 # -------- public API --------
 def run(ctx, settings: EdgeDetectionSettings):
-    """
-    Run a contour detector on the current image and write to ctx.contour.xy.
-    """
+    """Run a contour detector on the current image and write to ctx.contour.xy."""
     if not settings.enabled:
         logger.info("Edge detection is disabled. Skipping.")
         return

@@ -1,6 +1,4 @@
-"""
-Main GUI application setup and initialization.
-"""
+"""Main GUI application setup and initialization."""
 
 # src/menipy/gui/app.py
 # type: ignore
@@ -101,6 +99,18 @@ def _configure_qt(app: QApplication):
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Entry point.
+
+    Parameters
+    ----------
+    argv : type
+        Description.
+
+    Returns
+    -------
+    type
+        Description.
+    """
     argv = sys.argv if argv is None else argv
 
     # Enable high-DPI before QApplication is created

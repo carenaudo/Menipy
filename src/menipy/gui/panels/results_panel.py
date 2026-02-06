@@ -47,6 +47,13 @@ class ResultsPanel:
     """Provides a helper wrapper around the results table widget with measurement history support."""
 
     def __init__(self, panel: QWidget) -> None:
+        """Initialize.
+
+        Parameters
+        ----------
+        panel : type
+        Description.
+        """
         self.panel = panel
         self.table: Optional[QTableWidget] = panel.findChild(
             QTableWidget, "resultsTable"

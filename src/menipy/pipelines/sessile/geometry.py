@@ -1,3 +1,8 @@
+"""Geometry.
+
+Module implementation."""
+
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -65,22 +70,38 @@ def clip_contour_to_substrate(
         return contour, None
 
     epsilon = 1e-9 * np.linalg.norm(line_vec) + 1e-9
+    # Tolerance scaled with substrate length (helps with pixel-scale geometry)
+    epsilon = max(1e-9, 1e-6 * np.linalg.norm(line_vec))
 
     def is_inside(pt: np.ndarray) -> bool:
+        """Check if inside.
+
+        Parameters
+        ----------
+        pt : type
+        Description.
+
+        Returns
+        -------
+        type
+        Description.
+        """
+        # Signed area (cross product) test: positive means same side as apex
+        # Keep a small negative tolerance to allow near-collinear points.
         return np.cross(line_vec, pt - p1) * side >= -epsilon
 
     intersections: list[np.ndarray] = []
     clipped: list[np.ndarray] = []
-
-    prev = contour[-1]
-    prev_in = is_inside(prev)
 
     # Fast path: everything already on the apex side.
     inside_mask = np.array([is_inside(pt) for pt in contour])
     if inside_mask.all():
         return contour, None
 
-    for curr in contour:
+    # Iterate explicit segments (prev, curr) to avoid relying on implicit loop state
+    rolled = np.roll(contour, -1, axis=0)
+    for prev, curr in zip(contour, rolled):
+        prev_in = is_inside(prev)
         curr_in = is_inside(curr)
 
         if curr_in:
@@ -89,17 +110,24 @@ def clip_contour_to_substrate(
                 if inter is not None:
                     intersections.append(inter)
                     clipped.append(inter)
-            clipped.append(curr)
+            clipped.append(np.asarray(curr, dtype=float))
         elif prev_in:
             inter = _segment_intersection(prev, curr, p1, p2)
             if inter is not None:
                 intersections.append(inter)
                 clipped.append(inter)
 
-        prev = curr
-        prev_in = curr_in
-
-    refined_contour = np.array(clipped)
+    # Ensure refined_contour is always an (M, 2) float array (may be empty)
+    if len(clipped) == 0:
+        refined_contour = np.empty((0, 2), dtype=float)
+    else:
+        refined_contour = np.asarray(clipped, dtype=float)
+        if refined_contour.ndim == 1:
+            # if a single 2-element point ended up as 1D, reshape
+            if refined_contour.size == 2:
+                refined_contour = refined_contour.reshape(1, 2)
+            else:
+                refined_contour = refined_contour.reshape(-1, 2)
 
     # Deduplicate intersections (may appear twice if segment touches line)
     unique_inters: list[np.ndarray] = []
@@ -109,9 +137,15 @@ def clip_contour_to_substrate(
 
     contact_pts = None
     if len(unique_inters) >= 2:
-        c1, c2 = unique_inters[:2]
-        left_first = c1 if c1[0] <= c2[0] else c2
-        right_second = c2 if c1[0] <= c2[0] else c1
+        # Order intersections along substrate direction (robust for tilted/vertical lines)
+        line_len = np.linalg.norm(line_vec)
+        if line_len > 0:
+            line_dir = line_vec / line_len
+            unique_inters.sort(key=lambda p: float(np.dot(p - p1, line_dir)))
+        else:
+            unique_inters.sort(key=lambda p: float(p[0]))
+        left_first = unique_inters[0]
+        right_second = unique_inters[-1]
         contact_pts = (tuple(map(float, left_first)), tuple(map(float, right_second)))
 
     return refined_contour, contact_pts

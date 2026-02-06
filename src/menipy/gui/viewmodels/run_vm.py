@@ -1,6 +1,4 @@
-"""
-View model for pipeline run management.
-"""
+"""View model for pipeline run management."""
 
 # src/menipy/gui/viewmodels/run_vm.py
 from __future__ import annotations
@@ -42,6 +40,23 @@ class RunViewModel(QObject):
         frames: int = 1,
         **overlays,
     ) -> None:
+        """Run subset of pipeline.
+
+        Parameters
+        ----------
+        pipeline : str, optional
+            Pipeline name.
+        only : list[str]
+            List of stage names to run.
+        image : str, optional
+            Image path.
+        camera : int, optional
+            Camera index.
+        frames : int, optional
+            Number of frames. Default is 1.
+        **overlays
+            Additional overlay settings.
+        """
         self.runner.run_subset(
             pipeline, only=only, image=image, camera=camera, frames=frames, **overlays
         )

@@ -1,3 +1,8 @@
+"""Metrics.
+
+Module implementation."""
+
+
 from __future__ import annotations
 
 import numpy as np
@@ -24,7 +29,7 @@ def compute_pendant_metrics(
     Compute metrics for a pendant drop including dimensions, surface tension, and volume.
 
     Calculates:
-    - Height and Diameter (px and mm)
+        - Height and Diameter (px and mm)
     - Shape factor (S) and Beta parameter
     - Surface Tension (using Jennings-Pallas method)
     - Volume and Surface Area (using solid of revolution)

@@ -1,6 +1,4 @@
-"""
-Shared utilities for pipeline stages.
-"""
+"""Shared utilities for pipeline stages."""
 
 from __future__ import annotations
 import numpy as np

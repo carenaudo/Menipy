@@ -21,7 +21,7 @@ class MaterialDialog(QDialog):
     Supports materials, needles, and syringes.
     
     Modes:
-    - Manager: View/Edit/Delete items
+        - Manager: View/Edit/Delete items
     - Selector: Select an item and return it
     """
     
@@ -317,6 +317,13 @@ class _AddMaterialDialog(QDialog):
         self.accept()
 
     def get_data(self) -> dict:
+        """Get data.
+
+        Returns
+        -------
+        type
+        Description.
+        """
         return {
             "name": self._name.text().strip(),
             "type": self._type.currentText(),

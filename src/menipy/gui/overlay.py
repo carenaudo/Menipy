@@ -1,6 +1,4 @@
-"""
-Overlay rendering and display utilities.
-"""
+"""Overlay rendering and display utilities."""
 
 import numpy as np
 from PySide6.QtGui import QImage, QPixmap, QPainter, QPen, QColor, QBrush

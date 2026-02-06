@@ -1,3 +1,8 @@
+"""Tests for test pendant minimal pipeline.
+
+Unit tests."""
+
+
 import numpy as np
 from menipy.models.context import Context
 from menipy.pipelines.pendant.preprocessing import run as preprocessing_run

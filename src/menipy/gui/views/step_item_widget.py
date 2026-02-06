@@ -1,6 +1,4 @@
-"""
-Widget for displaying pipeline step items.
-"""
+"""Widget for displaying pipeline step items."""
 
 # type: ignore
 from __future__ import annotations
@@ -96,6 +94,13 @@ class StepItemWidget(QWidget):
         return self._name
 
     def set_status(self, status: str) -> None:
+        """Set status.
+
+        Parameters
+        ----------
+        status : type
+        Description.
+        """
         self._apply_status_style(status)
 
     def _apply_status_style(self, status: str) -> None:

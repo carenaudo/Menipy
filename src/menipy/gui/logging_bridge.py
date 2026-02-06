@@ -23,6 +23,13 @@ class QtLogHandler(logging.Handler):
         self.bridge = bridge
 
     def emit(self, record: logging.LogRecord) -> None:  # type: ignore[override]
+        """emit.
+
+        Parameters
+        ----------
+        record : type
+        Description.
+        """
         try:
             message = self.format(record)
             self.bridge.log.emit(message)

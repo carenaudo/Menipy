@@ -1,6 +1,4 @@
-"""
-Common metrics calculations for droplet analysis.
-"""
+"""Common metrics calculations for droplet analysis."""
 
 import numpy as np
 

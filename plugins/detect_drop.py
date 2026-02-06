@@ -23,7 +23,12 @@ logger = logging.getLogger(__name__)
 # -----------------------------------------------------------------------------
 
 class DropSessileSettings(BaseModel):
-    """Settings for sessile drop detection."""
+    """Settings for sessile drop detection.
+    
+    Configuration parameters for controlling the adaptive thresholding-based
+    sessile drop contour detection algorithm.
+    """
+
     model_config = ConfigDict(extra='ignore')
     
     clahe_clip_limit: float = Field(2.0, description="Contrast enhancement limit")
@@ -34,11 +39,17 @@ class DropSessileSettings(BaseModel):
     rectangularity_threshold: float = Field(0.85, description="Max rectangularity to filter out ROI boxes")
 
     def model_post_init(self, __context):
+        """Ensure adaptive block size is odd for cv2.adaptiveThreshold."""
         if self.adaptive_block_size % 2 == 0:
             self.adaptive_block_size += 1
 
 class DropPendantSettings(BaseModel):
-    """Settings for pendant drop detection."""
+    """Settings for pendant drop detection.
+    
+    Configuration parameters for controlling the Otsu thresholding-based
+    pendant drop contour detection algorithm.
+    """
+
     model_config = ConfigDict(extra='ignore')
     
     min_area_fraction: float = Field(0.05, description="Min area as fraction of image")
@@ -60,8 +71,62 @@ def detect_drop_sessile(
     min_area_fraction: float = 0.005,
     **kwargs
 ) -> Optional[Tuple[np.ndarray, Tuple[Tuple[int, int], Tuple[int, int]]]]:
-    """
-    Detect drop contour for sessile drop using adaptive thresholding.
+    """Detect drop contour for sessile drops using adaptive thresholding.
+    
+    This function detects the sessile drop contour by applying CLAHE contrast
+    enhancement followed by adaptive thresholding. The algorithm includes
+    morphological filtering to remove noise and substrate masking.
+    Detected contours are filtered by area and spatial criteria.
+    
+    Parameters
+    ----------
+    image : np.ndarray
+        Input image as a 2D array (grayscale) or 3D array (BGR color).
+        If color image is provided, it is automatically converted to grayscale.
+    clahe_clip_limit : float, optional
+        CLAHE clip limit for contrast enhancement. Default is 2.0.
+    clahe_tile_size : Tuple[int, int], optional
+        CLAHE tile grid size as (height, width). Default is (8, 8).
+    adaptive_block_size : int, optional
+        Threshold block size for adaptive thresholding (must be odd).
+        Default is 21.
+    adaptive_c : int, optional
+        Threshold constant for adaptive thresholding. Default is 2.
+    substrate_y : Optional[int], optional
+        Y-coordinate of substrate line. If provided, image rows below
+        substrate_y-2 are masked to avoid detecting substrate.
+        Default is None.
+    min_area_fraction : float, optional
+        Minimum contour area as a fraction of image area. Default is 0.005.
+    **kwargs : dict
+        Additional keyword arguments including plugin_settings dictionary.
+    
+    Returns
+    -------
+    Optional[Tuple[np.ndarray, Tuple[Tuple[int, int], Tuple[int, int]]]]
+        Tuple containing:
+        - Drop contour as array of points
+        - Contact points as ((x_left, y_substrate), (x_right, y_substrate))
+          or None if no substrate was provided
+        
+        Returns None if no valid contour is detected.
+    
+    Raises
+    ------
+    None
+        Returns None instead of raising exceptions for invalid input.
+    
+    Notes
+    -----
+    Contour filtering logic:
+    1. Rejects contours touching image border or touching top (needle)
+    2. Filters by area (must exceed min_area_fraction)
+    3. Prefers contours touching substrate when available
+    4. Applies convex hull and reconstructs with substrate baseline
+    
+    See Also
+    --------
+    detect_drop_pendant : Detects drop contour for pendant drops
     """
     import cv2 
 
@@ -207,8 +272,51 @@ def detect_drop_pendant(
     min_area_fraction: float = 0.05,
     **kwargs
 ) -> Optional[np.ndarray]:
-    """
-    Detect drop contour for pendant drop using Otsu thresholding.
+    """Detect drop contour for pendant drops using Otsu thresholding.
+    
+    This function detects the drop contour in pendant drop analysis by
+    applying Otsu's automatic thresholding method. The contour must satisfy
+    area and centering constraints to be considered valid. The detected
+    contour is post-processed with morphological operations to remove noise.
+    
+    Parameters
+    ----------
+    image : np.ndarray
+        Input image as a 2D array (grayscale) or 3D array (BGR color).
+        If color image is provided, it is automatically converted to grayscale.
+    min_area_fraction : float, optional
+        Minimum required contour area as a fraction of the total image area.
+        Contours smaller than this value are rejected. Default is 0.05.
+    **kwargs : dict
+        Additional keyword arguments, including:
+        - plugin_settings : dict, optional
+            Configuration dictionary for detector settings.
+    
+    Returns
+    -------
+    Optional[np.ndarray]
+        Drop contour as an array of contour points, or None if no valid
+        contour is detected. Contour format typically follows OpenCV
+        convention with shape (N, 1, 2) where N is the number of points.
+    
+    Raises
+    ------
+    None
+        Returns None instead of raising exceptions for invalid input.
+    
+    Notes
+    -----
+    A valid contour must meet all of the following criteria:
+    - Area exceeds min_area_fraction * image_area
+    - Centroid is within width * centering_tolerance pixels of image center
+    
+    The function applies morphological opening to remove small noise artifacts
+    and uses Otsu's method for automatic threshold selection, making it robust
+    to varying image contrast levels.
+    
+    See Also
+    --------
+    detect_drop_sessile : Detects drop contour for sessile drops
     """
     import cv2 
 

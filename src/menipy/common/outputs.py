@@ -1,7 +1,5 @@
 # src/menipy/common/outputs.py
-"""
-Output formatting and normalization for pipeline results.
-"""
+"""Output formatting and normalization for pipeline results."""
 from __future__ import annotations
 
 

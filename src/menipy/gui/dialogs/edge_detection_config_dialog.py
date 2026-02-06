@@ -1,6 +1,4 @@
-"""
-Dialog for edge detection method configuration.
-"""
+"""Dialog for edge detection method configuration."""
 
 from __future__ import annotations
 
@@ -313,6 +311,7 @@ class EdgeDetectionConfigDialog(QDialog):
         self.pages.addWidget(widget)
 
     def _build_active_contour_page(self) -> None:
+        """_build_active_contour_page."""
         widget = QWidget(self)
         form = QFormLayout(widget)
 
@@ -336,6 +335,7 @@ class EdgeDetectionConfigDialog(QDialog):
         self.pages.addWidget(widget)
 
     def _build_refinement_page(self) -> None:
+        """_build_refinement_page."""
         widget = QWidget(self)
         form = QFormLayout(widget)
 
@@ -352,6 +352,7 @@ class EdgeDetectionConfigDialog(QDialog):
         self.pages.addWidget(widget)
 
     def _build_interface_page(self) -> None:
+        """_build_interface_page."""
         widget = QWidget(self)
         form = QFormLayout(widget)
 
@@ -390,6 +391,7 @@ class EdgeDetectionConfigDialog(QDialog):
     # Data binding
     # ------------------------------------------------------------------
     def _wire_signals(self) -> None:
+        """_wire_signals."""
         self.stage_list.currentRowChanged.connect(self.pages.setCurrentIndex)
         self._button_box.accepted.connect(self._on_accept)
         self._button_box.rejected.connect(self.reject)
@@ -402,6 +404,7 @@ class EdgeDetectionConfigDialog(QDialog):
         self.gaussian_blur_checkbox.toggled.connect(self._update_controls_enablement)
 
     def _load_settings(self) -> None:
+        """_load_settings."""
         s = self._settings
         self.enabled_checkbox.setChecked(s.enabled)
         self.method_combo.setCurrentText(s.method)
@@ -443,6 +446,7 @@ class EdgeDetectionConfigDialog(QDialog):
         self._update_controls_enablement()
 
     def _collect_settings(self) -> EdgeDetectionSettings:
+        """_collect_settings."""
         s = self._settings.model_copy(deep=True)
         s.enabled = self.enabled_checkbox.isChecked()
         s.method = self.method_combo.currentText()
@@ -480,14 +484,17 @@ class EdgeDetectionConfigDialog(QDialog):
     # Slots
     # ------------------------------------------------------------------
     def _on_preview(self) -> None:
+        """_on_preview."""
         settings = self._collect_settings()
         self.previewRequested.emit(settings)
 
     def _on_reset(self) -> None:
+        """_on_reset."""
         self._settings = EdgeDetectionSettings()
         self._load_settings()
 
     def _on_accept(self) -> None:
+        """_on_accept."""
         self._collect_settings()
         self.accept()
 
@@ -526,6 +533,7 @@ class EdgeDetectionConfigDialog(QDialog):
     # Control enablement helpers
     # ------------------------------------------------------------------
     def _update_controls_enablement(self) -> None:
+        """_update_controls_enablement."""
         enabled = self.enabled_checkbox.isChecked()
         method = self.method_combo.currentText()
 
@@ -620,4 +628,11 @@ class EdgeDetectionConfigDialog(QDialog):
     # Public accessors
     # ------------------------------------------------------------------
     def settings(self) -> EdgeDetectionSettings:
+        """settings.
+
+        Returns
+        -------
+        type
+        Description.
+        """
         return self._settings

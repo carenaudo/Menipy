@@ -212,6 +212,8 @@ def visualize_results(image, initial_snake, final_snake, analysis):
 
 
 def main():
+    """Entry point.
+    """
     # Create or load droplet image
     print("Creating synthetic droplet image...")
     image = create_synthetic_droplet(size=400)
