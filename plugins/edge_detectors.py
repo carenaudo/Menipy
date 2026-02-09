@@ -70,6 +70,16 @@ def _fallback_canny_plugin(img: np.ndarray, settings: EdgeDetectionSettings) -> 
 
 class CannyDetector:
     def detect(self, img: np.ndarray, settings: EdgeDetectionSettings) -> np.ndarray:
+        # Resolve settings using new CannySettings model
+        defaults = {
+            "threshold1": settings.canny_threshold1,
+            "threshold2": settings.canny_threshold2,
+            "aperture_size": settings.canny_aperture_size,
+            "L2gradient": settings.canny_L2_gradient,
+        }
+        raw = resolve_plugin_settings("canny", getattr(settings, "plugin_settings", {}), **defaults)
+        cfg = CannySettings(**raw)
+
         """Detect edges using Canny (with local fallback)."""
         try:
             import cv2
@@ -82,16 +92,25 @@ class CannyDetector:
         g = ensure_gray(img)
         edges = cv2.Canny(
             g,
-            settings.canny_threshold1,
-            settings.canny_threshold2,
-            apertureSize=settings.canny_aperture_size,
-            L2gradient=settings.canny_L2_gradient,
+            cfg.threshold1,
+            cfg.threshold2,
+            apertureSize=cfg.aperture_size,
+            L2gradient=cfg.L2gradient,
         )
         return edges_to_xy(edges, settings.min_contour_length, settings.max_contour_length)
 
 
 class ThresholdDetector:
     def detect(self, img: np.ndarray, settings: EdgeDetectionSettings) -> np.ndarray:
+        # Resolve settings
+        defaults = {
+            "threshold_value": settings.threshold_value,
+            "max_value": settings.threshold_max_value,
+            "type": settings.threshold_type,
+        }
+        raw = resolve_plugin_settings("threshold", getattr(settings, "plugin_settings", {}), **defaults)
+        cfg = ThresholdSettings(**raw)
+
         """Detect edges using simple/global threshold or OpenCV threshold."""
         try:
             import cv2
@@ -104,14 +123,22 @@ class ThresholdDetector:
             edges = (g > settings.threshold_value).astype(np.uint8) * 255
             return edges_to_xy(edges, settings.min_contour_length, settings.max_contour_length)
 
-        thresh_type = getattr(cv2, f"THRESH_{settings.threshold_type.upper()}", cv2.THRESH_BINARY)
-        _, edges = cv2.threshold(g, settings.threshold_value, settings.threshold_max_value, thresh_type)
+        thresh_type = getattr(cv2, f"THRESH_{cfg.type.upper()}", cv2.THRESH_BINARY)
+        _, edges = cv2.threshold(g, cfg.threshold_value, cfg.max_value, thresh_type)
         return edges_to_xy(edges, settings.min_contour_length, settings.max_contour_length)
 
 
 class SobelDetector:
     def detect(self, img: np.ndarray, settings: EdgeDetectionSettings) -> np.ndarray:
         """Detect edges using Sobel gradients (or fallback)."""
+        defaults = {
+            "kernel_size": settings.sobel_kernel_size,
+            "threshold_value": settings.threshold_value,
+            "max_value": settings.threshold_max_value,
+        }
+        raw = resolve_plugin_settings("sobel", getattr(settings, "plugin_settings", {}), **defaults)
+        cfg = SobelSettings(**raw)
+
         try:
             import cv2
         except Exception:
@@ -121,18 +148,33 @@ class SobelDetector:
 
         if cv2 is None:
             return _fallback_canny_plugin(img, settings)
-
-        grad_x = cv2.Sobel(g, cv2.CV_64F, 1, 0, ksize=settings.sobel_kernel_size)
-        grad_y = cv2.Sobel(g, cv2.CV_64F, 0, 1, ksize=settings.sobel_kernel_size)
+        grad_x = cv2.Sobel(img, cv2.CV_64F, 1, 0, ksize=cfg.kernel_size)
+        grad_y = cv2.Sobel(img, cv2.CV_64F, 0, 1, ksize=cfg.kernel_size)
         magnitude = cv2.magnitude(grad_x, grad_y)
-        magnitude = cv2.normalize(magnitude, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
-        _, edges = cv2.threshold(magnitude, settings.threshold_value, settings.threshold_max_value, cv2.THRESH_BINARY)
-        return edges_to_xy(edges, settings.min_contour_length, settings.max_contour_length)
+        magnitude = cv2.normalize(magnitude, None, 0, 255, cv2.NORM_MINMAX).astype(
+            np.uint8
+        )
+        _, edges = cv2.threshold(
+            magnitude,
+            cfg.threshold_value,
+            cfg.max_value,
+            cv2.THRESH_BINARY,
+        )
+        return edges_to_xy(
+            edges, settings.min_contour_length, settings.max_contour_length
+        )
 
 
 class ScharrDetector:
     def detect(self, img: np.ndarray, settings: EdgeDetectionSettings) -> np.ndarray:
         """Detect edges using Scharr operator (or fallback)."""
+        defaults = {
+            "threshold_value": settings.threshold_value,
+            "max_value": settings.threshold_max_value,
+        }
+        raw = resolve_plugin_settings("scharr", getattr(settings, "plugin_settings", {}), **defaults)
+        cfg = ScharrSettings(**raw)
+
         try:
             import cv2
         except Exception:
@@ -147,13 +189,21 @@ class ScharrDetector:
         grad_y = cv2.Scharr(g, cv2.CV_64F, 0, 1)
         magnitude = cv2.magnitude(grad_x, grad_y)
         magnitude = cv2.normalize(magnitude, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
-        _, edges = cv2.threshold(magnitude, settings.threshold_value, settings.threshold_max_value, cv2.THRESH_BINARY)
+        _, edges = cv2.threshold(magnitude, cfg.threshold_value, cfg.max_value, cv2.THRESH_BINARY)
         return edges_to_xy(edges, settings.min_contour_length, settings.max_contour_length)
 
 
 class LaplacianBasicDetector:
     def detect(self, img: np.ndarray, settings: EdgeDetectionSettings) -> np.ndarray:
         """Detect edges using the Laplacian operator (or fallback)."""
+        defaults = {
+            "kernel_size": settings.laplacian_kernel_size,
+            "threshold_value": settings.threshold_value,
+            "max_value": settings.threshold_max_value,
+        }
+        raw = resolve_plugin_settings("laplacian", getattr(settings, "plugin_settings", {}), **defaults)
+        cfg = LaplacianSettings(**raw)
+
         try:
             import cv2
         except Exception:
@@ -163,11 +213,19 @@ class LaplacianBasicDetector:
 
         if cv2 is None:
             return _fallback_canny_plugin(img, settings)
-
-        laplacian = cv2.Laplacian(g, cv2.CV_64F, ksize=getattr(settings, 'laplacian_kernel_size', 3))
-        laplacian = cv2.normalize(laplacian, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
-        _, edges = cv2.threshold(laplacian, settings.threshold_value, settings.threshold_max_value, cv2.THRESH_BINARY)
-        return _edges_to_xy(edges, settings.min_contour_length, settings.max_contour_length)
+        laplacian = cv2.Laplacian(img, cv2.CV_64F, ksize=cfg.kernel_size)
+        laplacian = cv2.normalize(laplacian, None, 0, 255, cv2.NORM_MINMAX).astype(
+            np.uint8
+        )
+        _, edges = cv2.threshold(
+            laplacian,
+            cfg.threshold_value,
+            cfg.max_value,
+            cv2.THRESH_BINARY,
+        )
+        return _edges_to_xy(
+            edges, settings.min_contour_length, settings.max_contour_length
+        )
 
 
 class LegacySnakeDetector:
@@ -180,6 +238,18 @@ class LegacySnakeDetector:
         except Exception:
             logger.error("LegacySnakeDetector requires scikit-image.")
             return _fallback_canny_plugin(img, settings)
+            
+        defaults = {
+            "iterations": settings.snake_iterations,
+            "alpha": settings.snake_alpha,
+            "beta": settings.snake_beta,
+            "gamma": settings.snake_gamma,
+        }
+        # Try resolving for 'legacy_snake' or 'active_contour' depending on method name in settings?
+        # But here valid method names are passed implicitly.
+        # Let's resolve 'legacy_snake' as primary
+        raw = resolve_plugin_settings("legacy_snake", getattr(settings, "plugin_settings", {}), **defaults)
+        cfg = LegacySnakeSettings(**raw)
 
         # 1. Initial Contour using Canny/Otsu
         initial_xy = _fallback_canny_plugin(img, settings)
@@ -192,22 +262,74 @@ class LegacySnakeDetector:
         # 3. Coordinate Swap (x,y) -> (row,col)
         init_snake_rc = initial_xy[:, ::-1]
 
-        # 4. Run Snake (use conservative defaults if settings missing)
-        try:
-            snake_rc = active_contour(
-                img_smooth,
-                init_snake_rc,
-                alpha=getattr(settings, 'snake_alpha', 0.015),
-                beta=getattr(settings, 'snake_beta', 10.0),
-                gamma=getattr(settings, 'snake_gamma', 0.001),
-                max_iterations=int(getattr(settings, 'snake_max_iter', 2500)),
-            )
-        except Exception:
-            return initial_xy
+        # 4. Run Snake
+        snake_rc = active_contour(
+            img_smooth,
+            init_snake_rc,
+            alpha=cfg.alpha,
+            beta=cfg.beta,
+            gamma=cfg.gamma,
+            max_num_iter=cfg.iterations,
+            convergence=0.01 
+        )
 
         # Convert back to (x,y) coordinates and return
         snake_xy = snake_rc[:, ::-1]
         return snake_xy
+
+
+# -----------------------------------------------------------------------------
+# Core Detector Settings Models
+# -----------------------------------------------------------------------------
+
+from typing import Literal
+
+class CannySettings(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+    threshold1: int = Field(50, ge=0, le=255)
+    threshold2: int = Field(150, ge=0, le=255)
+    aperture_size: Literal[3, 5, 7] = Field(3)
+    L2gradient: bool = Field(False)
+
+class ThresholdSettings(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+    threshold_value: int = Field(128, ge=0, le=255)
+    max_value: int = Field(255, ge=0, le=255)
+    type: Literal["binary", "binary_inv", "trunc", "to_zero", "to_zero_inv"] = Field("binary")
+
+class SobelSettings(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+    kernel_size: int = Field(3, ge=1, description="Must be odd")
+    threshold_value: int = Field(0, ge=0, le=255) # Sobel magnitude often needs thresh
+    max_value: int = Field(255, ge=0, le=255)
+
+class ScharrSettings(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+    threshold_value: int = Field(0, ge=0, le=255)
+    max_value: int = Field(255, ge=0, le=255)
+
+class LaplacianSettings(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+    kernel_size: int = Field(1, ge=1, description="Must be odd")
+    threshold_value: int = Field(0, ge=0, le=255)
+    max_value: int = Field(255, ge=0, le=255)
+
+class LegacySnakeSettings(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+    iterations: int = Field(100, ge=1)
+    alpha: float = Field(0.01, ge=0.0)
+    beta: float = Field(0.1, ge=0.0)
+    gamma: float = Field(0.001, ge=0.0)
+    
+# Register these models immediately so they are available
+register_detector_settings("canny", CannySettings)
+register_detector_settings("threshold", ThresholdSettings)
+register_detector_settings("sobel", SobelSettings)
+register_detector_settings("scharr", ScharrSettings)
+register_detector_settings("laplacian", LaplacianSettings)
+register_detector_settings("active_contour", LegacySnakeSettings)
+register_detector_settings("legacy_snake", LegacySnakeSettings)
+
 
 # -----------------------------------------------------------------------------
 # Advanced/Custom Detectors
@@ -380,11 +502,19 @@ class LoGEdgeDetector:
 # Improved Snake (Active Contour) Detector
 # -----------------------------------------------------------------------------
 
+class ImprovedSnakeSettings(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+    iterations: int = Field(500, ge=1)
+    alpha: float = Field(0.015, ge=0.0)
+    beta: float = Field(10.0, ge=0.0)
+    gamma: float = Field(0.001, ge=0.0)
+
+register_detector_settings("improved_snake", ImprovedSnakeSettings)
+
+
 class ImprovedSnakeDetector:
     """
     Enhanced active contour (snake) edge detection.
-    Using standard config settings for snake params (alpha, beta, etc)
-    as they are part of core configuration.
     """
     
     def detect(
@@ -395,6 +525,15 @@ class ImprovedSnakeDetector:
         needle_rect: Optional[Tuple[int, int, int, int]] = None,
         return_debug: bool = False,
     ) -> np.ndarray | Tuple[np.ndarray, list]:
+        defaults = {
+            "iterations": settings.snake_iterations,
+            "alpha": settings.snake_alpha,
+            "beta": settings.snake_beta,
+            "gamma": settings.snake_gamma,
+        }
+        raw = resolve_plugin_settings("improved_snake", getattr(settings, "plugin_settings", {}), **defaults)
+        cfg = ImprovedSnakeSettings(**raw)
+
         import cv2
 
         try:
@@ -463,13 +602,13 @@ class ImprovedSnakeDetector:
         snake_rc = active_contour(
             img_smooth,
             init_rc,
-            alpha=settings.snake_alpha,
-            beta=settings.snake_beta,
-            gamma=settings.snake_gamma,
+            alpha=cfg.alpha,
+            beta=cfg.beta,
+            gamma=cfg.gamma,
             w_line=-1.0,
             w_edge=1.0,
             max_px_move=1.0,
-            max_num_iter=settings.snake_iterations,
+            max_num_iter=cfg.iterations,
             convergence=0.01
         )
         
@@ -515,27 +654,13 @@ class ImprovedSnakeDetector:
 # Registry Registration
 # -----------------------------------------------------------------------------
 
-DETECTOR_SETTINGS = {
-    "log": LoGSettings,
-    "adaptive": AdaptiveSettings,
-}
-
-# Register detectors
-# Register detectors
-EDGE_DETECTORS.register("canny", CannyDetector().detect)
-EDGE_DETECTORS.register("threshold", ThresholdDetector().detect)
-EDGE_DETECTORS.register("sobel", SobelDetector().detect)
-EDGE_DETECTORS.register("scharr", ScharrDetector().detect)
-EDGE_DETECTORS.register("laplacian", LaplacianBasicDetector().detect)
-EDGE_DETECTORS.register("active_contour", LegacySnakeDetector().detect)
-EDGE_DETECTORS.register("legacy_snake", LegacySnakeDetector().detect)
+# Register detectors (Core ones registered at top, ensure these are too)
 EDGE_DETECTORS.register("otsu", OtsuEdgeDetector().detect)
 EDGE_DETECTORS.register("adaptive", AdaptiveEdgeDetector().detect)
 EDGE_DETECTORS.register("log", LoGEdgeDetector().detect)
 EDGE_DETECTORS.register("improved_snake", ImprovedSnakeDetector().detect)
 
-# Register settings
-register_detector_settings("log", LoGSettings)
-register_detector_settings("adaptive", AdaptiveSettings)
+# Settings for these plugins already registered via calls above or previously.
+# Canny/etc registered at top.
 
-logger.info("Registered edge detection plugins: otsu, adaptive, log, improved_snake")
+logger.info("Registered edge detection plugins: otsu, adaptive, log, improved_snake, canny, etc.")

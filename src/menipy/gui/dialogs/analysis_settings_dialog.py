@@ -326,42 +326,107 @@ class AnalysisSettingsDialog(QDialog):
     def _configure_edge_parameters(self):
         """Open a specific configuration dialog for the selected method."""
         # Ensure current method selection is synced
-        current_method = self._edge_method.currentText()
-        self._edge.method = current_method
+        method = self._edge_method.currentText()
+        self._edge.method = method
         
-        # Check if it's a plugin with a registered model
         from menipy.common.plugin_settings import get_detector_settings_model
         from menipy.gui.dialogs.plugin_config_dialog import PluginConfigDialog
         
-        plugin_model = get_detector_settings_model(current_method)
+        plugin_model = get_detector_settings_model(method)
         
-        if plugin_model:
-            # It's a plugin -> Use PluginConfigDialog
-            # Get current plugin settings (or empty dict)
-            current_data = self._edge.plugin_settings.get(current_method, {})
+        if not plugin_model:
+            # Fallback for unconfigured methods
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.information(self, "Configuration", f"No specific settings for '{method}'.")
+            return
+
+        # Prepare defaults from legacy fields to ensure UI reflects current state
+        defaults = {}
+        s = self._edge
+        if method == "canny":
+            defaults = {
+                "threshold1": s.canny_threshold1,
+                "threshold2": s.canny_threshold2,
+                "aperture_size": s.canny_aperture_size,
+                "L2gradient": s.canny_L2_gradient
+            }
+        elif method == "threshold":
+            defaults = {
+                "threshold_value": s.threshold_value,
+                "max_value": s.threshold_max_value,
+                "type": s.threshold_type
+            }
+        elif method == "sobel":
+            defaults = {
+                "kernel_size": s.sobel_kernel_size,
+                "threshold_value": s.threshold_value,
+                "max_value": s.threshold_max_value
+            }
+        elif method == "scharr":
+            defaults = {
+                "threshold_value": s.threshold_value,
+                "max_value": s.threshold_max_value
+            }
+        elif method == "laplacian":
+            defaults = {
+                "kernel_size": s.laplacian_kernel_size,
+                "threshold_value": s.threshold_value,
+                "max_value": s.threshold_max_value
+            }
+        elif method in ("legacy_snake", "active_contour", "improved_snake"):
+            defaults = {
+                "iterations": s.snake_iterations,
+                "alpha": s.snake_alpha,
+                "beta": s.snake_beta,
+                "gamma": s.snake_gamma
+            }
+
+        # Resolve current settings: plugin specific takes precedence?
+        # Actually, legacy fields are the "true" state for core methods currently.
+        # So defaults (legacy) should override stored plugin_settings if present, 
+        # unless we consider plugin_settings the new truth?
+        # Let's assume legacy fields are strict master for now.
+        
+        saved_data = s.plugin_settings.get(method, {})
+        # Start with saved, update with legacy defaults
+        current_data = saved_data.copy()
+        current_data.update(defaults)
+        
+        dlg = PluginConfigDialog(plugin_model, current_data, parent=self)
+        if dlg.exec():
+            new_settings = dlg.get_settings()
             
-            dlg = PluginConfigDialog(plugin_model, current_data, parent=self)
-            if dlg.exec():
-                new_settings = dlg.get_settings()
-                if self._edge.plugin_settings is None:
-                    self._edge.plugin_settings = {}
-                self._edge.plugin_settings[current_method] = new_settings
-                
-        else:
-            # It's a core method (or plugin without model) -> Use EdgeDetectionConfigDialog in compact mode
-            from menipy.gui.dialogs.edge_detection_config_dialog import EdgeDetectionConfigDialog
-            # We assume EdgeDetectionConfigDialog now accepts 'compact_mode'
-            try:
-                dlg = EdgeDetectionConfigDialog(parent=self, settings=self._edge, compact_mode=True)
-            except TypeError:
-                 # Fallback if we haven't updated it yet (safety)
-                dlg = EdgeDetectionConfigDialog(parent=self, settings=self._edge)
-                
-            if dlg.exec():
-                self._edge = dlg.settings()
-                # Sync back method
-                if self._edge.method != current_method:
-                    self._edge_method.setCurrentText(self._edge.method)
+            # 1. Update plugin_settings dict
+            if self._edge.plugin_settings is None:
+                self._edge.plugin_settings = {}
+            self._edge.plugin_settings[method] = new_settings
+            
+            # 2. Scync BACK to legacy fields
+            if method == "canny":
+                s.canny_threshold1 = new_settings.get("threshold1", s.canny_threshold1)
+                s.canny_threshold2 = new_settings.get("threshold2", s.canny_threshold2)
+                s.canny_aperture_size = new_settings.get("aperture_size", s.canny_aperture_size)
+                s.canny_L2_gradient = new_settings.get("L2gradient", s.canny_L2_gradient)
+            elif method == "threshold":
+                s.threshold_value = new_settings.get("threshold_value", s.threshold_value)
+                s.threshold_max_value = new_settings.get("max_value", s.threshold_max_value)
+                s.threshold_type = new_settings.get("type", s.threshold_type)
+            elif method == "sobel":
+                s.sobel_kernel_size = new_settings.get("kernel_size", s.sobel_kernel_size)
+                s.threshold_value = new_settings.get("threshold_value", s.threshold_value)
+                s.threshold_max_value = new_settings.get("max_value", s.threshold_max_value)
+            elif method == "scharr":
+                s.threshold_value = new_settings.get("threshold_value", s.threshold_value)
+                s.threshold_max_value = new_settings.get("max_value", s.threshold_max_value)
+            elif method == "laplacian":
+                s.laplacian_kernel_size = new_settings.get("kernel_size", s.laplacian_kernel_size)
+                s.threshold_value = new_settings.get("threshold_value", s.threshold_value)
+                s.threshold_max_value = new_settings.get("max_value", s.threshold_max_value)
+            elif method in ("legacy_snake", "active_contour", "improved_snake"):
+                s.snake_iterations = new_settings.get("iterations", s.snake_iterations)
+                s.snake_alpha = new_settings.get("alpha", s.snake_alpha)
+                s.snake_beta = new_settings.get("beta", s.snake_beta)
+                s.snake_gamma = new_settings.get("gamma", s.snake_gamma)
         
     def _build_physics_tab(self) -> QWidget:
         """Tab for PhysicsParams using PhysicsConfigDialog."""
