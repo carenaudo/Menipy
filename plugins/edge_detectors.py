@@ -43,25 +43,12 @@ logger = logging.getLogger(__name__)
 _edges_to_xy = edges_to_xy
 
 
-def _fallback_canny_plugin(img: np.ndarray, settings: EdgeDetectionSettings) -> np.ndarray:
-    """Local fallback Canny implementation to avoid importing from core edge_detection."""
-    import cv2
-    if cv2 is None:
-        # Simple threshold fallback if no OpenCV
-        v = float(np.median(ensure_gray(img)))
-        edges = (ensure_gray(img) > v).astype(np.uint8) * 255
-        return edges_to_xy(edges, settings.min_contour_length, settings.max_contour_length)
-    
-    # Use Canny with settings
-    g = ensure_gray(img)
-    edges = cv2.Canny(
-        g,
-        settings.canny_threshold1,
-        settings.canny_threshold2,
-        apertureSize=settings.canny_aperture_size,
-        L2gradient=settings.canny_L2_gradient,
-    )
-    return edges_to_xy(edges, settings.min_contour_length, settings.max_contour_length)
+def _simple_threshold_fallback(img: np.ndarray, settings: EdgeDetectionSettings) -> np.ndarray:
+    """Simple threshold fallback when OpenCV is unavailable."""
+    gray = ensure_gray(img)
+    v = float(np.median(gray))
+    edges = (gray > v).astype(np.uint8) * 255
+    return _edges_to_xy(edges, settings.min_contour_length, settings.max_contour_length)
 
 
 # -----------------------------------------------------------------------------
@@ -87,7 +74,7 @@ class CannyDetector:
             cv2 = None
 
         if cv2 is None:
-            return _fallback_canny_plugin(img, settings)
+            return _simple_threshold_fallback(img, settings)
 
         g = ensure_gray(img)
         edges = cv2.Canny(
@@ -147,7 +134,7 @@ class SobelDetector:
         g = ensure_gray(img)
 
         if cv2 is None:
-            return _fallback_canny_plugin(img, settings)
+            return CannyDetector().detect(img, settings)
         grad_x = cv2.Sobel(img, cv2.CV_64F, 1, 0, ksize=cfg.kernel_size)
         grad_y = cv2.Sobel(img, cv2.CV_64F, 0, 1, ksize=cfg.kernel_size)
         magnitude = cv2.magnitude(grad_x, grad_y)
@@ -183,7 +170,7 @@ class ScharrDetector:
         g = ensure_gray(img)
 
         if cv2 is None:
-            return _fallback_canny_plugin(img, settings)
+            return CannyDetector().detect(img, settings)
 
         grad_x = cv2.Scharr(g, cv2.CV_64F, 1, 0)
         grad_y = cv2.Scharr(g, cv2.CV_64F, 0, 1)
@@ -212,7 +199,7 @@ class LaplacianBasicDetector:
         g = ensure_gray(img)
 
         if cv2 is None:
-            return _fallback_canny_plugin(img, settings)
+            return CannyDetector().detect(img, settings)
         laplacian = cv2.Laplacian(img, cv2.CV_64F, ksize=cfg.kernel_size)
         laplacian = cv2.normalize(laplacian, None, 0, 255, cv2.NORM_MINMAX).astype(
             np.uint8
@@ -237,7 +224,7 @@ class LegacySnakeDetector:
             from skimage.filters import gaussian
         except Exception:
             logger.error("LegacySnakeDetector requires scikit-image.")
-            return _fallback_canny_plugin(img, settings)
+            return CannyDetector().detect(img, settings)
             
         defaults = {
             "iterations": settings.snake_iterations,
@@ -252,7 +239,7 @@ class LegacySnakeDetector:
         cfg = LegacySnakeSettings(**raw)
 
         # 1. Initial Contour using Canny/Otsu
-        initial_xy = _fallback_canny_plugin(img, settings)
+        initial_xy = CannyDetector().detect(img, settings)
 
         if initial_xy.size < 3:
             return initial_xy
@@ -659,6 +646,10 @@ EDGE_DETECTORS.register("otsu", OtsuEdgeDetector().detect)
 EDGE_DETECTORS.register("adaptive", AdaptiveEdgeDetector().detect)
 EDGE_DETECTORS.register("log", LoGEdgeDetector().detect)
 EDGE_DETECTORS.register("improved_snake", ImprovedSnakeDetector().detect)
+
+# Register settings
+register_detector_settings("log", LoGSettings)
+register_detector_settings("adaptive", AdaptiveSettings)
 
 # Settings for these plugins already registered via calls above or previously.
 # Canny/etc registered at top.

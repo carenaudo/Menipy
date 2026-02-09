@@ -11,11 +11,20 @@ Works with all pipeline types: sessile, pendant, captive bubble, oscillating, ca
 
 import numpy as np
 import logging
+from typing import Optional, Any
+
+from pydantic import BaseModel, Field, ConfigDict
 
 try:
     import cv2
 except ImportError:
     cv2 = None
+
+try:
+    from menipy.common.plugin_settings import register_detector_settings, resolve_plugin_settings
+except ImportError:
+    register_detector_settings = None
+    resolve_plugin_settings = None
 
 logger = logging.getLogger(__name__)
 
@@ -147,54 +156,77 @@ def _binary_to_contour(binary: np.ndarray, min_len: int = 0, max_len: int = 1000
 # Main Detection Function
 # -----------------------------------------------------------------------------
 
+# -----------------------------------------------------------------------------
+# Settings Model
+# -----------------------------------------------------------------------------
+
+class AutoAdaptiveSettings(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+    
+    otsu_variance_threshold: float = Field(0.5, ge=0.0, le=1.0)
+    illumination_cv_threshold: float = Field(0.15, ge=0.0)
+    gradient_strength_threshold: float = Field(20.0, ge=0.0)
+    canny_low: int = Field(50, ge=0, le=255)
+    canny_high: int = Field(150, ge=0, le=255)
+    adaptive_block_size: int = Field(11, ge=3, description="Block size (must be odd)")
+    adaptive_c: int = Field(2)
+
+    def model_post_init(self, __context):
+        if self.adaptive_block_size % 2 == 0:
+            self.adaptive_block_size += 1
+
+if register_detector_settings:
+    register_detector_settings("auto_adaptive", AutoAdaptiveSettings)
+
+
+# -----------------------------------------------------------------------------
+# Main Detection Function
+# -----------------------------------------------------------------------------
+
 def auto_adaptive_detect(
     img: np.ndarray,
     settings=None,
-    *,
-    otsu_variance_threshold: float = 0.5,
-    illumination_cv_threshold: float = 0.15,
-    gradient_strength_threshold: float = 20.0,
-    canny_low: int = 50,
-    canny_high: int = 150,
-    adaptive_block_size: int = 11,
-    adaptive_c: int = 2,
-    min_contour_length: int = 50,
-    max_contour_length: int = 100000,
+    **kwargs
 ) -> np.ndarray:
-    """Placeholder docstring for auto_adaptive_detect.
-    
-    TODO: Complete docstring with full description.
-    
-    Returns
-    -------
-    type
-        Description of return value.
-    """
     """Automatically select and apply the best edge detection method.
     
     Decision logic:
-    1. If strong gradients and continuous edges → Canny (best for ADSA)
-    2. If good bimodal separation and uniform lighting → Otsu
-    3. Otherwise → Adaptive thresholding
-    
-    Args:
-        img: Input image (grayscale or BGR)
-        settings: Optional EdgeDetectionSettings (uses settings params if provided)
-        **kwargs: Override parameters for auto-detection
-        
-    Returns:
-        (N, 2) array of contour points
+    1. If strong gradients and continuous edges -> Canny
+    2. If good bimodal separation and uniform lighting -> Otsu
+    3. Otherwise -> Adaptive thresholding
     """
     if cv2 is None:
         logger.warning("OpenCV not available - returning empty contour")
         return np.empty((0, 2), dtype=float)
+
+    # 1. Resolve Settings
+    defaults = {
+        "otsu_variance_threshold": 0.5,
+        "illumination_cv_threshold": 0.15,
+        "gradient_strength_threshold": 20.0,
+        "canny_low": 50,
+        "canny_high": 150,
+        "adaptive_block_size": 11,
+        "adaptive_c": 2
+    }
+    # Update with kwargs overrides
+    defaults.update(kwargs)
     
-    # Use settings if provided
+    plugin_settings = getattr(settings, "plugin_settings", {}) if settings else {}
+    
+    if resolve_plugin_settings:
+        raw_cfg = resolve_plugin_settings("auto_adaptive", plugin_settings, **defaults)
+        cfg = AutoAdaptiveSettings(**raw_cfg)
+    else:
+        # Fallback if resolving not available (standalone)
+        cfg = AutoAdaptiveSettings(**defaults)
+
     if settings is not None:
-        canny_low = getattr(settings, 'canny_threshold1', canny_low)
-        canny_high = getattr(settings, 'canny_threshold2', canny_high)
-        min_contour_length = getattr(settings, 'min_contour_length', min_contour_length)
-        max_contour_length = getattr(settings, 'max_contour_length', max_contour_length)
+         min_len = getattr(settings, 'min_contour_length', 50)
+         max_len = getattr(settings, 'max_contour_length', 100000)
+    else:
+         min_len = 50
+         max_len = 100000
     
     # Ensure grayscale
     if len(img.shape) == 3:
@@ -207,35 +239,34 @@ def auto_adaptive_detect(
     illumination_cv = calculate_illumination_uniformity(gray)
     gradient_strength = calculate_gradient_strength(gray)
     
-    # Apply Canny to check edge quality
-    edges_canny = cv2.Canny(gray, canny_low, canny_high)
+    # Apply Canny to check edge quality (using cfg params)
+    edges_canny = cv2.Canny(gray, cfg.canny_low, cfg.canny_high)
     _, edge_continuity = calculate_edge_quality(edges_canny)
     
-    # Decision logic
     method_used = "Unknown"
     
-    # PRIORITY 1: Canny if strong gradients and continuous edges
-    if gradient_strength >= gradient_strength_threshold and edge_continuity > 0.3:
+    # PRIORITY 1: Canny
+    if gradient_strength >= cfg.gradient_strength_threshold and edge_continuity > 0.3:
         method_used = "Canny"
-        xy = _edges_to_contour(edges_canny, min_contour_length, max_contour_length)
+        xy = _edges_to_contour(edges_canny, min_len, max_len)
     
-    # PRIORITY 2: Otsu if good separation and uniform lighting
-    elif variance_ratio >= otsu_variance_threshold and illumination_cv <= illumination_cv_threshold:
+    # PRIORITY 2: Otsu
+    elif variance_ratio >= cfg.otsu_variance_threshold and illumination_cv <= cfg.illumination_cv_threshold:
         method_used = "Otsu"
         _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        xy = _binary_to_contour(binary, min_contour_length, max_contour_length)
+        xy = _binary_to_contour(binary, min_len, max_len)
     
-    # PRIORITY 3: Adaptive for everything else
+    # PRIORITY 3: Adaptive
     else:
         method_used = "Adaptive"
         binary = cv2.adaptiveThreshold(
             gray, 255,
             cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
             cv2.THRESH_BINARY,
-            adaptive_block_size,
-            adaptive_c
+            cfg.adaptive_block_size,
+            cfg.adaptive_c
         )
-        xy = _binary_to_contour(binary, min_contour_length, max_contour_length)
+        xy = _binary_to_contour(binary, min_len, max_len)
     
     logger.info(f"auto_adaptive_detect: selected {method_used} "
                 f"(grad={gradient_strength:.1f}, cont={edge_continuity:.2f}, "

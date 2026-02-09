@@ -49,35 +49,18 @@ _edges_to_xy = edges_to_xy
 
 
 def _fallback_canny(img: np.ndarray, settings: EdgeDetectionSettings) -> np.ndarray:
-    """Default detector: auto-thresholded Canny → largest contour (Nx2)."""
-    # This logic is also now in plugins/edge_detectors.py as CannyDetector,
-    # but we keep this minimal fallback here for get_contour_detector's lambda.
-    # We can invoke the plugin registry implementation if available, or keep copy.
-    # To strictly deduplicate, we should try to use the registry item.
-    
-    # Try getting 'canny' from registry; it should be there now.
+    """Default detector: try registry 'canny' or fallback to simple threshold."""
+    # Try getting 'canny' from registry
     canny_fn = EDGE_DETECTORS.get("canny")
     if canny_fn:
         return canny_fn(img, settings)
     
-    # Minimal hardcoded fallback if registry is empty for some reason
+    # Minimal hardcoded fallback if registry is empty
     g = ensure_gray(img)
-    edges: np.ndarray
-    if cv2 is None:
-        # No OpenCV: threshold around median as a crude edge map
-        v = float(np.median(g))
-        edges = np.asarray((g > v).astype(np.uint8) * 255, dtype=np.uint8)
-    else:
-        lower = settings.canny_threshold1
-        upper = settings.canny_threshold2
-        edges = cv2.Canny(
-            g,
-            lower,
-            upper,
-            apertureSize=settings.canny_aperture_size,
-            L2gradient=settings.canny_L2_gradient,
-        )
-        edges = np.asarray(edges, dtype=np.uint8)
+    # Simple threshold around median
+    v = float(np.median(g))
+    edges = np.asarray((g > v).astype(np.uint8) * 255, dtype=np.uint8)
+    
     return edges_to_xy(edges, settings.min_contour_length, settings.max_contour_length)
 
 
