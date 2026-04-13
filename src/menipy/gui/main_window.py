@@ -8,7 +8,7 @@ from pathlib import Path
 import logging
 from typing import List, Optional
 
-from PySide6.QtCore import QFile, QByteArray, Qt
+from PySide6.QtCore import QFile, QByteArray, Qt, QTimer
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLayout, QPlainTextEdit
@@ -227,6 +227,47 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._wire_menu_actions()
         self._wire_layout_controls()
         self._wire_action_bar()
+        self._setup_units_menu()
+
+    def _setup_units_menu(self):
+        """Creates a Units menu to toggle between SI and CGS."""
+        from PySide6.QtGui import QAction, QActionGroup
+        
+        menu_bar = self.menuBar()
+        units_menu = menu_bar.addMenu("&Units")
+        
+        si_action = QAction("SI (mm, kg/m³)", self)
+        si_action.setCheckable(True)
+        si_action.setData("SI")
+        
+        cgs_action = QAction("CGS (cm, g/cm³)", self)
+        cgs_action.setCheckable(True)
+        cgs_action.setData("CGS")
+        
+        group = QActionGroup(self)
+        group.addAction(si_action)
+        group.addAction(cgs_action)
+        group.setExclusive(True)
+        
+        units_menu.addAction(si_action)
+        units_menu.addAction(cgs_action)
+        
+        # Initial check
+        current = self.settings.unit_system
+        if current == "CGS":
+            cgs_action.setChecked(True)
+        else:
+            si_action.setChecked(True)
+            
+        def on_triggered(action):
+            system = action.data()
+            if hasattr(self, "main_controller") and self.main_controller:
+                self.main_controller.change_unit_system(system)
+        
+        group.triggered.connect(on_triggered)
+        
+        # Force initial labels refresh
+        QTimer.singleShot(0, lambda: self.main_controller.change_unit_system(current))
 
 
     def _wire_menu_actions(self):

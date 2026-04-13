@@ -20,6 +20,7 @@ class AppSettings:
     acquisition_requires_contact_line: bool = False
     # Overlay appearance configuration (serialized as a simple dict)
     overlay_config: Optional[dict] = None
+    unit_system: str = "SI"  # "SI" or "CGS"
     path: Path = field(default_factory=_default_path, repr=False)
 
     @classmethod
@@ -40,6 +41,7 @@ class AppSettings:
                     "acquisition_requires_contact_line", False
                 ),
                 overlay_config=data.get("overlay_config"),
+                unit_system=data.get("unit_system", "SI"),
                 path=p,
             )
         except Exception:

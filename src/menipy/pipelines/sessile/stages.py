@@ -42,7 +42,7 @@ class SessilePipeline(PipelineBase):
         "color": "#4A90E2",
         "stages": ["acquisition", "contour_extraction", "contour_refinement", "geometric_features", "overlay", "physics"],
         "calibration_params": [
-            "needle_length_mm",
+            "needle_diameter_mm",
             "drop_density_kg_m3",
             "fluid_density_kg_m3",
             "substrate_contact_angle_deg",

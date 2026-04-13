@@ -305,6 +305,55 @@ class MainController(QObject):
             "<p>This software is under active development.</p>",
         )
 
+    @Slot()
+    def export_results_csv(self) -> None:
+        """Opens a file dialog and exports the results history to CSV."""
+        from menipy.models.results import get_results_history
+        
+        file_path, _ = QFileDialog.getSaveFileName(
+            self.window, "Export Results to CSV", "", "CSV Files (*.csv)"
+        )
+        if not file_path:
+            return
+            
+        history = get_results_history()
+        success = history.export_csv(file_path)
+        
+        if success:
+            self.window.statusBar().showMessage(f"Results exported to {Path(file_path).name}", 3000)
+        else:
+            QMessageBox.critical(self.window, "Export Error", "Failed to export results to CSV.")
+
+    @Slot(str)
+    def change_unit_system(self, system: str) -> None:
+        """Updates the global unit system setting and refreshes relevant UI components."""
+        if system not in ("SI", "CGS"):
+            return
+            
+        logger.info(f"Changing unit system to {system}")
+        self.settings.unit_system = system
+        self.settings.save()
+        
+        # Refresh UI components
+        # 1. Update results panel history table
+        if self.results_panel:
+            try:
+                from menipy.models.results import get_results_history
+                history = get_results_history()
+                self.results_panel.update_history_table(history)
+            except Exception as e:
+                logger.error(f"Failed to refresh results panel: {e}")
+        
+        # 2. Update setup panel labels
+        if self.setup_ctrl:
+            try:
+                self.setup_ctrl.refresh_ui_labels()
+            except Exception as e:
+                logger.error(f"Failed to refresh setup panel labels: {e}")
+        
+        self.window.statusBar().showMessage(f"Unit system set to {system}", 2000)
+
+
     @Slot(object)
     def _on_roi_selected(self, rect) -> None:
         if rect is None or self.preprocessing_ctrl is None:

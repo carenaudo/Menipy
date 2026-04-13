@@ -9,6 +9,8 @@ from PySide6.QtCore import QObject, Signal, QTimer
 from PySide6.QtWidgets import (
     QButtonGroup,
     QComboBox,
+    QDoubleSpinBox,
+    QLabel,
     QLineEdit,
     QListWidget,
     QPushButton,
@@ -150,6 +152,15 @@ class SetupPanelController(QObject):
 
         self.framesSpin: Optional[QSpinBox] = panel.findChild(QSpinBox, "framesSpin")
 
+        # Calibration labels for unit dynamic updates
+        self.needleLengthLabel: Optional[QLabel] = panel.findChild(QLabel, "needleLengthLabel")
+        self.dropDensityLabel: Optional[QLabel] = panel.findChild(QLabel, "dropDensityLabel")
+        self.fluidDensityLabel: Optional[QLabel] = panel.findChild(QLabel, "fluidDensityLabel")
+        
+        self.needleLengthSpin: Optional[QDoubleSpinBox] = panel.findChild(QDoubleSpinBox, "needleLengthSpin")
+        self.dropDensitySpin: Optional[QDoubleSpinBox] = panel.findChild(QDoubleSpinBox, "dropDensitySpin")
+        self.fluidDensitySpin: Optional[QDoubleSpinBox] = panel.findChild(QDoubleSpinBox, "fluidDensitySpin")
+
         steps_list_widget: Optional[QListWidget] = panel.findChild(
             QListWidget, "stepsList"
         )
@@ -251,7 +262,51 @@ class SetupPanelController(QObject):
             "image": image,
             "batch_folder": batch_folder,
             "cam_id": cam_id,
+            "calibration_params": self.get_calibration_params(),
         }
+
+    def get_calibration_params(self) -> dict[str, Any]:
+        """Returns calibration parameters normalized to SI units."""
+        from menipy.common.units import convert_to_si
+        system = getattr(self.settings, "unit_system", "SI")
+        
+        # Use defaults if widgets missing
+        needle_diameter = 0.54
+        drop_rho = 1000.0
+        fluid_rho = 1.2
+        
+        if self.needleLengthSpin:
+            needle_val = self.needleLengthSpin.value()
+            needle_diameter = convert_to_si(needle_val, "length", system)
+        if self.dropDensitySpin:
+            drop_val = self.dropDensitySpin.value()
+            drop_rho = convert_to_si(drop_val, "density", system)
+        if self.fluidDensitySpin:
+            fluid_val = self.fluidDensitySpin.value()
+            fluid_rho = convert_to_si(fluid_val, "density", system)
+            
+        return {
+            "needle_diameter_mm": needle_diameter,
+            "drop_density_kg_m3": drop_rho,
+            "fluid_density_kg_m3": fluid_rho,
+        }
+
+    def refresh_ui_labels(self) -> None:
+        """Updates setup panel labels based on the current unit system."""
+        system = getattr(self.settings, "unit_system", "SI")
+        
+        if system == "SI":
+            if self.needleLengthLabel: self.needleLengthLabel.setText("Needle Diameter (mm)")
+            if self.dropDensityLabel: self.dropDensityLabel.setText("Drop Density (kg/m³)")
+            if self.fluidDensityLabel: self.fluidDensityLabel.setText("Fluid Density (kg/m³)")
+        else:
+            if self.needleLengthLabel: self.needleLengthLabel.setText("Needle Diameter (cm)")
+            if self.dropDensityLabel: self.dropDensityLabel.setText("Drop Density (g/cm³)")
+            if self.fluidDensityLabel: self.fluidDensityLabel.setText("Fluid Density (g/cm³)")
+            
+        # Optional: convert current spinbox values to stay consistent when units toggle
+        # (This is tricky if done multiple times without precision loss, but helpful for UX)
+        # For now, just refreshing the labels as requested.
 
     def image_path(self) -> Optional[str]:
         if self.imagePathEdit and hasattr(self.imagePathEdit, "text"):

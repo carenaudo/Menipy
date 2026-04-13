@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib
 import logging
+from pathlib import Path
 from typing import Any, Mapping, Optional, Dict
 
 from menipy.gui.controllers.preprocessing_controller import (
@@ -15,6 +16,9 @@ from menipy.gui.controllers.edge_detection_controller import (
 from PySide6.QtWidgets import QMessageBox, QPlainTextEdit, QMainWindow
 
 from menipy.models.config import PhysicsParams
+
+
+logger = logging.getLogger(__name__)
 
 
 class PipelineController:
@@ -310,23 +314,21 @@ class PipelineController:
                     p2 = substrate_line.p2() - roi_rect.topLeft()
                     ctx.substrate_line = ((p1.x(), p1.y()), (p2.x(), p2.y()))
 
-            # Set scale using actual detected needle diameter (width)
-            # Get calibration params from the setup panel (not controller)
-            setup_panel = getattr(self.window, 'setupPanel', None)
-            if setup_panel and hasattr(setup_panel, 'get_calibration_params'):
-                calibration_params = setup_panel.get_calibration_params()
-            else:
-                calibration_params = {"needle_length_mm": 0.54, "drop_density_kg_m3": 1000.0, "fluid_density_kg_m3": 1.2}
-            needle_diameter_mm = calibration_params.get("needle_length_mm", 0.54)
+            # Get calibration params from the setup controller (normalized to SI)
+            calibration_params = self.setup_ctrl.get_calibration_params()
+            try:
+                needle_diameter_mm = float(calibration_params.get("needle_diameter_mm", 0.54))
+            except (ValueError, TypeError):
+                needle_diameter_mm = 0.54
             
             # Get actual needle width from detected needle_rect overlay
             needle_rect = self.preview_panel.needle_rect() if hasattr(self.preview_panel, 'needle_rect') else None
-            if needle_rect and needle_diameter_mm > 0:
+            if needle_rect and isinstance(needle_diameter_mm, (int, float)) and needle_diameter_mm > 0:
                 needle_diameter_px = needle_rect[2]  # (x, y, w, h) -> w (width = diameter)
                 px_per_mm = needle_diameter_px / needle_diameter_mm
             else:
                 # Fallback: use approximate estimate
-                px_per_mm = 100.0 / max(needle_diameter_mm, 0.1)
+                px_per_mm = 100.0 / max(needle_diameter_mm or 0.1, 0.1)
             ctx.scale = {"px_per_mm": px_per_mm}
 
             # Set edge detection settings
@@ -386,20 +388,19 @@ class PipelineController:
         frames = params.get("frames")
         
         # Calculate scale from detected needle diameter (width)
-        # Get calibration params from the setup panel (not controller)
-        setup_panel = getattr(self.window, 'setupPanel', None)
-        if setup_panel and hasattr(setup_panel, 'get_calibration_params'):
-            calibration_params = setup_panel.get_calibration_params()
-        else:
-            # Fallback default values
-            calibration_params = {"needle_length_mm": 0.54}
-        needle_diameter_mm = calibration_params.get("needle_length_mm", 0.54)
+        # Get calibration params from the setup controller (normalized to SI)
+        calibration_params = self.setup_ctrl.get_calibration_params()
+        try:
+            needle_diameter_mm = float(calibration_params.get("needle_diameter_mm", 0.54))
+        except (ValueError, TypeError):
+            needle_diameter_mm = 0.54
+
         needle_rect = overlays.get('needle_rect')
-        if needle_rect and needle_diameter_mm > 0:
+        if needle_rect and isinstance(needle_diameter_mm, (int, float)) and needle_diameter_mm > 0:
             needle_diameter_px = needle_rect[2]  # (x, y, w, h) -> w (width = diameter)
             px_per_mm = needle_diameter_px / needle_diameter_mm
         else:
-            px_per_mm = 100.0 / max(needle_diameter_mm, 0.1)
+            px_per_mm = 100.0 / max(needle_diameter_mm or 0.1, 0.1)
 
         self.window.statusBar().showMessage(f"Running {name}.")
 
@@ -751,20 +752,16 @@ class PipelineController:
             pass
 
     def on_pipeline_error(self, message: str) -> None:
-        """on pipeline error.
-
-        Parameters
-        ----------
-        message : type
-        Description.
-        """
-        # Use a None parent to avoid PySide runtime type-checking issues when
-        # the tests patch window with a Mock (which is not a QWidget).
-        QMessageBox.critical(None, "Pipeline Error", message)
+        """Handles pipeline errors by showing a dialog and logging the incident."""
+        logger.error(f"Pipeline Error: {message}")
+        
+        # Use the static method to maintain compatibility with existing test mocks
+        display_msg = "An error occurred during the analysis pipeline.\n\n" + message
+        QMessageBox.critical(None, "Pipeline Error", display_msg)
+        
         try:
-            self.window.statusBar().showMessage("Error", 1500)
+            self.window.statusBar().showMessage(f"Error: {message[:50]}...", 5000)
         except Exception:
-            # Be defensive: don't blow up the error handler if window is mocked
             pass
 
     def _run_pipeline_direct(self, pipeline_cls: type, **kwargs: Any) -> Any:

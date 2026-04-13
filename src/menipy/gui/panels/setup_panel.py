@@ -324,32 +324,12 @@ class SetupPanelController(QObject):
         """Get current calibration parameter values for the selected pipeline."""
         pipeline_name = self.current_pipeline_name()
         if not pipeline_name:
-            # Fallback to basic parameters if no pipeline selected
-            return {
-                "needle_length_mm": (
-                    float(self.needleLengthSpin.value())
-                    if self.needleLengthSpin
-                    else 10.0
-                ),
-                "drop_density_kg_m3": (
-                    float(self.dropDensitySpin.value())
-                    if self.dropDensitySpin
-                    else 1000.0
-                ),
-                "fluid_density_kg_m3": (
-                    float(self.fluidDensitySpin.value())
-                    if self.fluidDensitySpin
-                    else 1.2
-                ),
-            }
-
-        # Get pipeline-specific calibration parameters
+            return {}
         required_params = self.pipeline_ui_manager.get_calibration_params(pipeline_name)
-
-        # Map UI widgets to parameter values based on pipeline requirements
+        # Get calibration-specific parameters
         params = {}
         for param_name in required_params:
-            if param_name == "needle_length_mm" and self.needleLengthSpin:
+            if param_name == "needle_diameter_mm" and self.needleLengthSpin:
                 params[param_name] = float(self.needleLengthSpin.value())
             elif param_name == "needle_diameter_mm" and self.needleLengthSpin:
                 # Reuse needle length spin for diameter (could add separate widget later)
@@ -535,13 +515,7 @@ class SetupPanelController(QObject):
         substrate_spin = self.substrateAngleSpin
 
         # Show/hide and relabel widgets based on pipeline needs
-        if "needle_length_mm" in required_params:
-            if needle_label:
-                needle_label.setText("Needle Length (mm)")
-                needle_label.show()
-            if needle_spin:
-                needle_spin.show()
-        elif "needle_diameter_mm" in required_params:
+        if "needle_diameter_mm" in required_params:
             if needle_label:
                 needle_label.setText("Needle Diameter (mm)")
                 needle_label.show()

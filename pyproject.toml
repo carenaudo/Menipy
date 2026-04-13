@@ -150,7 +150,8 @@ follow_imports = "silent"
 strict_optional = true
 files = ["src/menipy"]
 exclude = [
-    "^src/menipy/gui/.*$",
+    "^src/menipy/gui/views/.*$",
+    "^src/menipy/gui/widgets/.*$",
     "^tests/.*$",
 ]
 
@@ -160,6 +161,10 @@ ignore_errors = false
 
 [[tool.mypy.overrides]]
 module = "menipy.gui.*"
+ignore_errors = false
+
+[[tool.mypy.overrides]]
+module = "menipy.gui.views.*"
 ignore_errors = true
 
 [[tool.mypy.overrides]]
@@ -169,7 +174,6 @@ module = [
     "skimage.*",
     "PyQt5.*",
     "PySide6.*",
-    "detect_*",
     "pydantic_numpy.*",
     "pydantic_pint.*",
 ]

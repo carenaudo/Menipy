@@ -75,7 +75,7 @@ class OscillatingPipeline(PipelineBase):
             "physics",
         ],
         "calibration_params": [
-            "needle_length_mm",
+            "needle_diameter_mm",
             "drop_density_kg_m3",
             "fluid_density_kg_m3",
         ],

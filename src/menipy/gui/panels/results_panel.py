@@ -20,6 +20,52 @@ from PySide6.QtCore import Qt
 
 from menipy.models.results import get_results_history, MeasurementResult
 from menipy.gui.controllers.pipeline_ui_manager import PipelineUIManager
+from menipy.gui.services.settings_service import AppSettings
+from menipy.common.units import convert_from_si
+
+def get_label_with_unit(key: str, system: str) -> str:
+    """Return the label with localized unit suffix."""
+    labels_si = {
+        "density": "kg/m³",
+        "surface_tension": "mN/m",
+        "volume": "µL",
+        "length": "mm",
+        "contact_angle": "°",
+        "surface_area": "mm²",
+    }
+    labels_cgs = {
+        "density": "g/cm³",
+        "surface_tension": "dyn/cm",
+        "volume": "cm³",
+        "length": "cm",
+        "contact_angle": "°",
+        "surface_area": "cm²",
+    }
+    units = labels_si if system == "SI" else labels_cgs
+    
+    base_labels = {
+        "diameter_mm": ("Diameter", "length"),
+        "height_mm": ("Height", "length"),
+        "volume_uL": ("Volume", "volume"),
+        "surface_tension_mN_m": ("Surface Tension", "surface_tension"),
+        "r0_mm": ("Apex Radius", "length"),
+        "needle_surface_mm2": ("Needle Surface", "surface_area"),
+        "drop_surface_mm2": ("Drop Surface", "surface_area"),
+        "contact_angle_deg": ("Contact Angle", "contact_angle"),
+        "contact_surface_mm2": ("Contact Surface", "surface_area"),
+        "theta_left_deg": ("Left Contact Angle", "contact_angle"),
+        "theta_right_deg": ("Right Contact Angle", "contact_angle"),
+        "baseline_tilt_deg": ("Baseline Tilt", "contact_angle"),
+        "uncertainty_deg": ("Angle Uncertainty", "contact_angle"),
+        "uncertainty_left_deg": ("Left Angle Uncertainty", "contact_angle"),
+        "uncertainty_right_deg": ("Right Angle Uncertainty", "contact_angle"),
+    }
+    
+    if key in base_labels:
+        name, qtype = base_labels[key]
+        return f"{name} ({units[qtype]})"
+    
+    return key.replace("_", " ").title()
 
 LABEL_MAP = {
     "diameter_mm": "Diameter (mm)",
@@ -196,6 +242,8 @@ class ResultsPanel:
         if not self.table:
             return
 
+        settings = AppSettings.load()
+        unit_system = settings.unit_system
         headers, rows = self.history.get_table_data(self.current_pipeline_filter)
         raw_headers = list(headers)
 
@@ -207,7 +255,7 @@ class ResultsPanel:
             raw_headers = list(headers)
 
         # Update table
-        display_headers = [self._display_header(h) for h in headers]
+        display_headers = [get_label_with_unit(h, unit_system) for h in headers]
         self.table.setColumnCount(len(display_headers))
         self.table.setRowCount(len(rows))
         self.table.setHorizontalHeaderLabels(display_headers)
@@ -215,7 +263,25 @@ class ResultsPanel:
         # Populate data with pipeline-aware styling
         for row_idx, row_data in enumerate(rows):
             for col_idx, cell_value in enumerate(row_data):
-                item = QTableWidgetItem(str(cell_value))
+                # Convert value if needed
+                transformed_value = cell_value
+                try:
+                    # Map header key back to quantity type
+                    quantity_map = {
+                        "diameter_mm": "length",
+                        "height_mm": "length",
+                        "r0_mm": "length",
+                        "volume_uL": "volume",
+                        "surface_tension_mN_m": "surface_tension",
+                    }
+                    if raw_headers[col_idx] in quantity_map and cell_value != "":
+                        val_float = float(cell_value)
+                        transformed_float = convert_from_si(val_float, quantity_map[raw_headers[col_idx]], unit_system)
+                        transformed_value = f"{transformed_float:.3g}"
+                except (ValueError, TypeError):
+                    pass
+
+                item = QTableWidgetItem(str(transformed_value))
                 item.setFlags(item.flags() & ~Qt.ItemIsEditable)  # Make read-only
 
                 # Add pipeline-specific styling
@@ -382,3 +448,7 @@ class ResultsPanel:
             )
             self.history.add_measurement(measurement)
             self.update_history()
+
+    def update_history_table(self, history=None) -> None:
+        """Refresh the history table using the current global unit setting."""
+        self.update_history()
