@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import Optional
 import numpy as np
 
+from menipy.models.geometry import Geometry
 from menipy.pipelines.base import PipelineBase
 from menipy.models.context import Context
 from menipy.models.fit import FitConfig
@@ -18,6 +19,7 @@ from menipy.pipelines.utils import ensure_contour
 
 # Get solver from registry (loaded at startup)
 young_laplace_sphere = get_solver("toy_young_laplace")
+assert young_laplace_sphere is not None, "Fallback solver not found."
 
 
 class CapillaryRisePipeline(PipelineBase):
@@ -61,12 +63,12 @@ class CapillaryRisePipeline(PipelineBase):
         # axis by median x (tube centerline)
         axis_x = float(np.median(x))
 
-        ctx.geometry = {
-            "baseline_y": baseline_y,
-            "apex_xy": apex_xy,
-            "axis_x": axis_x,
-            "h_px": h_px,
-        }
+        ctx.geometry = Geometry(
+            baseline_y=baseline_y,
+            apex_xy=apex_xy,
+            axis_x=axis_x,
+        )
+        ctx.h_px = h_px
         return ctx
 
     def do_calibration(self, ctx: Context) -> Optional[Context]:
@@ -97,17 +99,20 @@ class CapillaryRisePipeline(PipelineBase):
         names = fit.get("param_names") or []
         params = fit.get("params", [])
         res = {n: p for n, p in zip(names, params)}
-        res["h_px"] = (ctx.geometry or {}).get("h_px")
+        res["h_px"] = getattr(ctx, "h_px", None)
         res["residuals"] = fit.get("residuals", {})
         ctx.results = res
         return ctx
 
     def do_overlay(self, ctx: Context) -> Optional[Context]:
         xy = ensure_contour(ctx)
-        baseline_y = int(round(ctx.geometry["baseline_y"]))
-        axis_x = int(round(ctx.geometry["axis_x"]))
-        apex_x, apex_y = ctx.geometry["apex_xy"]
-        h_px = float(ctx.geometry["h_px"])
+        
+        baseline_y = int(round(ctx.geometry.baseline_y)) if ctx.geometry and ctx.geometry.baseline_y is not None else 0
+        axis_x = int(round(ctx.geometry.axis_x)) if ctx.geometry and ctx.geometry.axis_x is not None else 0
+        apex_xy = ctx.geometry.apex_xy if ctx.geometry and ctx.geometry.apex_xy is not None else (0, 0)
+        apex_x, apex_y = apex_xy
+        h_px = float(getattr(ctx, "h_px", 0))
+        
         text = f"R0≈{ctx.results.get('R0_mm','?')} mm | h≈{h_px:.0f}px"
         x0 = int(axis_x)
         cmds = [
@@ -149,19 +154,4 @@ class CapillaryRisePipeline(PipelineBase):
         ]
         return ovl.run(ctx, commands=cmds, alpha=0.6)
 
-    def do_validation(self, ctx: Context) -> Optional[Context]:
-        """do validation.
 
-        Parameters
-        ----------
-        ctx : type
-        Description.
-
-        Returns
-        -------
-        type
-        Description.
-        """
-        ok = bool(ctx.fit and ctx.fit.get("solver", {}).get("success", False))
-        ctx.qa = {"ok": ok}
-        return ctx

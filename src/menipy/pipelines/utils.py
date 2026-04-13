@@ -27,7 +27,7 @@ def ensure_contour(
         RuntimeError: If no image can be loaded to detect contours.
     """
     # 1. Return existing contour if valid
-    if getattr(ctx, "contour", None) is not None and hasattr(ctx.contour, "xy"):
+    if ctx.contour is not None and ctx.contour.xy is not None:
         return np.asarray(ctx.contour.xy, dtype=float)
 
     # 2. Ensure we have image data in ctx.frames/ctx.image
@@ -44,7 +44,7 @@ def ensure_contour(
         except Exception:
             loaded = []
         if loaded:
-            ctx.frames = loaded
+            ctx.frames = list(loaded)
             ctx.frame = loaded[0]
             ctx.image = loaded[0]
 
@@ -78,7 +78,7 @@ def ensure_contour(
     edged.run(ctx, settings=run_settings)
 
     # 4. Return result
-    if ctx.contour and hasattr(ctx.contour, "xy"):
+    if ctx.contour is not None and ctx.contour.xy is not None:
         return np.asarray(ctx.contour.xy, dtype=float)
 
     return np.empty((0, 2), dtype=float)

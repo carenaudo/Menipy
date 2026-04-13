@@ -329,7 +329,7 @@ def main(argv: Optional[list[str]] = None) -> int:
             {
                 "pipeline": runner.pipeline.name,
                 "results": ctx.results,
-                "qa": ctx.qa,
+                "qa": ctx.qa.to_dict() if hasattr(ctx.qa, "to_dict") else ctx.qa,
                 "timings_ms": ctx.timings_ms,
                 "log": ctx.log,
                 "error": ctx.error,

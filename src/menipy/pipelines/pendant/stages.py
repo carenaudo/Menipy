@@ -18,8 +18,10 @@ from menipy.common import registry
 from menipy.common.plugin_loader import get_solver
 from menipy.pipelines.utils import ensure_contour
 
+from menipy.math.young_laplace import young_laplace_ode
+
 # Get solvers from registry (loaded at startup)
-young_laplace_adsa = get_solver("young_laplace_adsa")
+young_laplace_default = get_solver("young_laplace_ode", fallback=young_laplace_ode)
 
 
 def _calc_surface_tension_fallback(
@@ -46,7 +48,7 @@ class PendantPipeline(PipelineBase):
     """Pendant drop pipeline (simplified): contour → axis/apex → toy Y–L radius fit."""
 
     name = "pendant"
-    solver_name: str = "young_laplace_adsa"
+    solver_name: str = "young_laplace_ode"
     preprocessor_name: str | None = None
     edge_detector_name: str | None = None
 
@@ -163,7 +165,8 @@ class PendantPipeline(PipelineBase):
             distance="pointwise",
             param_names=["r0_mm", "beta"],
         )
-        integrator = get_solver(self.solver_name, fallback=young_laplace_adsa)
+        integrator = get_solver(self.solver_name, fallback=young_laplace_default)
+        assert integrator is not None, f"Solver {self.solver_name} not found and no fallback available."
         common_solver.run(ctx, integrator=integrator, config=cfg)
         return ctx
 
@@ -293,19 +296,4 @@ class PendantPipeline(PipelineBase):
         ctx.overlay_commands = cmds
         return ovl.run(ctx, commands=cmds, alpha=0.6)
 
-    def do_validation(self, ctx: Context) -> Optional[Context]:
-        """do validation.
 
-        Parameters
-        ----------
-        ctx : type
-        Description.
-
-        Returns
-        -------
-        type
-        Description.
-        """
-        ok = bool(ctx.fit and ctx.fit.get("solver", {}).get("success", False))
-        ctx.qa = {"ok": ok}
-        return ctx

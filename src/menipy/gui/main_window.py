@@ -111,20 +111,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             loader.registerCustomWidget(ImageView)
 
         def load_ui(res_path: str, fallback_filename: str) -> QWidget:
-            """Load ui.
-
-            Parameters
-            ----------
-            res_path : type
-            Description.
-            fallback_filename : type
-            Description.
-
-            Returns
-            -------
-            type
-            Description.
-            """
+            """Load a .ui file from a Qt resource path or a filesystem fallback."""
             f = QFile(res_path)
             if not f.exists():
                 f = QFile(
@@ -135,63 +122,63 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             f.close()
             return w
 
-            # ---------- load panels into split hosts ----------
-            self.setup_panel: QWidget = load_ui(":/views/setup_panel.ui", "setup_panel.ui")
-            self.overlay_panel: QWidget = load_ui(
+        # ---------- load panels into split hosts ----------
+        self.setup_panel: QWidget = load_ui(":/views/setup_panel.ui", "setup_panel.ui")
+        self.overlay_panel: QWidget = load_ui(
             ":/views/overlay_panel.ui", "overlay_panel.ui"
-            )
-            self.results_panel: QWidget = load_ui(
+        )
+        self.results_panel: QWidget = load_ui(
             ":/views/results_panel.ui", "results_panel.ui"
-            )
+        )
 
-            # the split UI provides these host layouts/widgets
-            self._embed(self.setup_panel, self.setupHostLayout)
-            self._embed(self.overlay_panel, self.previewHostLayout)
-            self._embed(self.results_panel, self.resultsHostLayout)
+        # the split UI provides these host layouts/widgets
+        self._embed(self.setup_panel, self.setupHostLayout)
+        self._embed(self.overlay_panel, self.previewHostLayout)
+        self._embed(self.results_panel, self.resultsHostLayout)
 
-            self.preview_panel = PreviewPanel(self.overlay_panel, ImageView)
-            self.results_panel_ctrl = ResultsPanel(self.results_panel)
+        self.preview_panel = PreviewPanel(self.overlay_panel, ImageView)
+        self.results_panel_ctrl = ResultsPanel(self.results_panel)
 
-            self.preprocessing_ctrl = PreprocessingPipelineController(self)
-            self.edge_detection_ctrl = EdgeDetectionPipelineController(self)
-            self.marker_helper = (
+        self.preprocessing_ctrl = PreprocessingPipelineController(self)
+        self.edge_detection_ctrl = EdgeDetectionPipelineController(self)
+        self.marker_helper = (
             ImageMarkerHelper(self.preview_panel, self.preprocessing_ctrl, parent=self)
             if self.preview_panel.has_view()
             else None
+        )
+
+        self.camera_ctrl = CameraController(self)
+
+        # add simple log view into the Log tab
+        self.logView = QPlainTextEdit(self)
+        self.logView.setReadOnly(True)
+        self._embed(self.logView, self.logHostLayout)
+
+        # Install Qt logging bridge (only one handler) and connect to logView
+        try:
+            gui_logger = logging.getLogger("menipy")
+            gui_logger.setLevel(logging.INFO)
+            self._qt_log_bridge, self._qt_log_handler = install_qt_logging(
+                self.logView, logger=gui_logger
             )
+        except Exception:
+            pass
 
-            self.camera_ctrl = CameraController(self)
+        # ---------- plugin dock (optional) ----------
+        self.plugins_controller = PluginsController(self, self.settings)
 
-            # add simple log view into the Log tab
-            self.logView = QPlainTextEdit(self)
-            self.logView.setReadOnly(True)
-            self._embed(self.logView, self.logHostLayout)
+        # ---------- services / VMs ----------
+        if PipelineRunner and RunViewModel:
+            self.runner = PipelineRunner()
+            self.run_vm = RunViewModel(self.runner)
+        else:
+            self.runner = None
+            self.run_vm = None
 
-            # Install Qt logging bridge (only one handler) and connect to logView
-            try:
-                gui_logger = logging.getLogger("menipy")
-                gui_logger.setLevel(logging.INFO)
-                self._qt_log_bridge, self._qt_log_handler = install_qt_logging(
-                    self.logView, logger=gui_logger
-                )
-            except Exception:
-                pass
+        # SOP service
+        self.sops = SopService() if SopService else None
 
-            # ---------- plugin dock (optional) ----------
-            self.plugins_controller = PluginsController(self, self.settings)
-
-            # ---------- services / VMs ----------
-            if PipelineRunner and RunViewModel:
-                self.runner = PipelineRunner()
-                self.run_vm = RunViewModel(self.runner)
-            else:
-                self.runner = None
-                self.run_vm = None
-
-            # SOP service
-            self.sops = SopService() if SopService else None
-
-            self.setup_panel_ctrl = SetupPanelController(
+        self.setup_panel_ctrl = SetupPanelController(
             self,
             self.setup_panel,
             self.settings,
@@ -199,9 +186,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             STAGE_ORDER,
             StepItemWidget,
             list(PIPELINE_MAP.keys()) if PIPELINE_MAP else [],
-            )
+        )
 
-            self.pipeline_ctrl = PipelineController(
+        self.pipeline_ctrl = PipelineController(
             window=self,
             setup_ctrl=self.setup_panel_ctrl,
             preview_panel=self.preview_panel,
@@ -212,36 +199,35 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             sops=self.sops,
             run_vm=self.run_vm,
             log_view=self.logView,
-            )
+        )
 
-            if self.preview_panel.has_view():
-                try:
-                    self.preview_panel.set_draw_mode(DRAW_NONE)
-                except Exception:
-                    pass
-            
-            # restore saved splitter sizes (optional)
-            if getattr(self.settings, "splitter_sizes", None):
-                try:
-                    self.rootSplitter.setSizes(self.settings.splitter_sizes)  # type: ignore[attr-defined]
-                except Exception:
-                    pass
+        if self.preview_panel.has_view():
+            try:
+                self.preview_panel.set_draw_mode(DRAW_NONE)
+            except Exception:
+                pass
 
-            # focus
-            self.statusBar().showMessage("Ready", 1500)
+        # restore saved splitter sizes (optional)
+        if getattr(self.settings, "splitter_sizes", None):
+            try:
+                self.rootSplitter.setSizes(self.settings.splitter_sizes)  # type: ignore[attr-defined]
+            except Exception:
+                pass
 
-            # The MainController now orchestrates everything.
-            if MainController:
-                self.main_controller = MainController(self)
-            else:
-                self.main_controller = None  # type: ignore
+        # focus
+        self.statusBar().showMessage("Ready", 1500)
 
-            # menubar actions from split UI
-            self._wire_menu_actions()
-            self._wire_layout_controls()
-            self._wire_action_bar()
+        # The MainController now orchestrates everything.
+        if MainController:
+            self.main_controller = MainController(self)
+        else:
+            self.main_controller = None  # type: ignore
 
-            # -------------------------- helpers & wiring --------------------------
+        # menubar actions from split UI
+        self._wire_menu_actions()
+        self._wire_layout_controls()
+        self._wire_action_bar()
+
 
     def _wire_menu_actions(self):
         # Actions declared in main_window_split.ui

@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, Union, List
 
+import numpy as np
 from pydantic import BaseModel, Field, ConfigDict
 
 from .config import EdgeDetectionSettings, PreprocessingSettings
@@ -19,13 +20,13 @@ class Context(BaseModel):
     Mutable bag of state shared across pipeline stages.
     Pipelines freely attach fields here. Commonly used keys are predeclared.
     """
-    model_config = ConfigDict(extra='allow')
+    model_config = ConfigDict(extra='forbid', arbitrary_types_allowed=True)
 
     # Acquisition / images
-    frames: Any | None = None  # np.ndarray or list[np.ndarray]
+    frames: Union[np.ndarray, List[np.ndarray], List[Frame], None] = None  # np.ndarray or list[np.ndarray]
     current_frame: Optional[Frame] = None
     image_path: Optional[str] = None  # Path to input image file
-    image: Any | None = None  # Loaded image data
+    image: Optional[np.ndarray] = None  # Loaded image data
     camera_id: Optional[int] = None  # Camera device ID for capture
     frames_requested: Optional[int] = None  # Number of frames to capture
 
@@ -46,16 +47,17 @@ class Context(BaseModel):
     fit: Optional[Dict[str, Any]] = None
     physics: Dict[str, Any] = Field(default_factory=dict)
     results: Dict[str, Any] = Field(default_factory=dict)
-    qa: dict[str, Any] = Field(default_factory=dict)
+    qa: Any = Field(default_factory=dict)
 
     # Overlay rendering (optional)
-    overlay: Any | None = None  # overlay-only image (BGR)
-    preview: Any | None = None  # base + overlay composited (BGR)
+    overlay: Optional[np.ndarray] = None  # overlay-only image (BGR)
+    preview: Optional[np.ndarray] = None  # base + overlay composited (BGR)
 
     # Diagnostics
     timings_ms: dict[str, float] = Field(default_factory=dict)
     log: list[str] = Field(default_factory=list)
     error: Optional[str] = None
+    status_message: Optional[str] = None
 
     # Measurement tracking (for results history)
     measurement_id: Optional[str] = (
@@ -66,6 +68,9 @@ class Context(BaseModel):
     # Settings for pipeline stages
     preprocessing_settings: Optional[PreprocessingSettings] = None
     edge_detection_settings: Optional[EdgeDetectionSettings] = None
+    needle_diameter_mm: Optional[float] = None
+    fluid_density_kg_m3: Optional[float] = None
+    drop_density_kg_m3: Optional[float] = None
 
     # Preprocessing state and markers
     preprocessing_markers: Optional[MarkerSet] = None
@@ -79,16 +84,28 @@ class Context(BaseModel):
     substrate_line: Optional[Tuple[Tuple[float, float], Tuple[float, float]]] = (
         None  # ((x1,y1), (x2,y2))
     )
-    roi_mask: Any | None = None  # Binary mask for ROI
+    roi_mask: Optional[np.ndarray] = None  # Binary mask for ROI
     # Fields populated by preprocessing.run (compatibility)
-    preprocessed_state: Any | None = None
-    preprocessed_settings: Any | None = None
-    preprocessed_history: Any | None = None
-    preprocessed_roi: Any | None = None
-    preprocessed_mask: Any | None = None
-    preprocessed_scale: Any | None = None
-    contact_line_mask: Any | None = None
-    preprocessed: Any | None = None
+    preprocessed_state: Optional[Dict[str, Any]] = None
+    preprocessed_settings: Optional[Dict[str, Any]] = None
+    preprocessed_history: Optional[List[Any]] = None
+    preprocessed_roi: Optional[np.ndarray] = None
+    preprocessed_mask: Optional[np.ndarray] = None
+    preprocessed_scale: Optional[Tuple[float, float]] = None
+    contact_line_mask: Optional[np.ndarray] = None
+    preprocessed: Optional[np.ndarray] = None
+    gray: Optional[np.ndarray] = None
+    
+    # Specific algorithm variables (found during refactor)
+    contact_points: Optional[Tuple[Tuple[int, int], Tuple[int, int]]] = None
+    r_eq_series_px: Optional[list] = None
+    centers_px: Optional[list] = None
+    r0_eq_px: Optional[float] = None
+    c0_xy: Optional[Tuple[float, float]] = None
+    h_px: Optional[float] = None
+    _sessile_metrics: Optional[Dict[str, Any]] = None
+    overlay_commands: Optional[list] = None
+    smoothing_results: Optional[Dict[str, Any]] = None
 
     # Backwards-compatible single-frame accessors (legacy tests expect `ctx.frame`)
     @property
@@ -111,7 +128,7 @@ class Context(BaseModel):
             # If value is a single image, store as frames list
             self.frames = [value]
         except Exception:
-            self.frames = value
+            self.frames = value  # type: ignore[assignment]
 
     def note(self, message: str) -> None:
         self.log.append(message)

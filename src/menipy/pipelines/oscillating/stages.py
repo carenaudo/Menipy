@@ -12,15 +12,16 @@ import numpy as np
 from menipy.pipelines.base import PipelineBase
 from menipy.models.context import Context
 from menipy.models.fit import FitConfig
+from menipy.models.geometry import Contour, Geometry
 from menipy.common import edge_detection as edged
 from menipy.common import overlay as ovl
 from menipy.common import solver as common_solver
 from pathlib import Path
-from menipy.common.plugins import _load_module_from_path
+from menipy.common._module_loader import load_module_from_path
 
 _repo_root = Path(__file__).resolve().parents[4]
 _toy_path = _repo_root / "plugins" / "toy_young_laplace.py"
-_toy_mod = _load_module_from_path(_toy_path, "adsa_plugins.toy_young_laplace")
+_toy_mod = load_module_from_path(_toy_path, "menipy_plugins.toy_young_laplace")
 young_laplace_sphere = getattr(_toy_mod, "toy_young_laplace")
 
 
@@ -29,8 +30,12 @@ def _contour_from_frame(ctx: Context, frame) -> np.ndarray:
     # Save/restore current frame(s)
     original = ctx.frames
     ctx.frames = [frame]
-    edged.run(ctx, method="canny")
-    xy = np.asarray(ctx.contour.xy, dtype=float)
+    from menipy.models.config import EdgeDetectionSettings
+    edged.run(ctx, settings=EdgeDetectionSettings(method="canny"))
+    if ctx.contour is not None and ctx.contour.xy is not None:
+        xy = np.asarray(ctx.contour.xy, dtype=float)
+    else:
+        xy = np.empty((0, 2), dtype=float)
     ctx.frames = original
     return xy
 
@@ -97,10 +102,9 @@ class OscillatingPipeline(PipelineBase):
         contours: List[object] = []
         for f in frames[:]:  # safe slice
             xy = _contour_from_frame(ctx, f)
-            C = type("Contour", (), {})()
-            C.xy = xy
+            C = Contour(xy=xy)
             contours.append(C)
-        ctx.contours_by_frame = contours or None
+        ctx.contours_by_frame = contours
 
         # Provide a current contour (frame 0) for downstream stages
         if contours:
@@ -117,16 +121,20 @@ class OscillatingPipeline(PipelineBase):
                 r, (cx, cy) = _area_equiv_radius(np.asarray(C.xy))
                 series.append(r)
                 centers.append((cx, cy))
-            ctx.geometry = (ctx.geometry or {}) | {
-                "r_eq_series_px": series,
-                "centers_px": centers,
-            }
+                
+            ctx.r_eq_series_px = series
+            ctx.centers_px = centers
+            
             # Assign a few handy refs from frame 0
             xy0 = np.asarray(ctx.contours_by_frame[0].xy)
         else:
             # Single contour fallback
-            edged.run(ctx, method="canny")
-            xy0 = np.asarray(ctx.contour.xy)
+            from menipy.models.config import EdgeDetectionSettings
+            edged.run(ctx, settings=EdgeDetectionSettings(method="canny"))
+            if ctx.contour is not None and ctx.contour.xy is not None:
+                xy0 = np.asarray(ctx.contour.xy, dtype=float)
+            else:
+                xy0 = np.empty((0, 2), dtype=float)
 
         x0, y0 = xy0[:, 0], xy0[:, 1]
         axis_x = float(np.median(x0))
@@ -135,12 +143,14 @@ class OscillatingPipeline(PipelineBase):
 
         # Store frame-0 equivalent radius/center for overlay
         r0, (c0x, c0y) = _area_equiv_radius(xy0)
-        ctx.geometry = (ctx.geometry or {}) | {
-            "axis_x": axis_x,
-            "apex_xy": apex_xy,
-            "r0_eq_px": float(r0),
-            "c0_xy": (float(c0x), float(c0y)),
-        }
+        
+        ctx.geometry = Geometry(
+            axis_x=axis_x,
+            apex_xy=apex_xy,
+        )
+        ctx.r0_eq_px = float(r0)
+        ctx.c0_xy = (float(c0x), float(c0y))
+        
         return ctx
 
     def do_calibration(self, ctx: Context) -> Optional[Context]:
@@ -173,7 +183,7 @@ class OscillatingPipeline(PipelineBase):
     def do_compute_metrics(self, ctx: Context) -> Optional[Context]:
         """Aggregate fit results, compute frequency from oscillation data."""
         # First estimate oscillation frequency from r_eq(t)
-        series = (ctx.geometry or {}).get("r_eq_series_px")
+        series = getattr(ctx, "r_eq_series_px", None)
         fps = (ctx.physics or {}).get("fps", None)
         f0 = None
         if series and fps and len(series) >= 8:
@@ -201,18 +211,25 @@ class OscillatingPipeline(PipelineBase):
         results = {n: p for n, p in zip(names, params)}
         results["residuals"] = fit.get("residuals", {})
         # Export a couple of geometry refs
-        if ctx.geometry:
-            results["r0_eq_px"] = ctx.geometry.get("r0_eq_px")
+        results["r0_eq_px"] = getattr(ctx, "r0_eq_px", None)
         ctx.results = results
         return ctx
 
     def do_overlay(self, ctx: Context) -> Optional[Context]:
-        xy = np.asarray(ctx.contour.xy, dtype=float)
-        cx, cy = ctx.geometry.get(
-            "c0_xy", (float(np.mean(xy[:, 0])), float(np.mean(xy[:, 1])))
-        )
-        r = float(ctx.geometry.get("r0_eq_px", 10.0))
-        axis_x = int(round(ctx.geometry.get("axis_x", cx)))
+        if ctx.contour is not None and ctx.contour.xy is not None:
+            xy = np.asarray(ctx.contour.xy, dtype=float)
+        else:
+            xy = np.empty((0, 2), dtype=float)
+        
+        if xy.size > 0:
+            cx, cy = getattr(ctx, "c0_xy", (float(np.mean(xy[:, 0])), float(np.mean(xy[:, 1]))))
+        else:
+            cx, cy = getattr(ctx, "c0_xy", (0.0, 0.0))
+        r = float(getattr(ctx, "r0_eq_px", 10.0))
+        
+        geom_axis_x = getattr(ctx.geometry, "axis_x", cx) if ctx.geometry else cx
+        axis_x = int(round(geom_axis_x))
+        
         text = f"R0≈{ctx.results.get('R0_mm','?')} mm"
         f0 = ctx.results.get("f0_Hz", None)
         if f0 is not None:
@@ -256,19 +273,4 @@ class OscillatingPipeline(PipelineBase):
         ]
         return ovl.run(ctx, commands=cmds, alpha=0.6)
 
-    def do_validation(self, ctx: Context) -> Optional[Context]:
-        """do validation.
 
-        Parameters
-        ----------
-        ctx : type
-        Description.
-
-        Returns
-        -------
-        type
-        Description.
-        """
-        ok = bool(ctx.fit and ctx.fit.get("solver", {}).get("success", False))
-        ctx.qa = {"ok": ok}
-        return ctx

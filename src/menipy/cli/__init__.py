@@ -22,9 +22,9 @@ except Exception:
     _PLUGINS_OK = False
 
 try:
-    import cv2  # type: ignore
+    import cv2
 except Exception:
-    cv2 = None
+    cv2: Any = None
 try:
     from PIL import Image  # type: ignore
 
@@ -72,32 +72,21 @@ def _patch_acquisition(
         img_path = str(image)
 
         def do_acq_from_file(ctx: Context):
-            ctx.frames = acq.from_file([img_path])
+            ctx.frames = list(acq.from_file([img_path]))
 
             return ctx
 
-        p.do_acquisition = do_acq_from_file  # type: ignore[attr-defined]
+        p.do_acquisition = do_acq_from_file  # type: ignore[method-assign, attr-defined]
         return
     cam_id = 0 if camera is None else int(camera)
 
     def do_acq_from_camera(ctx: Context):
-        """do acq from camera.
-
-        Parameters
-        ----------
-        ctx : type
-        Description.
-
-        Returns
-        -------
-        type
-        Description.
-        """
-        ctx.frames = acq.from_camera(device=cam_id, n_frames=frames)
+        """do acq from camera."""
+        ctx.frames = list(acq.from_camera(device=cam_id, n_frames=frames))
 
         return ctx
 
-        p.do_acquisition = do_acq_from_camera  # type: ignore[attr-defined]
+    p.do_acquisition = do_acq_from_camera  # type: ignore[method-assign, attr-defined]
 
 
 def main(argv: Optional[list[str]] = None) -> int:
@@ -177,7 +166,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     pipeline = _pick_pipeline(args.pipeline)
 
     if args.no_overlay:
-        pipeline.do_overlay = lambda ctx: ctx  # type: ignore[attr-defined]
+        pipeline.do_overlay = lambda ctx: ctx  # type: ignore[method-assign, attr-defined]
 
     image_path = Path(args.image).expanduser().resolve() if args.image else None
     _patch_acquisition(
@@ -205,7 +194,7 @@ def main(argv: Optional[list[str]] = None) -> int:
             {
                 "pipeline": pipeline.name,
                 "results": ctx.results,
-                "qa": ctx.qa,
+                "qa": ctx.qa.to_dict() if hasattr(ctx.qa, "to_dict") else ctx.qa,
                 "timings_ms": ctx.timings_ms,
                 "log": ctx.log,
                 "error": ctx.error,

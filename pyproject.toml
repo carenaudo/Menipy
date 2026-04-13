@@ -142,11 +142,13 @@ known-first-party = ["menipy"]
 # Mypy - Static Type Checker
 # =============================================================================
 [tool.mypy]
+explicit_package_bases = true
+mypy_path = "src"
 python_version = "3.10"
-ignore_missing_imports = true
+ignore_missing_imports = false
 follow_imports = "silent"
-strict_optional = false
-files = ["src"]
+strict_optional = true
+files = ["src/menipy"]
 exclude = [
     "^src/menipy/gui/.*$",
     "^tests/.*$",
@@ -159,6 +161,19 @@ ignore_errors = false
 [[tool.mypy.overrides]]
 module = "menipy.gui.*"
 ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = [
+    "cv2",
+    "scipy.*",
+    "skimage.*",
+    "PyQt5.*",
+    "PySide6.*",
+    "detect_*",
+    "pydantic_numpy.*",
+    "pydantic_pint.*",
+]
+ignore_missing_imports = true
 
 # =============================================================================
 # Pytest - Testing Framework

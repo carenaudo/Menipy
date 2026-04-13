@@ -444,7 +444,7 @@ def estimate_contact_angle_tangent(
                 np.linalg.norm(local_points - center, axis=1) - radius
             )
             rmse = np.sqrt(np.mean(distances_to_circle**2))
-        except:
+        except Exception:
             angle_deg = 90.0
             rmse = 1.0
     else:
@@ -514,7 +514,7 @@ def estimate_contact_angle_circle_fit(
             np.linalg.norm(local_points - center, axis=1) - radius
         )
         rmse = np.sqrt(np.mean(distances_to_circle**2))
-    except:
+    except Exception:
         angle_deg = 90.0
         rmse = 1.0
 

@@ -39,7 +39,7 @@ class PluginConfigDialog(QDialog):
             if value is None and field.default_factory:
                  try:
                     value = field.default_factory()
-                 except:
+                 except Exception:
                     pass
             
             # If still PydanticUndefined (required field missing), set sensible default for type

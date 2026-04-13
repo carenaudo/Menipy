@@ -12,6 +12,14 @@ This file tracks specific features and tasks that need to be implemented or addr
 - [ ] **Implement Ellipse Fit Model**: Add the ellipse fitting model for sessile drop analysis.
 - [ ] **Implement Low-Bond ADSA**: Add the perturbation-based ADSA method for sessile drops.
 
+## Pipeline Specialization Roadmap
+The following details future stage implementations per pipeline type, as each has unique physics and image processing variations:
+- **Sessile**: Custom substrate-aware preprocessing, contact angle optimization, wetting dynamics validation.
+- **Pendant**: Needle-aware acquisition/ROI, ADSA-specific contour refinement, Bond number optimization.
+- **Oscillating**: Multi-frame acquisition pipeline, FFT-based frequency extraction, Rayleigh-Lamb physics model.
+- **Capillary Rise**: Tube-wall detection preprocessing, meniscus height gauge geometry, Jurin's law solver.
+- **Captive Bubble**: Ceiling detection, inverted bubble geometry, pressure-corrected physics.
+
 ## Low Priority
 - [ ] **Review Remaining Foundational Docs**: Systematically review and update the remaining design documents in `docs/guides/` to ensure they align with the current codebase.
   - [ ] `image_processing.md`

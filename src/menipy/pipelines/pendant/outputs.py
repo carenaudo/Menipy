@@ -22,8 +22,8 @@ def run(ctx: Context) -> Optional[Context]:
         Description.
     """
     if getattr(ctx, "fit", None):
-        names = ctx.fit.get("param_names", [])
-        params = ctx.fit.get("params", [])
+        names = (ctx.fit or {}).get("param_names", [])
+        params = (ctx.fit or {}).get("params", [])
         fit_map = {n: p for n, p in zip(names, params)}
         ctx.results = ctx.results or {}
         ctx.results.update(fit_map)

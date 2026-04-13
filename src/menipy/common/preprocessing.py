@@ -27,7 +27,7 @@ from .preprocessing_helpers import (  # Assuming this file exists or will be cre
 try:
     import cv2
 except ImportError:
-    cv2 = None
+    cv2: Any = None
 
 logger = logging.getLogger(__name__)
 
@@ -85,9 +85,10 @@ def run(
     full_image = _compose_full_image(frame, processed_roi, state)
 
     # --- Finalize context with results ---
-    ctx.preprocessed_state = state
-    ctx.preprocessed_settings = resolved_settings
-    ctx.preprocessed_history = [record.model_dump() for record in state.history]
+    # --- Finalize context with results ---
+    ctx.preprocessed_state = state.model_dump() if hasattr(state, "model_dump") else state
+    ctx.preprocessed_settings = resolved_settings.model_dump() if hasattr(resolved_settings, "model_dump") else resolved_settings
+    ctx.preprocessed_history = [record.model_dump() for record in getattr(state, "history", [])]
     # Make `preprocessed_roi` reflect what is actually present in the
     # composed full image when possible so tests that compare the two see
     # identical data (handles grayscale->color conversions performed by

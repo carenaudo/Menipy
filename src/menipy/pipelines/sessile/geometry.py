@@ -69,9 +69,9 @@ def clip_contour_to_substrate(
         # Apex exactly on the line; default to keeping the current contour.
         return contour, None
 
-    epsilon = 1e-9 * np.linalg.norm(line_vec) + 1e-9
+    epsilon_base = 1e-9 * float(np.linalg.norm(line_vec)) + 1e-9
     # Tolerance scaled with substrate length (helps with pixel-scale geometry)
-    epsilon = max(1e-9, 1e-6 * np.linalg.norm(line_vec))
+    epsilon = float(max(1e-9, 1e-6 * float(np.linalg.norm(line_vec))))
 
     def is_inside(pt: np.ndarray) -> bool:
         """Check if inside.
@@ -119,7 +119,7 @@ def clip_contour_to_substrate(
 
     # Ensure refined_contour is always an (M, 2) float array (may be empty)
     if len(clipped) == 0:
-        refined_contour = np.empty((0, 2), dtype=float)
+        refined_contour: np.ndarray = np.empty((0, 2), dtype=float)
     else:
         refined_contour = np.asarray(clipped, dtype=float)
         if refined_contour.ndim == 1:
@@ -146,7 +146,7 @@ def clip_contour_to_substrate(
             unique_inters.sort(key=lambda p: float(p[0]))
         left_first = unique_inters[0]
         right_second = unique_inters[-1]
-        contact_pts = (tuple(map(float, left_first)), tuple(map(float, right_second)))
+        contact_pts = ((float(left_first[0]), float(left_first[1])), (float(right_second[0]), float(right_second[1])))
 
     return refined_contour, contact_pts
 

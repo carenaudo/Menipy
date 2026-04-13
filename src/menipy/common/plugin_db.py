@@ -5,15 +5,16 @@ import sqlite3
 from pathlib import Path
 from typing import Optional, Tuple
 
-# NOTE: relative imports come from your package layout; keep this file under menipy/common
-DB_DEFAULT = Path("./menipy_plugins.sqlite")
+DB_DEFAULT = Path(__file__).resolve().parents[2] / "data" / "menipy_plugins.sqlite"
 
 
 class PluginDB:
     def __init__(self, db_path: Path = DB_DEFAULT):
         self.db_path = Path(db_path)
+        self.init_schema()
 
     def connect(self) -> sqlite3.Connection:
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
         con = sqlite3.connect(self.db_path)
         con.execute("PRAGMA foreign_keys=ON;")
         return con
@@ -213,24 +214,13 @@ class PluginDB:
             ) = row
 
             def safe_json_load(json_str):
-                """Load safe json.
-
-                Parameters
-                ----------
-                json_str : type
-                Description.
-
-                Returns
-                -------
-                type
-                Description.
-                """
+                """Safely parse a JSON string, returning None on failure."""
                 try:
                     return json.loads(json_str) if json_str else None
                 except (json.JSONDecodeError, TypeError):
                     return None
 
-                return {
+            return {
                 "pipeline_name": pipeline_name,
                 "display_name": display_name,
                 "icon": icon,
@@ -238,7 +228,7 @@ class PluginDB:
                 "stages": safe_json_load(stages_json),
                 "calibration_params": safe_json_load(calibration_json),
                 "primary_metrics": safe_json_load(primary_metrics_json),
-                }
+            }
 
     def list_pipeline_metadata(self) -> list[dict]:
         """Get all pipeline UI metadata."""

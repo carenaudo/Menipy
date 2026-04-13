@@ -16,19 +16,22 @@ from menipy.pipelines.base import PipelineBase
 from menipy.models.context import Context
 from menipy.models.fit import FitConfig
 from menipy.common import solver as common_solver
+from menipy.common import overlay as ovl
 from menipy.common import registry
 from menipy.common.plugin_loader import get_solver
 from menipy.pipelines.utils import ensure_contour
 
+from menipy.math.young_laplace import young_laplace_ode
+
 # Get solver from registry (loaded at startup)
-young_laplace_sphere = get_solver("toy_young_laplace")
+young_laplace_default = get_solver("young_laplace_ode", fallback=young_laplace_ode)
 
 
 class SessilePipeline(PipelineBase):
     """Sessile drop pipeline (simplified): contour → baseline/axis/angles → toy Y–L radius fit."""
 
     name = "sessile"
-    solver_name: str = "toy_young_laplace"
+    solver_name: str = "young_laplace_ode"
     preprocessor_name: str | None = None
     edge_detector_name: str | None = None
 
@@ -206,24 +209,18 @@ class SessilePipeline(PipelineBase):
 
     def do_profile_fitting(self, ctx: Context) -> Optional[Context]:
         """Fit spherical Young-Laplace profile."""
-        integrator = get_solver(self.solver_name, fallback=young_laplace_sphere)
-        # Some solvers (e.g., young_laplace_adsa) require both R0 and beta.
-        if getattr(integrator, "__name__", "") == "young_laplace_adsa":
-            cfg = FitConfig(
-                x0=[20.0, 1.0],
-                bounds=([1.0, 1e-4], [2000.0, 200.0]),
-                loss="soft_l1",
-                distance="pointwise",
-                param_names=["R0_mm", "beta"],
-            )
-        else:
-            cfg = FitConfig(
-                x0=[20.0],
-                bounds=([1.0], [2000.0]),
-                loss="soft_l1",
-                distance="pointwise",
-                param_names=["R0_mm"],
-            )
+        integrator = get_solver(self.solver_name, fallback=young_laplace_default)
+        assert integrator is not None, f"Solver {self.solver_name} not found and no fallback available."
+        
+        # New ODE solver requires [R0_mm, beta]. beta ~ 0.5 for a typical drop
+        cfg = FitConfig(
+            x0=[20.0, 0.1],
+            bounds=([1.0, -10.0], [2000.0, 10.0]),
+            loss="soft_l1",
+            distance="pointwise",
+            param_names=["R0_mm", "beta"],
+        )
+        
         common_solver.run(ctx, integrator=integrator, config=cfg)
         return ctx
 
@@ -247,148 +244,77 @@ class SessilePipeline(PipelineBase):
         return ctx
 
     def do_overlay(self, ctx: Context) -> Optional[Context]:
-        if ctx.image is not None and ctx.contour is not None:
-            # Ensure image is loaded if it's a string path
-            if isinstance(ctx.image, str):
-                try:
-                    img = cv2.imread(ctx.image, cv2.IMREAD_COLOR)
-                    if img is None:
-                        logger.warning(
-                            "Could not load image from path in overlay: %s", ctx.image
-                        )
-                        return ctx
-                    ctx.image = img
-                except Exception as exc:
-                    logger.error(
-                        "Error loading image in overlay %s: %s", ctx.image, exc
-                    )
-                    return ctx
-            # Create a simple overlay with contour and geometry info
-            overlay_img = ctx.image.copy()
+        xy = ensure_contour(ctx)
+        
+        cmds = []
+        if len(xy) > 0:
+            cmds.append({
+                "type": "polyline",
+                "points": xy.tolist(),
+                "closed": False,
+                "color": "green",
+                "thickness": 2
+            })
+            
+        if hasattr(ctx, "measurement_sequence") and ctx.measurement_sequence is not None:
+            cmds.append({
+                "type": "text", 
+                "p": (10, 15), 
+                "text": f"Measurement #{ctx.measurement_sequence}",
+                "color": "white",
+                "scale": 0.7,
+                "thickness": 2
+            })
+            
+        if ctx.geometry:
+            geom = ctx.geometry
+            if geom.apex_xy:
+                cmds.append({
+                    "type": "circle",
+                    "center": geom.apex_xy,
+                    "radius": 5,
+                    "color": "blue",
+                    "thickness": -1
+                })
+            if geom.axis_x is not None:
+                # Need an arbitrary Y for a vertical line (overlay handles lines in px space)
+                shape = (1000, 1000)
+                if ctx.image is not None and hasattr(ctx.image, "shape"):
+                    shape = ctx.image.shape
+                cmds.append({
+                    "type": "line",
+                    "p1": (geom.axis_x, 0),
+                    "p2": (geom.axis_x, shape[0]),
+                    "color": "cyan",
+                    "thickness": 1
+                })
+            if geom.baseline_y is not None:
+                shape = (1000, 1000)
+                if ctx.image is not None and hasattr(ctx.image, "shape"):
+                    shape = ctx.image.shape
+                cmds.append({
+                    "type": "line",
+                    "p1": (0, geom.baseline_y),
+                    "p2": (shape[1], geom.baseline_y),
+                    "color": "yellow",
+                    "thickness": 1
+                })
+                
+        if ctx.results:
+            y_offset = 30
+            for key in ["diameter_mm", "height_mm", "contact_angle_deg", "volume_uL"]:
+                if key in ctx.results:
+                    val = ctx.results[key]
+                    if isinstance(val, (int, float)):
+                        cmds.append({
+                            "type": "text", 
+                            "p": (10, y_offset), 
+                            "text": f"{key.replace('_', ' ').title()}: {val:.2f}",
+                            "color": "white",
+                            "scale": 0.6,
+                            "thickness": 2
+                        })
+                        y_offset += 25
+                        
+        return ovl.run(ctx, commands=cmds, alpha=0.6)
 
-            # Validate contour data before drawing
-            if not hasattr(ctx.contour, "xy") or ctx.contour.xy is None:
-                logger.warning("Contour has no xy data, skipping overlay")
-                return ctx
-
-            contour_array = np.asarray(ctx.contour.xy, dtype=np.float64)
-
-            # Check if contour is valid
-            if contour_array.size == 0:
-                logger.warning("Contour is empty, skipping overlay")
-                return ctx
-
-            if contour_array.ndim != 2 or contour_array.shape[1] != 2:
-                logger.warning(
-                    f"Contour has invalid shape {contour_array.shape}, expected (N, 2)"
-                )
-                return ctx
-
-            # Convert to int32 and reshape for OpenCV
-            contour_xy = contour_array.astype(np.int32).reshape(-1, 1, 2)
-            cv2.drawContours(overlay_img, [contour_xy], -1, (0, 255, 0), 2)
-
-            # Draw measurement number if available
-            if (
-                hasattr(ctx, "measurement_sequence")
-                and ctx.measurement_sequence is not None
-            ):
-                measurement_text = f"Measurement #{ctx.measurement_sequence}"
-                # Add semi-transparent background for readability
-                (text_width, text_height), baseline = cv2.getTextSize(
-                    measurement_text, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2
-                )
-                cv2.rectangle(
-                    overlay_img,
-                    (5, 5),
-                    (15 + text_width, 15 + text_height),
-                    (0, 0, 0),
-                    -1,  # Filled rectangle
-                )
-                cv2.putText(
-                    overlay_img,
-                    measurement_text,
-                    (10, 10 + text_height),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.7,
-                    (255, 255, 255),
-                    2,
-                )
-
-            # Draw geometry info if available
-            if ctx.geometry:
-                geom = ctx.geometry
-                # Draw apex
-                if geom.apex_xy:
-                    cv2.circle(
-                        overlay_img,
-                        (int(geom.apex_xy[0]), int(geom.apex_xy[1])),
-                        5,
-                        (255, 0, 0),
-                        -1,
-                    )
-                # Draw axis line
-                if geom.axis_x is not None:
-                    cv2.line(
-                        overlay_img,
-                        (int(geom.axis_x), 0),
-                        (int(geom.axis_x), overlay_img.shape[0]),
-                        (255, 255, 0),
-                        1,
-                    )
-                # Draw baseline
-                if geom.baseline_y is not None:
-                    cv2.line(
-                        overlay_img,
-                        (0, int(geom.baseline_y)),
-                        (overlay_img.shape[1], int(geom.baseline_y)),
-                        (0, 255, 255),
-                        1,
-                    )
-
-            # Add text with results - only show a few key metrics
-            if ctx.results:
-                y_offset = 30
-                key_metrics = [
-                    "diameter_mm",
-                    "height_mm",
-                    "contact_angle_deg",
-                    "volume_uL",
-                ]
-                for key in key_metrics:
-                    if key in ctx.results:
-                        value = ctx.results[key]
-                        if isinstance(value, (int, float)):
-                            text = f"{key.replace('_', ' ').title()}: {value:.2f}"
-                            cv2.putText(
-                                overlay_img,
-                                text,
-                                (10, y_offset),
-                                cv2.FONT_HERSHEY_SIMPLEX,
-                                0.6,
-                                (255, 255, 255),
-                                2,
-                            )
-                            y_offset += 25
-                            if y_offset > overlay_img.shape[0] - 50:
-                                break
-
-            ctx.preview = overlay_img
-        return ctx
-
-    def do_validation(self, ctx: Context) -> Optional[Context]:
-        """do validation.
-
-        Parameters
-        ----------
-        ctx : type
-        Description.
-
-        Returns
-        -------
-        type
-        Description.
-        """
-        ok = bool(ctx.fit and ctx.fit.get("solver", {}).get("success", False))
-        ctx.qa = {"ok": ok}
-        return ctx

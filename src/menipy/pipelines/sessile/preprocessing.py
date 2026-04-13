@@ -107,16 +107,5 @@ def do_preprocessing(ctx: Context) -> Optional[Context]:
 
 # Backward-compatible alias expected by older tests
 def run(ctx: Context) -> Optional[Context]:
-    """Run.
-
-    Parameters
-    ----------
-    ctx : type
-        Description.
-
-    Returns
-    -------
-    type
-        Description.
-    """
+    """Run preprocessing."""
     return do_preprocessing(ctx)

@@ -119,7 +119,7 @@ class PluginSettingsWidget(QWidget):
             if val is None and field.default_factory:
                 try:
                     val = field.default_factory()
-                except:
+                except Exception:
                     pass
 
             # Create Widget
@@ -252,7 +252,7 @@ class PluginSettingsWidget(QWidget):
                 val = field.default
                 if val is None and field.default_factory:
                     try: val = field.default_factory()
-                    except: pass
+                    except Exception: pass
                 
                 # Set widget value
                 if isinstance(widget, (QSpinBox, QDoubleSpinBox)):

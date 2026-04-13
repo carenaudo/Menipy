@@ -21,7 +21,6 @@ from PySide6.QtGui import QImage, QColor
 from menipy.gui.controllers.camera_manager import CameraManager
 from menipy.gui.controllers.layout_manager import LayoutManager
 from menipy.gui.controllers.dialog_coordinator import DialogCoordinator
-from menipy.gui.controllers.dialog_coordinator import DialogCoordinator
 from menipy.gui.controllers.overlay_manager import OverlayManager
 from menipy.gui.controllers.image_manager import ImageManager
 
@@ -54,9 +53,6 @@ class MainController(QObject):
         self.preprocessing_ctrl = getattr(window, "preprocessing_ctrl", None)
         self.edge_detection_ctrl = getattr(window, "edge_detection_ctrl", None)
         self.camera_ctrl: CameraController | None = getattr(window, "camera_ctrl", None)
-        self.results_panel: ResultsPanel | None = getattr(
-            window, "results_panel_ctrl", None
-        )
         self.results_panel: ResultsPanel | None = getattr(
             window, "results_panel_ctrl", None
         )

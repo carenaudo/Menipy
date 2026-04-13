@@ -9,18 +9,22 @@ import logging
 
 from .registry import register_edge, register_solver
 from .plugin_db import PluginDB
+from ._module_loader import load_module_from_path
 
 
-def _load_module_from_path(path: Path, module_name: str):
-    spec = importlib.util.spec_from_file_location(module_name, str(path))
-    if spec is None or spec.loader is None:
-        raise ImportError(f"Cannot load spec for {path}")
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules[module_name] = mod
-    spec.loader.exec_module(
-        mod
-    )  # dynamic import from file :contentReference[oaicite:5]{index=5}
-    return mod
+_loaded = False
+
+
+def ensure_loaded(db: PluginDB | None = None) -> int:
+    """Ensure active plugins are loaded into registry (idempotent)."""
+    global _loaded
+    if _loaded:
+        return 0
+    if db is None:
+        db = PluginDB()
+    count = load_active_plugins(db)
+    _loaded = True
+    return count
 
 
 def _register_from_module(mod) -> None:
@@ -109,7 +113,7 @@ def load_active_plugins(db: PluginDB) -> int:
                 raise FileNotFoundError(str(p))
 
             mod_name = f"menipy_plugins.{name}" # Use consistent module naming
-            mod = _load_module_from_path(p, mod_name)
+            mod = load_module_from_path(p, mod_name)
             _register_from_module(mod)
             return True
         except Exception as exc:
@@ -188,8 +192,8 @@ def list_plugins_status(db: PluginDB) -> list[dict]:
             p = Path(file_path)
             if not p.exists():
                 raise FileNotFoundError(str(p))
-            mod_name = f"adsa_plugins.{kind}_{name}"
-            mod = _load_module_from_path(p, mod_name)
+            mod_name = f"menipy_plugins.{name}"
+            mod = load_module_from_path(p, mod_name)
             # simple sanity: must expose at least one of the expected symbols
             ok = any(
                 hasattr(mod, k)

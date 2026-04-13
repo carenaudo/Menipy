@@ -19,7 +19,7 @@ from menipy.models.geometry import Contour, Geometry
 from menipy.common import edge_detection as edged
 from menipy.common import overlay as ovl
 from menipy.common import solver as common_solver
-from menipy.common.plugins import _load_module_from_path
+from menipy.common._module_loader import load_module_from_path
 
 # Make common utilities available to subclasses
 __all__ = [
@@ -55,7 +55,7 @@ class PipelineBase:
     # Common plugin setup
     _repo_root: ClassVar[Path] = Path(__file__).resolve().parents[3]
     _toy_path: ClassVar[Path] = _repo_root / "plugins" / "toy_young_laplace.py"
-    _toy_mod = _load_module_from_path(_toy_path, "adsa_plugins.toy_young_laplace")
+    _toy_mod = load_module_from_path(_toy_path, "menipy_plugins.toy_young_laplace")
     young_laplace_sphere = getattr(_toy_mod, "toy_young_laplace")
     DEFAULT_SEQ = [
         ("acquisition", None),
@@ -203,6 +203,8 @@ class PipelineBase:
            - 'errors': list - fatal issues
            - 'scores': dict - quality scores per check
         """
+        from menipy.common.validation import validate
+        ctx.qa = validate(ctx)
         return ctx
 
     # ---- Backward compatibility aliases (deprecated) ----
@@ -513,22 +515,7 @@ class PipelineBase:
 
         self.logger.info("Starting pipeline: %s", self.name)
 
-        stages: list[tuple[str, Callable[[Context], Optional[Context]]]] = [
-            ("acquisition", self.do_acquisition),
-            ("preprocessing", self.do_preprocessing),
-            ("feature_detection", self.do_feature_detection),
-            ("contour_extraction", self.do_contour_extraction),
-            ("contour_refinement", self.do_contour_refinement),
-            ("calibration", self.do_calibration),
-            ("geometric_features", self.do_geometric_features),
-            ("physics", self.do_physics),
-            ("profile_fitting", self.do_profile_fitting),
-            ("compute_metrics", self.do_compute_metrics),
-            ("overlay", self.do_overlay),
-            ("validation", self.do_validation),
-        ]
-
-        for name, fn in stages:
+        for name, fn in self.build_plan():
             ctx = self._call_stage(ctx, name, fn)
 
         self.logger.info("Finished pipeline: %s", self.name)

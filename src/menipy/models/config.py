@@ -199,7 +199,7 @@ class EdgeDetectionSettings(BaseModel):
     method: Literal[
         "canny", "sobel", "scharr", "laplacian", "threshold", "active_contour",
         "otsu", "adaptive", "log", "improved_snake"
-    ] = Field(default="canny", description="Edge detection algorithm to use")
+    ] = Field(default="otsu", description="Edge detection algorithm to use")
     # Common preprocessing for edge detection
     gaussian_blur_before: bool = Field(
         default=True, description="Apply Gaussian blur before edge detection"

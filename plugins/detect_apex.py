@@ -197,7 +197,7 @@ def detect_apex_auto(
     detect_apex_pendant : Detects apex for pendant drops
     detect_apex_sessile : Detects apex for sessile drops
     """
-    if pipeline.lower() == "pendant":
+    if pipeline.lower() in ("pendant", "captive_bubble"):
         return detect_apex_pendant(drop_contour)
     else:
         return detect_apex_sessile(drop_contour, **kwargs)
@@ -206,4 +206,5 @@ def detect_apex_auto(
 # Register plugins
 register_apex_detector("pendant", detect_apex_pendant)
 register_apex_detector("sessile", detect_apex_sessile)
+register_apex_detector("captive_bubble", detect_apex_pendant)
 register_apex_detector("auto", detect_apex_auto)
