@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-import numpy as np
 from typing import Any
+
+import numpy as np
 from numpy.typing import NDArray
+from scipy.integrate import trapezoid
 
 
 # Jennings–Pallas cubic correlation -----------------------------------------
@@ -59,6 +61,6 @@ def volume_from_contour(contour_mm: NDArray[Any]) -> float:
     idx = np.argsort(y)
     y_sorted = y[idx]
     r_sorted = r[idx]
-    trapz_val = np.trapz(r_sorted**2, y_sorted)
+    trapz_val = trapezoid(r_sorted**2, y_sorted)
     vol = float(np.pi) * float(trapz_val)  # m^3
     return float(vol * 1e9)

@@ -116,6 +116,24 @@ class PipelineController:
         }
         return payload
 
+    def _calibration_result_payload(self) -> Dict[str, Any]:
+        result = getattr(self.window, "_last_calibration_result", None)
+        if result is None:
+            return {}
+
+        payload: Dict[str, Any] = {}
+        if getattr(result, "roi_rect", None):
+            payload["roi"] = result.roi_rect
+        if getattr(result, "needle_rect", None):
+            payload["needle_rect"] = result.needle_rect
+        if getattr(result, "drop_contour", None) is not None:
+            payload["drop_contour"] = result.drop_contour
+        if getattr(result, "contact_points", None):
+            payload["contact_points"] = result.contact_points
+        if getattr(result, "apex_point", None):
+            payload["apex_point"] = result.apex_point
+        return payload
+
     def _should_check_acquisition(self, stages: Optional[list[str]]) -> bool:
         if not stages:
             return True
@@ -382,6 +400,9 @@ class PipelineController:
         # Collect settings from dedicated controllers
         overlays.update(self._preprocessing_payload())
         overlays.update(self._edge_detection_payload())
+        calibration_payload = self._calibration_result_payload()
+        for key, value in calibration_payload.items():
+            overlays.setdefault(key, value)
 
         image = params.get("image")
         cam_id = params.get("cam_id")
@@ -473,6 +494,9 @@ class PipelineController:
 
         overlays.update(self._preprocessing_payload())
         overlays.update(self._edge_detection_payload())
+        calibration_payload = self._calibration_result_payload()
+        for key, value in calibration_payload.items():
+            overlays.setdefault(key, value)
 
         run_kwargs = dict(overlays)
         if image is not None:

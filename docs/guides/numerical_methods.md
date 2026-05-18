@@ -18,7 +18,8 @@ This document outlines the algorithms and numerical techniques for solving and f
 ## 3. Numerical Integration for Volume
 
 - **Rotational Volume**  
-  Discrete trapezoidal integration of the profile:  
+  Discrete trapezoidal integration of the profile is implemented with
+  `scipy.integrate.trapezoid`:  
   %%
     V \approx \sum_{i} \pi\,r(y_i)^2\,\Delta y
   %%
@@ -54,3 +55,14 @@ This document outlines the algorithms and numerical techniques for solving and f
    Use `scipy.optimize.minimize` (e.g. Nelder–Mead) on (γ, ΔP) to drive E→min.  
 5. **Generate Predicted Curve**  
    Once optimal, compute (r(z)) over full z range and pass to GUI for plotting.
+
+## 6. Current Library-Backed Numerical Swaps
+
+- Normal-projection residual matching in the common solver uses
+  `scipy.spatial.cKDTree` for nearest-neighbor lookup while preserving the
+  previous residual shape and sign convention.
+- Volume and surface-area integrations use `scipy.integrate.trapezoid` instead
+  of direct NumPy trapezoid calls.
+- Young-Laplace model integration and least-squares optimization already use
+  SciPy (`solve_ivp` and `least_squares`). Circle/contact-angle fitting,
+  baseline detection, and most contour heuristics remain custom.

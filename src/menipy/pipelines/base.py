@@ -306,6 +306,8 @@ class PipelineBase:
         # Also accept roi_rect as alias for roi
         if "roi_rect" in kwargs and kwargs["roi_rect"] is not None:
             ctx.roi = kwargs["roi_rect"]
+        if "detected_roi" in kwargs and kwargs["detected_roi"] is not None:
+            ctx.detected_roi = kwargs["detected_roi"]
         if "needle_rect" in kwargs and kwargs["needle_rect"] is not None:
             ctx.needle_rect = kwargs["needle_rect"]
         if "contact_line" in kwargs and kwargs["contact_line"] is not None:
@@ -315,8 +317,12 @@ class PipelineBase:
             ctx.substrate_line = kwargs["substrate_line"]
         if "drop_contour" in kwargs and kwargs["drop_contour"] is not None:
             ctx.drop_contour = kwargs["drop_contour"]
+        if "detected_contour" in kwargs and kwargs["detected_contour"] is not None:
+            ctx.detected_contour = kwargs["detected_contour"]
         if "contact_points" in kwargs and kwargs["contact_points"] is not None:
             ctx.contact_points = kwargs["contact_points"]
+        if "apex_point" in kwargs and kwargs["apex_point"] is not None:
+            ctx.apex_point = kwargs["apex_point"]
         # Scale factor (pixels per mm)
         if "px_per_mm" in kwargs and kwargs["px_per_mm"] is not None:
             ctx.px_per_mm = kwargs["px_per_mm"]
@@ -350,7 +356,8 @@ class PipelineBase:
         # Store any other kwargs into context (e.g. auto_detect_features)
         known_keys = {
             "image", "image_path", "camera", "cam_id", "frames", "roi", "roi_rect",
-            "needle_rect", "contact_line", "substrate_line", "drop_contour", "contact_points",
+            "detected_roi", "needle_rect", "contact_line", "substrate_line",
+            "drop_contour", "detected_contour", "contact_points", "apex_point",
             "px_per_mm", "needle_diameter_mm", "calibration_params",
             "preprocessing_settings", "edge_detection_settings",
             "measurement_id", "measurement_sequence", "scale", "physics"

@@ -1,7 +1,9 @@
 """Additional droplet property calculations (Worthington number, curvature, surface area, etc.)."""
 
-import numpy as np
 import math
+
+import numpy as np
+from scipy.integrate import trapezoid
 
 
 # ---------- 1. Worthington number ---------------------------------
@@ -48,7 +50,7 @@ def surface_area_mm2(contour_px: np.ndarray, px_per_mm: float) -> float:
         
     dr_dz: np.ndarray = np.gradient(r_mm, z_mm, edge_order=2)
     integrand: np.ndarray = np.asarray(r_mm * np.sqrt(1.0 + dr_dz**2), dtype=float)
-    trapz_val = float(np.trapz(integrand, z_mm))
+    trapz_val = float(trapezoid(integrand, z_mm))
     A_mm2 = 2.0 * math.pi * trapz_val
     return float(A_mm2)
 

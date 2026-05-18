@@ -7,7 +7,9 @@ Module implementation."""
 from __future__ import annotations
 
 from typing import Optional
+
 import numpy as np
+from scipy.integrate import trapezoid
 
 from menipy.pipelines.base import PipelineBase
 from menipy.models.context import Context
@@ -42,6 +44,84 @@ def _calc_surface_tension_fallback(
 calculate_surface_tension = get_solver(
     "calculate_surface_tension", fallback=_calc_surface_tension_fallback
 )
+
+
+def _contour_to_xy(contour: object) -> np.ndarray:
+    """Normalize OpenCV and plain contours to an ``(N, 2)`` float array."""
+    xy = np.asarray(contour, dtype=float)
+    if xy.ndim == 3 and xy.shape[-1] == 2:
+        xy = xy.reshape(-1, 2)
+    elif xy.ndim == 2 and xy.shape[1] >= 2:
+        xy = xy[:, :2]
+    else:
+        xy = xy.reshape(-1, 2)
+    return np.asarray(xy, dtype=float)
+
+
+def _clip_contour_at_pendant_contacts(
+    xy: np.ndarray, contact_points: object | None
+) -> np.ndarray:
+    """Remove needle-shaft contour points above the pendant contact level."""
+    if contact_points is None:
+        return xy
+
+    try:
+        contacts = np.asarray(contact_points, dtype=float).reshape(-1, 2)
+    except Exception:
+        return xy
+
+    if contacts.shape[0] < 2 or xy.size == 0:
+        return xy
+
+    contact_y = float(np.min(contacts[:2, 1]))
+    clipped = xy[xy[:, 1] >= contact_y]
+    if clipped.shape[0] < 3:
+        return xy
+
+    return np.vstack([contacts[:2], clipped])
+
+
+def _pendant_max_width(
+    xy: np.ndarray, contact_points: object | None = None
+) -> tuple[float, tuple[tuple[int, int], tuple[int, int]]]:
+    """Return maximum horizontal contour width in pixels and its line."""
+    if xy.size == 0:
+        return 0.0, ((0, 0), (0, 0))
+
+    measured = xy
+    if contact_points is not None:
+        try:
+            contacts = np.asarray(contact_points, dtype=float).reshape(-1, 2)
+            if contacts.shape[0] >= 2:
+                contact_y = float(np.min(contacts[:2, 1]))
+                candidate = xy[xy[:, 1] >= contact_y]
+                if candidate.shape[0] >= 2:
+                    measured = candidate
+        except Exception:
+            measured = xy
+
+    row_keys = np.rint(measured[:, 1]).astype(int)
+    best_width = 0.0
+    best_line = ((0, 0), (0, 0))
+    for row in np.unique(row_keys):
+        xs = measured[row_keys == row, 0]
+        if xs.size < 2:
+            continue
+        width = float(np.max(xs) - np.min(xs))
+        if width > best_width:
+            x_min = float(np.min(xs))
+            x_max = float(np.max(xs))
+            best_width = width
+            best_line = ((int(round(x_min)), int(row)), (int(round(x_max)), int(row)))
+
+    if best_width <= 0.0 and measured.shape[0] >= 2:
+        x_min = float(np.min(measured[:, 0]))
+        x_max = float(np.max(measured[:, 0]))
+        y_mid = int(round(float(np.median(measured[:, 1]))))
+        best_width = x_max - x_min
+        best_line = ((int(round(x_min)), y_mid), (int(round(x_max)), y_mid))
+
+    return best_width, best_line
 
 
 class PendantPipeline(PipelineBase):
@@ -81,6 +161,19 @@ class PendantPipeline(PipelineBase):
 
     def do_contour_extraction(self, ctx: Context) -> Optional[Context]:
         """Extract droplet contour using edge detection."""
+        detected = getattr(ctx, "drop_contour", None)
+        if detected is None:
+            detected = getattr(ctx, "detected_contour", None)
+        if detected is not None:
+            from menipy.models.geometry import Contour
+
+            xy = _contour_to_xy(detected)
+            xy = _clip_contour_at_pendant_contacts(
+                xy, getattr(ctx, "contact_points", None)
+            )
+            ctx.contour = Contour(xy=xy)
+            return ctx
+
         if self.edge_detector_name and self.edge_detector_name in registry.EDGE_DETECTORS:
             fn = registry.EDGE_DETECTORS[self.edge_detector_name]
             return fn(ctx) or ctx
@@ -100,54 +193,33 @@ class PendantPipeline(PipelineBase):
         return ctx
 
     def do_calibration(self, ctx: Context) -> Optional[Context]:
-        """Calculate px_per_mm from needle calibration and scale contour to mm."""
-        # Check if scaling already set
-        if ctx.scale and ctx.scale.get("px_per_mm", 1.0) != 1.0:
+        """Calculate px_per_mm from needle calibration."""
+        if ctx.scale and ctx.scale.get("px_per_mm", 0.0) > 0:
             return ctx
 
-        # Try to calculate px_per_mm from needle calibration
         needle_diameter_mm = getattr(ctx, "needle_diameter_mm", None)
         needle_rect = getattr(ctx, "needle_rect", None)
 
-        px_per_mm = 1.0  # Default (no scaling)
+        px_per_mm = float(getattr(ctx, "px_per_mm", 0.0) or 0.0)
 
-        if needle_diameter_mm and needle_rect:
+        if px_per_mm <= 0 and needle_diameter_mm and needle_rect:
             # needle_rect is typically (x, y, width, height) in pixels
             try:
                 if hasattr(needle_rect, "__iter__") and len(needle_rect) >= 3:
                     needle_width_px = needle_rect[2]  # width in pixels
                     if needle_width_px > 0 and needle_diameter_mm > 0:
-                        px_per_mm = needle_width_px / needle_diameter_mm
+                        px_per_mm = float(needle_width_px) / float(needle_diameter_mm)
                         self.logger.info(
                             f"Calibration: needle {needle_width_px}px = {needle_diameter_mm}mm → {px_per_mm:.2f} px/mm"
                         )
             except Exception as e:
                 self.logger.warning(f"Could not calculate scale from needle: {e}")
-        elif needle_diameter_mm:
+        elif px_per_mm <= 0 and needle_diameter_mm:
             self.logger.warning(
                 f"needle_diameter_mm={needle_diameter_mm} but no needle_rect provided for calibration"
             )
 
-        ctx.scale = {"px_per_mm": px_per_mm}
-
-        # Scale the contour to mm if we have valid calibration
-        if px_per_mm != 1.0 and ctx.contour and hasattr(ctx.contour, "xy"):
-            from menipy.models.geometry import Contour
-
-            xy_px = np.asarray(ctx.contour.xy, dtype=float)
-            xy_mm = xy_px / px_per_mm
-            ctx.contour = Contour(xy=xy_mm.tolist())
-            self.logger.info(
-                f"Scaled contour from pixels to mm (factor: 1/{px_per_mm:.2f})"
-            )
-
-            # Also update geometry apex_xy if present
-            if ctx.geometry and ctx.geometry.apex_xy:
-                apex_x, apex_y = ctx.geometry.apex_xy
-                ctx.geometry.apex_xy = (apex_x / px_per_mm, apex_y / px_per_mm)
-                if ctx.geometry.axis_x:
-                    ctx.geometry.axis_x = ctx.geometry.axis_x / px_per_mm
-
+        ctx.scale = {"px_per_mm": px_per_mm if px_per_mm > 0 else 1.0}
         return ctx
 
     def do_physics(self, ctx: Context) -> Optional[Context]:
@@ -195,9 +267,13 @@ class PendantPipeline(PipelineBase):
             height_px = np.max(y) - np.min(y)
             results["height_mm"] = height_px / px_per_mm
 
-            # 4. Diameter (mm) - derived from R0 fit for consistency with spherical model
-            if "r0_mm" in results:
-                results["diameter_mm"] = 2 * float(results["r0_mm"])
+            # 4. Diameter (mm) from calibrated contour width, not fitted R0.
+            diameter_px, diameter_line = _pendant_max_width(
+                xy, getattr(ctx, "contact_points", None)
+            )
+            results["diameter_px"] = diameter_px
+            results["diameter_mm"] = diameter_px / px_per_mm if px_per_mm > 0 else 0.0
+            results["diameter_line"] = diameter_line
 
             # 5. Volume (uL) - Disk integration method
             axis_x = ctx.geometry.axis_x if ctx.geometry else np.mean(x)
@@ -207,7 +283,7 @@ class PendantPipeline(PipelineBase):
             y_sorted = y[sort_idx]
             r_sorted = r_px[sort_idx]
 
-            trapz_val = np.trapz(r_sorted**2, y_sorted)
+            trapz_val = trapezoid(r_sorted**2, y_sorted)
             vol_px3: float = float(np.pi) * float(trapz_val)
             results["volume_uL"] = float(abs(vol_px3)) / float(px_per_mm**3)
 
@@ -295,5 +371,3 @@ class PendantPipeline(PipelineBase):
         # Store commands for UI-side rendering (e.g., Qt painter toggles)
         ctx.overlay_commands = cmds
         return ovl.run(ctx, commands=cmds, alpha=0.6)
-
-

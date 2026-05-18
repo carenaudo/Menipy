@@ -56,6 +56,7 @@ class MainController(QObject):
         self.results_panel: ResultsPanel | None = getattr(
             window, "results_panel_ctrl", None
         )
+        self._last_calibration_result = None
 
         # Initialize managers
         self.camera_manager = CameraManager(
@@ -272,6 +273,8 @@ class MainController(QObject):
             from menipy.common.auto_calibrator import CalibrationResult
             if not isinstance(result, CalibrationResult):
                 return
+            self._last_calibration_result = result
+            setattr(self.window, "_last_calibration_result", result)
             
             # Delegate drawing to OverlayManager
             self.overlay_manager.draw_calibration_result(result)

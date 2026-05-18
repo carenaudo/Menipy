@@ -2,15 +2,19 @@
 """Solver stage utilities for fitting physical models to contours."""
 from __future__ import annotations
 
-from typing import Callable
-from menipy.models.fit import FitConfig
 import math
+from typing import Callable
+
 import numpy as np
+
+from menipy.models.fit import FitConfig
 
 try:
     from scipy.optimize import least_squares  # recommended backend
+    from scipy.spatial import cKDTree
 except Exception:  # pragma: no cover
     least_squares = None  # allow importing without SciPy; fail nicely at runtime
+    cKDTree = None
 
 
 def _residuals_pointwise(obs_xy: np.ndarray, model_xy: np.ndarray) -> np.ndarray:
@@ -52,17 +56,11 @@ def _residuals_normal_projection(
     t /= np.linalg.norm(t, axis=1, keepdims=True) + 1e-12
     n = np.column_stack([-t[:, 1], t[:, 0]])  # rotate tangents to get normals
 
-    # simple nearest-neighbor from obs -> model indices
-    # (KD-tree would be faster; linear scan is fine for 200–800 samples)
-    def nn_idx(p):
-        d = np.sum((model_xy - p) ** 2, axis=1)
-        return int(np.argmin(d))
+    if cKDTree is None:
+        raise RuntimeError("SciPy is required for normal-projection residuals.")
 
-    res = []
-    for p in obs_xy:
-        j = nn_idx(p)
-        res.append(np.dot((p - model_xy[j]), n[j]))
-    return np.asarray(res, dtype=float)
+    _, idx = cKDTree(model_xy).query(obs_xy)
+    return np.einsum("ij,ij->i", obs_xy - model_xy[idx], n[idx]).astype(float)
 
 
 def run(

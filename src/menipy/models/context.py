@@ -32,6 +32,8 @@ class Context(BaseModel):
 
     # Edge detection
     contour: Optional[Contour] = None
+    detected_contour: Optional[Any] = None
+    drop_contour: Optional[Any] = None
     contours_by_frame: list[Contour] = Field(default_factory=list)
     fluid_interface_contour: Optional[Contour] = None
     solid_interface_contour: Optional[Contour] = None
@@ -40,6 +42,7 @@ class Context(BaseModel):
     detected_geometry: Optional[Geometry] = None
     geometry: Optional[Geometry] = None  # Current geometric analysis results
     scale: dict[str, float] = Field(default_factory=dict)
+    px_per_mm: Optional[float] = None
 
     # Solver / optimization / outputs
     fit_results: Optional[Fit] = None
@@ -77,6 +80,7 @@ class Context(BaseModel):
 
     # Geometric regions and overlays
     roi: Optional[Tuple[int, int, int, int]] = None  # (x, y, width, height)
+    detected_roi: Optional[Tuple[int, int, int, int]] = None
     needle_rect: Optional[Tuple[int, int, int, int]] = None  # (x, y, width, height)
     contact_line: Optional[Tuple[Tuple[int, int], Tuple[int, int]]] = (
         None  # ((x1,y1), (x2,y2))
@@ -98,6 +102,7 @@ class Context(BaseModel):
     
     # Specific algorithm variables (found during refactor)
     contact_points: Optional[Tuple[Tuple[int, int], Tuple[int, int]]] = None
+    apex_point: Optional[Tuple[int, int]] = None
     r_eq_series_px: Optional[list] = None
     centers_px: Optional[list] = None
     r0_eq_px: Optional[float] = None
