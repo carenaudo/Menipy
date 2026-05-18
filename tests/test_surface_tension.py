@@ -29,6 +29,14 @@ def test_surface_tension_and_bond_number():
     assert bo > 0
 
 
+def test_surface_tension_returns_newtons_per_metre_for_mn_conversion():
+    beta = jennings_pallas_beta(1.0)
+    gamma_n_m = surface_tension(998.8, 9.80665, 1.0, beta)
+    gamma_mn_m = gamma_n_m * 1000.0
+    assert gamma_n_m == pytest.approx(0.0135592573)
+    assert gamma_mn_m == pytest.approx(13.5592573)
+
+
 def test_volume_from_contour_circle():
     R = 1.0
     y = np.linspace(0, 2 * R, 100)

@@ -10,7 +10,13 @@ This document outlines the algorithms and numerical techniques for solving and f
 ## 2. Parameter Optimization
 
 - **Surface Tension Fitting**  
-  The current implementation uses a direct estimation method based on the apex curvature and maximum droplet diameter. A full optimization routine to fit the entire contour by minimizing the mean square distance (e.g., using `scipy.optimize.minimize`) is a planned enhancement.
+  Pendant drops first compute a calibrated geometric Jennings-Pallas estimate
+  from apex curvature and maximum droplet diameter. The pendant pipeline then
+  runs a strict Young-Laplace fit in millimetres with
+  `scipy.optimize.least_squares`; if residual and status gates pass, this
+  strict fit populates the public surface-tension result. If it fails, the
+  geometric estimate remains public and the strict fit is retained as
+  diagnostics.
 - **Curve Fitting**  
   - **Circle**: Least-squares fitting is used to determine apex curvature.
   - **Spline Fitting**: Local splines are used for tangent estimation at the contact points, which is more robust than simple polynomial regression.
@@ -34,27 +40,25 @@ This document outlines the algorithms and numerical techniques for solving and f
 - While primarily in the image-processing pipeline, certain numerical cleanup (e.g., area filtering of small contours) ensures robust input to model fitting. :contentReference[oaicite:9]{index=9}
 
 
-## 5. Planned: Contour-Driven Y–L Fitting Algorithm
+## 5. Pendant Contour-Driven Y-L Fitting Algorithm
 
-*This section describes the target algorithm for a full Axisymmetric Drop Shape Analysis (ADSA) implementation, which is not yet fully integrated into the main analysis pipeline.*
-
-1. **Resample & Smooth**  
-   Uniformly sample the detected contour in arc-length and apply a small moving-average to reduce noise.  
+1. **Calibrate Coordinates**
+   Convert clipped pendant contour pixels into apex-centered millimetres with
+   `x_mm = (x_px - axis_x) / px_per_mm` and
+   `z_mm = (apex_y - y_px) / px_per_mm`.
 2. **Solve Y-L ODE**  
-   For a given (γ, ΔP), integrate  
-   %%
-     \frac{dψ}{ds} = \Deltaρ\,g\,r(s)\,\cosψ(s) - \frac{ΔP}{γ}
-   %%
-   with initial condition at the apex.  
+   Integrate the dimensionless axisymmetric Young-Laplace system from the apex
+   using `scipy.integrate.solve_ivp`, then scale by fitted `r0_mm`.
 3. **Distance Metric**  
-   Compute  
-   %%
-     E = \sum_i \bigl\|\,\bigl(r_i,z_i\bigr) - \bigl(r_{\rm model}(s_i),z_{\rm model}(s_i)\bigr)\,\bigr\|^2
-   %%
+   Compare the observed calibrated contour to the model profile with KD-tree
+   nearest-neighbor lookup and normal-projection residuals in millimetres.
 4. **Parameter Optimization**  
-   Use `scipy.optimize.minimize` (e.g. Nelder–Mead) on (γ, ΔP) to drive E→min.  
-5. **Generate Predicted Curve**  
-   Once optimal, compute (r(z)) over full z range and pass to GUI for plotting.
+   Fit `[r0_mm, beta, x_offset_mm, z_offset_mm]` with
+   `scipy.optimize.least_squares`, seeded from the Jennings-Pallas estimate.
+5. **Reporting Gate**
+   Use strict Young-Laplace values publicly only when the optimizer succeeds,
+   parameters are finite and not pinned to bounds, model height covers the
+   observed contour, and `rmse_mm <= max(0.05, 0.03 * diameter_mm)`.
 
 ## 6. Current Library-Backed Numerical Swaps
 

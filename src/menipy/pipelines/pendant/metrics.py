@@ -88,7 +88,10 @@ def compute_pendant_metrics(
                     # 3. Calculate beta using the Jennings-Pallas correlation
                     beta = jennings_pallas_beta(s1)
                     # 4. Calculate surface tension
-                    gamma_mN_m = surface_tension(delta_rho, g, r0_px / px_per_mm, beta)
+                    gamma_mN_m = (
+                        surface_tension(delta_rho, g, r0_px / px_per_mm, beta)
+                        * 1000.0
+                    )
 
         # Calculate volume and surface area by solid of revolution around the apex's vertical axis.
         if apex is not None and px_per_mm > 0:
@@ -113,6 +116,7 @@ def compute_pendant_metrics(
         "height_mm": height_mm,
         "volume_uL": volume_uL,
         "surface_tension_mN_m": gamma_mN_m,
+        "surface_tension_method": "jennings_pallas_geometric",
         "beta": beta,
         "s1": s1,
         "r0_mm": r0_px / px_per_mm if px_per_mm > 0 else 0.0,

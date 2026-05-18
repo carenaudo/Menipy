@@ -13,37 +13,18 @@ from scipy.integrate import trapezoid
 
 from menipy.pipelines.base import PipelineBase
 from menipy.models.context import Context
-from menipy.models.fit import FitConfig
-from menipy.common import solver as common_solver
+from menipy.common.geometry import fit_circle
 from menipy.common import overlay as ovl
 from menipy.common import registry
-from menipy.common.plugin_loader import get_solver
-from menipy.pipelines.utils import ensure_contour
-
-from menipy.math.young_laplace import young_laplace_ode
-
-# Get solvers from registry (loaded at startup)
-young_laplace_default = get_solver("young_laplace_ode", fallback=young_laplace_ode)
-
-
-def _calc_surface_tension_fallback(
-    R0_mm: float, beta: float, delta_rho_kg_m3: float, g: float = 9.80665
-) -> float:
-    """
-    Local fallback if plugin solver isn't registered.
-    gamma = (delta_rho * g * R0^2) / beta
-    Returns mN/m.
-    """
-    if abs(beta) < 1e-10:
-        return float("nan")
-    R0_m = R0_mm / 1000.0
-    gamma_N_per_m = (delta_rho_kg_m3 * g * (R0_m**2)) / beta
-    return gamma_N_per_m * 1000.0
-
-
-calculate_surface_tension = get_solver(
-    "calculate_surface_tension", fallback=_calc_surface_tension_fallback
+from menipy.models.surface_tension import (
+    jennings_pallas_beta,
+    surface_tension as surface_tension_n_per_m,
 )
+from menipy.pipelines.pendant.strict_young_laplace import (
+    PendantStrictFitInput,
+    fit_pendant_young_laplace_strict,
+)
+from menipy.pipelines.utils import ensure_contour
 
 
 def _contour_to_xy(contour: object) -> np.ndarray:
@@ -122,6 +103,37 @@ def _pendant_max_width(
         best_line = ((int(round(x_min)), y_mid), (int(round(x_max)), y_mid))
 
     return best_width, best_line
+
+
+def _pendant_apex_radius_px(
+    xy: np.ndarray, apex_xy: tuple[float, float] | None, window_px: float = 20.0
+) -> float:
+    """Fit a local circle around the pendant apex and return its pixel radius."""
+    if apex_xy is None or xy.size == 0:
+        return 0.0
+
+    apex_y = float(apex_xy[1])
+    apex_pts = xy[(xy[:, 1] - apex_y) > -float(window_px)]
+    if apex_pts.shape[0] < 3:
+        return 0.0
+
+    _, radius = fit_circle(apex_pts)
+    if not np.isfinite(radius) or radius <= 0:
+        return 0.0
+    return float(radius)
+
+
+def _profile_fit_unreliable(fit: dict, rmse_threshold_px: float = 25.0) -> bool:
+    """Return True when the profile fit residual is too large for reporting."""
+    residuals = fit.get("residuals") or {}
+    rmse = residuals.get("rmse")
+    if rmse is None:
+        return False
+    try:
+        rmse_value = float(rmse)
+    except (TypeError, ValueError):
+        return False
+    return np.isfinite(rmse_value) and rmse_value > rmse_threshold_px
 
 
 class PendantPipeline(PipelineBase):
@@ -227,19 +239,67 @@ class PendantPipeline(PipelineBase):
         return ctx
 
     def do_profile_fitting(self, ctx: Context) -> Optional[Context]:
-        """Fit Young-Laplace profile to extract R0 and beta."""
-        # Fit both apex radius (R0) and Bond number (beta)
-        # beta = (delta_rho * g * R0^2) / gamma
-        cfg = FitConfig(
-            x0=[5.0, 0.3],  # Initial guess: R0=5mm, beta=0.3
-            bounds=([0.1, 0.01], [50.0, 2.0]),  # R0: 0.1-50mm, beta: 0.01-2.0
-            loss="soft_l1",
-            distance="pointwise",
-            param_names=["r0_mm", "beta"],
-        )
-        integrator = get_solver(self.solver_name, fallback=young_laplace_default)
-        assert integrator is not None, f"Solver {self.solver_name} not found and no fallback available."
-        common_solver.run(ctx, integrator=integrator, config=cfg)
+        """Fit a calibrated Young-Laplace profile to extract R0 and beta."""
+        try:
+            xy = ensure_contour(ctx)
+            scale = ctx.scale or {}
+            px_per_mm = float(scale.get("px_per_mm", 0.0))
+            if px_per_mm <= 0:
+                raise ValueError("missing positive px_per_mm calibration")
+
+            if ctx.geometry is None or ctx.geometry.axis_x is None:
+                self.do_geometric_features(ctx)
+            if ctx.geometry is None or ctx.geometry.axis_x is None:
+                raise ValueError("missing pendant geometry")
+
+            apex_xy = ctx.geometry.apex_xy
+            if apex_xy is None:
+                apex_i = int(np.argmax(xy[:, 1]))
+                apex_xy = (float(xy[apex_i, 0]), float(xy[apex_i, 1]))
+
+            diameter_px, _ = _pendant_max_width(xy, getattr(ctx, "contact_points", None))
+            r0_seed_px = _pendant_apex_radius_px(xy, apex_xy)
+            r0_seed_mm = r0_seed_px / px_per_mm if r0_seed_px > 0 else 0.0
+            if r0_seed_mm <= 0:
+                r0_seed_mm = max((diameter_px / px_per_mm) / 4.0, 0.1)
+
+            beta_seed = 0.3
+            if diameter_px > 0 and r0_seed_px > 0:
+                beta_seed = float(jennings_pallas_beta(diameter_px / (2.0 * r0_seed_px)))
+
+            ctx.fit = fit_pendant_young_laplace_strict(
+                PendantStrictFitInput(
+                    contour_px=xy,
+                    axis_x_px=float(ctx.geometry.axis_x),
+                    apex_y_px=float(apex_xy[1]),
+                    px_per_mm=px_per_mm,
+                    r0_seed_mm=r0_seed_mm,
+                    beta_seed=beta_seed,
+                    physics=ctx.physics or {},
+                )
+            )
+        except Exception as exc:
+            ctx.fit = {
+                "params": [],
+                "param_names": ["r0_mm", "beta", "x_offset_mm", "z_offset_mm"],
+                "residuals": {
+                    "rmse": float("nan"),
+                    "max_abs": float("nan"),
+                    "dof": 0,
+                    "r": [],
+                    "units": "mm",
+                },
+                "solver": {
+                    "backend": "scipy.least_squares",
+                    "method": "trf",
+                    "iterations": 0,
+                    "success": False,
+                    "message": str(exc),
+                },
+                "strict_fit_success": False,
+                "strict_fit_warning": "fit_exception",
+            }
+            self.logger.warning(f"Strict Young-Laplace fit failed: {exc}")
         return ctx
 
     def do_compute_metrics(self, ctx: Context) -> Optional[Context]:
@@ -248,10 +308,32 @@ class PendantPipeline(PipelineBase):
         names = fit.get("param_names") or []
         params = fit.get("params", [])
 
-        # Base results from fit
-        results = {n: p for n, p in zip(names, params)} | {
-            "residuals": fit.get("residuals", {})
-        }
+        # Keep profile-fit values as diagnostics. The current fitter compares
+        # pixel contour coordinates against a millimetre model, so fitted
+        # parameters are not reliable enough for reported pendant metrics.
+        results = {"residuals": fit.get("residuals", {})}
+        for name, value in zip(names, params):
+            results[f"fit_{name}"] = value
+        for key in (
+            "strict_r0_mm",
+            "strict_beta",
+            "strict_surface_tension_mN_m",
+            "strict_rmse_mm",
+            "strict_fit_success",
+            "strict_fit_warning",
+            "strict_residual_threshold_mm",
+            "strict_model_coverage_height_mm",
+            "strict_observed_height_mm",
+            "strict_observed_diameter_mm",
+            "strict_x_offset_mm",
+            "strict_z_offset_mm",
+        ):
+            if key in fit:
+                results[key] = fit[key]
+        if fit.get("strict_fit_warning"):
+            results["fit_warning"] = "young_laplace_fit_unreliable"
+        elif _profile_fit_unreliable(fit):
+            results["fit_warning"] = "young_laplace_fit_unreliable"
 
         # --- Geometric Calculations ---
         # 1. Scale
@@ -275,6 +357,50 @@ class PendantPipeline(PipelineBase):
             results["diameter_mm"] = diameter_px / px_per_mm if px_per_mm > 0 else 0.0
             results["diameter_line"] = diameter_line
 
+            # Jennings-Pallas geometric surface tension estimate. Keep contour
+            # coordinates in pixels for overlays, then calibrate scalar lengths.
+            apex_xy = ctx.geometry.apex_xy if ctx.geometry else None
+            r0_px = _pendant_apex_radius_px(xy, apex_xy)
+            if diameter_px > 0 and r0_px > 0 and px_per_mm > 0:
+                r0_mm = r0_px / px_per_mm
+                s1 = diameter_px / (2.0 * r0_px)
+                beta = jennings_pallas_beta(s1)
+                results["r0_px"] = r0_px
+                results["r0_mm"] = r0_mm
+                results["s1"] = s1
+                results["beta"] = beta
+                results["surface_tension_method"] = "jennings_pallas_geometric"
+                results["geometric_r0_mm"] = r0_mm
+                results["geometric_beta"] = beta
+
+                if np.isfinite(beta) and abs(beta) > 1e-12:
+                    physics = ctx.physics or {}
+                    rho1 = float(physics.get("rho1", 1000.0))
+                    rho2 = float(physics.get("rho2", 1.2))
+                    g = float(physics.get("g", 9.80665))
+                    gamma_n_m = surface_tension_n_per_m(
+                        rho1 - rho2, g, r0_mm, beta
+                    )
+                    results["surface_tension_mN_m"] = gamma_n_m * 1000.0
+                    results["geometric_surface_tension_mN_m"] = (
+                        results["surface_tension_mN_m"]
+                    )
+
+            if fit.get("strict_fit_success"):
+                strict_r0 = fit.get("strict_r0_mm")
+                strict_beta = fit.get("strict_beta")
+                strict_gamma = fit.get("strict_surface_tension_mN_m")
+                if (
+                    strict_r0 is not None
+                    and strict_beta is not None
+                    and strict_gamma is not None
+                ):
+                    results["r0_mm"] = float(strict_r0)
+                    results["beta"] = float(strict_beta)
+                    results["surface_tension_mN_m"] = float(strict_gamma)
+                    results["surface_tension_method"] = "young_laplace_strict"
+                    results.pop("fit_warning", None)
+
             # 5. Volume (uL) - Disk integration method
             axis_x = ctx.geometry.axis_x if ctx.geometry else np.mean(x)
             r_px = np.abs(x - axis_x)
@@ -289,26 +415,6 @@ class PendantPipeline(PipelineBase):
 
         except Exception as e:
             self.logger.warning(f"Failed to calculate geometric stats: {e}")
-
-        # --- Surface Tension Calculation ---
-        # gamma = (delta_rho * g * R0^2) / beta
-        try:
-            if "r0_mm" in results and "beta" in results:
-                physics = ctx.physics or {}
-                rho1 = physics.get("rho1", 1000.0)  # liquid density kg/m³
-                rho2 = physics.get("rho2", 1.2)  # ambient density kg/m³
-                g = physics.get("g", 9.80665)
-                delta_rho = rho1 - rho2
-
-                gamma = calculate_surface_tension(
-                    R0_mm=results["r0_mm"],
-                    beta=results["beta"],
-                    delta_rho_kg_m3=delta_rho,
-                    g=g,
-                )
-                results["surface_tension_mN_m"] = gamma
-        except Exception as e:
-            self.logger.warning(f"Failed to calculate surface tension: {e}")
 
         ctx.results = results
         return ctx
@@ -368,6 +474,22 @@ class PendantPipeline(PipelineBase):
                 "scale": 0.55,
             },
         ]
+        model_profile_px = (ctx.fit or {}).get("model_profile_px")
+        if model_profile_px:
+            try:
+                model_xy = np.asarray(model_profile_px, dtype=float)
+                if model_xy.ndim == 2 and model_xy.shape[0] >= 2:
+                    cmds.append(
+                        {
+                            "type": "polyline",
+                            "points": model_xy.tolist(),
+                            "closed": False,
+                            "color": "green",
+                            "thickness": 2,
+                        }
+                    )
+            except Exception:
+                pass
         # Store commands for UI-side rendering (e.g., Qt painter toggles)
         ctx.overlay_commands = cmds
         return ovl.run(ctx, commands=cmds, alpha=0.6)

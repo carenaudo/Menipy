@@ -1,6 +1,9 @@
 import numpy as np
 import pytest
 from menipy.math.young_laplace import young_laplace_ode
+from menipy.pipelines.pendant.strict_young_laplace import (
+    integrate_young_laplace_profile_mm,
+)
 
 def test_young_laplace_sphere_limit():
     """Test that with beta=0, the shape approaches a circle radius R0."""
@@ -55,3 +58,29 @@ def test_young_laplace_single_param_fallback():
     z = profile[:, 1]
     distances = np.sqrt(r**2 + (z - R0)**2)
     np.testing.assert_allclose(distances, R0, rtol=1e-3, atol=1e-3)
+
+
+def test_strict_young_laplace_beta_zero_circle():
+    """Strict dimensionless integration should preserve the spherical limit."""
+    r0_mm = 2.0
+    profile = integrate_young_laplace_profile_mm(r0_mm, 0.0)
+
+    r = profile[:, 0]
+    z = profile[:, 1]
+    distances = np.sqrt(r**2 + (z - r0_mm) ** 2)
+    np.testing.assert_allclose(distances, r0_mm, rtol=1e-3, atol=1e-3)
+
+
+def test_strict_young_laplace_positive_beta_reaches_target_height():
+    """Strict model should be finite, symmetric, and cover the requested height."""
+    profile = integrate_young_laplace_profile_mm(
+        1.2, 0.6, target_height_mm=2.0
+    )
+
+    assert profile.shape[0] > 20
+    assert profile.shape[1] == 2
+    assert np.all(np.isfinite(profile))
+    assert np.max(profile[:, 1]) >= 2.0
+    np.testing.assert_allclose(
+        np.min(profile[:, 0]), -np.max(profile[:, 0]), rtol=1e-3, atol=1e-3
+    )

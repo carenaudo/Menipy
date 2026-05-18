@@ -18,12 +18,16 @@ This document defines the pendant pipeline results contract used by the GUI Resu
   - `needle_surface_mm2` (float) — Needle cross‑sectional area in mm² (if needle_diam provided).
   - `s1` (float) — Shape factor `De / (2 r0)`.
   - `Bo` (float) — Bond number `Δρ g r0² / γ`.
+  - `surface_tension_method` (string) — `young_laplace_strict` when the calibrated full-profile fit passes quality gates, otherwise `jennings_pallas_geometric`.
+  - `strict_r0_mm`, `strict_beta`, `strict_surface_tension_mN_m`, `strict_rmse_mm` — Strict Young-Laplace diagnostics in calibrated units.
+  - `geometric_r0_mm`, `geometric_beta`, `geometric_surface_tension_mN_m` — Jennings-Pallas comparison values.
   - `residuals` (object) — Fit residuals/diagnostics; implementation‑defined structure.
   - `timings_ms` (object) — Per‑stage timings populated by the pipeline runner.
   - `image_path` (string) — Source image path (for provenance in exports).
 
 Notes
-- Current implementation emits `diameter_mm`, `height_mm`, `r0_mm`, `beta`, `surface_tension_mN_m`, `volume_uL`, `drop_surface_mm2`, and possibly `needle_surface_mm2`, `s1`.
+- Current implementation emits `diameter_mm`, `height_mm`, `r0_mm`, `beta`, `surface_tension_mN_m`, `volume_uL`, and possibly `needle_surface_mm2`, `s1`, strict fit diagnostics, and geometric comparison values.
+- Public `r0_mm`, `beta`, and `surface_tension_mN_m` come from strict Young-Laplace only when the fit succeeds and passes residual gates. Otherwise they remain the Jennings-Pallas geometric estimate and `fit_warning` identifies the strict fit rejection.
 - The plan previously referenced `De_mm`/`H_mm`; these are aliases of `diameter_mm`/`height_mm` and SHOULD NOT be added as separate keys. Use the canonical names above.
 
 ## Units and Formatting
@@ -68,4 +72,3 @@ Authoritative consumers
 - Results Panel mapping
 - Batch export writers
 - Tests validating pendant results shape
-
