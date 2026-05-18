@@ -4,23 +4,42 @@ Unit tests."""
 
 
 import pytest
-from menipy.gui.mainwindow import MainWindow
+from menipy.gui.main_window import MainWindow
 from menipy.gui.controllers.setup_panel_controller import SetupPanelController
 from menipy.gui.views.image_view import DRAW_POINT, DRAW_LINE, DRAW_RECT
 from unittest.mock import Mock
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QListView
 
 
 @pytest.fixture
 def main_window(qtbot):
     window = MainWindow()
     qtbot.addWidget(window)
-    return window
+    yield window
+    if getattr(window, "main_controller", None):
+        window.main_controller.shutdown()
 
 
 @pytest.fixture
 def setup_panel_controller(main_window) -> SetupPanelController:
-    return main_window.setup_panel_ctrl
+    controller = main_window.setup_panel_ctrl
+    for signal_name in (
+        "browse_requested",
+        "browse_batch_requested",
+        "preview_requested",
+        "run_all_requested",
+        "play_stage_requested",
+        "config_stage_requested",
+        "source_mode_changed",
+        "auto_calibrate_requested",
+    ):
+        signal = getattr(controller, signal_name)
+        try:
+            signal.disconnect()
+        except RuntimeError:
+            pass
+    return controller
 
 
 def test_radio_button_toggles_mode(qtbot, setup_panel_controller: SetupPanelController):
@@ -184,3 +203,38 @@ def test_add_sop_button_calls_sop_controller(
         setup_panel_controller.sop_ctrl.on_add_sop = Mock()
         qtbot.mouseClick(setup_panel_controller.addSopBtn, Qt.LeftButton)
         setup_panel_controller.sop_ctrl.on_add_sop.assert_called_once()
+
+
+def test_steps_list_uses_vertical_layout(setup_panel_controller: SetupPanelController):
+    steps_list = setup_panel_controller.stepsList
+    assert steps_list is not None
+    assert steps_list.flow() == QListView.TopToBottom
+    assert not steps_list.isWrapping()
+    assert steps_list.horizontalScrollBarPolicy() == Qt.ScrollBarAlwaysOff
+
+
+def test_excluded_step_stays_readable_but_is_not_collected(
+    setup_panel_controller: SetupPanelController,
+):
+    widgets = setup_panel_controller.sop_ctrl._step_widgets
+    assert widgets
+    first = widgets[0]
+
+    first.set_included(False)
+
+    assert first.isEnabled()
+    assert not first.is_included()
+    assert first.step_name not in setup_panel_controller.collect_included_stages()
+
+
+def test_included_step_controls_emit_signals(qtbot, setup_panel_controller):
+    widgets = setup_panel_controller.sop_ctrl._step_widgets
+    assert widgets
+    first = widgets[0]
+    first.set_included(True)
+    handler = Mock()
+    first.playClicked.connect(handler)
+
+    qtbot.mouseClick(first.playBtn, Qt.LeftButton)
+
+    handler.assert_called_once_with(first.step_name)

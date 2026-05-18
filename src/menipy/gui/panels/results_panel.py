@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Any, Mapping, Optional, List
 import csv
-from pathlib import Path
 
 from PySide6.QtWidgets import (
     QWidget,
@@ -22,6 +21,7 @@ from menipy.models.results import get_results_history, MeasurementResult
 from menipy.gui.controllers.pipeline_ui_manager import PipelineUIManager
 from menipy.gui.services.settings_service import AppSettings
 from menipy.common.units import convert_from_si
+
 
 def get_label_with_unit(key: str, system: str) -> str:
     """Return the label with localized unit suffix."""
@@ -42,7 +42,7 @@ def get_label_with_unit(key: str, system: str) -> str:
         "surface_area": "cm²",
     }
     units = labels_si if system == "SI" else labels_cgs
-    
+
     base_labels = {
         "diameter_mm": ("Diameter", "length"),
         "height_mm": ("Height", "length"),
@@ -60,12 +60,22 @@ def get_label_with_unit(key: str, system: str) -> str:
         "uncertainty_left_deg": ("Left Angle Uncertainty", "contact_angle"),
         "uncertainty_right_deg": ("Right Angle Uncertainty", "contact_angle"),
     }
-    
+
     if key in base_labels:
         name, qtype = base_labels[key]
         return f"{name} ({units[qtype]})"
-    
+
     return key.replace("_", " ").title()
+
+VALID_PIPELINES = {
+    "sessile",
+    "pendant",
+    "oscillating",
+    "capillary_rise",
+    "captive_bubble",
+}
+VALID_PIPELINES_FILTER = "__valid__"
+LEGACY_PIPELINES_FILTER = "__legacy__"
 
 LABEL_MAP = {
     "diameter_mm": "Diameter (mm)",
@@ -106,7 +116,8 @@ class ResultsPanel:
         )
         self.summary_label: Optional[QLabel] = panel.findChild(QLabel, "summaryLabel")
         self.history = get_results_history()
-        self.current_pipeline_filter = None
+        self.unit_system = getattr(AppSettings.load(), "unit_system", "SI")
+        self.current_pipeline_filter = VALID_PIPELINES_FILTER
         self.pipeline_ui_manager = PipelineUIManager()
 
         # Add controls for history management
@@ -133,11 +144,13 @@ class ResultsPanel:
 
         # Pipeline filter
         self.pipeline_combo = QComboBox()
-        self.pipeline_combo.addItem("All Pipelines", None)
+        self.pipeline_combo.addItem("All Valid Pipelines", VALID_PIPELINES_FILTER)
         self.pipeline_combo.addItem("Sessile", "sessile")
         self.pipeline_combo.addItem("Pendant", "pendant")
         self.pipeline_combo.addItem("Oscillating", "oscillating")
         self.pipeline_combo.addItem("Capillary Rise", "capillary_rise")
+        self.pipeline_combo.addItem("Captive Bubble", "captive_bubble")
+        self.pipeline_combo.addItem("Legacy / Unknown", LEGACY_PIPELINES_FILTER)
         self.pipeline_combo.currentIndexChanged.connect(
             self._on_pipeline_filter_changed
         )
@@ -222,19 +235,8 @@ class ResultsPanel:
         self._export_csv()
 
     def update(self, results: Mapping[str, Any] | None) -> None:
-        """Legacy method for single measurement display - now adds to history."""
+        """Refresh the history-backed table after a legacy update signal."""
         if results:
-            # Create a measurement result and add to history
-            from datetime import datetime
-            import uuid
-
-            measurement = MeasurementResult(
-                id=f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}",
-                timestamp=datetime.now(),
-                pipeline="unknown",  # Will be set by pipeline controller
-                results=dict(results),
-            )
-            self.history.add_measurement(measurement)
             self.update_history()
 
     def update_history(self) -> None:
@@ -242,13 +244,12 @@ class ResultsPanel:
         if not self.table:
             return
 
-        settings = AppSettings.load()
-        unit_system = settings.unit_system
-        headers, rows = self.history.get_table_data(self.current_pipeline_filter)
+        unit_system = self.unit_system
+        headers, rows = self._get_table_data()
         raw_headers = list(headers)
 
         # Apply pipeline-specific column prioritization if filtering by pipeline
-        if self.current_pipeline_filter:
+        if self.current_pipeline_filter in VALID_PIPELINES:
             headers, rows = self._prioritize_columns_for_pipeline(
                 headers, rows, self.current_pipeline_filter
             )
@@ -276,7 +277,11 @@ class ResultsPanel:
                     }
                     if raw_headers[col_idx] in quantity_map and cell_value != "":
                         val_float = float(cell_value)
-                        transformed_float = convert_from_si(val_float, quantity_map[raw_headers[col_idx]], unit_system)
+                        transformed_float = convert_from_si(
+                            val_float,
+                            quantity_map[raw_headers[col_idx]],
+                            unit_system,
+                        )
                         transformed_value = f"{transformed_float:.3g}"
                 except (ValueError, TypeError):
                     pass
@@ -285,7 +290,7 @@ class ResultsPanel:
                 item.setFlags(item.flags() & ~Qt.ItemIsEditable)  # Make read-only
 
                 # Add pipeline-specific styling
-                if self.current_pipeline_filter:
+                if self.current_pipeline_filter in VALID_PIPELINES:
                     self._apply_pipeline_styling(
                         item, self.current_pipeline_filter, raw_headers[col_idx]
                     )
@@ -296,13 +301,86 @@ class ResultsPanel:
         measurement_count = len(rows)
         filter_text = (
             f" ({self.pipeline_combo.currentText()})"
-            if self.current_pipeline_filter
+            if self.current_pipeline_filter != VALID_PIPELINES_FILTER
             else ""
         )
         self.count_label.setText(f"{measurement_count} measurements{filter_text}")
 
         self._update_summary()
         self.table.resizeColumnsToContents()
+
+    def _filtered_measurements(self) -> list[MeasurementResult]:
+        measurements = list(self.history.measurements)
+        pipeline_filter = self.current_pipeline_filter
+        if pipeline_filter == VALID_PIPELINES_FILTER:
+            return [m for m in measurements if m.pipeline in VALID_PIPELINES]
+        if pipeline_filter == LEGACY_PIPELINES_FILTER:
+            return [m for m in measurements if m.pipeline not in VALID_PIPELINES]
+        if pipeline_filter:
+            return [m for m in measurements if m.pipeline == pipeline_filter]
+        return measurements
+
+    def _get_table_data(self) -> tuple[list[str], list[list[Any]]]:
+        measurements = self._filtered_measurements()
+        if not measurements:
+            return ["file_name", "timestamp", "pipeline"], []
+
+        all_keys: set[str] = set()
+        for measurement in measurements:
+            all_keys.update(measurement.results.keys())
+
+        priority_columns = [
+            "file_name",
+            "timestamp",
+            "pipeline",
+            "diameter_mm",
+            "height_mm",
+            "volume_uL",
+            "surface_tension_mN_m",
+            "contact_angle_deg",
+            "theta_left_deg",
+            "theta_right_deg",
+            "contact_surface_mm2",
+            "drop_surface_mm2",
+            "baseline_tilt_deg",
+            "beta",
+            "s1",
+            "r0_mm",
+            "needle_surface_mm2",
+            "R0_mm",
+            "f0_Hz",
+            "r0_eq_px",
+        ]
+        headers = priority_columns + sorted(all_keys - set(priority_columns))
+
+        rows: list[list[Any]] = []
+        for measurement in measurements:
+            row: list[Any] = []
+            for col in headers:
+                if col == "file_name":
+                    value = (
+                        measurement.file_name
+                        or measurement.file_path
+                        or f"Measurement {measurement.id.split('_')[-1]}"
+                    )
+                elif col == "timestamp":
+                    value = measurement.timestamp.strftime("%H:%M:%S")
+                elif col == "pipeline":
+                    value = measurement.pipeline.title()
+                else:
+                    value = measurement.results.get(col)
+                    if isinstance(value, (int, float)):
+                        if col.endswith("_deg") or "angle" in col.lower():
+                            value = f"{value:.1f}"
+                        else:
+                            value = f"{value:.3g}"
+                    elif value is None:
+                        value = ""
+                    else:
+                        value = str(value)
+                row.append(value)
+            rows.append(row)
+        return headers, rows
 
     def _prioritize_columns_for_pipeline(
         self, headers: List[str], rows: List[List[Any]], pipeline_name: str
@@ -372,11 +450,7 @@ class ResultsPanel:
     def _update_summary(self) -> None:
         if not self.summary_label:
             return
-        measurements = self.history.measurements
-        if self.current_pipeline_filter:
-            measurements = [
-                m for m in measurements if m.pipeline == self.current_pipeline_filter
-            ]
+        measurements = self._filtered_measurements()
         count = len(measurements)
         last_run = (
             measurements[0].timestamp.strftime("%H:%M:%S") if measurements else "n/a"
@@ -397,6 +471,10 @@ class ResultsPanel:
 
     def set_pipeline_filter(self, pipeline_name: str) -> None:
         """Set the pipeline filter programmatically."""
+        if not pipeline_name:
+            pipeline_name = VALID_PIPELINES_FILTER
+        elif pipeline_name == "unknown":
+            pipeline_name = LEGACY_PIPELINES_FILTER
         self.current_pipeline_filter = pipeline_name
         # Update combo box selection
         for i in range(self.pipeline_combo.count()):
@@ -407,24 +485,9 @@ class ResultsPanel:
 
     def add_measurement(self, measurement: MeasurementResult) -> None:
         """Add a new measurement to history and update display."""
+        if measurement is None:
+            return
         self.history.add_measurement(measurement)
-        # Update the pipeline filter to match the new measurement if no filter is set
-        if self.current_pipeline_filter is None and measurement.pipeline != "unknown":
-            # Auto-select the pipeline filter if it's the first measurement of that type
-            pipeline_measurements = [
-                m
-                for m in self.history.measurements
-                if m.pipeline == measurement.pipeline
-            ]
-            if (
-                len(pipeline_measurements) == 1
-            ):  # This is the first measurement of this pipeline
-                self.current_pipeline_filter = measurement.pipeline
-                # Update the combo box selection
-                for i in range(self.pipeline_combo.count()):
-                    if self.pipeline_combo.itemData(i) == measurement.pipeline:
-                        self.pipeline_combo.setCurrentIndex(i)
-                        break
         self.update_history()
 
     def update_single_measurement(
@@ -449,6 +512,8 @@ class ResultsPanel:
             self.history.add_measurement(measurement)
             self.update_history()
 
-    def update_history_table(self, history=None) -> None:
+    def update_history_table(self, history=None, unit_system: str | None = None) -> None:
         """Refresh the history table using the current global unit setting."""
+        if unit_system in ("SI", "CGS"):
+            self.unit_system = unit_system
         self.update_history()

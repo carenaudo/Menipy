@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Callable, Optional, Sequence
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QListWidget,
     QListWidgetItem,
@@ -11,6 +12,8 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QInputDialog,
     QWidget,
+    QListView,
+    QAbstractItemView,
 )
 
 try:
@@ -79,7 +82,11 @@ class SopController:
             if not step_name:
                 continue
             try:
-                if widget.isEnabled():
+                if hasattr(widget, "is_included"):
+                    is_included = widget.is_included()
+                else:
+                    is_included = widget.isEnabled()
+                if is_included:
                     included.append(step_name)
             except Exception:
                 included.append(step_name)
@@ -127,6 +134,14 @@ class SopController:
         if not self.steps_list:
             return
         self.steps_list.clear()
+        self.steps_list.setFlow(QListView.TopToBottom)
+        self.steps_list.setWrapping(False)
+        self.steps_list.setResizeMode(QListView.Adjust)
+        self.steps_list.setMovement(QListView.Static)
+        self.steps_list.setSelectionMode(QAbstractItemView.NoSelection)
+        self.steps_list.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.steps_list.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
+        self.steps_list.setUniformItemSizes(False)
         if not self.step_item_cls:
             for stage in self.stage_order:
                 self.steps_list.addItem(stage)
@@ -197,7 +212,10 @@ class SopController:
             step_name = getattr(widget, "step_name", None)
             enabled = step_name in include if step_name else False
             try:
-                widget.setEnabled(enabled)
+                if hasattr(widget, "set_included"):
+                    widget.set_included(enabled)
+                else:
+                    widget.setEnabled(enabled)
                 if not enabled:
                     widget.set_status("pending")
             except Exception:

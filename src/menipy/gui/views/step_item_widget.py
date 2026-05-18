@@ -43,6 +43,7 @@ class StepItemWidget(QWidget):
     def __init__(self, step_name: str, parent: Optional[QWidget] = None):
         super().__init__(parent)
         self._name = step_name
+        self._included = True
 
         self.statusLbl = QLabel()
         self.statusLbl.setFixedSize(10, 10)
@@ -52,7 +53,7 @@ class StepItemWidget(QWidget):
         self.nameLbl = QLabel(display_name)
         self.nameLbl.setToolTip(step_name)
         self.nameLbl.setObjectName("stepNameLabel")
-        self.nameLbl.setMinimumWidth(100)
+        self.nameLbl.setMinimumWidth(0)
         self.nameLbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
         self.playBtn = QToolButton()
@@ -86,6 +87,7 @@ class StepItemWidget(QWidget):
         self.playBtn.clicked.connect(lambda: self.playClicked.emit(self._name))
         self.cfgBtn.clicked.connect(lambda: self.configClicked.emit(self._name))
         self.setMinimumHeight(34)
+        self.setProperty("included", True)
         self._apply_status_style("pending")
         self._apply_widget_style()
 
@@ -103,14 +105,42 @@ class StepItemWidget(QWidget):
         """
         self._apply_status_style(status)
 
+    def is_included(self) -> bool:
+        return self._included
+
+    def set_included(self, included: bool) -> None:
+        self._included = bool(included)
+        self.setProperty("included", self._included)
+        self.playBtn.setEnabled(self._included)
+        self.cfgBtn.setEnabled(self._included)
+        if self._included:
+            self.nameLbl.setToolTip(self._name)
+            self._apply_status_style(self.property("stepState") or "pending")
+        else:
+            self.nameLbl.setToolTip(f"{self._name} excluded from current SOP")
+            self.statusLbl.setStyleSheet(
+                "background-color: #CBD5E1; border-radius: 5px;"
+            )
+            self.statusLbl.setToolTip("Excluded")
+        self.style().unpolish(self)
+        self.style().polish(self)
+
     def _apply_status_style(self, status: str) -> None:
         status = status if status in _STATUS_COLORS else "pending"
+        self.setProperty("stepState", status)
+        if not self._included:
+            self.statusLbl.setStyleSheet(
+                "background-color: #CBD5E1; border-radius: 5px;"
+            )
+            self.statusLbl.setToolTip("Excluded")
+            self.style().unpolish(self)
+            self.style().polish(self)
+            return
         color = _STATUS_COLORS[status]
         self.statusLbl.setStyleSheet(
             f"background-color: {color}; border-radius: 5px;"
         )
         self.statusLbl.setToolTip(status.title())
-        self.setProperty("stepState", status)
         self.style().unpolish(self)
         self.style().polish(self)
 
@@ -118,44 +148,53 @@ class StepItemWidget(QWidget):
         self.setStyleSheet(
             """
             QWidget[stepState="pending"] {
-                background: #1f1f1f;
-                border: 1px solid #2a2a2a;
+                background: #ffffff;
+                border: 1px solid #d7dde5;
                 border-radius: 6px;
             }
             QWidget[stepState="running"] {
-                background: #1e2a36;
-                border: 1px solid #2f4b66;
+                background: #eef8ff;
+                border: 1px solid #38bdf8;
                 border-radius: 6px;
             }
             QWidget[stepState="done"] {
-                background: #1f2b24;
-                border: 1px solid #2d6a47;
+                background: #ecfdf5;
+                border: 1px solid #34d399;
                 border-radius: 6px;
             }
             QWidget[stepState="error"] {
-                background: #2b1f1f;
-                border: 1px solid #6a2d2d;
+                background: #fef2f2;
+                border: 1px solid #f87171;
+                border-radius: 6px;
+            }
+            QWidget[included="false"] {
+                background: #f8fafc;
+                border: 1px dashed #cbd5e1;
                 border-radius: 6px;
             }
             QLabel#stepNameLabel {
-                color: #e5e7eb;
+                color: #1f2937;
                 font-weight: 600;
             }
+            QWidget[included="false"] QLabel#stepNameLabel {
+                color: #64748b;
+                font-weight: 500;
+            }
             QToolButton {
-                background: #2b2b2b;
-                border: 1px solid #3a3a3a;
+                background: #f8fafc;
+                border: 1px solid #cbd5e1;
                 border-radius: 4px;
                 padding: 2px;
             }
             QToolButton:hover {
-                background: #3a3a3a;
+                background: #e2e8f0;
             }
             QToolButton:pressed {
-                background: #4a4a4a;
+                background: #cbd5e1;
             }
             QToolButton:disabled {
-                background: #1b1b1b;
-                border-color: #2a2a2a;
+                background: #f1f5f9;
+                border-color: #e2e8f0;
             }
             """
         )

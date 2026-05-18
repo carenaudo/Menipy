@@ -210,6 +210,32 @@ class MainController(QObject):
 
         self.window.statusBar().showMessage("No preview source available", 2000)
 
+    def load_startup_preview(self) -> None:
+        """Silently load a remembered single-file source during startup."""
+        try:
+            mode = self.setup_ctrl.current_mode()
+        except Exception:
+            mode = None
+        mode_single = getattr(self.setup_ctrl, "MODE_SINGLE", "single")
+        if mode != mode_single:
+            return
+
+        image_path = self.setup_ctrl.image_path()
+        if not image_path:
+            return
+
+        target = Path(image_path)
+        if not target.is_file():
+            self.window.statusBar().showMessage("Remembered image not found", 2000)
+            return
+
+        try:
+            self.preview_panel.load_path(target)
+            self.window.statusBar().showMessage("Preview loaded", 1500)
+        except Exception as exc:
+            logger.info("Could not load remembered preview %s: %s", target, exc)
+            self.window.statusBar().showMessage("Could not load remembered image", 2000)
+
     @Slot()
     def on_auto_calibrate_requested(self) -> None:
         """Launch auto-calibration wizard."""
@@ -329,18 +355,29 @@ class MainController(QObject):
         """Updates the global unit system setting and refreshes relevant UI components."""
         if system not in ("SI", "CGS"):
             return
-            
+
         logger.info(f"Changing unit system to {system}")
         self.settings.unit_system = system
-        self.settings.save()
-        
+        try:
+            self.settings.save()
+        except OSError as exc:
+            logger.warning("Failed to persist unit system setting: %s", exc)
+
+        self.refresh_unit_labels()
+        self.window.statusBar().showMessage(f"Unit system set to {system}", 2000)
+
+    def refresh_unit_labels(self) -> None:
+        """Refresh unit-dependent UI labels without changing persisted settings."""
         # Refresh UI components
         # 1. Update results panel history table
         if self.results_panel:
             try:
                 from menipy.models.results import get_results_history
                 history = get_results_history()
-                self.results_panel.update_history_table(history)
+                self.results_panel.update_history_table(
+                    history,
+                    unit_system=getattr(self.settings, "unit_system", "SI"),
+                )
             except Exception as e:
                 logger.error(f"Failed to refresh results panel: {e}")
         
@@ -350,8 +387,6 @@ class MainController(QObject):
                 self.setup_ctrl.refresh_ui_labels()
             except Exception as e:
                 logger.error(f"Failed to refresh setup panel labels: {e}")
-        
-        self.window.statusBar().showMessage(f"Unit system set to {system}", 2000)
 
 
     @Slot(object)

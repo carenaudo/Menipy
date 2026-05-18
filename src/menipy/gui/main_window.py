@@ -64,6 +64,7 @@ except Exception:
         main_window_state_b64: Optional[str] = None
         main_window_geom_b64: Optional[str] = None
         splitter_sizes: Optional[list[int]] = None
+        unit_system: str = "SI"
 
         @classmethod
         def load(cls):
@@ -228,47 +229,50 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._wire_layout_controls()
         self._wire_action_bar()
         self._setup_units_menu()
+        try:
+            self.main_controller.load_startup_preview()
+        except Exception:
+            logger.debug("Startup preview load failed", exc_info=True)
 
     def _setup_units_menu(self):
         """Creates a Units menu to toggle between SI and CGS."""
         from PySide6.QtGui import QAction, QActionGroup
-        
+
         menu_bar = self.menuBar()
         units_menu = menu_bar.addMenu("&Units")
-        
+
         si_action = QAction("SI (mm, kg/m³)", self)
         si_action.setCheckable(True)
         si_action.setData("SI")
-        
+
         cgs_action = QAction("CGS (cm, g/cm³)", self)
         cgs_action.setCheckable(True)
         cgs_action.setData("CGS")
-        
+
         group = QActionGroup(self)
         group.addAction(si_action)
         group.addAction(cgs_action)
         group.setExclusive(True)
-        
+
         units_menu.addAction(si_action)
         units_menu.addAction(cgs_action)
-        
+
         # Initial check
-        current = self.settings.unit_system
+        current = getattr(self.settings, "unit_system", "SI")
         if current == "CGS":
             cgs_action.setChecked(True)
         else:
             si_action.setChecked(True)
-            
+
         def on_triggered(action):
             system = action.data()
             if hasattr(self, "main_controller") and self.main_controller:
                 self.main_controller.change_unit_system(system)
-        
-        group.triggered.connect(on_triggered)
-        
-        # Force initial labels refresh
-        QTimer.singleShot(0, lambda: self.main_controller.change_unit_system(current))
 
+        group.triggered.connect(on_triggered)
+
+        # Force initial labels refresh
+        QTimer.singleShot(0, self.main_controller.refresh_unit_labels)
 
     def _wire_menu_actions(self):
         # Actions declared in main_window_split.ui
