@@ -35,8 +35,10 @@ class DropSessileSettings(BaseModel):
     adaptive_block_size: int = Field(21, description="Threshold block size (odd)")
     adaptive_c: int = Field(2, description="Threshold constant")
     min_area_fraction: float = Field(0.005, description="Min area as fraction of image")
-    substrate_touch_tolerance: int = Field(10, description="Max pixels from substrate to be considered touching")
+    substrate_touch_tolerance: int = Field(15, description="Max pixels from substrate to be considered touching")
     rectangularity_threshold: float = Field(0.85, description="Max rectangularity to filter out ROI boxes")
+    min_gap_from_needle: int = Field(50, description="Min vertical gap from needle bottom for sessile contour")
+    needle_alignment_guard: int = Field(100, description="Max vertical distance for center-alignment needle guard")
 
     def model_post_init(self, __context):
         """Ensure adaptive block size is odd for cv2.adaptiveThreshold."""
@@ -68,6 +70,7 @@ def detect_drop_sessile(
     adaptive_block_size: int = 21,
     adaptive_c: int = 2,
     substrate_y: Optional[int] = None,
+    needle_rect: Optional[Tuple[int, int, int, int]] = None,
     min_area_fraction: float = 0.005,
     **kwargs
 ) -> Optional[Tuple[np.ndarray, Tuple[Tuple[int, int], Tuple[int, int]]]]:
@@ -174,6 +177,12 @@ def detect_drop_sessile(
     center_x = width // 2
     min_area = image_area * cfg.min_area_fraction
     
+    # Accept legacy callers that pass geometry via kwargs/plugin settings wrapper.
+    if needle_rect is None:
+        maybe_needle = kwargs.get("needle_rect")
+        if isinstance(maybe_needle, tuple) and len(maybe_needle) == 4:
+            needle_rect = maybe_needle
+
     # Filter valid contours - separate into substrate-touching and non-touching
     substrate_contours = []  # Contours touching substrate (preferred)
     floating_contours = []   # Contours not touching substrate (fallback)
@@ -186,6 +195,22 @@ def detect_drop_sessile(
         # Skip needle (touches top)
         if y < 5:
             continue
+
+        # Skip contours too close to the detected needle.
+        if needle_rect is not None:
+            n_x, n_y, n_w, n_h = needle_rect
+            needle_bottom = n_y + n_h
+            needle_center_x = n_x + n_w // 2
+
+            if y < needle_bottom + cfg.min_gap_from_needle:
+                continue
+
+            cnt_center_x = x + w // 2
+            if (
+                abs(cnt_center_x - needle_center_x) < n_w
+                and y < needle_bottom + cfg.needle_alignment_guard
+            ):
+                continue
         
         # Skip rectangular contours (likely ROI boundaries, not droplets)
         rect_area = w * h
@@ -241,26 +266,56 @@ def detect_drop_sessile(
     
     # Reconstruct with flat base at substrate
     if substrate_y is not None:
-        dome_points = [pt for pt in points if pt[1] < (substrate_y - 5)]
+        substrate_tolerance = 20
+
+        near_substrate = [
+            pt for pt in points if abs(pt[1] - substrate_y) <= substrate_tolerance
+        ]
+
+        dome_raw = [pt for pt in points if pt[1] <= (substrate_y + substrate_tolerance)]
+        dome_points = []
+        for pt in dome_raw:
+            if pt[1] > substrate_y:
+                dome_points.append(np.array([pt[0], substrate_y], dtype=pt.dtype))
+            else:
+                dome_points.append(pt)
         
+        if near_substrate:
+            sorted_near = sorted(near_substrate, key=lambda p: p[0])
+            x_left = sorted_near[0][0]
+            x_right = sorted_near[-1][0]
+        elif len(points) > 0:
+            sorted_pts = sorted(points, key=lambda p: p[0])
+            x_left = sorted_pts[0][0]
+            x_right = sorted_pts[-1][0]
+        else:
+            return points.astype(np.float64), None
+
+        cp_left = (int(x_left), substrate_y)
+        cp_right = (int(x_right), substrate_y)
+        contact_points = (cp_left, cp_right)
+
         if dome_points:
             dome_points = sorted(dome_points, key=lambda p: p[0])
-            x_left = dome_points[0][0]
-            x_right = dome_points[-1][0]
-            
-            cp_left = (int(x_left), substrate_y)
-            cp_right = (int(x_right), substrate_y)
-            contact_points = (cp_left, cp_right)
-            
             final_polygon = np.array(
-                [[x_left, substrate_y]] + 
-                [[p[0], p[1]] for p in dome_points] + 
-                [[x_right, substrate_y]],
-                dtype=np.float64
+                [[x_left, substrate_y]]
+                + [[p[0], p[1]] for p in dome_points]
+                + [[x_right, substrate_y]]
+                + [[x_left, substrate_y]],
+                dtype=np.float64,
             )
-            
-            logger.info(f"Sessile drop detected with {len(final_polygon)} points")
-            return final_polygon, contact_points
+        else:
+            sorted_pts = sorted(points, key=lambda p: p[0])
+            final_polygon = np.array(
+                [[x_left, substrate_y]]
+                + [[p[0], p[1]] for p in sorted_pts]
+                + [[x_right, substrate_y]]
+                + [[x_left, substrate_y]],
+                dtype=np.float64,
+            )
+
+        logger.info(f"Sessile drop detected with {len(final_polygon)} points")
+        return final_polygon, contact_points
     
     logger.info(f"Sessile drop detected with {len(points)} points (no substrate)")
     return points.astype(np.float64), None

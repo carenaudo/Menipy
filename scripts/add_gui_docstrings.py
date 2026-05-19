@@ -13,7 +13,6 @@ GUI_FILES = {
     "menipy/gui/main_window.py": "Main window implementation (legacy - check if still used).",
     "menipy/gui/mainwindow.py": "Main window class for Menipy GUI.",
     "menipy/gui/overlay.py": "Overlay rendering and display utilities.",
-    "menipy/gui/zold_drawing_alt.py": "Legacy drawing utilities (deprecated).",
     # Controllers
     "menipy/gui/controllers/edge_detection_controller.py": "Controller for edge detection configuration and execution.",
     "menipy/gui/controllers/preprocessing_controller.py": "Controller for preprocessing stage configuration.",

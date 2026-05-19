@@ -25,6 +25,7 @@ from menipy.common.registry import (
     DROP_DETECTORS,
     APEX_DETECTORS,
 )
+from menipy.common.auto_calibrator import AutoCalibrator
 
 
 def create_sessile_test_image(
@@ -123,6 +124,27 @@ class TestNeedleDetector:
         # Just verify it doesn't crash
         assert result is None or isinstance(result, tuple)
 
+    def test_sessile_needle_detector_matches_auto_calibrator_baseline(self):
+        """Sessile needle detector should stay aligned with GUI auto-calibration baseline."""
+        image = create_sessile_test_image()
+
+        baseline = AutoCalibrator(image, "sessile").detect_all()
+        assert baseline.needle_rect is not None
+
+        detector = NEEDLE_DETECTORS["sessile"]
+        result = detector(image)
+
+        assert result is not None
+        x, y, w, h = result
+        bx, by, bw, bh = baseline.needle_rect
+
+        # Baseline-level parity: same top-touching semantics and comparable geometry.
+        assert y < 5
+        assert by < 5
+        assert abs(x - bx) <= 20
+        assert abs(w - bw) <= 40
+        assert h > 0 and bh > 0
+
 
 class TestSubstrateDetector:
     """Tests for substrate detection plugin."""
@@ -206,6 +228,62 @@ class TestDropDetector:
             
             # The needle drop is around y=120-180, so if we got a drop there, it's wrong
             assert contour_max_y > 250, "Should have selected substrate drop, not needle drop"
+
+    def test_sessile_detector_matches_auto_calibrator_baseline(self):
+        """Sessile detector should stay aligned with GUI auto-calibration baseline."""
+        image = create_sessile_test_image()
+
+        baseline = AutoCalibrator(image, "sessile").detect_all()
+        assert baseline.substrate_line is not None
+
+        substrate_y = int(
+            (baseline.substrate_line[0][1] + baseline.substrate_line[1][1]) / 2
+        )
+        detector = DROP_DETECTORS["sessile"]
+        result = detector(
+            image,
+            substrate_y=substrate_y,
+            needle_rect=baseline.needle_rect,
+        )
+
+        assert result is not None
+        assert isinstance(result, tuple) and len(result) == 2
+        contour, contact_pts = result
+        assert contour is not None and len(contour) > 0
+
+        # Contact points should be on/near the substrate baseline.
+        assert contact_pts is not None
+        (_, y_left), (_, y_right) = contact_pts
+        assert abs(y_left - substrate_y) <= 2
+        assert abs(y_right - substrate_y) <= 2
+
+        # Detected contour should reach the substrate neighborhood.
+        contour_y_max = float(np.max(contour[:, 1]))
+        assert contour_y_max >= substrate_y - 25
+
+
+class TestNeedleDropBaselineParity:
+    """Parity checks against GUI auto-calibration baseline."""
+
+    def test_pendant_needle_detector_matches_baseline_shape(self):
+        """Pendant needle detector should produce valid geometry like AutoCalibrator."""
+        image = create_pendant_test_image()
+        baseline = AutoCalibrator(image, "pendant").detect_all()
+
+        assert baseline.drop_contour is not None and len(baseline.drop_contour) > 0
+
+        detector = NEEDLE_DETECTORS["pendant"]
+        drop_contour_cv = np.asarray(baseline.drop_contour, dtype=np.int32).reshape(-1, 1, 2)
+        result = detector(image, drop_contour=drop_contour_cv)
+
+        assert result is not None
+        needle_rect, contact_pts = result
+        assert needle_rect is not None
+        assert contact_pts is not None
+
+        x, y, w, h = needle_rect
+        assert w > 0 and h > 0
+        assert y >= 0
 
 
 class TestApexDetector:

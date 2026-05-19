@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Detection baseline alignment to GUI Auto-Calibrate flow:
+  - Updated sessile drop detector behavior in plugins/detect_drop.py to better match AutoCalibrator constraints (needle-gap filtering, substrate contact tolerance, near-substrate contact extraction).
+  - Refactored preprocessor detectors to delegate to baseline detector plugins instead of duplicating logic:
+    - plugins/preproc_detect_drop.py now delegates to plugins/detect_drop.py
+    - plugins/preproc_detect_needle.py now delegates to plugins/detect_needle.py
+  - Added/updated baseline parity tests in tests/test_detection_plugins.py for sessile drop, sessile needle, and pendant needle against AutoCalibrator expectations.
+
+### Removed
+- Low-risk legacy files removed from active source tree after archive-first cleanup:
+  - src/menipy/common/zold_detection.py
+  - src/menipy/gui/zold_drawing_alt.py
+  - src/menipy/math/rayleigh_lamb.py
+
+### Archived
+- Archived copies preserved under archive/2026-05-cleanup:
+  - archive/2026-05-cleanup/src/menipy/common/zold_detection.py
+  - archive/2026-05-cleanup/src/menipy/gui/zold_drawing_alt.py
+  - archive/2026-05-cleanup/src/menipy/math/rayleigh_lamb.py
+
 ## [0.3.2] - 2026-02-05
 
 ### Added

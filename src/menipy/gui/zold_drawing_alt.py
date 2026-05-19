@@ -1,1 +1,0 @@
-"""Legacy drawing utilities (deprecated)."""
