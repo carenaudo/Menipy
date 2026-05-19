@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import Mock
 
-from PySide6.QtCore import QFile, Qt
+from PySide6.QtCore import QFile
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import QMainWindow
 
@@ -35,7 +35,6 @@ def _controller(qtbot):
     panel = _load_setup_panel()
     qtbot.addWidget(window)
     qtbot.addWidget(panel)
-    panel.show()
     controller = SetupPanelController(
         window=window,
         panel=panel,
@@ -72,12 +71,12 @@ def test_guided_setup_shows_only_active_source_controls(qtbot):
     assert controller.batchPathEdit.isHidden()
     assert controller.framesSpin.isHidden()
 
-    qtbot.mouseClick(controller.batchModeRadio, Qt.LeftButton)
+    controller.batchModeRadio.click()
     assert controller.imagePathEdit.isHidden()
     assert not controller.batchPathEdit.isHidden()
     assert not controller.sourceIdCombo.isHidden()
 
-    qtbot.mouseClick(controller.cameraModeRadio, Qt.LeftButton)
+    controller.cameraModeRadio.click()
     assert controller.imagePathEdit.isHidden()
     assert controller.batchPathEdit.isHidden()
     assert not controller.sourceIdCombo.isHidden()
@@ -95,10 +94,10 @@ def test_guided_setup_keeps_primary_signals_available(qtbot):
     controller.auto_calibrate_requested.connect(calibrate)
     controller.run_all_requested.connect(run)
 
-    qtbot.mouseClick(controller.browseBtn, Qt.LeftButton)
-    qtbot.mouseClick(controller.previewBtn, Qt.LeftButton)
-    qtbot.mouseClick(controller.autoCalibrateBtn, Qt.LeftButton)
-    qtbot.mouseClick(controller.runAllBtn, Qt.LeftButton)
+    controller.browseBtn.click()
+    controller.previewBtn.click()
+    controller.autoCalibrateBtn.click()
+    controller.runAllBtn.click()
 
     browse.assert_called_once()
     preview.assert_called_once()
@@ -110,5 +109,5 @@ def test_guided_setup_hides_substrate_angle_outside_sessile(qtbot):
     controller = _controller(qtbot)
 
     assert not controller.substrateAngleSpin.isHidden()
-    qtbot.mouseClick(controller.pendantBtn, Qt.LeftButton)
+    controller.pendantBtn.click()
     assert controller.substrateAngleSpin.isHidden()

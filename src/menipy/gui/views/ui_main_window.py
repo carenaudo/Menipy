@@ -69,59 +69,55 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName(u"centralwidget")
         self.centralLayout = QVBoxLayout(self.centralwidget)
         self.centralLayout.setObjectName(u"centralLayout")
-        self.layoutBar = QWidget(self.centralwidget)
-        self.layoutBar.setObjectName(u"layoutBar")
-        self.layoutBarLayout = QHBoxLayout(self.layoutBar)
-        self.layoutBarLayout.setSpacing(8)
-        self.layoutBarLayout.setObjectName(u"layoutBarLayout")
-        self.layoutBarLayout.setContentsMargins(8, 8, 8, 0)
-        self.layoutLabel = QLabel(self.layoutBar)
-        self.layoutLabel.setObjectName(u"layoutLabel")
+        self.workflowBar = QWidget(self.centralwidget)
+        self.workflowBar.setObjectName(u"workflowBar")
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.workflowBar.sizePolicy().hasHeightForWidth())
+        self.workflowBar.setSizePolicy(sizePolicy)
+        self.workflowBar.setMaximumSize(QSize(16777215, 44))
+        self.workflowBarLayout = QHBoxLayout(self.workflowBar)
+        self.workflowBarLayout.setSpacing(8)
+        self.workflowBarLayout.setObjectName(u"workflowBarLayout")
+        self.workflowBarLayout.setContentsMargins(8, 8, 8, 6)
+        self.actionOpenImageBtn = QToolButton(self.workflowBar)
+        self.actionOpenImageBtn.setObjectName(u"actionOpenImageBtn")
+        self.actionOpenImageBtn.setAutoRaise(True)
 
-        self.layoutBarLayout.addWidget(self.layoutLabel)
+        self.workflowBarLayout.addWidget(self.actionOpenImageBtn)
 
-        self.layoutAnalysisBtn = QToolButton(self.layoutBar)
-        self.layoutAnalysisBtn.setObjectName(u"layoutAnalysisBtn")
-        self.layoutAnalysisBtn.setCheckable(True)
-        self.layoutAnalysisBtn.setAutoExclusive(True)
+        self.workflowAutoCalibrateBtn = QToolButton(self.workflowBar)
+        self.workflowAutoCalibrateBtn.setObjectName(u"workflowAutoCalibrateBtn")
+        self.workflowAutoCalibrateBtn.setAutoRaise(True)
 
-        self.layoutBarLayout.addWidget(self.layoutAnalysisBtn)
+        self.workflowBarLayout.addWidget(self.workflowAutoCalibrateBtn)
 
-        self.layoutSetupBtn = QToolButton(self.layoutBar)
-        self.layoutSetupBtn.setObjectName(u"layoutSetupBtn")
-        self.layoutSetupBtn.setCheckable(True)
-        self.layoutSetupBtn.setAutoExclusive(True)
+        self.actionRunBtn = QToolButton(self.workflowBar)
+        self.actionRunBtn.setObjectName(u"actionRunBtn")
+        self.actionRunBtn.setAutoRaise(True)
 
-        self.layoutBarLayout.addWidget(self.layoutSetupBtn)
+        self.workflowBarLayout.addWidget(self.actionRunBtn)
 
-        self.layoutReviewBtn = QToolButton(self.layoutBar)
-        self.layoutReviewBtn.setObjectName(u"layoutReviewBtn")
-        self.layoutReviewBtn.setCheckable(True)
-        self.layoutReviewBtn.setChecked(True)
-        self.layoutReviewBtn.setAutoExclusive(True)
+        self.actionExportCsvBtn = QToolButton(self.workflowBar)
+        self.actionExportCsvBtn.setObjectName(u"actionExportCsvBtn")
+        self.actionExportCsvBtn.setAutoRaise(True)
 
-        self.layoutBarLayout.addWidget(self.layoutReviewBtn)
+        self.workflowBarLayout.addWidget(self.actionExportCsvBtn)
 
-        self.layoutSpacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.workflowAdvancedBtn = QToolButton(self.workflowBar)
+        self.workflowAdvancedBtn.setObjectName(u"workflowAdvancedBtn")
+        self.workflowAdvancedBtn.setCheckable(True)
+        self.workflowAdvancedBtn.setAutoRaise(True)
 
-        self.layoutBarLayout.addItem(self.layoutSpacer)
+        self.workflowBarLayout.addWidget(self.workflowAdvancedBtn)
 
-        self.toggleSetupBtn = QToolButton(self.layoutBar)
-        self.toggleSetupBtn.setObjectName(u"toggleSetupBtn")
-        self.toggleSetupBtn.setCheckable(True)
-        self.toggleSetupBtn.setChecked(True)
+        self.workflowSpacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
-        self.layoutBarLayout.addWidget(self.toggleSetupBtn)
-
-        self.toggleInspectBtn = QToolButton(self.layoutBar)
-        self.toggleInspectBtn.setObjectName(u"toggleInspectBtn")
-        self.toggleInspectBtn.setCheckable(True)
-        self.toggleInspectBtn.setChecked(True)
-
-        self.layoutBarLayout.addWidget(self.toggleInspectBtn)
+        self.workflowBarLayout.addItem(self.workflowSpacer)
 
 
-        self.centralLayout.addWidget(self.layoutBar)
+        self.centralLayout.addWidget(self.workflowBar)
 
         self.rootSplitter = QSplitter(self.centralwidget)
         self.rootSplitter.setObjectName(u"rootSplitter")
@@ -164,80 +160,6 @@ class Ui_MainWindow(object):
         self.rootSplitter.addWidget(self.inspectTabs)
 
         self.centralLayout.addWidget(self.rootSplitter)
-
-        self.actionBar = QFrame(self.centralwidget)
-        self.actionBar.setObjectName(u"actionBar")
-        self.actionBar.setFrameShape(QFrame.StyledPanel)
-        self.actionBar.setFrameShadow(QFrame.Plain)
-        self.actionBarLayout = QHBoxLayout(self.actionBar)
-        self.actionBarLayout.setSpacing(10)
-        self.actionBarLayout.setObjectName(u"actionBarLayout")
-        self.actionBarLayout.setContentsMargins(8, 6, 8, 8)
-        self.sessionLabel = QLabel(self.actionBar)
-        self.sessionLabel.setObjectName(u"sessionLabel")
-
-        self.actionBarLayout.addWidget(self.sessionLabel)
-
-        self.actionOpenImageBtn = QToolButton(self.actionBar)
-        self.actionOpenImageBtn.setObjectName(u"actionOpenImageBtn")
-        self.actionOpenImageBtn.setAutoRaise(True)
-
-        self.actionBarLayout.addWidget(self.actionOpenImageBtn)
-
-        self.sessionSeparator = QFrame(self.actionBar)
-        self.sessionSeparator.setObjectName(u"sessionSeparator")
-        self.sessionSeparator.setFrameShape(QFrame.VLine)
-        self.sessionSeparator.setFrameShadow(QFrame.Sunken)
-
-        self.actionBarLayout.addWidget(self.sessionSeparator)
-
-        self.processingLabel = QLabel(self.actionBar)
-        self.processingLabel.setObjectName(u"processingLabel")
-
-        self.actionBarLayout.addWidget(self.processingLabel)
-
-        self.actionPreviewBtn = QToolButton(self.actionBar)
-        self.actionPreviewBtn.setObjectName(u"actionPreviewBtn")
-        self.actionPreviewBtn.setAutoRaise(True)
-
-        self.actionBarLayout.addWidget(self.actionPreviewBtn)
-
-        self.actionRunBtn = QToolButton(self.actionBar)
-        self.actionRunBtn.setObjectName(u"actionRunBtn")
-        self.actionRunBtn.setAutoRaise(True)
-
-        self.actionBarLayout.addWidget(self.actionRunBtn)
-
-        self.actionStopBtn = QToolButton(self.actionBar)
-        self.actionStopBtn.setObjectName(u"actionStopBtn")
-        self.actionStopBtn.setAutoRaise(True)
-
-        self.actionBarLayout.addWidget(self.actionStopBtn)
-
-        self.processingSeparator = QFrame(self.actionBar)
-        self.processingSeparator.setObjectName(u"processingSeparator")
-        self.processingSeparator.setFrameShape(QFrame.VLine)
-        self.processingSeparator.setFrameShadow(QFrame.Sunken)
-
-        self.actionBarLayout.addWidget(self.processingSeparator)
-
-        self.exportLabel = QLabel(self.actionBar)
-        self.exportLabel.setObjectName(u"exportLabel")
-
-        self.actionBarLayout.addWidget(self.exportLabel)
-
-        self.actionExportCsvBtn = QToolButton(self.actionBar)
-        self.actionExportCsvBtn.setObjectName(u"actionExportCsvBtn")
-        self.actionExportCsvBtn.setAutoRaise(True)
-
-        self.actionBarLayout.addWidget(self.actionExportCsvBtn)
-
-        self.actionSpacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-
-        self.actionBarLayout.addItem(self.actionSpacer)
-
-
-        self.centralLayout.addWidget(self.actionBar)
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.statusbar = QStatusBar(MainWindow)
@@ -313,38 +235,13 @@ class Ui_MainWindow(object):
         self.menuView.setTitle(QCoreApplication.translate("MainWindow", u"&View", None))
         self.menuRun.setTitle(QCoreApplication.translate("MainWindow", u"&Run", None))
         self.menuHelp.setTitle(QCoreApplication.translate("MainWindow", u"&Help", None))
-        self.layoutLabel.setText(QCoreApplication.translate("MainWindow", u"Layout", None))
-        self.layoutAnalysisBtn.setText(QCoreApplication.translate("MainWindow", u"Analysis", None))
-        #if QT_CONFIG(tooltip)
-        self.layoutAnalysisBtn.setToolTip(QCoreApplication.translate("MainWindow", u"Focus on the image canvas", None))
-        #endif // QT_CONFIG(tooltip)
-        self.layoutSetupBtn.setText(QCoreApplication.translate("MainWindow", u"Setup", None))
-        #if QT_CONFIG(tooltip)
-        self.layoutSetupBtn.setToolTip(QCoreApplication.translate("MainWindow", u"Show setup and preview panels", None))
-        #endif // QT_CONFIG(tooltip)
-        self.layoutReviewBtn.setText(QCoreApplication.translate("MainWindow", u"Review", None))
-        #if QT_CONFIG(tooltip)
-        self.layoutReviewBtn.setToolTip(QCoreApplication.translate("MainWindow", u"Show setup, preview, and inspector panels", None))
-        #endif // QT_CONFIG(tooltip)
-        self.toggleSetupBtn.setText(QCoreApplication.translate("MainWindow", u"Setup Panel", None))
-        #if QT_CONFIG(tooltip)
-        self.toggleSetupBtn.setToolTip(QCoreApplication.translate("MainWindow", u"Show or hide the setup panel", None))
-        #endif // QT_CONFIG(tooltip)
-        self.toggleInspectBtn.setText(QCoreApplication.translate("MainWindow", u"Inspector", None))
-        #if QT_CONFIG(tooltip)
-        self.toggleInspectBtn.setToolTip(QCoreApplication.translate("MainWindow", u"Show or hide the results inspector", None))
-        #endif // QT_CONFIG(tooltip)
+        self.actionOpenImageBtn.setText(QCoreApplication.translate("MainWindow", u"Open Image", None))
+        self.workflowAutoCalibrateBtn.setText(QCoreApplication.translate("MainWindow", u"Auto-Calibrate", None))
+        self.actionRunBtn.setText(QCoreApplication.translate("MainWindow", u"Run Analysis", None))
+        self.actionExportCsvBtn.setText(QCoreApplication.translate("MainWindow", u"Export CSV", None))
+        self.workflowAdvancedBtn.setText(QCoreApplication.translate("MainWindow", u"Advanced +", None))
         self.inspectTabs.setTabText(self.inspectTabs.indexOf(self.resultsTab), QCoreApplication.translate("MainWindow", u"Results", None))
         self.inspectTabs.setTabText(self.inspectTabs.indexOf(self.residualsTab), QCoreApplication.translate("MainWindow", u"Residuals", None))
         self.inspectTabs.setTabText(self.inspectTabs.indexOf(self.timingsTab), QCoreApplication.translate("MainWindow", u"Timings", None))
         self.inspectTabs.setTabText(self.inspectTabs.indexOf(self.logTab), QCoreApplication.translate("MainWindow", u"Log", None))
-        self.sessionLabel.setText(QCoreApplication.translate("MainWindow", u"Session", None))
-        self.actionOpenImageBtn.setText(QCoreApplication.translate("MainWindow", u"Load Image", None))
-        self.processingLabel.setText(QCoreApplication.translate("MainWindow", u"Processing", None))
-        self.actionPreviewBtn.setText(QCoreApplication.translate("MainWindow", u"Preview", None))
-        self.actionRunBtn.setText(QCoreApplication.translate("MainWindow", u"Run", None))
-        self.actionStopBtn.setText(QCoreApplication.translate("MainWindow", u"Stop", None))
-        self.exportLabel.setText(QCoreApplication.translate("MainWindow", u"Export", None))
-        self.actionExportCsvBtn.setText(QCoreApplication.translate("MainWindow", u"Export CSV", None))
         # retranslateUi
-

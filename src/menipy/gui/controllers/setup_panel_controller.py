@@ -323,13 +323,13 @@ class SetupPanelController(QObject):
         system = getattr(self.settings, "unit_system", "SI")
         
         if system == "SI":
-            if self.needleLengthLabel: self.needleLengthLabel.setText("Needle Diameter (mm)")
-            if self.dropDensityLabel: self.dropDensityLabel.setText("Drop Density (kg/m³)")
-            if self.fluidDensityLabel: self.fluidDensityLabel.setText("Fluid Density (kg/m³)")
+            if self.needleLengthLabel: self.needleLengthLabel.setText("Needle (mm)")
+            if self.dropDensityLabel: self.dropDensityLabel.setText("Drop rho")
+            if self.fluidDensityLabel: self.fluidDensityLabel.setText("Fluid rho")
         else:
-            if self.needleLengthLabel: self.needleLengthLabel.setText("Needle Diameter (cm)")
-            if self.dropDensityLabel: self.dropDensityLabel.setText("Drop Density (g/cm³)")
-            if self.fluidDensityLabel: self.fluidDensityLabel.setText("Fluid Density (g/cm³)")
+            if self.needleLengthLabel: self.needleLengthLabel.setText("Needle (cm)")
+            if self.dropDensityLabel: self.dropDensityLabel.setText("Drop rho")
+            if self.fluidDensityLabel: self.fluidDensityLabel.setText("Fluid rho")
             
         # Optional: convert current spinbox values to stay consistent when units toggle
         # (This is tricky if done multiple times without precision loss, but helpful for UX)

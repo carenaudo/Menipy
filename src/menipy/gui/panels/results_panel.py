@@ -652,19 +652,24 @@ class ResultsPanel:
         last_run = (
             measurements[0].timestamp.strftime("%H:%M:%S") if measurements else "n/a"
         )
-        angles = []
-        for measurement in measurements:
-            value = measurement.results.get("contact_angle_deg")
-            if value is None:
-                continue
-            try:
-                angles.append(float(value))
-            except (TypeError, ValueError):
-                continue
-        avg_ca = f"{sum(angles) / len(angles):.1f}°" if angles else "n/a"
-        self.summary_label.setText(
-            f"{count} measurements | Avg CA: {avg_ca} | Last run: {last_run}"
-        )
+        parts = [f"{count} measurements", f"Last: {last_run}"]
+        if measurements:
+            latest = measurements[0].results
+            for key, label, suffix in (
+                ("surface_tension_mN_m", "IFT", " mN/m"),
+                ("contact_angle_deg", "CA", "°"),
+                ("diameter_mm", "Dia", " mm"),
+                ("volume_uL", "Vol", " µL"),
+            ):
+                value = latest.get(key)
+                if value is None:
+                    continue
+                try:
+                    text = f"{float(value):.3g}{suffix}"
+                except (TypeError, ValueError):
+                    text = str(value)
+                parts.append(f"{label}: {text}")
+        self.summary_label.setText(" | ".join(parts))
 
     def set_pipeline_filter(self, pipeline_name: str) -> None:
         """Set the pipeline filter programmatically."""

@@ -17,7 +17,6 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QLayout,
     QPlainTextEdit,
-    QToolButton,
 )
 
 from menipy.gui.views.image_view import DRAW_NONE
@@ -112,7 +111,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # restore geometry/state if present (pre-split or split—it’s fine)
         self._restore_window_layout()
-        self._configure_guided_shell()
 
         # ---------- loader that knows our custom widgets ----------
         loader = QUiLoader()
@@ -342,9 +340,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         button_action_pairs = [
             ("actionOpenImageBtn", "actionOpenImage"),
-            ("actionPreviewBtn", "actionPreview"),
             ("actionRunBtn", "actionRunFull"),
-            ("actionStopBtn", "actionStop"),
             ("actionExportCsvBtn", "actionExportCsv"),
         ]
         for button_name, action_name in button_action_pairs:
@@ -372,58 +368,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 advanced.toggled.connect(self._set_guided_advanced_visible)
             except Exception:
                 pass
-
-    def _configure_guided_shell(self) -> None:
-        """Show one workflow toolbar and hide duplicate layout controls."""
-        for name in (
-            "layoutLabel",
-            "layoutAnalysisBtn",
-            "layoutSetupBtn",
-            "layoutReviewBtn",
-            "toggleSetupBtn",
-            "toggleInspectBtn",
-            "sessionLabel",
-            "sessionSeparator",
-            "processingLabel",
-            "actionPreviewBtn",
-            "actionStopBtn",
-            "processingSeparator",
-            "exportLabel",
-        ):
-            widget = getattr(self, name, None)
-            if widget:
-                widget.setVisible(False)
-
-        toolbar = getattr(self, "layoutBarLayout", None)
-        if toolbar is None:
-            return
-
-        self.workflowAutoCalibrateBtn = QToolButton(self.layoutBar)
-        self.workflowAutoCalibrateBtn.setObjectName("workflowAutoCalibrateBtn")
-        self.workflowAutoCalibrateBtn.setText("Auto-Calibrate")
-        self.workflowAutoCalibrateBtn.setAutoRaise(True)
-
-        self.workflowAdvancedBtn = QToolButton(self.layoutBar)
-        self.workflowAdvancedBtn.setObjectName("workflowAdvancedBtn")
-        self.workflowAdvancedBtn.setText("Advanced")
-        self.workflowAdvancedBtn.setCheckable(True)
-        self.workflowAdvancedBtn.setAutoRaise(True)
-
-        if getattr(self, "actionRunBtn", None):
-            self.actionRunBtn.setText("Run Analysis")
-
-        workflow_widgets = [
-            getattr(self, "actionOpenImageBtn", None),
-            self.workflowAutoCalibrateBtn,
-            getattr(self, "actionRunBtn", None),
-            getattr(self, "actionExportCsvBtn", None),
-            self.workflowAdvancedBtn,
-        ]
-        for widget in reversed([w for w in workflow_widgets if w is not None]):
-            toolbar.insertWidget(0, widget)
-
-        if getattr(self, "actionBar", None):
-            self.actionBar.setVisible(False)
 
     def _set_guided_advanced_visible(self, visible: bool, save: bool = True) -> None:
         advanced = getattr(self, "workflowAdvancedBtn", None)

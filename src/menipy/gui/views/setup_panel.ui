@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='UTF-8'?>
+<?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>SetupPanel</class>
  <widget class="QWidget" name="SetupPanel">
@@ -6,97 +6,54 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>349</width>
-    <height>573</height>
+    <width>300</width>
+    <height>620</height>
    </rect>
   </property>
   <layout class="QVBoxLayout" name="root">
-   <property name="spacing">
-    <number>8</number>
-   </property>
-   <property name="leftMargin">
-    <number>8</number>
-   </property>
-   <property name="topMargin">
-    <number>8</number>
-   </property>
-   <property name="rightMargin">
-    <number>8</number>
-   </property>
-   <property name="bottomMargin">
-    <number>8</number>
-   </property>
+   <property name="spacing"><number>8</number></property>
+   <property name="leftMargin"><number>8</number></property>
+   <property name="topMargin"><number>8</number></property>
+   <property name="rightMargin"><number>8</number></property>
+   <property name="bottomMargin"><number>8</number></property>
    <item>
     <widget class="QGroupBox" name="pipelineGroup">
-     <property name="title">
-      <string>Pipeline Type</string>
-     </property>
+     <property name="title"><string>Analysis Type</string></property>
      <layout class="QVBoxLayout" name="pipelineButtonLayout">
+      <property name="spacing"><number>6</number></property>
       <item>
        <layout class="QHBoxLayout" name="pipelineButtons">
+        <property name="spacing"><number>6</number></property>
         <item>
          <widget class="QPushButton" name="sessileBtn">
-          <property name="text">
-           <string>Sessile Drop</string>
-          </property>
-          <property name="icon">
-           <iconset resource="../resources/menipy_icons.qrc">
-            <normaloff>:/icons/sessile.svg</normaloff>
-           </iconset>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-          <property name="autoExclusive">
-           <bool>true</bool>
-          </property>
+          <property name="text"><string>Sessile</string></property>
+          <property name="checkable"><bool>true</bool></property>
+          <property name="autoExclusive"><bool>true</bool></property>
           <property name="styleSheet">
-           <string notr="true">QPushButton { text-align: center; padding: 8px; border: 2px solid #4A90E2; border-radius: 6px; background-color: #f8f9fa; }
-QPushButton:checked { background-color: #4A90E2; color: white; font-weight: bold; }</string>
+           <string notr="true">QPushButton { text-align: center; padding: 5px 6px; border: 1px solid #5f6773; border-radius: 4px; background: transparent; color: palette(text); }
+QPushButton:checked { border: 2px solid #4A90E2; font-weight: 600; }</string>
           </property>
          </widget>
         </item>
         <item>
          <widget class="QPushButton" name="pendantBtn">
-          <property name="text">
-           <string>Pendant Drop</string>
-          </property>
-          <property name="icon">
-           <iconset resource="../resources/menipy_icons.qrc">
-            <normaloff>:/icons/pendant.svg</normaloff>
-           </iconset>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-          <property name="autoExclusive">
-           <bool>true</bool>
-          </property>
+          <property name="text"><string>Pendant</string></property>
+          <property name="checkable"><bool>true</bool></property>
+          <property name="autoExclusive"><bool>true</bool></property>
           <property name="styleSheet">
-           <string notr="true">QPushButton { text-align: center; padding: 8px; border: 2px solid #7ED321; border-radius: 6px; background-color: #f8f9fa; }
-QPushButton:checked { background-color: #7ED321; color: white; font-weight: bold; }</string>
+           <string notr="true">QPushButton { text-align: center; padding: 5px 6px; border: 1px solid #5f6773; border-radius: 4px; background: transparent; color: palette(text); }
+QPushButton:checked { border: 2px solid #4A90E2; font-weight: 600; }</string>
           </property>
          </widget>
         </item>
         <item>
          <widget class="QPushButton" name="oscillatingBtn">
-          <property name="text">
-           <string>Oscillating</string>
-          </property>
-          <property name="icon">
-           <iconset resource="../resources/menipy_icons.qrc">
-            <normaloff>:/icons/oscillating.svg</normaloff>
-           </iconset>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-          <property name="autoExclusive">
-           <bool>true</bool>
-          </property>
+          <property name="text"><string>Osc.</string></property>
+          <property name="checkable"><bool>true</bool></property>
+          <property name="autoExclusive"><bool>true</bool></property>
           <property name="styleSheet">
-           <string notr="true">QPushButton { text-align: center; padding: 8px; border: 2px solid #F5A623; border-radius: 6px; background-color: #f8f9fa; }
-QPushButton:checked { background-color: #F5A623; color: white; font-weight: bold; }</string>
+           <string notr="true">QPushButton { text-align: center; padding: 5px 6px; border: 1px solid #5f6773; border-radius: 4px; background: transparent; color: palette(text); }
+QPushButton:checked { border: 2px solid #4A90E2; font-weight: 600; }</string>
           </property>
          </widget>
         </item>
@@ -104,47 +61,26 @@ QPushButton:checked { background-color: #F5A623; color: white; font-weight: bold
       </item>
       <item>
        <layout class="QHBoxLayout" name="pipelineButtonsRow2">
+        <property name="spacing"><number>6</number></property>
         <item>
          <widget class="QPushButton" name="capillaryBtn">
-          <property name="text">
-           <string>Capillary Rise</string>
-          </property>
-          <property name="icon">
-           <iconset resource="../resources/menipy_icons.qrc">
-            <normaloff>:/icons/capillary_rise.svg</normaloff>
-           </iconset>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-          <property name="autoExclusive">
-           <bool>true</bool>
-          </property>
+          <property name="text"><string>Capillary</string></property>
+          <property name="checkable"><bool>true</bool></property>
+          <property name="autoExclusive"><bool>true</bool></property>
           <property name="styleSheet">
-           <string notr="true">QPushButton { text-align: center; padding: 8px; border: 2px solid #9B59B6; border-radius: 6px; background-color: #f8f9fa; }
-QPushButton:checked { background-color: #9B59B6; color: white; font-weight: bold; }</string>
+           <string notr="true">QPushButton { text-align: center; padding: 5px 6px; border: 1px solid #5f6773; border-radius: 4px; background: transparent; color: palette(text); }
+QPushButton:checked { border: 2px solid #4A90E2; font-weight: 600; }</string>
           </property>
          </widget>
         </item>
         <item>
          <widget class="QPushButton" name="captiveBtn">
-          <property name="text">
-           <string>Captive Bubble</string>
-          </property>
-          <property name="icon">
-           <iconset resource="../resources/menipy_icons.qrc">
-            <normaloff>:/icons/captive_bubble.svg</normaloff>
-           </iconset>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-          <property name="autoExclusive">
-           <bool>true</bool>
-          </property>
+          <property name="text"><string>Captive</string></property>
+          <property name="checkable"><bool>true</bool></property>
+          <property name="autoExclusive"><bool>true</bool></property>
           <property name="styleSheet">
-           <string notr="true">QPushButton { text-align: center; padding: 8px; border: 2px solid #50E3C2; border-radius: 6px; background-color: #f8f9fa; }
-QPushButton:checked { background-color: #50E3C2; color: white; font-weight: bold; }</string>
+           <string notr="true">QPushButton { text-align: center; padding: 5px 6px; border: 1px solid #5f6773; border-radius: 4px; background: transparent; color: palette(text); }
+QPushButton:checked { border: 2px solid #4A90E2; font-weight: 600; }</string>
           </property>
          </widget>
         </item>
@@ -154,182 +90,210 @@ QPushButton:checked { background-color: #50E3C2; color: white; font-weight: bold
     </widget>
    </item>
    <item>
-   <widget class="QGroupBox" name="sourceGroup">
-    <property name="title">
-     <string>Image Source</string>
-    </property>
-     <layout class="QFormLayout" name="sourceForm"><item row="0" column="0"><widget class="QLabel" name="labelMode"><property name="text"><string>Mode</string></property></widget></item><item row="0" column="1"><layout class="QHBoxLayout" name="modeRow"><item><widget class="QRadioButton" name="singleModeRadio"><property name="text"><string>Single File</string></property><property name="checked"><bool>true</bool></property></widget></item><item><widget class="QRadioButton" name="batchModeRadio"><property name="text"><string>Batch Folder</string></property></widget></item><item><widget class="QRadioButton" name="cameraModeRadio"><property name="text"><string>Camera</string></property></widget></item></layout></item><item row="1" column="0"><widget class="QLabel" name="labelImage"><property name="text"><string>Image</string></property></widget></item><item row="1" column="1"><layout class="QHBoxLayout" name="srcRow"><item><widget class="QLineEdit" name="imagePathEdit"><property name="placeholderText"><string>Select image...</string></property></widget></item><item><widget class="QToolButton" name="browseBtn"><property name="toolTip"><string>Browse image</string></property><property name="text"><string>...</string></property></widget></item></layout></item><item row="2" column="0"><widget class="QLabel" name="labelBatch"><property name="text"><string>Batch Folder</string></property></widget></item><item row="2" column="1"><layout class="QHBoxLayout" name="batchRow"><item><widget class="QLineEdit" name="batchPathEdit"><property name="placeholderText"><string>Select folder...</string></property></widget></item><item><widget class="QToolButton" name="batchBrowseBtn"><property name="toolTip"><string>Browse folder</string></property><property name="text"><string>...</string></property></widget></item></layout></item><item row="3" column="0"><widget class="QLabel" name="labelSourceId"><property name="text"><string>Source</string></property></widget></item><item row="3" column="1"><widget class="QComboBox" name="sourceIdCombo"><property name="editable"><bool>true</bool></property></widget></item><item row="4" column="0"><widget class="QLabel" name="labelFrames"><property name="text"><string>Frames</string></property></widget></item><item row="4" column="1"><widget class="QSpinBox" name="framesSpin"><property name="minimum"><number>1</number></property><property name="maximum"><number>9999</number></property><property name="value"><number>1</number></property></widget></item></layout></widget>
-   </item>
-   <item>
-   <widget class="QGroupBox" name="calibrationGroup">
-    <property name="title">
-     <string>Calibration Parameters</string>
-    </property>
-     <layout class="QFormLayout" name="calibrationForm">
+    <widget class="QGroupBox" name="sourceGroup">
+     <property name="title"><string>Source</string></property>
+     <layout class="QFormLayout" name="sourceForm">
+      <property name="labelAlignment"><set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set></property>
       <item row="0" column="0">
-       <widget class="QLabel" name="previewLabel">
-        <property name="text">
-         <string>Preview</string>
-        </property>
+       <widget class="QLabel" name="labelMode">
+        <property name="text"><string>Mode</string></property>
        </widget>
       </item>
       <item row="0" column="1">
-       <layout class="QHBoxLayout" name="previewRow">
+       <layout class="QHBoxLayout" name="modeRow">
         <item>
-       <widget class="QToolButton" name="previewBtn">
-        <property name="toolTip">
-         <string>Preview selected image</string>
-        </property>
-        <property name="text">
-         <string>Preview</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="autoCalibrateBtn">
-        <property name="toolTip">
-         <string>Automatically detect ROI, needle, and substrate regions</string>
-        </property>
-        <property name="text">
-         <string>Auto-Calibrate</string>
-        </property>
-        <property name="styleSheet">
-         <string notr="true">QPushButton { background-color: #2563EB; color: white; border-radius: 4px; padding: 4px 8px; font-weight: bold; }
-QPushButton:hover { background-color: #1D4ED8; }
-QPushButton:disabled { background-color: #bdc3c7; }</string>
-        </property>
-       </widget>
+         <widget class="QRadioButton" name="singleModeRadio">
+          <property name="text"><string>File</string></property>
+          <property name="checked"><bool>true</bool></property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QRadioButton" name="batchModeRadio">
+          <property name="text"><string>Batch</string></property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QRadioButton" name="cameraModeRadio">
+          <property name="text"><string>Camera</string></property>
+         </widget>
         </item>
        </layout>
       </item>
       <item row="1" column="0">
-       <widget class="QLabel" name="needleLengthLabel">
-        <property name="text">
-         <string>Needle Length (mm)</string>
-        </property>
+       <widget class="QLabel" name="labelImage">
+        <property name="text"><string>Image</string></property>
        </widget>
       </item>
       <item row="1" column="1">
-       <widget class="QDoubleSpinBox" name="needleLengthSpin">
-        <property name="minimum">
-         <double>0.100000000000000</double>
-        </property>
-        <property name="maximum">
-         <double>100.000000000000000</double>
-        </property>
-        <property name="value">
-         <double>10.000000000000000</double>
-        </property>
-        <property name="decimals">
-         <number>2</number>
-        </property>
-       </widget>
+       <layout class="QHBoxLayout" name="srcRow">
+        <item>
+         <widget class="QLineEdit" name="imagePathEdit">
+          <property name="placeholderText"><string>Select image...</string></property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QToolButton" name="browseBtn">
+          <property name="toolTip"><string>Browse image</string></property>
+          <property name="text"><string>...</string></property>
+         </widget>
+        </item>
+       </layout>
       </item>
       <item row="2" column="0">
-       <widget class="QLabel" name="dropDensityLabel">
-        <property name="text">
-         <string>Drop Density (kg/m³)</string>
-        </property>
+       <widget class="QLabel" name="labelBatch">
+        <property name="text"><string>Folder</string></property>
        </widget>
       </item>
       <item row="2" column="1">
-       <widget class="QDoubleSpinBox" name="dropDensitySpin">
-        <property name="minimum">
-         <double>500.000000000000000</double>
-        </property>
-        <property name="maximum">
-         <double>20000.000000000000000</double>
-        </property>
-        <property name="value">
-         <double>1000.000000000000000</double>
-        </property>
-        <property name="decimals">
-         <number>1</number>
-        </property>
-       </widget>
+       <layout class="QHBoxLayout" name="batchRow">
+        <item>
+         <widget class="QLineEdit" name="batchPathEdit">
+          <property name="placeholderText"><string>Select folder...</string></property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QToolButton" name="batchBrowseBtn">
+          <property name="toolTip"><string>Browse folder</string></property>
+          <property name="text"><string>...</string></property>
+         </widget>
+        </item>
+       </layout>
       </item>
       <item row="3" column="0">
-       <widget class="QLabel" name="fluidDensityLabel">
-        <property name="text">
-         <string>Fluid Density (kg/m³)</string>
-        </property>
+       <widget class="QLabel" name="labelSourceId">
+        <property name="text"><string>Source</string></property>
        </widget>
       </item>
       <item row="3" column="1">
-       <widget class="QDoubleSpinBox" name="fluidDensitySpin">
-        <property name="minimum">
-         <double>1.000000000000000</double>
-        </property>
-        <property name="maximum">
-         <double>2000.000000000000000</double>
-        </property>
-        <property name="value">
-         <double>1.200000000000000</double>
-        </property>
-        <property name="decimals">
-         <number>1</number>
-        </property>
+       <widget class="QComboBox" name="sourceIdCombo">
+        <property name="editable"><bool>true</bool></property>
        </widget>
       </item>
       <item row="4" column="0">
-       <widget class="QLabel" name="substrateAngleLabel">
-        <property name="text">
-         <string>Substrate Contact Angle (°)</string>
-        </property>
+       <widget class="QLabel" name="labelFrames">
+        <property name="text"><string>Frames</string></property>
        </widget>
       </item>
       <item row="4" column="1">
-       <widget class="QDoubleSpinBox" name="substrateAngleSpin">
-        <property name="minimum">
-         <double>0.000000000000000</double>
-        </property>
-        <property name="maximum">
-         <double>180.000000000000000</double>
-        </property>
-        <property name="value">
-         <double>0.000000000000000</double>
-        </property>
-        <property name="decimals">
-         <number>1</number>
-        </property>
+       <widget class="QSpinBox" name="framesSpin">
+        <property name="minimum"><number>1</number></property>
+        <property name="maximum"><number>9999</number></property>
+        <property name="value"><number>1</number></property>
        </widget>
       </item>
      </layout>
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="sopGroup">
-     <property name="title">
-      <string>Standard Procedure (SOP)</string>
-     </property>
-     <layout class="QFormLayout" name="sopForm">
+    <widget class="QGroupBox" name="calibrationGroup">
+     <property name="title"><string>Calibration</string></property>
+     <layout class="QFormLayout" name="calibrationForm">
+      <property name="labelAlignment"><set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set></property>
       <item row="0" column="0">
-       <widget class="QLabel" name="labelPreset">
-        <property name="text">
-         <string>Preset</string>
-        </property>
+       <widget class="QLabel" name="needleLengthLabel">
+        <property name="text"><string>Needle (mm)</string></property>
        </widget>
       </item>
       <item row="0" column="1">
-       <layout class="QHBoxLayout" name="sopRow">
+       <widget class="QDoubleSpinBox" name="needleLengthSpin">
+        <property name="minimum"><double>0.100000000000000</double></property>
+        <property name="maximum"><double>100.000000000000000</double></property>
+        <property name="value"><double>10.000000000000000</double></property>
+        <property name="decimals"><number>2</number></property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="dropDensityLabel">
+        <property name="text"><string>Drop rho</string></property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QDoubleSpinBox" name="dropDensitySpin">
+        <property name="minimum"><double>500.000000000000000</double></property>
+        <property name="maximum"><double>20000.000000000000000</double></property>
+        <property name="value"><double>1000.000000000000000</double></property>
+        <property name="decimals"><number>1</number></property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="fluidDensityLabel">
+        <property name="text"><string>Fluid rho</string></property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QDoubleSpinBox" name="fluidDensitySpin">
+        <property name="minimum"><double>1.000000000000000</double></property>
+        <property name="maximum"><double>2000.000000000000000</double></property>
+        <property name="value"><double>1.200000000000000</double></property>
+        <property name="decimals"><number>1</number></property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="substrateAngleLabel">
+        <property name="text"><string>Substrate</string></property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QDoubleSpinBox" name="substrateAngleSpin">
+        <property name="minimum"><double>0.000000000000000</double></property>
+        <property name="maximum"><double>180.000000000000000</double></property>
+        <property name="value"><double>0.000000000000000</double></property>
+        <property name="decimals"><number>1</number></property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QToolButton" name="advancedToggleBtn">
+     <property name="text"><string>Advanced +</string></property>
+     <property name="checkable"><bool>true</bool></property>
+     <property name="toolButtonStyle"><enum>Qt::ToolButtonTextOnly</enum></property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="sopGroup">
+     <property name="title"><string>Advanced</string></property>
+     <layout class="QVBoxLayout" name="advancedLayout">
+      <item>
+       <layout class="QHBoxLayout" name="previewRow">
         <item>
-         <widget class="QComboBox" name="sopCombo">
-          <item>
-           <property name="text">
-            <string>Default (pipeline)</string>
-           </property>
-          </item>
+         <widget class="QToolButton" name="previewBtn">
+          <property name="toolTip"><string>Preview selected image</string></property>
+          <property name="text"><string>Preview</string></property>
          </widget>
         </item>
         <item>
-         <widget class="QToolButton" name="addSopBtn">
-          <property name="toolTip">
-           <string>Add SOP…</string>
-          </property>
-          <property name="text">
-           <string>+</string>
-          </property>
+         <widget class="QPushButton" name="autoCalibrateBtn">
+          <property name="toolTip"><string>Automatically detect ROI, needle, and substrate regions</string></property>
+          <property name="text"><string>Auto-Calibrate</string></property>
          </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QFormLayout" name="sopForm">
+        <item row="0" column="0">
+         <widget class="QLabel" name="labelPreset">
+          <property name="text"><string>SOP</string></property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <layout class="QHBoxLayout" name="sopRow">
+          <item>
+           <widget class="QComboBox" name="sopCombo">
+            <item>
+             <property name="text"><string>Default (pipeline)</string></property>
+            </item>
+           </widget>
+          </item>
+          <item>
+           <widget class="QToolButton" name="addSopBtn">
+            <property name="toolTip"><string>Add SOP...</string></property>
+            <property name="text"><string>+</string></property>
+           </widget>
+          </item>
+         </layout>
         </item>
        </layout>
       </item>
@@ -338,58 +302,36 @@ QPushButton:disabled { background-color: #bdc3c7; }</string>
    </item>
    <item>
     <widget class="QGroupBox" name="stepsGroup">
-     <property name="title">
-      <string>Steps</string>
-     </property>
+     <property name="title"><string>Stages</string></property>
      <layout class="QVBoxLayout" name="stepsBox">
-     <item>
-      <widget class="QListWidget" name="stepsList">
-       <property name="selectionMode">
-        <enum>QAbstractItemView::SelectionMode::NoSelection</enum>
-       </property>
-       <property name="flow">
-        <enum>QListView::Flow::TopToBottom</enum>
-       </property>
-       <property name="wrapping">
-        <bool>false</bool>
-       </property>
-       <property name="horizontalScrollBarPolicy">
-        <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOff</enum>
-       </property>
-       <property name="resizeMode">
-        <enum>QListView::ResizeMode::Adjust</enum>
-       </property>
-       <property name="movement">
-        <enum>QListView::Movement::Static</enum>
-       </property>
-       <property name="spacing">
-        <number>4</number>
-       </property>
-       <property name="uniformItemSizes">
-        <bool>false</bool>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </widget>
-  </item>
-  <item>
-   <widget class="QPushButton" name="runAllBtn">
-    <property name="text">
-     <string>Run Pipeline</string>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">QPushButton { background-color: #2563EB; color: white; border-radius: 4px; padding: 6px 10px; font-weight: bold; }
+      <item>
+       <widget class="QListWidget" name="stepsList">
+        <property name="selectionMode"><enum>QAbstractItemView::NoSelection</enum></property>
+        <property name="flow"><enum>QListView::TopToBottom</enum></property>
+        <property name="wrapping"><bool>false</bool></property>
+        <property name="horizontalScrollBarPolicy"><enum>Qt::ScrollBarAlwaysOff</enum></property>
+        <property name="resizeMode"><enum>QListView::Adjust</enum></property>
+        <property name="movement"><enum>QListView::Static</enum></property>
+        <property name="spacing"><number>4</number></property>
+        <property name="uniformItemSizes"><bool>false</bool></property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="runAllBtn">
+     <property name="text"><string>Run Analysis</string></property>
+     <property name="styleSheet">
+      <string notr="true">QPushButton { background-color: #2563EB; color: white; border-radius: 4px; padding: 7px 10px; font-weight: 600; }
 QPushButton:hover { background-color: #1D4ED8; }
 QPushButton:disabled { background-color: #94A3B8; }</string>
-    </property>
-   </widget>
-  </item>
+     </property>
+    </widget>
+   </item>
    <item>
     <spacer name="spacerBottom">
-     <property name="orientation">
-      <enum>Qt::Orientation::Vertical</enum>
-     </property>
+     <property name="orientation"><enum>Qt::Vertical</enum></property>
      <property name="sizeHint" stdset="0">
       <size>
        <width>20</width>
@@ -400,8 +342,6 @@ QPushButton:disabled { background-color: #94A3B8; }</string>
    </item>
   </layout>
  </widget>
- <resources>
-  <include location="../resources/menipy_icons.qrc" />
- </resources>
- <connections />
+ <resources/>
+ <connections/>
 </ui>
