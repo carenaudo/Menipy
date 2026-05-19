@@ -10,8 +10,15 @@ from pathlib import Path
 from typing import Any, Optional, Callable
 
 from PySide6.QtCore import QRectF, QLineF, Signal
-from PySide6.QtWidgets import QWidget, QToolButton, QPushButton
-from PySide6.QtGui import QColor
+from PySide6.QtWidgets import (
+    QWidget,
+    QToolButton,
+    QPushButton,
+    QCheckBox,
+    QMenu,
+    QHBoxLayout,
+)
+from PySide6.QtGui import QColor, QAction
 
 
 class PreviewPanel:
@@ -39,6 +46,7 @@ class PreviewPanel:
             self.image_view.roi_selected.connect(self.on_roi_selected)
             self.image_view.line_drawn.connect(self.on_line_drawn)
 
+        self._install_guided_menus()
         self._wire_buttons()
 
     # ------------------------------------------------------------------
@@ -260,6 +268,69 @@ class PreviewPanel:
                 except Exception:
                     pass
         self._set_overlay_buttons_enabled(False)
+
+    def _install_guided_menus(self) -> None:
+        """Replace exposed overlay controls with compact guided menus."""
+        def _find_button(name: str) -> Optional[QToolButton | QPushButton]:
+            button = self.panel.findChild(QToolButton, name)
+            if button:
+                return button
+            return self.panel.findChild(QPushButton, name)
+
+        toggles_layout = self.panel.findChild(QHBoxLayout, "togglesLayout")
+        mark_layout = self.panel.findChild(QHBoxLayout, "horizontalLayout")
+
+        overlay_button = self.panel.findChild(QToolButton, "overlayMenuBtn")
+        if overlay_button is None:
+            overlay_button = QToolButton(self.panel)
+            overlay_button.setObjectName("overlayMenuBtn")
+            overlay_button.setText("Overlays")
+            overlay_button.setPopupMode(QToolButton.InstantPopup)
+            if hasattr(toggles_layout, "insertWidget"):
+                toggles_layout.insertWidget(0, overlay_button)
+
+        overlay_menu = QMenu(overlay_button)
+        for checkbox_name, label in (
+            ("showContourCheck", "Contour"),
+            ("showAxesCheck", "Axes"),
+            ("showBaselineCheck", "Baseline"),
+        ):
+            checkbox = self.panel.findChild(QCheckBox, checkbox_name)
+            if not checkbox:
+                continue
+            action = QAction(label, overlay_menu)
+            action.setCheckable(True)
+            action.setChecked(checkbox.isChecked())
+            action.toggled.connect(checkbox.setChecked)
+            checkbox.toggled.connect(action.setChecked)
+            overlay_menu.addAction(action)
+            checkbox.setVisible(False)
+        overlay_button.setMenu(overlay_menu)
+
+        mark_button = self.panel.findChild(QToolButton, "markMenuBtn")
+        if mark_button is None:
+            mark_button = QToolButton(self.panel)
+            mark_button.setObjectName("markMenuBtn")
+            mark_button.setText("Mark")
+            mark_button.setPopupMode(QToolButton.InstantPopup)
+            if hasattr(mark_layout, "insertWidget"):
+                mark_layout.insertWidget(0, mark_button)
+
+        mark_menu = QMenu(mark_button)
+        for button_name, label in (
+            ("roiBtn", "ROI"),
+            ("needleBtn", "Needle"),
+            ("contactLineBtn", "Contact Line"),
+            ("clearBtn", "Clear"),
+        ):
+            button = _find_button(button_name)
+            if not button:
+                continue
+            action = QAction(label, mark_menu)
+            action.triggered.connect(button.click)
+            mark_menu.addAction(action)
+            button.setVisible(False)
+        mark_button.setMenu(mark_menu)
 
     def _set_overlay_buttons_enabled(self, enabled: bool) -> None:
         if not self._overlay_buttons:

@@ -11,7 +11,14 @@ from typing import List, Optional
 from PySide6.QtCore import QFile, QByteArray, Qt, QTimer
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtUiTools import QUiLoader
-from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLayout, QPlainTextEdit
+from PySide6.QtWidgets import (
+    QMainWindow,
+    QWidget,
+    QVBoxLayout,
+    QLayout,
+    QPlainTextEdit,
+    QToolButton,
+)
 
 from menipy.gui.views.image_view import DRAW_NONE
 
@@ -105,6 +112,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # restore geometry/state if present (pre-split or split—it’s fine)
         self._restore_window_layout()
+        self._configure_guided_shell()
 
         # ---------- loader that knows our custom widgets ----------
         loader = QUiLoader()
@@ -228,6 +236,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._wire_menu_actions()
         self._wire_layout_controls()
         self._wire_action_bar()
+        self._set_guided_advanced_visible(
+            bool(getattr(self.settings, "advanced_ui_visible", False)), save=False
+        )
         self._setup_units_menu()
         try:
             self.main_controller.load_startup_preview()
@@ -344,6 +355,115 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             try:
                 button.clicked.connect(action.trigger)
             except Exception:
+                pass
+
+        auto_calibrate = getattr(self, "workflowAutoCalibrateBtn", None)
+        if auto_calibrate and getattr(self, "setup_panel_ctrl", None):
+            try:
+                auto_calibrate.clicked.connect(
+                    self.setup_panel_ctrl.auto_calibrate_requested.emit
+                )
+            except Exception:
+                pass
+
+        advanced = getattr(self, "workflowAdvancedBtn", None)
+        if advanced:
+            try:
+                advanced.toggled.connect(self._set_guided_advanced_visible)
+            except Exception:
+                pass
+
+    def _configure_guided_shell(self) -> None:
+        """Show one workflow toolbar and hide duplicate layout controls."""
+        for name in (
+            "layoutLabel",
+            "layoutAnalysisBtn",
+            "layoutSetupBtn",
+            "layoutReviewBtn",
+            "toggleSetupBtn",
+            "toggleInspectBtn",
+            "sessionLabel",
+            "sessionSeparator",
+            "processingLabel",
+            "actionPreviewBtn",
+            "actionStopBtn",
+            "processingSeparator",
+            "exportLabel",
+        ):
+            widget = getattr(self, name, None)
+            if widget:
+                widget.setVisible(False)
+
+        toolbar = getattr(self, "layoutBarLayout", None)
+        if toolbar is None:
+            return
+
+        self.workflowAutoCalibrateBtn = QToolButton(self.layoutBar)
+        self.workflowAutoCalibrateBtn.setObjectName("workflowAutoCalibrateBtn")
+        self.workflowAutoCalibrateBtn.setText("Auto-Calibrate")
+        self.workflowAutoCalibrateBtn.setAutoRaise(True)
+
+        self.workflowAdvancedBtn = QToolButton(self.layoutBar)
+        self.workflowAdvancedBtn.setObjectName("workflowAdvancedBtn")
+        self.workflowAdvancedBtn.setText("Advanced")
+        self.workflowAdvancedBtn.setCheckable(True)
+        self.workflowAdvancedBtn.setAutoRaise(True)
+
+        if getattr(self, "actionRunBtn", None):
+            self.actionRunBtn.setText("Run Analysis")
+
+        workflow_widgets = [
+            getattr(self, "actionOpenImageBtn", None),
+            self.workflowAutoCalibrateBtn,
+            getattr(self, "actionRunBtn", None),
+            getattr(self, "actionExportCsvBtn", None),
+            self.workflowAdvancedBtn,
+        ]
+        for widget in reversed([w for w in workflow_widgets if w is not None]):
+            toolbar.insertWidget(0, widget)
+
+        if getattr(self, "actionBar", None):
+            self.actionBar.setVisible(False)
+
+    def _set_guided_advanced_visible(self, visible: bool, save: bool = True) -> None:
+        advanced = getattr(self, "workflowAdvancedBtn", None)
+        if advanced:
+            advanced.blockSignals(True)
+            advanced.setChecked(visible)
+            advanced.setText("Advanced -" if visible else "Advanced +")
+            advanced.blockSignals(False)
+
+        setup_ctrl = getattr(self, "setup_panel_ctrl", None)
+        if setup_ctrl and hasattr(setup_ctrl, "set_advanced_visible"):
+            setup_ctrl.set_advanced_visible(visible, save=False)
+
+        tabs = getattr(self, "inspectTabs", None)
+        if tabs:
+            for tab in (
+                getattr(self, "residualsTab", None),
+                getattr(self, "timingsTab", None),
+                getattr(self, "logTab", None),
+            ):
+                if tab is None:
+                    continue
+                index = tabs.indexOf(tab)
+                if index >= 0:
+                    try:
+                        tabs.setTabVisible(index, visible)
+                    except AttributeError:
+                        tab.setVisible(visible)
+            if not visible and tabs.currentWidget() in {
+                getattr(self, "residualsTab", None),
+                getattr(self, "timingsTab", None),
+                getattr(self, "logTab", None),
+            }:
+                tabs.setCurrentWidget(self.resultsTab)
+
+        if save:
+            self.settings.advanced_ui_visible = visible
+            try:
+                self.settings.save()
+            except OSError:
                 pass
 
     def _wire_layout_controls(self) -> None:

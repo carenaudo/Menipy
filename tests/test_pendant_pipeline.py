@@ -7,10 +7,14 @@ import numpy as np
 import pytest
 
 from menipy.common.auto_calibrator import AutoCalibrator
+from menipy.common import registry
+from menipy.common.plugin_db import PluginDB
+from menipy.common.plugins import load_active_plugins
 from menipy.models.context import Context
 from menipy.models.geometry import Contour, Geometry
 from menipy.models.surface_tension import jennings_pallas_beta, surface_tension
 from menipy.pipelines.pendant.stages import PendantPipeline
+from menipy.pipelines.pendant.approximations import volume_apex_lookup
 from menipy.pipelines.pendant.strict_young_laplace import (
     integrate_young_laplace_profile_mm,
     model_mm_to_pendant_px,
@@ -66,6 +70,7 @@ def test_pendant_diameter_uses_calibrated_contour_width_not_fit_radius():
             "params": [99.0, 0.4],
             "residuals": {},
         },
+        pendant_approximation_methods=[],
     )
     ctx.geometry = Geometry(axis_x=100.0, apex_xy=(100.0, 180.0))
 
@@ -97,6 +102,7 @@ def test_pendant_surface_tension_uses_geometric_mn_per_m_units():
             "params": [99.0, 0.2],
             "residuals": {"rmse": 500.0},
         },
+        pendant_approximation_methods=[],
     )
     ctx.geometry = Geometry(axis_x=100.0, apex_xy=(100.0, 180.0))
 
@@ -109,6 +115,52 @@ def test_pendant_surface_tension_uses_geometric_mn_per_m_units():
     assert ctx.results["surface_tension_mN_m"] == pytest.approx(expected_n_m * 1000.0)
     assert ctx.results["surface_tension_mN_m"] != pytest.approx(expected_n_m)
     assert ctx.results["fit_warning"] == "young_laplace_fit_unreliable"
+
+
+def test_builtin_pendant_approximators_registered_by_default():
+    assert "selected_plane" in registry.PENDANT_APPROXIMATORS
+    assert "multi_selected_plane" in registry.PENDANT_APPROXIMATORS
+    assert "volume_apex_lookup" in registry.PENDANT_APPROXIMATORS
+
+
+def test_external_pendant_approximator_plugin_loads(tmp_path):
+    plugin_path = tmp_path / "demo_approximation.py"
+    plugin_path.write_text(
+        "def demo(ctx, profile_mm, physics):\n"
+        "    return {'approx_demo_status': 'ok'}\n"
+        "PENDANT_APPROXIMATORS = {'demo': demo}\n",
+        encoding="utf-8",
+    )
+    db = PluginDB(tmp_path / "plugins.sqlite")
+    db.upsert_plugin(
+        name="demo_approximation",
+        kind="pendant_approximator",
+        file_path=plugin_path,
+    )
+    db.set_active("demo_approximation", "pendant_approximator", True)
+
+    load_active_plugins(db)
+
+    assert "demo" in registry.PENDANT_APPROXIMATORS
+
+
+def test_volume_apex_approximation_recovers_synthetic_profile():
+    r0_mm = 1.2
+    beta = 0.4
+    profile_mm = integrate_young_laplace_profile_mm(
+        r0_mm, beta, target_height_mm=2.2, branch="right"
+    )
+    ctx = Context(results={"r0_mm": r0_mm})
+    physics = {"rho1": 1000.0, "rho2": 1.2, "g": 9.80665}
+
+    approx = volume_apex_lookup(ctx, profile_mm, physics)
+
+    expected_gamma = surface_tension(998.8, 9.80665, r0_mm, beta) * 1000.0
+    assert approx["approx_volume_apex_status"] == "ok"
+    assert approx["approx_volume_apex_beta"] == pytest.approx(beta, rel=0.03)
+    assert approx["approx_volume_apex_surface_tension_mN_m"] == pytest.approx(
+        expected_gamma, rel=0.05
+    )
 
 
 def test_strict_young_laplace_recovers_synthetic_calibrated_contour():
@@ -208,6 +260,7 @@ def test_strict_young_laplace_failure_falls_back_to_geometric_metrics():
             "strict_beta": 0.5,
             "strict_rmse_mm": 10.0,
         },
+        pendant_approximation_methods=[],
     )
     ctx.geometry = Geometry(axis_x=100.0, apex_xy=(100.0, 180.0))
 
@@ -320,3 +373,87 @@ def test_sample_pendant_surface_tension_reports_geometric_result_not_bad_fit():
         assert ctx.results["fit_warning"] == "young_laplace_fit_unreliable"
     assert "strict_r0_mm" in ctx.results
     assert "geometric_surface_tension_mN_m" in ctx.results
+
+
+@pytest.mark.parametrize(
+    ("sample", "expected"),
+    [
+        (
+            "data/samples/gota pendiente 1.png",
+            {
+                "volume_uL": 7.924,
+                "drop_surface_mm2": 17.27,
+                "bond_number": 0.3883,
+                "worthington_number": 0.4618,
+                "surface_tension_mN_m": 29.24,
+            },
+        ),
+        (
+            "data/samples/prueba pend 1.png",
+            {
+                "volume_uL": 17.52,
+                "drop_surface_mm2": 30.5,
+                "bond_number": 0.289,
+                "worthington_number": 0.421,
+                "surface_tension_mN_m": 70.94,
+            },
+        ),
+    ],
+)
+def test_sample_pendant_matches_commercial_reference_window(sample, expected):
+    image = cv2.imread(sample)
+    assert image is not None
+
+    calibration = AutoCalibrator(image, "pendant").detect_all()
+    assert calibration.needle_rect is not None
+    assert calibration.drop_contour is not None
+    assert calibration.contact_points is not None
+
+    ctx = PendantPipeline().run_with_plan(
+        only=["compute_metrics"],
+        image=sample,
+        drop_contour=calibration.drop_contour,
+        contact_points=calibration.contact_points,
+        apex_point=calibration.apex_point,
+        needle_rect=calibration.needle_rect,
+        roi_rect=calibration.roi_rect,
+        calibration_params={
+            "needle_diameter_mm": 1.83,
+            "drop_density_kg_m3": 1000.0,
+            "fluid_density_kg_m3": 1.2,
+        },
+    )
+
+    assert ctx.results["surface_tension_method"] == "young_laplace_strict"
+    assert ctx.results["strict_fit_success"] is True
+    assert ctx.results["strict_fit_stop_reason"] == "height_cutoff"
+    assert ctx.results["approx_selected_plane_status"] in {
+        "ok",
+        "unavailable_plane_outside_drop",
+        "outside_lookup_range",
+    }
+    assert ctx.results["approx_multi_selected_plane_status"] in {
+        "ok",
+        "no_valid_planes",
+    }
+    assert ctx.results["approx_volume_apex_status"] == "ok"
+    assert np.isfinite(ctx.results["approx_volume_apex_surface_tension_mN_m"])
+    assert ctx.results["volume_uL"] == pytest.approx(expected["volume_uL"], rel=0.10)
+    assert ctx.results["drop_surface_mm2"] == pytest.approx(
+        expected["drop_surface_mm2"], rel=0.10
+    )
+    assert ctx.results["surface_tension_mN_m"] == pytest.approx(
+        expected["surface_tension_mN_m"], rel=0.20
+    )
+    assert ctx.results["bond_number"] == pytest.approx(
+        expected["bond_number"], rel=0.20
+    )
+    assert ctx.results["worthington_number"] == pytest.approx(
+        expected["worthington_number"], rel=0.20
+    )
+
+    model_px = np.asarray(ctx.fit["model_profile_px"], dtype=float)
+    contact_y = min(float(p[1]) for p in calibration.contact_points)
+    apex_y = float(calibration.apex_point[1])
+    assert np.min(model_px[:, 1]) >= contact_y - 2.0
+    assert np.max(model_px[:, 1]) <= apex_y + 2.0

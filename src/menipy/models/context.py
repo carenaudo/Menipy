@@ -106,6 +106,7 @@ class Context(BaseModel):
     r_eq_series_px: Optional[list] = None
     centers_px: Optional[list] = None
     r0_eq_px: Optional[float] = None
+    pendant_approximation_methods: Optional[list[str]] = None
     c0_xy: Optional[Tuple[float, float]] = None
     h_px: Optional[float] = None
     _sessile_metrics: Optional[Dict[str, Any]] = None

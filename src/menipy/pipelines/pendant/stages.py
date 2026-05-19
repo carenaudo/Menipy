@@ -17,14 +17,25 @@ from menipy.common.geometry import fit_circle
 from menipy.common import overlay as ovl
 from menipy.common import registry
 from menipy.models.surface_tension import (
+    bond_number as bond_number_from_gamma,
     jennings_pallas_beta,
     surface_tension as surface_tension_n_per_m,
 )
+from menipy.models.drop_extras import vmax_uL, worthington_number
 from menipy.pipelines.pendant.strict_young_laplace import (
     PendantStrictFitInput,
+    build_pendant_profile_envelope_mm,
     fit_pendant_young_laplace_strict,
 )
 from menipy.pipelines.utils import ensure_contour
+from menipy.pipelines.pendant import approximations as _pendant_approximations  # noqa: F401
+
+
+DEFAULT_PENDANT_APPROXIMATION_METHODS = [
+    "selected_plane",
+    "multi_selected_plane",
+    "volume_apex_lookup",
+]
 
 
 def _contour_to_xy(contour: object) -> np.ndarray:
@@ -134,6 +145,137 @@ def _profile_fit_unreliable(fit: dict, rmse_threshold_px: float = 25.0) -> bool:
     except (TypeError, ValueError):
         return False
     return np.isfinite(rmse_value) and rmse_value > rmse_threshold_px
+
+
+def _radial_profile_integrals(profile_mm: np.ndarray) -> tuple[float, float]:
+    """Return ``(volume_uL, surface_mm2)`` for a radial ``(r, z)`` profile."""
+    profile = np.asarray(profile_mm, dtype=float).reshape(-1, 2)
+    if profile.shape[0] < 3:
+        return 0.0, 0.0
+
+    profile = profile[np.all(np.isfinite(profile), axis=1)]
+    profile = profile[profile[:, 0] >= 0]
+    if profile.shape[0] < 3:
+        return 0.0, 0.0
+
+    order = np.argsort(profile[:, 1])
+    z_mm = profile[order, 1]
+    r_mm = profile[order, 0]
+    z_mm, unique_idx = np.unique(z_mm, return_index=True)
+    r_mm = r_mm[unique_idx]
+    if z_mm.shape[0] < 3 or float(np.ptp(z_mm)) <= 0:
+        return 0.0, 0.0
+
+    volume_uL = float(np.pi * trapezoid(r_mm**2, z_mm))
+    dr_dz = np.gradient(r_mm, z_mm, edge_order=2)
+    surface_mm2 = float(
+        2.0 * np.pi * trapezoid(r_mm * np.sqrt(1.0 + dr_dz**2), z_mm)
+    )
+    return abs(volume_uL), abs(surface_mm2)
+
+
+def _append_pendant_dimensionless_numbers(ctx: Context, results: dict) -> None:
+    """Populate Bond and Worthington numbers from public pendant outputs."""
+    gamma_mn_m = results.get("surface_tension_mN_m")
+    r0_mm = results.get("r0_mm")
+    volume_uL = results.get("volume_uL")
+    if gamma_mn_m is None or r0_mm is None:
+        return
+    try:
+        physics = ctx.physics or {}
+        rho1 = float(physics.get("rho1", 1000.0))
+        rho2 = float(physics.get("rho2", 1.2))
+        g = float(physics.get("g", 9.80665))
+        delta_rho = rho1 - rho2
+        gamma_n_m = float(gamma_mn_m) / 1000.0
+        results["bond_number"] = bond_number_from_gamma(
+            delta_rho, g, float(r0_mm), gamma_n_m
+        )
+        needle_diam_mm = getattr(ctx, "needle_diameter_mm", None)
+        if needle_diam_mm and needle_diam_mm > 0 and volume_uL is not None:
+            vmax = vmax_uL(gamma_n_m, float(needle_diam_mm), delta_rho, g)
+            results["vmax_uL"] = vmax
+            results["worthington_number"] = worthington_number(float(volume_uL), vmax)
+    except Exception:
+        return
+
+
+def _enabled_pendant_approximators(ctx: Context) -> list[str]:
+    methods = getattr(ctx, "pendant_approximation_methods", None)
+    if methods is None:
+        return list(DEFAULT_PENDANT_APPROXIMATION_METHODS)
+    return [str(method) for method in methods if str(method)]
+
+
+def _run_pendant_approximators(
+    ctx: Context, results: dict, profile_mm: np.ndarray | None
+) -> None:
+    """Run enabled pendant approximation plugins and merge diagnostic keys."""
+    if profile_mm is None:
+        return
+    ctx.results = results
+    for name in _enabled_pendant_approximators(ctx):
+        fn = registry.PENDANT_APPROXIMATORS.get(name)
+        if fn is None:
+            results[f"approx_{name}_status"] = "plugin_not_registered"
+            continue
+        try:
+            approx = fn(ctx, profile_mm, ctx.physics or {})
+        except Exception as exc:
+            results[f"approx_{name}_status"] = "plugin_exception"
+            results[f"approx_{name}_error"] = str(exc)
+            continue
+        if isinstance(approx, dict):
+            results.update(approx)
+
+
+def _promote_pendant_fallback(results: dict) -> None:
+    """Use the best available approximation only when strict Y-L was rejected."""
+    if results.get("surface_tension_method") == "young_laplace_strict":
+        return
+
+    candidates = (
+        (
+            "multi_selected_plane",
+            "approx_multi_selected_plane_surface_tension_mN_m",
+            "approx_multi_selected_plane_beta",
+            "approx_multi_selected_plane_status",
+        ),
+        (
+            "selected_plane",
+            "approx_selected_plane_surface_tension_mN_m",
+            "approx_selected_plane_beta",
+            "approx_selected_plane_status",
+        ),
+        (
+            "volume_apex_lookup",
+            "approx_volume_apex_surface_tension_mN_m",
+            "approx_volume_apex_beta",
+            "approx_volume_apex_status",
+        ),
+    )
+    for method, gamma_key, beta_key, status_key in candidates:
+        gamma = results.get(gamma_key)
+        status = results.get(status_key)
+        if status != "ok" or gamma is None:
+            continue
+        try:
+            gamma_value = float(gamma)
+        except (TypeError, ValueError):
+            continue
+        if not np.isfinite(gamma_value) or gamma_value <= 0:
+            continue
+        results["surface_tension_mN_m"] = gamma_value
+        beta = results.get(beta_key)
+        if beta is not None:
+            try:
+                beta_value = float(beta)
+                if np.isfinite(beta_value) and beta_value > 0:
+                    results["beta"] = beta_value
+            except (TypeError, ValueError):
+                pass
+        results["surface_tension_method"] = method
+        return
 
 
 class PendantPipeline(PipelineBase):
@@ -267,6 +409,26 @@ class PendantPipeline(PipelineBase):
             if diameter_px > 0 and r0_seed_px > 0:
                 beta_seed = float(jennings_pallas_beta(diameter_px / (2.0 * r0_seed_px)))
 
+            needle_radius_mm = None
+            needle_diameter_mm = getattr(ctx, "needle_diameter_mm", None)
+            if needle_diameter_mm and needle_diameter_mm > 0:
+                needle_radius_mm = float(needle_diameter_mm) / 2.0
+            elif getattr(ctx, "needle_rect", None) is not None:
+                try:
+                    needle_width_px = float(ctx.needle_rect[2])
+                    if needle_width_px > 0:
+                        needle_radius_mm = needle_width_px / px_per_mm / 2.0
+                except Exception:
+                    needle_radius_mm = None
+            elif getattr(ctx, "contact_points", None) is not None:
+                try:
+                    contacts = np.asarray(ctx.contact_points, dtype=float).reshape(-1, 2)
+                    if contacts.shape[0] >= 2:
+                        contact_r_px = np.max(np.abs(contacts[:2, 0] - ctx.geometry.axis_x))
+                        needle_radius_mm = float(contact_r_px) / px_per_mm
+                except Exception:
+                    needle_radius_mm = None
+
             ctx.fit = fit_pendant_young_laplace_strict(
                 PendantStrictFitInput(
                     contour_px=xy,
@@ -276,6 +438,7 @@ class PendantPipeline(PipelineBase):
                     r0_seed_mm=r0_seed_mm,
                     beta_seed=beta_seed,
                     physics=ctx.physics or {},
+                    needle_radius_mm=needle_radius_mm,
                 )
             )
         except Exception as exc:
@@ -322,6 +485,7 @@ class PendantPipeline(PipelineBase):
             "strict_fit_success",
             "strict_fit_warning",
             "strict_residual_threshold_mm",
+            "strict_fit_stop_reason",
             "strict_model_coverage_height_mm",
             "strict_observed_height_mm",
             "strict_observed_diameter_mm",
@@ -344,10 +508,22 @@ class PendantPipeline(PipelineBase):
         try:
             xy = ensure_contour(ctx)
             x, y = xy[:, 0], xy[:, 1]
+            axis_x = ctx.geometry.axis_x if ctx.geometry else np.mean(x)
+            apex_xy = ctx.geometry.apex_xy if ctx.geometry else None
+            apex_y = float(apex_xy[1]) if apex_xy is not None else float(np.max(y))
+            envelope_mm = build_pendant_profile_envelope_mm(
+                xy,
+                axis_x_px=float(axis_x),
+                apex_y_px=apex_y,
+                px_per_mm=px_per_mm,
+            )
 
             # 3. Height (mm)
-            height_px = np.max(y) - np.min(y)
-            results["height_mm"] = height_px / px_per_mm
+            if envelope_mm.shape[0] >= 3:
+                results["height_mm"] = float(np.max(envelope_mm[:, 1]))
+            else:
+                height_px = np.max(y) - np.min(y)
+                results["height_mm"] = height_px / px_per_mm
 
             # 4. Diameter (mm) from calibrated contour width, not fitted R0.
             diameter_px, diameter_line = _pendant_max_width(
@@ -359,7 +535,6 @@ class PendantPipeline(PipelineBase):
 
             # Jennings-Pallas geometric surface tension estimate. Keep contour
             # coordinates in pixels for overlays, then calibrate scalar lengths.
-            apex_xy = ctx.geometry.apex_xy if ctx.geometry else None
             r0_px = _pendant_apex_radius_px(xy, apex_xy)
             if diameter_px > 0 and r0_px > 0 and px_per_mm > 0:
                 r0_mm = r0_px / px_per_mm
@@ -401,17 +576,24 @@ class PendantPipeline(PipelineBase):
                     results["surface_tension_method"] = "young_laplace_strict"
                     results.pop("fit_warning", None)
 
-            # 5. Volume (uL) - Disk integration method
-            axis_x = ctx.geometry.axis_x if ctx.geometry else np.mean(x)
-            r_px = np.abs(x - axis_x)
+            profile_for_integrals = None
+            if fit.get("strict_fit_success") and fit.get("model_radial_profile_mm"):
+                profile_for_integrals = np.asarray(
+                    fit.get("model_radial_profile_mm"), dtype=float
+                )
+            elif envelope_mm.shape[0] >= 3:
+                profile_for_integrals = envelope_mm
 
-            sort_idx = np.argsort(y)
-            y_sorted = y[sort_idx]
-            r_sorted = r_px[sort_idx]
+            if profile_for_integrals is not None:
+                volume_uL, drop_surface_mm2 = _radial_profile_integrals(
+                    profile_for_integrals
+                )
+                results["volume_uL"] = volume_uL
+                results["drop_surface_mm2"] = drop_surface_mm2
+                _run_pendant_approximators(ctx, results, profile_for_integrals)
+                _promote_pendant_fallback(results)
 
-            trapz_val = trapezoid(r_sorted**2, y_sorted)
-            vol_px3: float = float(np.pi) * float(trapz_val)
-            results["volume_uL"] = float(abs(vol_px3)) / float(px_per_mm**3)
+            _append_pendant_dimensionless_numbers(ctx, results)
 
         except Exception as e:
             self.logger.warning(f"Failed to calculate geometric stats: {e}")

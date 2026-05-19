@@ -24,6 +24,60 @@ class PendantStrictFitInput:
     r0_seed_mm: float
     beta_seed: float
     physics: dict[str, Any]
+    needle_radius_mm: float | None = None
+
+
+def build_pendant_profile_envelope_mm(
+    contour_px: np.ndarray,
+    *,
+    axis_x_px: float,
+    apex_y_px: float,
+    px_per_mm: float,
+    bin_px: float = 1.0,
+) -> np.ndarray:
+    """Collapse a pendant contour into a radial ``(r_mm, z_mm)`` envelope."""
+    xy = np.asarray(contour_px, dtype=float).reshape(-1, 2)
+    if xy.shape[0] < 3 or px_per_mm <= 0:
+        return np.empty((0, 2), dtype=float)
+
+    bin_px = max(float(bin_px), 1.0)
+    row_keys = np.rint(xy[:, 1] / bin_px).astype(int)
+    rows: list[tuple[float, float]] = []
+    for row in np.unique(row_keys):
+        pts = xy[row_keys == row]
+        if pts.size == 0:
+            continue
+        y_px = float(np.mean(pts[:, 1]))
+        z_mm = (float(apex_y_px) - y_px) / float(px_per_mm)
+        if z_mm < -0.5 / float(px_per_mm):
+            continue
+        xs = pts[:, 0]
+        if xs.size >= 2:
+            r_mm = (float(np.max(xs)) - float(np.min(xs))) / (2.0 * px_per_mm)
+        else:
+            r_mm = float(np.max(np.abs(xs - float(axis_x_px)))) / float(px_per_mm)
+        if np.isfinite(z_mm) and np.isfinite(r_mm) and r_mm >= 0:
+            rows.append((r_mm, max(0.0, z_mm)))
+
+    if not rows:
+        return np.empty((0, 2), dtype=float)
+
+    arr = np.asarray(rows, dtype=float)
+    arr = arr[np.argsort(arr[:, 1])]
+    merged: list[tuple[float, float]] = []
+    for z in np.unique(arr[:, 1]):
+        r = float(np.max(arr[arr[:, 1] == z, 0]))
+        merged.append((r, float(z)))
+    profile = np.asarray(merged, dtype=float)
+    if profile.shape[0] < 2:
+        return np.empty((0, 2), dtype=float)
+
+    if profile[0, 1] > 1e-9:
+        profile = np.vstack([[0.0, 0.0], profile])
+    else:
+        profile[0, 1] = 0.0
+        profile[0, 0] = min(profile[0, 0], profile[1, 0] if profile.shape[0] > 1 else 0.0)
+    return profile
 
 
 def pendant_contour_to_model_mm(
@@ -61,17 +115,26 @@ def integrate_young_laplace_profile_mm(
     beta: float,
     *,
     target_height_mm: float | None = None,
+    needle_radius_mm: float | None = None,
     max_step: float = 0.02,
-) -> np.ndarray:
+    branch: str = "full",
+    return_metadata: bool = False,
+) -> np.ndarray | tuple[np.ndarray, dict[str, Any]]:
     """Integrate a symmetric pendant Young-Laplace profile in millimetres."""
     r0_mm = float(r0_mm)
     beta = float(beta)
     if not np.isfinite(r0_mm) or not np.isfinite(beta) or r0_mm <= 0:
-        return np.empty((0, 2), dtype=float)
+        profile = np.empty((0, 2), dtype=float)
+        meta = {"stop_reason": "invalid_parameters"}
+        return (profile, meta) if return_metadata else profile
 
     z_target = None
     if target_height_mm is not None and target_height_mm > 0:
-        z_target = max(float(target_height_mm) / r0_mm * 1.1, 0.2)
+        z_target = max(float(target_height_mm) / r0_mm, 0.2)
+
+    r_needle_target = None
+    if needle_radius_mm is not None and needle_radius_mm > 0:
+        r_needle_target = float(needle_radius_mm) / r0_mm
 
     def ode(_s: float, y: np.ndarray) -> list[float]:
         r, z, psi = y
@@ -82,7 +145,7 @@ def integrate_young_laplace_profile_mm(
         return [
             float(np.cos(psi)),
             float(np.sin(psi)),
-            float(2.0 + beta * z - sin_psi_over_r),
+            float(2.0 - beta * z - sin_psi_over_r),
         ]
 
     def hit_axis(s: float, y: np.ndarray) -> float:
@@ -103,6 +166,18 @@ def integrate_young_laplace_profile_mm(
         hit_target_height.direction = 1
         events.append(hit_target_height)
 
+    if r_needle_target is not None:
+
+        def hit_needle_radius_after_equator(_s: float, y: np.ndarray) -> float:
+            r, _z, psi = y
+            if psi <= (np.pi / 2.0):
+                return 1.0
+            return float(r - r_needle_target)
+
+        hit_needle_radius_after_equator.terminal = True
+        hit_needle_radius_after_equator.direction = -1
+        events.append(hit_needle_radius_after_equator)
+
     s_max = max(8.0, (z_target or 4.0) * 3.0 + 2.0)
     sol = solve_ivp(
         ode,
@@ -115,15 +190,36 @@ def integrate_young_laplace_profile_mm(
         atol=1e-8,
     )
     if not sol.success or sol.y.shape[1] < 3:
-        return np.empty((0, 2), dtype=float)
+        profile = np.empty((0, 2), dtype=float)
+        meta = {"stop_reason": "solver_failed", "solver_message": str(sol.message)}
+        return (profile, meta) if return_metadata else profile
+
+    stop_reason = "s_max"
+    if sol.t_events:
+        event_names = ["axis_return"]
+        if z_target is not None:
+            event_names.append("height_cutoff")
+        if r_needle_target is not None:
+            event_names.append("needle_radius")
+        for name, events_for_name in zip(event_names, sol.t_events):
+            if len(events_for_name) > 0:
+                stop_reason = name
+                break
 
     r_right = sol.y[0] * r0_mm
     z_right = sol.y[1] * r0_mm
+    if branch == "right":
+        profile = np.column_stack([r_right, z_right])
+        meta = {"stop_reason": stop_reason, "solver_message": str(sol.message)}
+        return (profile, meta) if return_metadata else profile
+
     r_left = -r_right[::-1]
     z_left = z_right[::-1]
     r_full = np.concatenate([r_left[:-1], r_right])
     z_full = np.concatenate([z_left[:-1], z_right])
-    return np.column_stack([r_full, z_full])
+    profile = np.column_stack([r_full, z_full])
+    meta = {"stop_reason": stop_reason, "solver_message": str(sol.message)}
+    return (profile, meta) if return_metadata else profile
 
 
 def _normal_projection_residuals_mm(obs_mm: np.ndarray, model_mm: np.ndarray) -> np.ndarray:
@@ -186,8 +282,18 @@ def fit_pendant_young_laplace_strict(fit_input: PendantStrictFitInput) -> dict[s
             "strict_fit_warning": "not_enough_contour_points",
         }
 
+    obs_mm = obs_mm[obs_mm[:, 1] >= -0.5 / float(fit_input.px_per_mm)]
+    envelope_mm = build_pendant_profile_envelope_mm(
+        fit_input.contour_px,
+        axis_x_px=fit_input.axis_x_px,
+        apex_y_px=fit_input.apex_y_px,
+        px_per_mm=fit_input.px_per_mm,
+    )
     diameter_mm = float(np.ptp(obs_mm[:, 0]))
     height_mm = float(np.ptp(obs_mm[:, 1]))
+    if envelope_mm.shape[0] >= 3:
+        diameter_mm = max(diameter_mm, float(2.0 * np.max(envelope_mm[:, 0])))
+        height_mm = max(height_mm, float(np.max(envelope_mm[:, 1])))
     x0, lower, upper = _bounds_from_seed(
         r0_seed_mm=fit_input.r0_seed_mm,
         beta_seed=fit_input.beta_seed,
@@ -198,7 +304,9 @@ def fit_pendant_young_laplace_strict(fit_input: PendantStrictFitInput) -> dict[s
     def model_from_params(params: np.ndarray) -> np.ndarray:
         r0_mm, beta, x_offset_mm, z_offset_mm = params
         model = integrate_young_laplace_profile_mm(
-            r0_mm, beta, target_height_mm=height_mm + abs(float(z_offset_mm))
+            r0_mm,
+            beta,
+            target_height_mm=height_mm,
         )
         if model.size == 0:
             return model
@@ -231,6 +339,13 @@ def fit_pendant_young_laplace_strict(fit_input: PendantStrictFitInput) -> dict[s
     max_abs = float(np.max(np.abs(contour_r))) if contour_r.size else float("nan")
     model_mm = model_from_params(res.x)
     coverage_height_mm = float(np.ptp(model_mm[:, 1])) if model_mm.size else 0.0
+    radial_profile_mm, radial_meta = integrate_young_laplace_profile_mm(
+        float(res.x[0]),
+        float(res.x[1]),
+        target_height_mm=height_mm,
+        branch="right",
+        return_metadata=True,
+    )
 
     rho1 = float(fit_input.physics.get("rho1", 1000.0))
     rho2 = float(fit_input.physics.get("rho2", 1.2))
@@ -300,9 +415,12 @@ def fit_pendant_young_laplace_strict(fit_input: PendantStrictFitInput) -> dict[s
         "strict_z_offset_mm": float(res.x[3]),
         "strict_rmse_mm": rmse,
         "strict_residual_threshold_mm": threshold_mm,
+        "strict_fit_stop_reason": radial_meta.get("stop_reason", "unknown"),
         "strict_model_coverage_height_mm": coverage_height_mm,
         "strict_observed_height_mm": height_mm,
         "strict_observed_diameter_mm": diameter_mm,
+        "observed_profile_mm": envelope_mm.tolist(),
+        "model_radial_profile_mm": radial_profile_mm.tolist(),
         "model_profile_mm": model_mm.tolist(),
         "model_profile_px": model_px.tolist(),
     }

@@ -59,6 +59,7 @@ class Registry:
 # Core plugin registries for small, pluggable utilities used by pipeline stages.
 EDGE_DETECTORS = Registry("edge_detectors")
 SOLVERS = Registry("solvers")
+PENDANT_APPROXIMATORS = Registry("pendant_approximators")
 
 # Other common stage utilities
 ACQUISITIONS = Registry("acquisitions")
@@ -91,6 +92,11 @@ def register_edge(name: str, fn: Callable[..., Any]) -> None:
 def register_solver(name: str, fn: Callable[..., Any]) -> None:
     """Register plugin."""
     SOLVERS.register(name, fn)
+
+
+def register_pendant_approximator(name: str, fn: Callable[..., Any]) -> None:
+    """Register a pendant surface-tension approximation plugin."""
+    PENDANT_APPROXIMATORS.register(name, fn)
 
 
 def register_acquisition(name: str, fn: Callable[..., Any]) -> None:
@@ -174,6 +180,7 @@ def get_registry_snapshot() -> Dict[str, Dict[str, Callable[..., Any]]]:
     return {
         "edge_detectors": dict(EDGE_DETECTORS),
         "solvers": dict(SOLVERS),
+        "pendant_approximators": dict(PENDANT_APPROXIMATORS),
         "acquisitions": dict(ACQUISITIONS),
         "preprocessors": dict(PREPROCESSORS),
         "geometries": dict(GEOMETRIES),

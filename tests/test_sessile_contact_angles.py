@@ -1,13 +1,20 @@
 """Tests for sessile drop contact angle estimation methods."""
 
-import numpy as np
+from pathlib import Path
 
+import cv2
+import numpy as np
+import pytest
+
+from menipy.common.auto_calibrator import AutoCalibrator
 from menipy.common.geometry import (
     estimate_contact_angle_tangent,
     estimate_contact_angle_circle_fit,
     tangent_angle_at_point,
     circle_fit_angle_at_point,
 )
+from menipy.models.context import Context
+from menipy.pipelines.sessile.stages import SessilePipeline
 from menipy.pipelines.sessile.metrics import compute_sessile_metrics
 
 
@@ -145,6 +152,40 @@ def test_compute_sessile_metrics_spherical_cap_method():
     assert metrics["theta_right_deg"] > 0
 
 
+def test_tangent_method_ignores_closed_baseline_segment():
+    theta = np.linspace(np.pi, 0.0, 120)
+    dome = np.column_stack([100.0 + 50.0 * np.cos(theta), 100.0 + 50.0 * np.sin(theta)])
+    contour = np.vstack([[50.0, 100.0], dome, [150.0, 100.0], [50.0, 100.0]])
+
+    metrics = compute_sessile_metrics(
+        contour,
+        px_per_mm=10.0,
+        substrate_line=((50.0, 100.0), (150.0, 100.0)),
+        apex=(100.0, 150.0),
+        contact_points=((50, 100), (150, 100)),
+        contact_angle_method="tangent",
+    )
+
+    assert metrics["theta_left_deg"] == pytest.approx(90.0, abs=5.0)
+    assert metrics["theta_right_deg"] == pytest.approx(90.0, abs=5.0)
+    assert metrics["contact_angle_fit_rmse_px"]["left"] >= 0.0
+    assert metrics["contact_angle_fit_rmse_px"]["right"] >= 0.0
+
+
+def test_sessile_contour_extraction_normalizes_opencv_contour_shape():
+    contour = np.array(
+        [[50, 100], [75, 140], [100, 150], [125, 140], [150, 100]],
+        dtype=float,
+    ).reshape(-1, 1, 2)
+    ctx = Context(drop_contour=contour)
+
+    SessilePipeline().do_contour_extraction(ctx)
+
+    xy = np.asarray(ctx.contour.xy)
+    assert xy.shape == (5, 2)
+    np.testing.assert_allclose(xy[0], [50.0, 100.0])
+
+
 def test_contact_angle_uncertainty_estimation():
     """Test that uncertainty estimates are reasonable."""
     # Create a noisy profile
@@ -210,3 +251,51 @@ def test_circle_fit_angle_at_point():
     # For a circle, contact angle should be 90 degrees
     assert 85 < angle < 95, f"Expected ~90°, got {angle}°"
     assert uncertainty >= 0, f"Uncertainty should be non-negative: {uncertainty}"
+
+
+@pytest.mark.parametrize(
+    "sample",
+    [
+        "data/samples/gota depositada 1.png",
+        "data/samples/prueba sesil 2.png",
+    ],
+)
+def test_real_sessile_samples_have_stable_contact_angles_and_diagnostic_fit(sample):
+    image = cv2.imread(str(Path(sample)))
+    assert image is not None
+
+    calibration = AutoCalibrator(image, "sessile").detect_all()
+    assert calibration.drop_contour is not None
+    assert calibration.contact_points is not None
+    assert calibration.substrate_line is not None
+
+    kwargs = {
+        "image": sample,
+        "drop_contour": calibration.drop_contour,
+        "contact_points": calibration.contact_points,
+        "apex_point": calibration.apex_point,
+        "needle_rect": calibration.needle_rect,
+        "roi_rect": calibration.roi_rect,
+        "substrate_line": calibration.substrate_line,
+        "calibration_params": {
+            "needle_diameter_mm": 1.83,
+            "drop_density_kg_m3": 1000.0,
+            "fluid_density_kg_m3": 1.2,
+        },
+    }
+    if calibration.needle_rect is not None:
+        kwargs["scale"] = {"px_per_mm": calibration.needle_rect[2] / 1.83}
+
+    ctx = SessilePipeline().run_with_plan(only=["compute_metrics"], **kwargs)
+
+    for key in ("diameter_mm", "height_mm", "volume_uL"):
+        assert np.isfinite(ctx.results[key])
+        assert ctx.results[key] > 0
+
+    assert ctx.results["theta_left_deg"] > 10.0
+    assert ctx.results["theta_right_deg"] > 10.0
+    assert np.isfinite(ctx.results["contact_angle_deg"])
+    assert "fit_R0_mm" in ctx.results
+    assert "fit_beta" in ctx.results
+    assert "R0_mm" not in ctx.results
+    assert ctx.results["fit_warning"] == "profile_fit_unreliable"

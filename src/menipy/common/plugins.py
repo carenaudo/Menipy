@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Iterable
 import logging
 
-from .registry import register_edge, register_solver
+from .registry import register_edge, register_pendant_approximator, register_solver
 from .plugin_db import PluginDB
 from ._module_loader import load_module_from_path
 
@@ -31,12 +31,17 @@ def _register_from_module(mod) -> None:
     """
     Protocols supported:
       1) register(module) -> calls registry functions
-      2) EDGE_DETECTORS / SOLVERS dicts
-      3) get_edge_detectors() / get_solvers() returning name->callable
+      2) EDGE_DETECTORS / SOLVERS / PENDANT_APPROXIMATORS dicts
+      3) get_edge_detectors() / get_solvers() / get_pendant_approximators()
+         returning name->callable
     """
     if hasattr(mod, "register"):
         mod.register(
-            {"register_edge": register_edge, "register_solver": register_solver}
+            {
+                "register_edge": register_edge,
+                "register_solver": register_solver,
+                "register_pendant_approximator": register_pendant_approximator,
+            }
         )
     if hasattr(mod, "EDGE_DETECTORS"):
         for name, fn in mod.EDGE_DETECTORS.items():
@@ -44,12 +49,18 @@ def _register_from_module(mod) -> None:
     if hasattr(mod, "SOLVERS"):
         for name, fn in mod.SOLVERS.items():
             register_solver(name, fn)
+    if hasattr(mod, "PENDANT_APPROXIMATORS"):
+        for name, fn in mod.PENDANT_APPROXIMATORS.items():
+            register_pendant_approximator(name, fn)
     if hasattr(mod, "get_edge_detectors"):
         for name, fn in mod.get_edge_detectors().items():
             register_edge(name, fn)
     if hasattr(mod, "get_solvers"):
         for name, fn in mod.get_solvers().items():
             register_solver(name, fn)
+    if hasattr(mod, "get_pendant_approximators"):
+        for name, fn in mod.get_pendant_approximators().items():
+            register_pendant_approximator(name, fn)
 
 
 def discover_into_db(db: PluginDB, plugin_dirs: Iterable[Path]) -> int:
@@ -66,7 +77,9 @@ def discover_into_db(db: PluginDB, plugin_dirs: Iterable[Path]) -> int:
             name = path.stem
             
             # Detect kind by filename keywords
-            if "solver" in name or "laplace" in name:
+            if "approximator" in name or "approximation" in name:
+                kind = "pendant_approximator"
+            elif "solver" in name or "laplace" in name:
                 kind = "solver"
             elif "needle" in name:
                 kind = "needle_detector"
@@ -201,8 +214,10 @@ def list_plugins_status(db: PluginDB) -> list[dict]:
                     "register",
                     "EDGE_DETECTORS",
                     "SOLVERS",
+                    "PENDANT_APPROXIMATORS",
                     "get_edge_detectors",
                     "get_solvers",
+                    "get_pendant_approximators",
                 )
             )
             if not ok:

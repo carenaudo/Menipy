@@ -10,24 +10,32 @@ This document defines the pendant pipeline results contract used by the GUI Resu
   - `diameter_mm` (float) — Maximum equatorial diameter De in millimetres.
   - `height_mm` (float) — Total droplet height in millimetres (ROI frame).
   - `r0_mm` (float) — Apex radius of curvature R0 in millimetres.
-  - `beta` (float) — Dimensionless form factor from Jennings–Pallas correlation.
+  - `beta` (float) — Public dimensionless Young-Laplace/Bond parameter when strict fit passes, otherwise the Jennings-Pallas fallback form factor.
   - `surface_tension_mN_m` (float) — Surface tension in mN/m (millinewtons per metre).
   - `volume_uL` (float) — Volume in microlitres.
   - `drop_surface_mm2` (float) — Drop surface area in mm².
 - optional keys:
   - `needle_surface_mm2` (float) — Needle cross‑sectional area in mm² (if needle_diam provided).
   - `s1` (float) — Shape factor `De / (2 r0)`.
-  - `Bo` (float) — Bond number `Δρ g r0² / γ`.
-  - `surface_tension_method` (string) — `young_laplace_strict` when the calibrated full-profile fit passes quality gates, otherwise `jennings_pallas_geometric`.
-  - `strict_r0_mm`, `strict_beta`, `strict_surface_tension_mN_m`, `strict_rmse_mm` — Strict Young-Laplace diagnostics in calibrated units.
+  - `bond_number` (float) — Bond number `Δρ g r0² / γ`.
+  - `worthington_number` (float) — `volume_uL / vmax_uL`.
+  - `vmax_uL` (float) — Maximum detachment volume used for Worthington number.
+  - `surface_tension_method` (string) — One of `young_laplace_strict`, `multi_selected_plane`, `selected_plane`, `volume_apex_lookup`, or `jennings_pallas_geometric`.
+  - `strict_r0_mm`, `strict_beta`, `strict_surface_tension_mN_m`, `strict_rmse_mm`, `strict_fit_stop_reason` — Strict Young-Laplace diagnostics in calibrated units.
   - `geometric_r0_mm`, `geometric_beta`, `geometric_surface_tension_mN_m` — Jennings-Pallas comparison values.
+  - `approx_selected_plane_surface_tension_mN_m`, `approx_selected_plane_beta`, `approx_selected_plane_status` — Single selected-plane approximation result.
+  - `approx_multi_selected_plane_surface_tension_mN_m`, `approx_multi_selected_plane_std_mN_m`, `approx_multi_selected_plane_planes` — Multi-plane approximation result and per-plane diagnostics.
+  - `approx_volume_apex_surface_tension_mN_m`, `approx_volume_apex_beta`, `approx_volume_apex_status` — Volume plus apex-curvature lookup approximation.
   - `residuals` (object) — Fit residuals/diagnostics; implementation‑defined structure.
   - `timings_ms` (object) — Per‑stage timings populated by the pipeline runner.
   - `image_path` (string) — Source image path (for provenance in exports).
 
 Notes
 - Current implementation emits `diameter_mm`, `height_mm`, `r0_mm`, `beta`, `surface_tension_mN_m`, `volume_uL`, and possibly `needle_surface_mm2`, `s1`, strict fit diagnostics, and geometric comparison values.
-- Public `r0_mm`, `beta`, and `surface_tension_mN_m` come from strict Young-Laplace only when the fit succeeds and passes residual gates. Otherwise they remain the Jennings-Pallas geometric estimate and `fit_warning` identifies the strict fit rejection.
+- Public `r0_mm`, `beta`, and `surface_tension_mN_m` come from strict Young-Laplace only when the fit succeeds and passes residual gates. Otherwise public surface tension falls back to the first enabled approximation with `ok` status in this order: multi-selected-plane, selected-plane, volume-apex lookup, then legacy Jennings-Pallas.
+- Accepted strict pendant profiles are truncated at the observed contact/needle height before loop branches are generated for display or reporting.
+- Approximation plugins are comparison methods for scientific review. They should be exported when present but treated as optional diagnostics by consumers.
+- Method references: Berry et al. 2015 for pendant selected-plane and ADSA workflow (https://doi.org/10.1016/j.jcis.2015.05.012), Jůza et al. 2026 for selected/multiple selected-plane notation (https://link.springer.com/article/10.1007/s00396-025-05513-5), and Yeow et al. 2008 for volume plus apex-curvature estimation (https://doi.org/10.1016/j.colsurfa.2007.07.025).
 - The plan previously referenced `De_mm`/`H_mm`; these are aliases of `diameter_mm`/`height_mm` and SHOULD NOT be added as separate keys. Use the canonical names above.
 
 ## Units and Formatting
@@ -49,8 +57,13 @@ Notes
   "s1": 1.366,
   "beta": 0.742,
   "surface_tension_mN_m": 71.7,
+  "surface_tension_method": "young_laplace_strict",
   "volume_uL": 12.84,
   "drop_surface_mm2": 45.1,
+  "bond_number": 0.31,
+  "worthington_number": 0.42,
+  "approx_volume_apex_surface_tension_mN_m": 70.9,
+  "approx_volume_apex_status": "ok",
   "needle_surface_mm2": 0.50,
   "residuals": {"rms": 0.23, "n": 512},
   "timings_ms": {"edge_detection": 12.3, "geometry": 4.9, "solver": 38.6}

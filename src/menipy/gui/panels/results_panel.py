@@ -14,8 +14,10 @@ from PySide6.QtWidgets import (
     QPushButton,
     QComboBox,
     QLabel,
+    QMenu,
 )
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QAction
 
 from menipy.models.results import get_results_history, MeasurementResult
 from menipy.gui.controllers.pipeline_ui_manager import PipelineUIManager
@@ -93,6 +95,13 @@ LABEL_MAP = {
     "theta_right_deg": "Right Contact Angle (°)",
     "baseline_tilt_deg": "Baseline Tilt (°)",
     "method": "Method",
+    "surface_tension_method": "Surface Tension Method",
+    "bond_number": "Bond Number",
+    "worthington_number": "Worthington Number",
+    "vmax_uL": "Vmax (µL)",
+    "approx_selected_plane_surface_tension_mN_m": "Selected Plane IFT (mN/m)",
+    "approx_multi_selected_plane_surface_tension_mN_m": "Multi-Plane IFT (mN/m)",
+    "approx_volume_apex_surface_tension_mN_m": "Volume+Apex IFT (mN/m)",
     "uncertainty_deg": "Angle Uncertainty (°)",
     "uncertainty_left_deg": "Left Angle Uncertainty (°)",
     "uncertainty_right_deg": "Right Angle Uncertainty (°)",
@@ -116,9 +125,11 @@ class ResultsPanel:
         )
         self.summary_label: Optional[QLabel] = panel.findChild(QLabel, "summaryLabel")
         self.history = get_results_history()
-        self.unit_system = getattr(AppSettings.load(), "unit_system", "SI")
+        self.settings = AppSettings.load()
+        self.unit_system = getattr(self.settings, "unit_system", "SI")
         self.current_pipeline_filter = VALID_PIPELINES_FILTER
         self.pipeline_ui_manager = PipelineUIManager()
+        self._raw_headers: list[str] = []
 
         # Add controls for history management
         self._setup_controls()
@@ -164,6 +175,26 @@ class ResultsPanel:
         controls_layout.addStretch()
 
         # Action buttons
+        self.key_results_button = QPushButton("Show Key Results")
+        self.key_results_button.clicked.connect(self.show_key_results)
+        controls_layout.addWidget(self.key_results_button)
+
+        self.compare_button = QPushButton("Compare Methods")
+        self.compare_button.setCheckable(True)
+        self.compare_button.setChecked(
+            bool(getattr(self.settings, "compare_methods_visible", False))
+        )
+        self.compare_button.toggled.connect(self.set_compare_methods_visible)
+        controls_layout.addWidget(self.compare_button)
+
+        self.diagnostics_button = QPushButton("Diagnostics")
+        self.diagnostics_button.setCheckable(True)
+        self.diagnostics_button.setChecked(
+            bool(getattr(self.settings, "diagnostics_visible", False))
+        )
+        self.diagnostics_button.toggled.connect(self.set_diagnostics_visible)
+        controls_layout.addWidget(self.diagnostics_button)
+
         self.clear_button = QPushButton("Clear History")
         self.clear_button.clicked.connect(self._clear_history)
         controls_layout.addWidget(self.clear_button)
@@ -171,6 +202,11 @@ class ResultsPanel:
         self.export_button = QPushButton("Export CSV")
         self.export_button.clicked.connect(self._export_csv)
         controls_layout.addWidget(self.export_button)
+
+        self.columns_button = QPushButton("Columns")
+        self.columns_menu = QMenu(self.columns_button)
+        self.columns_button.setMenu(self.columns_menu)
+        controls_layout.addWidget(self.columns_button)
 
         # Add controls to main layout (keep summary label above controls if present)
         insert_index = 0
@@ -209,6 +245,8 @@ class ResultsPanel:
                 # Write headers
                 headers = []
                 for col in range(self.table.columnCount()):
+                    if self.table.isColumnHidden(col):
+                        continue
                     header_item = self.table.horizontalHeaderItem(col)
                     headers.append(
                         header_item.text() if header_item else f"Column {col}"
@@ -219,6 +257,8 @@ class ResultsPanel:
                 for row in range(self.table.rowCount()):
                     row_data = []
                     for col in range(self.table.columnCount()):
+                        if self.table.isColumnHidden(col):
+                            continue
                         item = self.table.item(row, col)
                         row_data.append(item.text() if item else "")
                     writer.writerow(row_data)
@@ -260,6 +300,7 @@ class ResultsPanel:
         self.table.setColumnCount(len(display_headers))
         self.table.setRowCount(len(rows))
         self.table.setHorizontalHeaderLabels(display_headers)
+        self._raw_headers = list(raw_headers)
 
         # Populate data with pipeline-aware styling
         for row_idx, row_data in enumerate(rows):
@@ -307,7 +348,160 @@ class ResultsPanel:
         self.count_label.setText(f"{measurement_count} measurements{filter_text}")
 
         self._update_summary()
+        self._rebuild_columns_menu()
+        self._apply_column_visibility()
         self.table.resizeColumnsToContents()
+
+    def _column_settings_key(self) -> str:
+        return str(self.current_pipeline_filter or VALID_PIPELINES_FILTER)
+
+    def _hidden_columns(self) -> set[str]:
+        hidden = getattr(self.settings, "results_hidden_columns", {}) or {}
+        key = self._column_settings_key()
+        if key not in hidden:
+            return self._default_hidden_columns()
+        values = hidden.get(key, [])
+        return {str(value) for value in values}
+
+    def _save_hidden_columns(self, hidden: set[str]) -> None:
+        settings = AppSettings.load()
+        data = dict(getattr(settings, "results_hidden_columns", {}) or {})
+        data[self._column_settings_key()] = sorted(hidden)
+        settings.results_hidden_columns = data
+        settings.save()
+        self.settings = settings
+
+    def _apply_column_visibility(self) -> None:
+        if not self.table:
+            return
+        hidden = self._hidden_columns()
+        for col, key in enumerate(self._raw_headers):
+            self.table.setColumnHidden(col, key in hidden)
+
+    def _rebuild_columns_menu(self) -> None:
+        self.columns_menu.clear()
+        show_all = QAction("Show All", self.columns_menu)
+        show_all.triggered.connect(self.show_all_columns)
+        self.columns_menu.addAction(show_all)
+
+        hide_diagnostics = QAction("Hide Diagnostics", self.columns_menu)
+        hide_diagnostics.triggered.connect(self.hide_diagnostics_columns)
+        self.columns_menu.addAction(hide_diagnostics)
+
+        reset = QAction("Reset Defaults", self.columns_menu)
+        reset.triggered.connect(self.reset_column_defaults)
+        self.columns_menu.addAction(reset)
+        self.columns_menu.addSeparator()
+
+        hidden = self._hidden_columns()
+        for key in self._raw_headers:
+            action = QAction(self._display_header(key), self.columns_menu)
+            action.setCheckable(True)
+            action.setChecked(key not in hidden)
+            action.toggled.connect(
+                lambda checked, column_key=key: self.set_column_visible(
+                    column_key, checked
+                )
+            )
+            self.columns_menu.addAction(action)
+
+    def set_column_visible(self, column_key: str, visible: bool) -> None:
+        hidden = self._hidden_columns()
+        if visible:
+            hidden.discard(column_key)
+        else:
+            hidden.add(column_key)
+        self._save_hidden_columns(hidden)
+        self._apply_column_visibility()
+
+    def show_all_columns(self) -> None:
+        self._save_hidden_columns(set())
+        self._rebuild_columns_menu()
+        self._apply_column_visibility()
+
+    def show_key_results(self) -> None:
+        self.set_compare_methods_visible(False, refresh=False)
+        self.set_diagnostics_visible(False, refresh=False)
+        self._save_hidden_columns(self._default_hidden_columns())
+        self._sync_helper_buttons()
+        self._rebuild_columns_menu()
+        self._apply_column_visibility()
+
+    def set_compare_methods_visible(
+        self, visible: bool, *, refresh: bool = True
+    ) -> None:
+        self.settings.compare_methods_visible = bool(visible)
+        self.settings.results_hidden_columns = dict(
+            getattr(self.settings, "results_hidden_columns", {}) or {}
+        )
+        self.settings.results_hidden_columns.pop(self._column_settings_key(), None)
+        self.settings.save()
+        self._sync_helper_buttons()
+        if refresh:
+            self.update_history()
+
+    def set_diagnostics_visible(self, visible: bool, *, refresh: bool = True) -> None:
+        self.settings.diagnostics_visible = bool(visible)
+        self.settings.results_hidden_columns = dict(
+            getattr(self.settings, "results_hidden_columns", {}) or {}
+        )
+        self.settings.results_hidden_columns.pop(self._column_settings_key(), None)
+        self.settings.save()
+        self._sync_helper_buttons()
+        if refresh:
+            self.update_history()
+
+    def hide_diagnostics_columns(self) -> None:
+        diagnostic_prefixes = ("strict_", "fit_", "geometric_", "approx_")
+        diagnostic_names = {"residuals", "diameter_line", "model_profile_px"}
+        hidden = {
+            key
+            for key in self._raw_headers
+            if key.startswith(diagnostic_prefixes) or key in diagnostic_names
+        }
+        self._save_hidden_columns(hidden)
+        self._rebuild_columns_menu()
+        self._apply_column_visibility()
+
+    def reset_column_defaults(self) -> None:
+        self.show_key_results()
+
+    def _sync_helper_buttons(self) -> None:
+        for button, value in (
+            (
+                getattr(self, "compare_button", None),
+                bool(getattr(self.settings, "compare_methods_visible", False)),
+            ),
+            (
+                getattr(self, "diagnostics_button", None),
+                bool(getattr(self.settings, "diagnostics_visible", False)),
+            ),
+        ):
+            if button:
+                button.blockSignals(True)
+                button.setChecked(value)
+                button.blockSignals(False)
+
+    def _default_hidden_columns(self) -> set[str]:
+        compare = bool(getattr(self.settings, "compare_methods_visible", False))
+        diagnostics = bool(getattr(self.settings, "diagnostics_visible", False))
+        hidden: set[str] = set()
+        for key in self._raw_headers:
+            if key.startswith("approx_") and not compare:
+                hidden.add(key)
+            if self._is_diagnostic_column(key) and not diagnostics:
+                hidden.add(key)
+        return hidden
+
+    def _is_diagnostic_column(self, key: str) -> bool:
+        diagnostic_prefixes = ("strict_", "fit_", "geometric_")
+        diagnostic_names = {
+            "residuals",
+            "diameter_line",
+            "model_profile_px",
+            "contact_angle_fit_rmse_px",
+        }
+        return key.startswith(diagnostic_prefixes) or key in diagnostic_names
 
     def _filtered_measurements(self) -> list[MeasurementResult]:
         measurements = list(self.history.measurements)
@@ -337,11 +531,14 @@ class ResultsPanel:
             "height_mm",
             "volume_uL",
             "surface_tension_mN_m",
+            "surface_tension_method",
             "contact_angle_deg",
             "theta_left_deg",
             "theta_right_deg",
             "contact_surface_mm2",
             "drop_surface_mm2",
+            "bond_number",
+            "worthington_number",
             "baseline_tilt_deg",
             "beta",
             "s1",

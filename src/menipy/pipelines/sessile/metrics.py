@@ -42,6 +42,13 @@ def compute_sessile_metrics(
         p1, p2, baseline_confidence = detect_baseline_ransac(contour_2d)
         substrate_line = ((float(p1[0]), float(p1[1])), (float(p2[0]), float(p2[1])))
 
+    baseline_tilt_deg = 0.0
+    if substrate_line is not None:
+        line_p1 = np.asarray(substrate_line[0], dtype=float)
+        line_p2 = np.asarray(substrate_line[1], dtype=float)
+        line_vec = line_p2 - line_p1
+        baseline_tilt_deg = float(np.degrees(np.arctan2(line_vec[1], line_vec[0])))
+
     contact_line = None
     diameter_px = 0.0
     height_px = 0.0
@@ -234,9 +241,14 @@ def compute_sessile_metrics(
         "diameter_line": contact_line or ((0, 0), (0, 0)),
         "contact_line": contact_line,
         "baseline_confidence": baseline_confidence,
+        "baseline_tilt_deg": baseline_tilt_deg,
         "apex_confidence": apex_confidence,
         "baseline_method": baseline_method,
         "apex_method": apex_method,
         "method": contact_angle_method,
         "uncertainty_deg": {"left": uncertainty_left, "right": uncertainty_right},
+        "contact_angle_fit_rmse_px": {
+            "left": uncertainty_left,
+            "right": uncertainty_right,
+        },
     }

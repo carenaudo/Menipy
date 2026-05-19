@@ -5,11 +5,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Optional, Sequence
 
-from PySide6.QtCore import QObject, Signal, QTimer
+from PySide6.QtCore import QObject, Signal, QTimer, Qt
 from PySide6.QtWidgets import (
     QButtonGroup,
     QComboBox,
     QDoubleSpinBox,
+    QGroupBox,
     QLabel,
     QLineEdit,
     QListWidget,
@@ -125,6 +126,10 @@ class SetupPanelController(QObject):
         self.sourceIdCombo: Optional[QComboBox] = panel.findChild(
             QComboBox, "sourceIdCombo"
         )
+        self.labelImage: Optional[QLabel] = panel.findChild(QLabel, "labelImage")
+        self.labelBatch: Optional[QLabel] = panel.findChild(QLabel, "labelBatch")
+        self.labelSourceId: Optional[QLabel] = panel.findChild(QLabel, "labelSourceId")
+        self.labelFrames: Optional[QLabel] = panel.findChild(QLabel, "labelFrames")
 
         self.browseBtn: Optional[QToolButton] = panel.findChild(
             QToolButton, "browseBtn"
@@ -156,10 +161,29 @@ class SetupPanelController(QObject):
         self.needleLengthLabel: Optional[QLabel] = panel.findChild(QLabel, "needleLengthLabel")
         self.dropDensityLabel: Optional[QLabel] = panel.findChild(QLabel, "dropDensityLabel")
         self.fluidDensityLabel: Optional[QLabel] = panel.findChild(QLabel, "fluidDensityLabel")
+        self.substrateAngleLabel: Optional[QLabel] = panel.findChild(QLabel, "substrateAngleLabel")
         
         self.needleLengthSpin: Optional[QDoubleSpinBox] = panel.findChild(QDoubleSpinBox, "needleLengthSpin")
         self.dropDensitySpin: Optional[QDoubleSpinBox] = panel.findChild(QDoubleSpinBox, "dropDensitySpin")
         self.fluidDensitySpin: Optional[QDoubleSpinBox] = panel.findChild(QDoubleSpinBox, "fluidDensitySpin")
+        self.substrateAngleSpin: Optional[QDoubleSpinBox] = panel.findChild(QDoubleSpinBox, "substrateAngleSpin")
+        self.sopGroup: Optional[QGroupBox] = panel.findChild(QGroupBox, "sopGroup")
+        self.stepsGroup: Optional[QGroupBox] = panel.findChild(QGroupBox, "stepsGroup")
+        self.advancedToggleBtn: Optional[QToolButton] = panel.findChild(
+            QToolButton, "advancedToggleBtn"
+        )
+        if self.advancedToggleBtn is None:
+            self.advancedToggleBtn = QToolButton(panel)
+            self.advancedToggleBtn.setObjectName("advancedToggleBtn")
+            self.advancedToggleBtn.setText("Advanced")
+            self.advancedToggleBtn.setCheckable(True)
+            self.advancedToggleBtn.setToolButtonStyle(Qt.ToolButtonTextOnly)
+            root_layout = panel.layout()
+            if root_layout is not None:
+                insert_at = root_layout.indexOf(self.sopGroup) if self.sopGroup else -1
+                if insert_at < 0:
+                    insert_at = max(0, root_layout.count() - 1)
+                root_layout.insertWidget(insert_at, self.advancedToggleBtn)
 
         steps_list_widget: Optional[QListWidget] = panel.findChild(
             QListWidget, "stepsList"
@@ -207,6 +231,9 @@ class SetupPanelController(QObject):
         self._restore_settings()
         self.sop_ctrl.initialize()
         self._wire_controls()
+        self.set_advanced_visible(
+            bool(getattr(self.settings, "advanced_ui_visible", False)), save=False
+        )
         self._apply_mode(self._mode, emit=False)
         self._initial_pipeline_refresh()
 
@@ -352,6 +379,23 @@ class SetupPanelController(QObject):
             return self.sop_ctrl.collect_included_stages()
         return list(self.stage_order)
 
+    def set_advanced_visible(self, visible: bool, *, save: bool = True) -> None:
+        """Show or hide advanced SOP/stage controls."""
+        if self.advancedToggleBtn:
+            self.advancedToggleBtn.blockSignals(True)
+            self.advancedToggleBtn.setChecked(visible)
+            self.advancedToggleBtn.setText("Advanced -" if visible else "Advanced +")
+            self.advancedToggleBtn.blockSignals(False)
+        for widget in (self.sopGroup, self.stepsGroup):
+            if widget:
+                widget.setVisible(visible)
+        if save:
+            self.settings.advanced_ui_visible = visible
+            try:
+                self.settings.save()
+            except OSError:
+                pass
+
         # -------------------------- internal helpers --------------------------
 
     def _populate_pipeline_combo(self) -> None:
@@ -396,6 +440,10 @@ class SetupPanelController(QObject):
             self.previewBtn.clicked.connect(lambda: self.preview_requested.emit())
         if self.autoCalibrateBtn:
             self.autoCalibrateBtn.clicked.connect(lambda: self.auto_calibrate_requested.emit())
+        if self.advancedToggleBtn:
+            self.advancedToggleBtn.toggled.connect(
+                lambda checked: self.set_advanced_visible(bool(checked))
+            )
         if self.drawPointBtn:
             self.drawPointBtn.clicked.connect(
                 lambda: self.draw_mode_requested.emit(DRAW_POINT)
@@ -487,6 +535,7 @@ class SetupPanelController(QObject):
         """Handle clicks from the segmented pipeline buttons."""
         self._sync_combo_to_pipeline(pipeline_name)
         self.sop_ctrl.on_pipeline_changed(pipeline_name)
+        self._update_pipeline_specific_visibility(pipeline_name)
 
     def _on_pipeline_combo_changed(self, text: str) -> None:
         """Keep segmented buttons in sync when legacy combo changes."""
@@ -495,6 +544,7 @@ class SetupPanelController(QObject):
             pipeline = None
         self._select_pipeline_button(pipeline)
         self.sop_ctrl.on_pipeline_changed(text)
+        self._update_pipeline_specific_visibility(pipeline)
 
     def _initial_pipeline_refresh(self) -> None:
         """_initial_pipeline_refresh."""
@@ -507,11 +557,13 @@ class SetupPanelController(QObject):
 
         if pipeline:
             self.sop_ctrl.on_pipeline_changed(pipeline)
+            self._update_pipeline_specific_visibility(pipeline)
             return
 
         combo = self.testCombo or self.pipelineCombo
         if combo:
             self.sop_ctrl.on_pipeline_changed(combo.currentText())
+            self._update_pipeline_specific_visibility(self.current_pipeline_name())
 
     def _on_mode_toggled(self, button: Optional[QRadioButton], checked: bool) -> None:
         if not checked or not button:
@@ -547,23 +599,45 @@ class SetupPanelController(QObject):
         camera = self._mode == self.MODE_CAMERA
         if self.imagePathEdit:
             self.imagePathEdit.setEnabled(single)
+            self.imagePathEdit.setVisible(single)
+        if self.labelImage:
+            self.labelImage.setVisible(single)
         if self.browseBtn:
             self.browseBtn.setEnabled(single)
+            self.browseBtn.setVisible(single)
         if self.batchPathEdit:
             self.batchPathEdit.setEnabled(batch)
+            self.batchPathEdit.setVisible(batch)
+        if self.labelBatch:
+            self.labelBatch.setVisible(batch)
         if self.batchBrowseBtn:
             # Keep batch browse enabled so tests and automation can access
             # this action regardless of the currently selected mode.
             try:
                 self.batchBrowseBtn.setEnabled(True)
+                self.batchBrowseBtn.setVisible(batch)
             except Exception:
                 # Best effort - ignore widget errors when running headless tests
                 pass
         if self.framesSpin:
             self.framesSpin.setEnabled(camera)
+            self.framesSpin.setVisible(camera)
+        if self.labelFrames:
+            self.labelFrames.setVisible(camera)
         if self.sourceIdCombo:
             self.sourceIdCombo.setEditable(camera)
-            self.sourceIdCombo.setEnabled(camera or single or batch)
+            self.sourceIdCombo.setEnabled(camera or batch)
+            self.sourceIdCombo.setVisible(camera or batch)
+        if self.labelSourceId:
+            self.labelSourceId.setVisible(camera or batch)
+
+    def _update_pipeline_specific_visibility(
+        self, pipeline_name: Optional[str] = None
+    ) -> None:
+        is_sessile = (pipeline_name or self.current_pipeline_name()) == "sessile"
+        for widget in (self.substrateAngleLabel, self.substrateAngleSpin):
+            if widget:
+                widget.setVisible(is_sessile)
 
     def _refresh_source_items(self) -> None:
         """_refresh_source_items."""

@@ -81,6 +81,18 @@ def test_strict_young_laplace_positive_beta_reaches_target_height():
     assert profile.shape[1] == 2
     assert np.all(np.isfinite(profile))
     assert np.max(profile[:, 1]) >= 2.0
+    assert np.max(profile[:, 1]) <= 2.0 + 1e-3
     np.testing.assert_allclose(
         np.min(profile[:, 0]), -np.max(profile[:, 0]), rtol=1e-3, atol=1e-3
     )
+
+
+def test_strict_young_laplace_truncates_at_observed_height_before_loops():
+    """Strict pendant model generation should stop at the measured height."""
+    profile, meta = integrate_young_laplace_profile_mm(
+        1.2, 0.6, target_height_mm=2.0, return_metadata=True
+    )
+
+    assert meta["stop_reason"] == "height_cutoff"
+    assert profile.shape[0] > 20
+    assert np.max(profile[:, 1]) == pytest.approx(2.0, abs=1e-3)

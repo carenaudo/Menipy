@@ -27,6 +27,18 @@ from menipy.math.young_laplace import young_laplace_ode
 young_laplace_default = get_solver("young_laplace_ode", fallback=young_laplace_ode)
 
 
+def _contour_to_xy(contour: object) -> np.ndarray:
+    """Normalize OpenCV and plain contours to an ``(N, 2)`` float array."""
+    xy = np.asarray(contour, dtype=float)
+    if xy.ndim == 3 and xy.shape[-1] == 2:
+        xy = xy.reshape(-1, 2)
+    elif xy.ndim == 2 and xy.shape[1] >= 2:
+        xy = xy[:, :2]
+    else:
+        xy = xy.reshape(-1, 2)
+    return np.asarray(xy, dtype=float)
+
+
 class SessilePipeline(PipelineBase):
     """Sessile drop pipeline (simplified): contour → baseline/axis/angles → toy Y–L radius fit."""
 
@@ -69,11 +81,16 @@ class SessilePipeline(PipelineBase):
         drop_contour = getattr(ctx, "drop_contour", None)
         if drop_contour is not None:
             from menipy.models.geometry import Contour
-            # Convert to Contour object if needed
-            if isinstance(drop_contour, np.ndarray):
-                ctx.contour = Contour(xy=drop_contour)
-            elif isinstance(drop_contour, Contour):
-                ctx.contour = drop_contour
+            if isinstance(drop_contour, Contour):
+                ctx.contour = Contour(
+                    xy=_contour_to_xy(drop_contour.xy),
+                    closed=drop_contour.closed,
+                    units=drop_contour.units,
+                    smoothing=drop_contour.smoothing,
+                    origin_hint=drop_contour.origin_hint,
+                )
+            else:
+                ctx.contour = Contour(xy=_contour_to_xy(drop_contour))
             
             logger.info("Using pre-detected drop contour from calibration")
             return ctx
@@ -110,8 +127,14 @@ class SessilePipeline(PipelineBase):
             
         # Get apex for reference
         x, y = xy[:, 0], xy[:, 1]
-        apex_i = int(np.argmin(y))
-        apex_xy = (float(x[apex_i]), float(y[apex_i]))
+        if getattr(ctx, "apex_point", None) is not None:
+            apex_xy = (
+                float(ctx.apex_point[0]),
+                float(ctx.apex_point[1]),
+            )
+        else:
+            apex_i = int(np.argmin(y))
+            apex_xy = (float(x[apex_i]), float(y[apex_i]))
         
         from .geometry import clip_contour_to_substrate
         
@@ -154,8 +177,14 @@ class SessilePipeline(PipelineBase):
             tilt_deg = 0.0
 
         axis_x = float(np.median(x))
-        apex_i = int(np.argmin(y))
-        apex_xy = (float(x[apex_i]), float(y[apex_i]))
+        if getattr(ctx, "apex_point", None) is not None:
+            apex_xy = (
+                float(ctx.apex_point[0]),
+                float(ctx.apex_point[1]),
+            )
+        else:
+            apex_i = int(np.argmin(y))
+            apex_xy = (float(x[apex_i]), float(y[apex_i]))
 
         # Get scale
         if ctx.scale and ctx.scale.get("px_per_mm"):
@@ -229,8 +258,16 @@ class SessilePipeline(PipelineBase):
         fit = ctx.fit or {}
         names = fit.get("param_names") or []
         params = fit.get("params", [])
-        res = {n: p for n, p in zip(names, params)}
+        res = {f"fit_{n}": p for n, p in zip(names, params)}
         res.update({"residuals": fit.get("residuals", {})})
+
+        residuals = fit.get("residuals") or {}
+        try:
+            rmse = float(residuals.get("rmse"))
+        except (TypeError, ValueError):
+            rmse = float("nan")
+        if np.isfinite(rmse) and rmse > 25.0:
+            res["fit_warning"] = "profile_fit_unreliable"
         
         # Merge sessile metrics from geometric_features stage
         if hasattr(ctx, "_sessile_metrics") and ctx._sessile_metrics:
@@ -317,4 +354,3 @@ class SessilePipeline(PipelineBase):
                         y_offset += 25
                         
         return ovl.run(ctx, commands=cmds, alpha=0.6)
-

@@ -10,6 +10,7 @@ from menipy.gui.panels.results_panel import (
     ResultsPanel,
     VALID_PIPELINES_FILTER,
 )
+from menipy.gui.services.settings_service import AppSettings
 from menipy.models.results import MeasurementResult
 
 
@@ -43,6 +44,21 @@ def _measurement(pipeline: str, value: float = 1.0) -> MeasurementResult:
         pipeline=pipeline,
         file_name=f"{pipeline}.png",
         results={"diameter_mm": value},
+    )
+
+
+def _rich_measurement(pipeline: str = "pendant") -> MeasurementResult:
+    return MeasurementResult(
+        id=f"{pipeline}_rich",
+        timestamp=datetime(2026, 4, 27, 12, 0, 0),
+        pipeline=pipeline,
+        file_name=f"{pipeline}.png",
+        results={
+            "diameter_mm": 2.0,
+            "surface_tension_mN_m": 29.0,
+            "strict_rmse_mm": 0.01,
+            "approx_volume_apex_surface_tension_mN_m": 30.0,
+        },
     )
 
 
@@ -84,3 +100,114 @@ def test_results_update_does_not_add_duplicate_unknown(monkeypatch, qtbot):
 
     assert len(history.measurements) == 1
     assert history.measurements[0].pipeline == "sessile"
+
+
+def test_results_panel_column_visibility_persists(monkeypatch, qtbot, tmp_path):
+    history = FakeHistory([_rich_measurement()])
+    settings_path = tmp_path / "settings.json"
+    original_load = AppSettings.load
+    monkeypatch.setattr(results_panel_module, "get_results_history", lambda: history)
+    monkeypatch.setattr(
+        results_panel_module.AppSettings,
+        "load",
+        classmethod(lambda cls: original_load(settings_path)),
+    )
+    panel, table = _panel_widget()
+    qtbot.addWidget(panel)
+    controller = ResultsPanel(panel)
+    controller.set_pipeline_filter("pendant")
+
+    controller.set_column_visible("diameter_mm", False)
+    diameter_col = controller._raw_headers.index("diameter_mm")
+    assert table.isColumnHidden(diameter_col)
+
+    panel2, table2 = _panel_widget()
+    qtbot.addWidget(panel2)
+    controller2 = ResultsPanel(panel2)
+    controller2.set_pipeline_filter("pendant")
+    diameter_col2 = controller2._raw_headers.index("diameter_mm")
+    assert table2.isColumnHidden(diameter_col2)
+
+
+def test_results_panel_exports_visible_columns(monkeypatch, qtbot, tmp_path):
+    history = FakeHistory([_rich_measurement()])
+    settings_path = tmp_path / "settings.json"
+    export_path = tmp_path / "visible.csv"
+    original_load = AppSettings.load
+    monkeypatch.setattr(results_panel_module, "get_results_history", lambda: history)
+    monkeypatch.setattr(
+        results_panel_module.AppSettings,
+        "load",
+        classmethod(lambda cls: original_load(settings_path)),
+    )
+    monkeypatch.setattr(
+        "PySide6.QtWidgets.QFileDialog.getSaveFileName",
+        lambda *_args, **_kwargs: (str(export_path), "CSV Files (*.csv)"),
+    )
+    panel, _table = _panel_widget()
+    qtbot.addWidget(panel)
+    controller = ResultsPanel(panel)
+    controller.set_pipeline_filter("pendant")
+    controller.set_column_visible("strict_rmse_mm", False)
+
+    controller.export_csv()
+
+    header = export_path.read_text(encoding="utf-8").splitlines()[0]
+    assert "Strict Rmse Mm" not in header
+    assert "Surface Tension" in header
+
+
+def test_results_panel_guided_defaults_hide_comparison_and_diagnostics(
+    monkeypatch, qtbot, tmp_path
+):
+    history = FakeHistory([_rich_measurement()])
+    settings_path = tmp_path / "settings.json"
+    original_load = AppSettings.load
+    monkeypatch.setattr(results_panel_module, "get_results_history", lambda: history)
+    monkeypatch.setattr(
+        results_panel_module.AppSettings,
+        "load",
+        classmethod(lambda cls: original_load(settings_path)),
+    )
+    panel, table = _panel_widget()
+    qtbot.addWidget(panel)
+
+    controller = ResultsPanel(panel)
+    controller.set_pipeline_filter("pendant")
+
+    strict_col = controller._raw_headers.index("strict_rmse_mm")
+    approx_col = controller._raw_headers.index(
+        "approx_volume_apex_surface_tension_mN_m"
+    )
+    assert table.isColumnHidden(strict_col)
+    assert table.isColumnHidden(approx_col)
+
+
+def test_results_panel_compare_and_diagnostics_helpers(monkeypatch, qtbot, tmp_path):
+    history = FakeHistory([_rich_measurement()])
+    settings_path = tmp_path / "settings.json"
+    original_load = AppSettings.load
+    monkeypatch.setattr(results_panel_module, "get_results_history", lambda: history)
+    monkeypatch.setattr(
+        results_panel_module.AppSettings,
+        "load",
+        classmethod(lambda cls: original_load(settings_path)),
+    )
+    panel, table = _panel_widget()
+    qtbot.addWidget(panel)
+
+    controller = ResultsPanel(panel)
+    controller.set_pipeline_filter("pendant")
+    controller.set_compare_methods_visible(True)
+    controller.set_diagnostics_visible(True)
+
+    strict_col = controller._raw_headers.index("strict_rmse_mm")
+    approx_col = controller._raw_headers.index(
+        "approx_volume_apex_surface_tension_mN_m"
+    )
+    assert not table.isColumnHidden(strict_col)
+    assert not table.isColumnHidden(approx_col)
+
+    controller.show_key_results()
+    assert table.isColumnHidden(strict_col)
+    assert table.isColumnHidden(approx_col)

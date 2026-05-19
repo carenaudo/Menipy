@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from PySide6.QtWidgets import QWidget, QFormLayout, QDoubleSpinBox, QTextEdit, QVBoxLayout, QComboBox, QCheckBox
+from menipy.pipelines.pendant.stages import DEFAULT_PENDANT_APPROXIMATION_METHODS
 
 
 class PipelineSettingsWidget(QWidget):
@@ -65,6 +66,16 @@ class PipelineSettingsWidget(QWidget):
             self._edge.setCurrentText(settings["edge_detector"])
         form.addRow("Edge detector", self._edge)
 
+        self._approx_checks: dict[str, QCheckBox] = {}
+        enabled_approximations = settings.get(
+            "pendant_approximation_methods", DEFAULT_PENDANT_APPROXIMATION_METHODS
+        )
+        for method in DEFAULT_PENDANT_APPROXIMATION_METHODS:
+            checkbox = QCheckBox(method.replace("_", " ").title())
+            checkbox.setChecked(method in enabled_approximations)
+            self._approx_checks[method] = checkbox
+            form.addRow("", checkbox)
+
         # Overlay options
         self._overlay_alpha = QDoubleSpinBox()
         self._overlay_alpha.setRange(0.0, 1.0)
@@ -119,4 +130,9 @@ class PipelineSettingsWidget(QWidget):
             "fit_visible": self._ov_fit.isChecked(),
             "preprocessor": self._preproc.currentText(),
             "edge_detector": self._edge.currentText(),
+            "pendant_approximation_methods": [
+                method
+                for method, checkbox in self._approx_checks.items()
+                if checkbox.isChecked()
+            ],
         }

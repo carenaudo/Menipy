@@ -20,6 +20,11 @@ class AppSettings:
     acquisition_requires_contact_line: bool = False
     # Overlay appearance configuration (serialized as a simple dict)
     overlay_config: Optional[dict] = None
+    results_hidden_columns: dict = field(default_factory=dict)
+    advanced_ui_visible: bool = False
+    compare_methods_visible: bool = False
+    diagnostics_visible: bool = False
+    guided_splitter_sizes: Optional[list[int]] = None
     unit_system: str = "SI"  # "SI" or "CGS"
     path: Path = field(default_factory=_default_path, repr=False)
 
@@ -41,6 +46,13 @@ class AppSettings:
                     "acquisition_requires_contact_line", False
                 ),
                 overlay_config=data.get("overlay_config"),
+                results_hidden_columns=dict(data.get("results_hidden_columns", {})),
+                advanced_ui_visible=bool(data.get("advanced_ui_visible", False)),
+                compare_methods_visible=bool(
+                    data.get("compare_methods_visible", False)
+                ),
+                diagnostics_visible=bool(data.get("diagnostics_visible", False)),
+                guided_splitter_sizes=data.get("guided_splitter_sizes"),
                 unit_system=data.get("unit_system", "SI"),
                 path=p,
             )

@@ -46,6 +46,7 @@ class LayoutManager:
             splitter = getattr(self.window, "rootSplitter", None)
             if splitter:
                 self.settings.splitter_sizes = splitter.sizes()
+                self.settings.guided_splitter_sizes = splitter.sizes()
 
             self.settings.save()
             logger.info("Window state and settings saved.")
@@ -73,8 +74,9 @@ class LayoutManager:
             # Restore splitter sizes if available
             splitter = getattr(self.window, "rootSplitter", None)
             splitter_sizes = getattr(self.settings, "splitter_sizes", None)
+            guided_sizes = getattr(self.settings, "guided_splitter_sizes", None)
             if splitter and splitter_sizes:
-                splitter.setSizes(splitter_sizes)
+                splitter.setSizes(guided_sizes or splitter_sizes)
 
             logger.info("Window layout restored from settings.")
         except Exception as e:
