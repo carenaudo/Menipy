@@ -1,5 +1,6 @@
 # src/menipy/common/registry.py
 """Central registry for pipeline components and plugins."""
+
 from __future__ import annotations
 from typing import Callable, Dict, Any, Optional, Iterator
 
@@ -148,22 +149,27 @@ def register_utility(name: str, fn: Callable[..., Any]) -> None:
     """Register a utility function for image testing/analysis."""
     UTILITIES.register(name, fn)
 
+
 # Detector registration functions
 def register_needle_detector(name: str, fn: Callable[..., Any]) -> None:
     """Register plugin."""
     NEEDLE_DETECTORS.register(name, fn)
 
+
 def register_roi_detector(name: str, fn: Callable[..., Any]) -> None:
     """Register plugin."""
     ROI_DETECTORS.register(name, fn)
+
 
 def register_substrate_detector(name: str, fn: Callable[..., Any]) -> None:
     """Register plugin."""
     SUBSTRATE_DETECTORS.register(name, fn)
 
+
 def register_drop_detector(name: str, fn: Callable[..., Any]) -> None:
     """Register plugin."""
     DROP_DETECTORS.register(name, fn)
+
 
 def register_apex_detector(name: str, fn: Callable[..., Any]) -> None:
     """Register plugin."""

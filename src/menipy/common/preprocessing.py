@@ -86,9 +86,17 @@ def run(
 
     # --- Finalize context with results ---
     # --- Finalize context with results ---
-    ctx.preprocessed_state = state.model_dump() if hasattr(state, "model_dump") else state
-    ctx.preprocessed_settings = resolved_settings.model_dump() if hasattr(resolved_settings, "model_dump") else resolved_settings
-    ctx.preprocessed_history = [record.model_dump() for record in getattr(state, "history", [])]
+    ctx.preprocessed_state = (
+        state.model_dump() if hasattr(state, "model_dump") else state
+    )
+    ctx.preprocessed_settings = (
+        resolved_settings.model_dump()
+        if hasattr(resolved_settings, "model_dump")
+        else resolved_settings
+    )
+    ctx.preprocessed_history = [
+        record.model_dump() for record in getattr(state, "history", [])
+    ]
     # Make `preprocessed_roi` reflect what is actually present in the
     # composed full image when possible so tests that compare the two see
     # identical data (handles grayscale->color conversions performed by

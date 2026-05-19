@@ -133,9 +133,7 @@ def test_workbench_layout_xml_places_preview_above_results():
     splitter = root.find(".//widget[@name='workbenchSplitter']")
     assert splitter is not None
     child_names = [
-        child.attrib.get("name")
-        for child in splitter
-        if child.tag == "widget"
+        child.attrib.get("name") for child in splitter if child.tag == "widget"
     ]
     assert child_names[:2] == ["previewHost", "inspectTabs"]
 
@@ -145,10 +143,7 @@ def test_menu_xml_order_and_config_actions():
     root = tree.getroot()
     menubar = root.find(".//widget[@name='menubar']")
     assert menubar is not None
-    menu_order = [
-        action.attrib["name"]
-        for action in menubar.findall("addaction")
-    ]
+    menu_order = [action.attrib["name"] for action in menubar.findall("addaction")]
     assert menu_order == [
         "menuFile",
         "menuConfig",

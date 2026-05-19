@@ -147,9 +147,7 @@ class OverlayConfigDialog(QDialog):
         outer.setSpacing(8)
 
         grid_host = QWidget(group)
-        grid_host.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
-        )
+        grid_host.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         layout = QGridLayout(grid_host)
         layout.setContentsMargins(12, 12, 12, 12)
         layout.setHorizontalSpacing(10)
@@ -292,9 +290,7 @@ class OverlayConfigDialog(QDialog):
         self.preview_label.setStyleSheet("background: #eeeeee; color: #555;")
         layout.addWidget(self.preview_label)
 
-        hint = QLabel(
-            "Screen-constant strokes stay readable while zooming.", group
-        )
+        hint = QLabel("Screen-constant strokes stay readable while zooming.", group)
         hint.setWordWrap(True)
         hint.setStyleSheet("color: #666;")
         layout.addWidget(hint)
@@ -320,8 +316,12 @@ class OverlayConfigDialog(QDialog):
             controls["alpha"].valueChanged.connect(self._maybe_emit_live_preview)
             if "dashed" in controls:
                 controls["dashed"].toggled.connect(self._maybe_emit_live_preview)
-                controls["dash_length"].valueChanged.connect(self._maybe_emit_live_preview)
-                controls["dash_space"].valueChanged.connect(self._maybe_emit_live_preview)
+                controls["dash_length"].valueChanged.connect(
+                    self._maybe_emit_live_preview
+                )
+                controls["dash_space"].valueChanged.connect(
+                    self._maybe_emit_live_preview
+                )
 
     def _on_ok(self) -> None:
         cfg = self.get_config()
@@ -531,7 +531,11 @@ class OverlayConfigDialog(QDialog):
             marker_color.setAlphaF(
                 max(0.0, min(1.0, float(config.get("marker_alpha", 1))))
             )
-            painter.setPen(self._preview_pen(marker_color, float(config.get("marker_thickness", 2)), 1))
+            painter.setPen(
+                self._preview_pen(
+                    marker_color, float(config.get("marker_thickness", 2)), 1
+                )
+            )
             painter.drawLine(151, 185, 169, 203)
             painter.drawLine(151, 203, 169, 185)
         if config.get("points_visible", True):

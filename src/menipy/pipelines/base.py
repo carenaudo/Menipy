@@ -1,5 +1,6 @@
 # src/menipy/pipelines/base.py
 """Base pipeline class with template method pattern for stage-based execution."""
+
 from __future__ import annotations
 
 import logging
@@ -60,15 +61,15 @@ class PipelineBase:
     DEFAULT_SEQ = [
         ("acquisition", None),
         ("preprocessing", None),
-        ("feature_detection", None),      # NEW: detect ROI, needle, substrate
-        ("contour_extraction", None),     # was: edge_detection
-        ("contour_refinement", None),     # NEW: clip/smooth contour
-        ("calibration", None),            # was: scaling
-        ("geometric_features", None),     # was: geometry
+        ("feature_detection", None),  # NEW: detect ROI, needle, substrate
+        ("contour_extraction", None),  # was: edge_detection
+        ("contour_refinement", None),  # NEW: clip/smooth contour
+        ("calibration", None),  # was: scaling
+        ("geometric_features", None),  # was: geometry
         ("physics", None),
-        ("profile_fitting", None),        # was: solver
+        ("profile_fitting", None),  # was: solver
         # optimization stage REMOVED
-        ("compute_metrics", None),        # was: outputs
+        ("compute_metrics", None),  # was: outputs
         ("overlay", None),
         ("validation", None),
     ]
@@ -88,7 +89,7 @@ class PipelineBase:
 
     def do_feature_detection(self, ctx: Context) -> Optional[Context]:
         """Detect features like ROI, needle, substrate, and contact points.
-        
+
         This stage runs automatic detection algorithms to identify key image
         features before contour extraction. Results are stored in ctx for use
         by subsequent stages.
@@ -97,7 +98,7 @@ class PipelineBase:
 
     def do_contour_extraction(self, ctx: Context) -> Optional[Context]:
         """Extract the droplet contour from the preprocessed image.
-        
+
         Previously named 'edge_detection'. Uses Canny or registered plugins
         to extract contour points as (x, y) coordinate arrays.
         """
@@ -109,7 +110,7 @@ class PipelineBase:
 
     def do_contour_refinement(self, ctx: Context) -> Optional[Context]:
         """Refine the extracted contour by clipping, smoothing, or filtering.
-        
+
         Operations may include:
             - Clipping contour at substrate line
         - Removing noise points
@@ -120,7 +121,7 @@ class PipelineBase:
 
     def do_calibration(self, ctx: Context) -> Optional[Context]:
         """Convert pixel measurements to physical units (mm).
-        
+
         Previously named 'scaling'. Calculates px_per_mm from calibration
         objects (needle diameter) and scales contour coordinates.
         """
@@ -128,13 +129,13 @@ class PipelineBase:
 
     def do_geometric_features(self, ctx: Context) -> Optional[Context]:
         """Extract geometric features from the contour.
-        
+
         Previously named 'geometry'. Calculates:
             - Axis of symmetry
         - Apex point location
         - Baseline/substrate line
         - Tilt angle
-        
+
         Note: Metric computation has been moved to do_compute_metrics.
         """
         return ctx
@@ -145,7 +146,7 @@ class PipelineBase:
 
     def do_profile_fitting(self, ctx: Context) -> Optional[Context]:
         """Fit the physical model (Young-Laplace) to the contour data.
-        
+
         Previously named 'solver'. Uses least-squares optimization to fit
         theoretical curves to measured contour points.
         """
@@ -153,7 +154,7 @@ class PipelineBase:
 
     def do_compute_metrics(self, ctx: Context) -> Optional[Context]:
         """Aggregate and compute final measurement results.
-        
+
         Previously named 'outputs'. Computes derived metrics like:
             - Surface tension (from fit parameters)
         - Volume (disk integration)
@@ -168,35 +169,35 @@ class PipelineBase:
 
     def do_validation(self, ctx: Context) -> Optional[Context]:
         """Quality assurance checks on analysis results.
-        
+
         This stage should verify:
-        
+
             1. RESIDUAL MAGNITUDES
            - Check if fit residuals are within acceptable bounds
            - Flag results with high residual RMS (> threshold)
            - Compute goodness-of-fit metrics (R², chi-squared)
-        
+
         2. PHYSICAL PLAUSIBILITY
            - Verify surface tension is in expected range (e.g., 15-80 mN/m)
            - Check contact angles are valid (0-180°)
            - Validate volume is positive and reasonable
            - Ensure Bond number is physically meaningful
-        
+
         3. CONTOUR QUALITY
            - Check contour point density (too few points = unreliable fit)
            - Detect contour artifacts (gaps, noise spikes)
            - Verify contour is closed/continuous
            - Check for asymmetry beyond threshold
-        
+
         4. GEOMETRIC CONSISTENCY
            - Validate apex is at expected location
            - Check baseline detection quality
            - Verify needle/calibration object detection
-        
+
         5. REPEATABILITY (for batch processing)
            - Compare with previous frames if available
            - Flag sudden jumps in measured values
-        
+
         Sets ctx.qa dict with:
            - 'ok': bool - overall pass/fail
            - 'warnings': list - non-fatal issues
@@ -204,6 +205,7 @@ class PipelineBase:
            - 'scores': dict - quality scores per check
         """
         from menipy.common.validation import validate
+
         ctx.qa = validate(ctx)
         return ctx
 
@@ -355,12 +357,30 @@ class PipelineBase:
 
         # Store any other kwargs into context (e.g. auto_detect_features)
         known_keys = {
-            "image", "image_path", "camera", "cam_id", "frames", "roi", "roi_rect",
-            "detected_roi", "needle_rect", "contact_line", "substrate_line",
-            "drop_contour", "detected_contour", "contact_points", "apex_point",
-            "px_per_mm", "needle_diameter_mm", "calibration_params",
-            "preprocessing_settings", "edge_detection_settings",
-            "measurement_id", "measurement_sequence", "scale", "physics"
+            "image",
+            "image_path",
+            "camera",
+            "cam_id",
+            "frames",
+            "roi",
+            "roi_rect",
+            "detected_roi",
+            "needle_rect",
+            "contact_line",
+            "substrate_line",
+            "drop_contour",
+            "detected_contour",
+            "contact_points",
+            "apex_point",
+            "px_per_mm",
+            "needle_diameter_mm",
+            "calibration_params",
+            "preprocessing_settings",
+            "edge_detection_settings",
+            "measurement_id",
+            "measurement_sequence",
+            "scale",
+            "physics",
         }
         for k, v in kwargs.items():
             if k not in known_keys:

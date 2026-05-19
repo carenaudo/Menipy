@@ -1,5 +1,6 @@
 # src/menipy/common/acquisition.py
 """Common acquisition utilities for loading images from files or cameras."""
+
 from __future__ import annotations
 
 from typing import Sequence
@@ -42,7 +43,7 @@ def from_file(paths: Sequence[str]) -> Sequence[np.ndarray]:
 def from_camera(device: int = 0, n_frames: int = 1) -> Sequence[np.ndarray]:
     """
     Grab frames from a camera.
-    
+
     .. note::
         This is currently a placeholder returning black frames.
         Proper integration with `cv2.VideoCapture` is planned.

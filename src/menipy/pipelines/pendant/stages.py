@@ -2,7 +2,6 @@
 
 Module implementation."""
 
-
 # src/menipy/pipelines/pendant/stages.py
 from __future__ import annotations
 
@@ -28,8 +27,9 @@ from menipy.pipelines.pendant.strict_young_laplace import (
     fit_pendant_young_laplace_strict,
 )
 from menipy.pipelines.utils import ensure_contour
-from menipy.pipelines.pendant import approximations as _pendant_approximations  # noqa: F401
-
+from menipy.pipelines.pendant import (
+    approximations as _pendant_approximations,
+)  # noqa: F401
 
 DEFAULT_PENDANT_APPROXIMATION_METHODS = [
     "selected_plane",
@@ -168,9 +168,7 @@ def _radial_profile_integrals(profile_mm: np.ndarray) -> tuple[float, float]:
 
     volume_uL = float(np.pi * trapezoid(r_mm**2, z_mm))
     dr_dz = np.gradient(r_mm, z_mm, edge_order=2)
-    surface_mm2 = float(
-        2.0 * np.pi * trapezoid(r_mm * np.sqrt(1.0 + dr_dz**2), z_mm)
-    )
+    surface_mm2 = float(2.0 * np.pi * trapezoid(r_mm * np.sqrt(1.0 + dr_dz**2), z_mm))
     return abs(volume_uL), abs(surface_mm2)
 
 
@@ -291,7 +289,12 @@ class PendantPipeline(PipelineBase):
         "display_name": "Pendant Drop",
         "icon": "pendant.svg",
         "color": "#7ED321",
-        "stages": ["acquisition", "contour_extraction", "geometric_features", "physics"],
+        "stages": [
+            "acquisition",
+            "contour_extraction",
+            "geometric_features",
+            "physics",
+        ],
         "calibration_params": [
             "needle_diameter_mm",
             "drop_density_kg_m3",
@@ -303,6 +306,7 @@ class PendantPipeline(PipelineBase):
     def do_acquisition(self, ctx: Context) -> Optional[Context]:
         """Load frames from disk or wrap existing image in frames."""
         from menipy.common.acquisition_stage import do_acquisition
+
         return do_acquisition(ctx, self.logger)
 
     def do_preprocessing(self, ctx: Context) -> Optional[Context]:
@@ -311,6 +315,7 @@ class PendantPipeline(PipelineBase):
             fn = registry.PREPROCESSORS[self.preprocessor_name]
             return fn(ctx) or ctx
         from menipy.pipelines.pendant.preprocessing import do_preprocessing
+
         return do_preprocessing(ctx)
 
     def do_contour_extraction(self, ctx: Context) -> Optional[Context]:
@@ -328,7 +333,10 @@ class PendantPipeline(PipelineBase):
             ctx.contour = Contour(xy=xy)
             return ctx
 
-        if self.edge_detector_name and self.edge_detector_name in registry.EDGE_DETECTORS:
+        if (
+            self.edge_detector_name
+            and self.edge_detector_name in registry.EDGE_DETECTORS
+        ):
             fn = registry.EDGE_DETECTORS[self.edge_detector_name]
             return fn(ctx) or ctx
         return super().do_contour_extraction(ctx)
@@ -399,7 +407,9 @@ class PendantPipeline(PipelineBase):
                 apex_i = int(np.argmax(xy[:, 1]))
                 apex_xy = (float(xy[apex_i, 0]), float(xy[apex_i, 1]))
 
-            diameter_px, _ = _pendant_max_width(xy, getattr(ctx, "contact_points", None))
+            diameter_px, _ = _pendant_max_width(
+                xy, getattr(ctx, "contact_points", None)
+            )
             r0_seed_px = _pendant_apex_radius_px(xy, apex_xy)
             r0_seed_mm = r0_seed_px / px_per_mm if r0_seed_px > 0 else 0.0
             if r0_seed_mm <= 0:
@@ -407,7 +417,9 @@ class PendantPipeline(PipelineBase):
 
             beta_seed = 0.3
             if diameter_px > 0 and r0_seed_px > 0:
-                beta_seed = float(jennings_pallas_beta(diameter_px / (2.0 * r0_seed_px)))
+                beta_seed = float(
+                    jennings_pallas_beta(diameter_px / (2.0 * r0_seed_px))
+                )
 
             needle_radius_mm = None
             needle_diameter_mm = getattr(ctx, "needle_diameter_mm", None)
@@ -422,9 +434,13 @@ class PendantPipeline(PipelineBase):
                     needle_radius_mm = None
             elif getattr(ctx, "contact_points", None) is not None:
                 try:
-                    contacts = np.asarray(ctx.contact_points, dtype=float).reshape(-1, 2)
+                    contacts = np.asarray(ctx.contact_points, dtype=float).reshape(
+                        -1, 2
+                    )
                     if contacts.shape[0] >= 2:
-                        contact_r_px = np.max(np.abs(contacts[:2, 0] - ctx.geometry.axis_x))
+                        contact_r_px = np.max(
+                            np.abs(contacts[:2, 0] - ctx.geometry.axis_x)
+                        )
                         needle_radius_mm = float(contact_r_px) / px_per_mm
                 except Exception:
                     needle_radius_mm = None
@@ -553,13 +569,11 @@ class PendantPipeline(PipelineBase):
                     rho1 = float(physics.get("rho1", 1000.0))
                     rho2 = float(physics.get("rho2", 1.2))
                     g = float(physics.get("g", 9.80665))
-                    gamma_n_m = surface_tension_n_per_m(
-                        rho1 - rho2, g, r0_mm, beta
-                    )
+                    gamma_n_m = surface_tension_n_per_m(rho1 - rho2, g, r0_mm, beta)
                     results["surface_tension_mN_m"] = gamma_n_m * 1000.0
-                    results["geometric_surface_tension_mN_m"] = (
-                        results["surface_tension_mN_m"]
-                    )
+                    results["geometric_surface_tension_mN_m"] = results[
+                        "surface_tension_mN_m"
+                    ]
 
             if fit.get("strict_fit_success"):
                 strict_r0 = fit.get("strict_r0_mm")

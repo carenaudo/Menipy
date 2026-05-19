@@ -14,7 +14,6 @@ from menipy.pipelines.pendant.strict_young_laplace import (
     integrate_young_laplace_profile_mm,
 )
 
-
 DEFAULT_SELECTED_PLANES = (0.6, 0.7, 0.8, 0.9, 1.0)
 
 
@@ -53,19 +52,25 @@ def _r0_mm_from_context(ctx: Any) -> float | None:
     return None
 
 
-def _surface_tension_from_h(delta_rho: float, g: float, de_mm: float, h: float) -> float:
+def _surface_tension_from_h(
+    delta_rho: float, g: float, de_mm: float, h: float
+) -> float:
     de_m = de_mm / 1000.0
     return delta_rho * g * de_m**2 / h
 
 
-def _beta_from_gamma(delta_rho: float, g: float, r0_mm: float | None, gamma_n_m: float) -> float | None:
+def _beta_from_gamma(
+    delta_rho: float, g: float, r0_mm: float | None, gamma_n_m: float
+) -> float | None:
     if r0_mm is None or gamma_n_m <= 0:
         return None
     return float(delta_rho * g * (r0_mm / 1000.0) ** 2 / gamma_n_m)
 
 
 @lru_cache(maxsize=1)
-def _selected_plane_lookup_all() -> dict[float, tuple[np.ndarray, np.ndarray, np.ndarray]]:
+def _selected_plane_lookup_all() -> (
+    dict[float, tuple[np.ndarray, np.ndarray, np.ndarray]]
+):
     beta_grid = np.linspace(0.03, 2.5, 24)
     height_grid = np.linspace(0.8, 4.5, 24)
     by_plane = {
@@ -106,11 +111,17 @@ def _selected_plane_lookup_all() -> dict[float, tuple[np.ndarray, np.ndarray, np
 
 
 def _selected_plane_lookup(k: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    empty = (np.array([], dtype=float), np.array([], dtype=float), np.array([], dtype=float))
+    empty = (
+        np.array([], dtype=float),
+        np.array([], dtype=float),
+        np.array([], dtype=float),
+    )
     return _selected_plane_lookup_all().get(round(float(k), 4), empty)
 
 
-def _lookup_h_from_s(k: float, s: float, height_over_de: float) -> tuple[float | None, str]:
+def _lookup_h_from_s(
+    k: float, s: float, height_over_de: float
+) -> tuple[float | None, str]:
     s_arr, hde_arr, h_arr = _selected_plane_lookup(round(float(k), 4))
     if s_arr.size < 3 or not np.isfinite(s):
         return None, "lookup_unavailable"
@@ -169,7 +180,9 @@ def _selected_plane_estimate(
     return out
 
 
-def selected_plane(ctx: Any, profile_mm: np.ndarray, physics: dict[str, Any]) -> dict[str, Any]:
+def selected_plane(
+    ctx: Any, profile_mm: np.ndarray, physics: dict[str, Any]
+) -> dict[str, Any]:
     """Approximate IFT from one selected plane at ``k=1.0``."""
     return _selected_plane_estimate(ctx, profile_mm, physics, k=1.0)
 
@@ -245,7 +258,9 @@ def _volume_lookup(height_over_r0: float) -> tuple[np.ndarray, np.ndarray]:
     return v_unique, beta_arr[idx]
 
 
-def volume_apex_lookup(ctx: Any, profile_mm: np.ndarray, physics: dict[str, Any]) -> dict[str, Any]:
+def volume_apex_lookup(
+    ctx: Any, profile_mm: np.ndarray, physics: dict[str, Any]
+) -> dict[str, Any]:
     """Approximate IFT from volume, height, and apex radius."""
     prefix = "approx_volume_apex"
     r, z = _profile(profile_mm)
@@ -263,7 +278,11 @@ def volume_apex_lookup(ctx: Any, profile_mm: np.ndarray, physics: dict[str, Any]
         f"{prefix}_height_over_r0": height_dim,
         f"{prefix}_volume_over_r0_cubed": volume_dim,
     }
-    if v_arr.size < 3 or volume_dim < float(np.min(v_arr)) or volume_dim > float(np.max(v_arr)):
+    if (
+        v_arr.size < 3
+        or volume_dim < float(np.min(v_arr))
+        or volume_dim > float(np.max(v_arr))
+    ):
         out[f"{prefix}_status"] = "outside_lookup_range"
         return out
 

@@ -1,5 +1,6 @@
 # src/menipy/common/solver.py
 """Solver stage utilities for fitting physical models to contours."""
+
 from __future__ import annotations
 
 import math

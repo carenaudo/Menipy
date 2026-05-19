@@ -20,7 +20,6 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QColor, QAction
 
-
 LAYER_DEFAULTS = {
     "contour": True,
     "fit": True,
@@ -198,10 +197,16 @@ class PreviewPanel:
             self.image_view.clear_overlays()
 
     def apply_overlay_config(self, config: dict[str, Any] | None = None) -> None:
-        cfg = config if config is not None else getattr(self.settings, "overlay_config", None)
+        cfg = (
+            config
+            if config is not None
+            else getattr(self.settings, "overlay_config", None)
+        )
         cfg = dict(cfg or {})
         self._layer_state = self._load_layer_state(cfg)
-        if self.image_view and hasattr(self.image_view, "set_overlay_stroke_scale_mode"):
+        if self.image_view and hasattr(
+            self.image_view, "set_overlay_stroke_scale_mode"
+        ):
             self.image_view.set_overlay_stroke_scale_mode(
                 str(cfg.get("stroke_scale_mode", "screen"))
             )
@@ -343,6 +348,7 @@ class PreviewPanel:
 
     def _wire_buttons(self) -> None:
         """_wire_buttons."""
+
         def _find_button(name: str) -> Optional[QToolButton | QPushButton]:
             button = self.panel.findChild(QToolButton, name)
             if button:
@@ -387,6 +393,7 @@ class PreviewPanel:
 
     def _install_guided_menus(self) -> None:
         """Replace exposed overlay controls with compact guided menus."""
+
         def _find_button(name: str) -> Optional[QToolButton | QPushButton]:
             button = self.panel.findChild(QToolButton, name)
             if button:
@@ -475,8 +482,14 @@ class PreviewPanel:
             self.image_view.set_overlay_layer_visible(layer, bool(visible))
         self._save_layer_state()
 
-    def _load_layer_state(self, config: dict[str, Any] | None = None) -> dict[str, bool]:
-        cfg = config if config is not None else getattr(self.settings, "overlay_config", None)
+    def _load_layer_state(
+        self, config: dict[str, Any] | None = None
+    ) -> dict[str, bool]:
+        cfg = (
+            config
+            if config is not None
+            else getattr(self.settings, "overlay_config", None)
+        )
         cfg = dict(cfg or {})
         return {
             layer: bool(cfg.get(LAYER_SETTINGS_KEYS[layer], default))
@@ -496,7 +509,9 @@ class PreviewPanel:
             pass
 
     def _apply_all_layer_visibility(self) -> None:
-        if not self.image_view or not hasattr(self.image_view, "set_overlay_layer_visible"):
+        if not self.image_view or not hasattr(
+            self.image_view, "set_overlay_layer_visible"
+        ):
             return
         for layer, visible in self._layer_state.items():
             self.image_view.set_overlay_layer_visible(layer, visible)

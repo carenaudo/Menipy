@@ -2,7 +2,6 @@
 
 Module implementation."""
 
-
 from __future__ import annotations
 
 import numpy as np
@@ -89,8 +88,7 @@ def compute_pendant_metrics(
                     beta = jennings_pallas_beta(s1)
                     # 4. Calculate surface tension
                     gamma_mN_m = (
-                        surface_tension(delta_rho, g, r0_px / px_per_mm, beta)
-                        * 1000.0
+                        surface_tension(delta_rho, g, r0_px / px_per_mm, beta) * 1000.0
                     )
 
         # Calculate volume and surface area by solid of revolution around the apex's vertical axis.

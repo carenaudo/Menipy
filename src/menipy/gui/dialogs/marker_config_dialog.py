@@ -24,7 +24,6 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-
 MARKER_TYPES = (
     ("default", "Default markers"),
     ("roi", "ROI"),
@@ -115,7 +114,9 @@ class MarkerConfigDialog(QDialog):
             label_color_btn = QPushButton("Choose...", group)
             label_color_preview = QLabel(group)
             label_color_preview.setFixedSize(34, 18)
-            form.addRow("Label color:", self._color_row(label_color_btn, label_color_preview))
+            form.addRow(
+                "Label color:", self._color_row(label_color_btn, label_color_preview)
+            )
 
             self._widgets[key] = {
                 "visible": visible,
@@ -132,7 +133,9 @@ class MarkerConfigDialog(QDialog):
                 "_color": QColor(DEFAULT_MARKER_CONFIG[key]["color"]),
                 "_label_color": QColor(DEFAULT_MARKER_CONFIG[key]["label_color"]),
             }
-            color_btn.clicked.connect(lambda _=False, k=key: self._choose_color(k, "color"))
+            color_btn.clicked.connect(
+                lambda _=False, k=key: self._choose_color(k, "color")
+            )
             label_color_btn.clicked.connect(
                 lambda _=False, k=key: self._choose_color(k, "label_color")
             )
@@ -181,7 +184,9 @@ class MarkerConfigDialog(QDialog):
             widgets["visible"].setChecked(bool(values.get("visible", True)))
             widgets["shape"].setCurrentText(str(values.get("shape", "circle")))
             widgets["radius"].setValue(int(values.get("radius", 5)))
-            widgets["label_visible"].setChecked(bool(values.get("label_visible", False)))
+            widgets["label_visible"].setChecked(
+                bool(values.get("label_visible", False))
+            )
             widgets["label_text"].setText(str(values.get("label_text", "")))
             widgets["font_size"].setValue(int(values.get("font_size", 10)))
             font_family = values.get("font_family")
@@ -207,7 +212,9 @@ class MarkerConfigDialog(QDialog):
 
     def _choose_color(self, marker_key: str, color_key: str) -> None:
         widgets = self._widgets[marker_key]
-        initial = widgets["_label_color"] if color_key == "label_color" else widgets["_color"]
+        initial = (
+            widgets["_label_color"] if color_key == "label_color" else widgets["_color"]
+        )
         color = QColorDialog.getColor(initial, self)
         if color.isValid():
             self._set_color(marker_key, color, color_key)
@@ -215,7 +222,9 @@ class MarkerConfigDialog(QDialog):
     def _set_color(self, marker_key: str, color: QColor, color_key: str) -> None:
         widgets = self._widgets[marker_key]
         store_key = "_label_color" if color_key == "label_color" else "_color"
-        preview_key = "label_color_preview" if color_key == "label_color" else "color_preview"
+        preview_key = (
+            "label_color_preview" if color_key == "label_color" else "color_preview"
+        )
         widgets[store_key] = color
         widgets[preview_key].setStyleSheet(
             f"background-color: {color.name()}; border: 1px solid #222;"

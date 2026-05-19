@@ -76,7 +76,9 @@ def build_pendant_profile_envelope_mm(
         profile = np.vstack([[0.0, 0.0], profile])
     else:
         profile[0, 1] = 0.0
-        profile[0, 0] = min(profile[0, 0], profile[1, 0] if profile.shape[0] > 1 else 0.0)
+        profile[0, 0] = min(
+            profile[0, 0], profile[1, 0] if profile.shape[0] > 1 else 0.0
+        )
     return profile
 
 
@@ -222,7 +224,9 @@ def integrate_young_laplace_profile_mm(
     return (profile, meta) if return_metadata else profile
 
 
-def _normal_projection_residuals_mm(obs_mm: np.ndarray, model_mm: np.ndarray) -> np.ndarray:
+def _normal_projection_residuals_mm(
+    obs_mm: np.ndarray, model_mm: np.ndarray
+) -> np.ndarray:
     """Project observed points to nearest model normals and return mm distances."""
     if model_mm.shape[0] < 3:
         return np.full(obs_mm.shape[0], 1e3, dtype=float)
@@ -258,7 +262,9 @@ def _is_pinned(params: np.ndarray, lower: np.ndarray, upper: np.ndarray) -> bool
     return bool(np.any(params <= lower + tol) or np.any(params >= upper - tol))
 
 
-def fit_pendant_young_laplace_strict(fit_input: PendantStrictFitInput) -> dict[str, Any]:
+def fit_pendant_young_laplace_strict(
+    fit_input: PendantStrictFitInput,
+) -> dict[str, Any]:
     """Fit a calibrated pendant contour to a strict Young-Laplace profile."""
     obs_mm = pendant_contour_to_model_mm(
         fit_input.contour_px,
@@ -270,7 +276,12 @@ def fit_pendant_young_laplace_strict(fit_input: PendantStrictFitInput) -> dict[s
         return {
             "params": [],
             "param_names": ["r0_mm", "beta", "x_offset_mm", "z_offset_mm"],
-            "residuals": {"rmse": float("nan"), "max_abs": float("nan"), "dof": 0, "r": []},
+            "residuals": {
+                "rmse": float("nan"),
+                "max_abs": float("nan"),
+                "dof": 0,
+                "r": [],
+            },
             "solver": {
                 "backend": "scipy.least_squares",
                 "method": "trf",
@@ -318,9 +329,12 @@ def fit_pendant_young_laplace_strict(fit_input: PendantStrictFitInput) -> dict[s
         # Keep small offset freedom, but discourage using offsets as a full shape fit.
         r0_mm, _beta, x_offset_mm, z_offset_mm = params
         offset_scale = max(0.05, r0_mm * 0.25)
-        regularization = np.array(
-            [x_offset_mm / offset_scale, z_offset_mm / offset_scale], dtype=float
-        ) * 0.01
+        regularization = (
+            np.array(
+                [x_offset_mm / offset_scale, z_offset_mm / offset_scale], dtype=float
+            )
+            * 0.01
+        )
         return np.concatenate([r, regularization])
 
     res = least_squares(

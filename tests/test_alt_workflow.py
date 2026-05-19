@@ -2,7 +2,6 @@
 
 Unit tests."""
 
-
 import numpy as np
 import pytest
 
@@ -34,9 +33,7 @@ def test_find_contact_points_from_contour_circle():
 
 def test_detect_baseline_ransac_bottom_aligns():
     # Rectangle contour spanning x=0..20, y=0..10
-    contour = np.array(
-        [[0, 0], [20, 0], [20, 10], [0, 10]], dtype=float
-    )
+    contour = np.array([[0, 0], [20, 0], [20, 10], [0, 10]], dtype=float)
     p1, p2, conf = detect_baseline_ransac(contour, threshold=1.0, min_samples=3)
     assert conf >= 0  # confidence returned
     # Baseline should be within the vertical extent
@@ -67,9 +64,14 @@ def test_compute_sessile_metrics_circle():
     )
 
     # Ensure outputs are finite and non-negative
-    for key in ("diameter_mm", "height_mm", "volume_uL",
-                "theta_left_deg", "theta_right_deg",
-                "contact_angle_deg"):
+    for key in (
+        "diameter_mm",
+        "height_mm",
+        "volume_uL",
+        "theta_left_deg",
+        "theta_right_deg",
+        "contact_angle_deg",
+    ):
         assert res[key] >= 0.0
     assert 0.0 <= res["baseline_confidence"] <= 1.0
     assert 0.0 <= res["apex_confidence"] <= 1.0

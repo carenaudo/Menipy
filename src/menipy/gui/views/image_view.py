@@ -307,7 +307,7 @@ class ImageView(QGraphicsView):
         tag: str | None = None,
     ) -> None:
         """Add a rectangle overlay.
-        
+
         Args:
             rect: Rectangle in scene coordinates (can be QRectF or tuple of x,y,w,h)
             color: Outline color
@@ -324,7 +324,7 @@ class ImageView(QGraphicsView):
             return
         if "color" in marker_style:
             color = QColor(str(marker_style["color"]))
-        
+
         item = QGraphicsRectItem(rect)
         pen = QPen(color)
         pen.setWidthF(float(width))
@@ -410,7 +410,11 @@ class ImageView(QGraphicsView):
             return
         if marker_style:
             color = QColor(
-                str(marker_style.get("label_color", marker_style.get("color", color.name())))
+                str(
+                    marker_style.get(
+                        "label_color", marker_style.get("color", color.name())
+                    )
+                )
             )
         item = QGraphicsSimpleTextItem(str(text))
         item.setPos(point)
@@ -422,7 +426,9 @@ class ImageView(QGraphicsView):
             if marker_style.get("font_size"):
                 font.setPointSizeF(float(marker_style["font_size"]))
             item.setFont(font)
-            item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
+            item.setFlag(
+                QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True
+            )
         except Exception:
             pass
         try:
@@ -443,7 +449,11 @@ class ImageView(QGraphicsView):
     def _marker_style_for_tag(self, tag: str | None) -> dict[str, object]:
         config = self._marker_config or {}
         marker_type = self._marker_type_for_tag(tag)
-        style = dict(config.get("default", {})) if isinstance(config.get("default"), dict) else {}
+        style = (
+            dict(config.get("default", {}))
+            if isinstance(config.get("default"), dict)
+            else {}
+        )
         specific = config.get(marker_type)
         if isinstance(specific, dict):
             style.update(specific)
@@ -477,7 +487,9 @@ class ImageView(QGraphicsView):
             return
         item = QGraphicsSimpleTextItem(label)
         item.setPos(point + QPointF(6, -18))
-        item.setBrush(QColor(str(style.get("label_color", style.get("color", "white")))))
+        item.setBrush(
+            QColor(str(style.get("label_color", style.get("color", "white"))))
+        )
         try:
             font = item.font()
             if style.get("font_family"):
@@ -485,7 +497,9 @@ class ImageView(QGraphicsView):
             if style.get("font_size"):
                 font.setPointSizeF(float(style["font_size"]))
             item.setFont(font)
-            item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
+            item.setFlag(
+                QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True
+            )
         except Exception:
             pass
         item.setZValue(13_000)
@@ -579,6 +593,7 @@ class ImageView(QGraphicsView):
         self._mode = "fit"
 
         # --------------------- events & helpers ---------------------
+
     def wheelEvent(self, event):
         """wheel event."""
         # Require Ctrl only if configured

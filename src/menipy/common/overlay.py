@@ -1,5 +1,6 @@
 # src/menipy/common/overlay.py
 """Overlay drawing utilities for visualizing analysis results on images."""
+
 from __future__ import annotations
 from typing import Iterable, Tuple, Union, Dict, Any
 import numpy as np
@@ -90,7 +91,9 @@ def draw_overlay(
             cv2.line(overlay, p1, p2, color, th, lineType=cv2.LINE_AA)
 
         elif typ == "polyline":
-            pts_poly: np.ndarray = np.asarray(cmd["points"], dtype=np.int32).reshape(-1, 1, 2)
+            pts_poly: np.ndarray = np.asarray(cmd["points"], dtype=np.int32).reshape(
+                -1, 1, 2
+            )
             color = _bgr(cmd.get("color", "yellow"))
             th = int(cmd.get("thickness", 2))
             closed = bool(cmd.get("closed", True))
@@ -129,7 +132,9 @@ def draw_overlay(
             cv2.circle(overlay, c, r, color, th, cv2.LINE_AA)
 
         elif typ == "scatter":
-            pts_scatter: np.ndarray = np.asarray(cmd["points"], dtype=int).reshape(-1, 2)
+            pts_scatter: np.ndarray = np.asarray(cmd["points"], dtype=int).reshape(
+                -1, 2
+            )
             color = _bgr(cmd.get("color", "white"))
             r = int(cmd.get("radius", 2))
             th = int(cmd.get("thickness", -1))

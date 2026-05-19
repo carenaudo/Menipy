@@ -244,7 +244,9 @@ def detect_baseline_ransac(
             vec_to_points = candidates - p1
             dists = np.abs(np.cross(vec_to_points, unit_vec))
             inlier_count = int(np.sum(dists <= threshold))
-            confidence = float(inlier_count) / len(candidates) if len(candidates) > 0 else 0.0
+            confidence = (
+                float(inlier_count) / len(candidates) if len(candidates) > 0 else 0.0
+            )
 
     return p1, p2, confidence
 
@@ -351,9 +353,7 @@ def refine_apex_curvature(
                 ratio = peak_kappa / (mean_kappa + 1e-6)
                 # Scale ratio conservatively so flat contours yield moderate confidence
                 # and strong curvature peaks yield higher confidence up to ~0.99.
-                confidence = float(
-                    min(0.99, 0.5 + 0.5 * min(ratio / 5.0, 1.0))
-                )
+                confidence = float(min(0.99, 0.5 + 0.5 * min(ratio / 5.0, 1.0)))
 
     return apex, confidence
 
@@ -499,11 +499,7 @@ def _contact_branch_points(
     for factor in (1.0, 1.5, 2.0, 3.0):
         radius = float(window_px) * factor
         distances = np.linalg.norm(rel_all, axis=1)
-        mask = (
-            (distances <= radius)
-            & (h_all > 0.5)
-            & ((s_all * inward_sign) >= -1.0)
-        )
+        mask = (distances <= radius) & (h_all > 0.5) & ((s_all * inward_sign) >= -1.0)
         local_points = contour_2d[mask]
         if local_points.shape[0] >= 3:
             return local_points, substrate_vec, normal_vec

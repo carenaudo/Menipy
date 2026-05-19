@@ -42,7 +42,7 @@ def _load_plugin(name: str) -> Optional[Callable]:
 
 
 # -------- helpers --------
-# Helpers _ensure_gray and _edges_to_xy are kept for potential backward 
+# Helpers _ensure_gray and _edges_to_xy are kept for potential backward
 # compatibility but we prefer using the ones from detection_helpers.
 _ensure_gray = ensure_gray
 _edges_to_xy = edges_to_xy
@@ -54,13 +54,13 @@ def _fallback_canny(img: np.ndarray, settings: EdgeDetectionSettings) -> np.ndar
     canny_fn = EDGE_DETECTORS.get("canny")
     if canny_fn:
         return canny_fn(img, settings)
-    
+
     # Minimal hardcoded fallback if registry is empty
     g = ensure_gray(img)
     # Simple threshold around median
     v = float(np.median(g))
     edges = np.asarray((g > v).astype(np.uint8) * 255, dtype=np.uint8)
-    
+
     return edges_to_xy(edges, settings.min_contour_length, settings.max_contour_length)
 
 

@@ -2,7 +2,6 @@
 
 Unit tests."""
 
-
 import sys
 import pytest
 

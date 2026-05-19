@@ -2,7 +2,6 @@
 
 Module implementation."""
 
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -146,7 +145,10 @@ def clip_contour_to_substrate(
             unique_inters.sort(key=lambda p: float(p[0]))
         left_first = unique_inters[0]
         right_second = unique_inters[-1]
-        contact_pts = ((float(left_first[0]), float(left_first[1])), (float(right_second[0]), float(right_second[1])))
+        contact_pts = (
+            (float(left_first[0]), float(left_first[1])),
+            (float(right_second[0]), float(right_second[1])),
+        )
 
     return refined_contour, contact_pts
 

@@ -113,8 +113,7 @@ class EdgeDetectionPipelineController(QObject):
         self.previewRequested.emit(preview_image, metadata)
 
     def reset(self) -> None:
-        """reset.
-        """
+        """reset."""
         self._settings = EdgeDetectionSettings()
         self.settingsChanged.emit(self._settings)
         self.run()

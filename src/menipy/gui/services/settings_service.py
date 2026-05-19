@@ -67,8 +67,7 @@ class AppSettings:
             return cls(path=p)
 
     def save(self) -> None:
-        """Save.
-        """
+        """Save."""
         self.path.parent.mkdir(parents=True, exist_ok=True)
         tmp = asdict(self).copy()
         tmp.pop("path", None)

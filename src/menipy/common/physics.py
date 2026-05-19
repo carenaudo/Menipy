@@ -1,5 +1,6 @@
 # src/menipy/common/physics.py
 """Physics constants and parameter management."""
+
 from __future__ import annotations
 
 

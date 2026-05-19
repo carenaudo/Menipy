@@ -2,7 +2,6 @@
 
 Module implementation."""
 
-
 from __future__ import annotations
 
 """Helper utilities for Menipy preprocessing pipeline."""
@@ -99,7 +98,6 @@ class PreprocessingContext:
         Description.
         """
         self.state.normalized_roi = array
-
 
         # ---------------------------------------------------------------------------
         # Stage helpers

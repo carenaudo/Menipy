@@ -1,7 +1,16 @@
 """Pipeline-specific settings panel for the pendant drop pipeline."""
+
 from __future__ import annotations
 
-from PySide6.QtWidgets import QWidget, QFormLayout, QDoubleSpinBox, QTextEdit, QVBoxLayout, QComboBox, QCheckBox
+from PySide6.QtWidgets import (
+    QWidget,
+    QFormLayout,
+    QDoubleSpinBox,
+    QTextEdit,
+    QVBoxLayout,
+    QComboBox,
+    QCheckBox,
+)
 from menipy.pipelines.pendant.stages import DEFAULT_PENDANT_APPROXIMATION_METHODS
 
 

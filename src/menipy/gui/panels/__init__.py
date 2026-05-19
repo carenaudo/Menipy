@@ -3,6 +3,7 @@ GUI panels package.
 
 Contains reusable panel components for the ADSA application.
 """
+
 from menipy.gui.panels.image_source_panel import ImageSourcePanel
 from menipy.gui.panels.calibration_panel import CalibrationPanel
 from menipy.gui.panels.parameters_panel import ParametersPanel
@@ -18,4 +19,3 @@ __all__ = [
     "NeedleCalibrationPanel",
     "TiltStagePanel",
 ]
-

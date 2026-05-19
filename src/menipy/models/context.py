@@ -20,10 +20,13 @@ class Context(BaseModel):
     Mutable bag of state shared across pipeline stages.
     Pipelines freely attach fields here. Commonly used keys are predeclared.
     """
-    model_config = ConfigDict(extra='forbid', arbitrary_types_allowed=True)
+
+    model_config = ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     # Acquisition / images
-    frames: Union[np.ndarray, List[np.ndarray], List[Frame], None] = None  # np.ndarray or list[np.ndarray]
+    frames: Union[np.ndarray, List[np.ndarray], List[Frame], None] = (
+        None  # np.ndarray or list[np.ndarray]
+    )
     current_frame: Optional[Frame] = None
     image_path: Optional[str] = None  # Path to input image file
     image: Optional[np.ndarray] = None  # Loaded image data
@@ -99,7 +102,7 @@ class Context(BaseModel):
     contact_line_mask: Optional[np.ndarray] = None
     preprocessed: Optional[np.ndarray] = None
     gray: Optional[np.ndarray] = None
-    
+
     # Specific algorithm variables (found during refactor)
     contact_points: Optional[Tuple[Tuple[int, int], Tuple[int, int]]] = None
     apex_point: Optional[Tuple[int, int]] = None

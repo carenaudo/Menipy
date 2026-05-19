@@ -93,8 +93,7 @@ class SopController:
         return included
 
     def on_add_sop(self) -> None:
-        """Add on  sop.
-        """
+        """Add on  sop."""
         if not self.sops:
             QMessageBox.warning(self.window, "SOP", "SOP service is not available.")
             return

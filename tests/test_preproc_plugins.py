@@ -23,6 +23,7 @@ from menipy.common.registry import PREPROCESSORS
 
 class MockContext:
     """Mock context for testing preprocessor plugins."""
+
     def __init__(self, pipeline_name: str = "sessile"):
         self.pipeline_name = pipeline_name
         self.auto_detect_features = True
@@ -54,20 +55,20 @@ def create_pendant_test_image(
 
 class TestPluginRegistration:
     """Test that all preprocessor plugins are registered."""
-    
+
     def test_detect_substrate_registered(self):
         assert "detect_substrate" in PREPROCESSORS
-    
+
     def test_detect_needle_registered(self):
         assert "detect_needle" in PREPROCESSORS
-    
+
     def test_detect_drop_registered(self):
         assert "detect_drop" in PREPROCESSORS
-    
+
     def test_detect_roi_registered(self):
         """test_detect_roi_registered."""
         assert "detect_roi" in PREPROCESSORS
-    
+
     def test_auto_detect_registered(self):
         """test_auto_detect_registered."""
         assert "auto_detect" in PREPROCESSORS
@@ -75,14 +76,14 @@ class TestPluginRegistration:
 
 class TestSubstratePreprocessor:
     """Tests for substrate detection preprocessor."""
-    
+
     def test_detects_substrate_line(self):
         """test_detects_substrate_line."""
         ctx = MockContext()
         ctx.image = create_sessile_test_image(substrate_y=380)
-        
+
         ctx = PREPROCESSORS["detect_substrate"](ctx)
-        
+
         assert hasattr(ctx, "substrate_line")
         assert ctx.substrate_line is not None
         p1, p2 = ctx.substrate_line
@@ -92,14 +93,14 @@ class TestSubstratePreprocessor:
 
 class TestNeedlePreprocessor:
     """Tests for needle detection preprocessor."""
-    
+
     def test_detects_sessile_needle(self):
         """test_detects_sessile_needle."""
         ctx = MockContext("sessile")
         ctx.image = create_sessile_test_image()
-        
+
         ctx = PREPROCESSORS["detect_needle"](ctx)
-        
+
         assert hasattr(ctx, "needle_rect")
         if ctx.needle_rect:
             x, y, w, h = ctx.needle_rect
@@ -108,43 +109,43 @@ class TestNeedlePreprocessor:
 
 class TestDropPreprocessor:
     """Tests for drop detection preprocessor."""
-    
+
     def test_detects_sessile_drop(self):
         """test_detects_sessile_drop."""
         ctx = MockContext("sessile")
         ctx.image = create_sessile_test_image()
         ctx.substrate_line = ((0, 400), (640, 400))
-        
+
         ctx = PREPROCESSORS["detect_drop"](ctx)
-        
+
         assert hasattr(ctx, "detected_contour")
         assert ctx.detected_contour is not None
-    
+
     def test_detects_pendant_drop(self):
         """Test_detects_pendant_drop."""
         ctx = MockContext("pendant")
         ctx.image = create_pendant_test_image()
-        
+
         ctx = PREPROCESSORS["detect_drop"](ctx)
-        
+
         assert hasattr(ctx, "detected_contour")
         assert ctx.detected_contour is not None
 
 
 class TestROIPreprocessor:
     """Tests for ROI detection preprocessor."""
-    
+
     def test_computes_sessile_roi(self):
         """Test_computes_sessile_roi."""
         ctx = MockContext("sessile")
         ctx.image = create_sessile_test_image()
         ctx.substrate_line = ((0, 400), (640, 400))
-        ctx.detected_contour = np.array([
-            [240, 350], [320, 300], [400, 350], [320, 400]
-        ], dtype=np.float64)
-        
+        ctx.detected_contour = np.array(
+            [[240, 350], [320, 300], [400, 350], [320, 400]], dtype=np.float64
+        )
+
         ctx = PREPROCESSORS["detect_roi"](ctx)
-        
+
         assert hasattr(ctx, "detected_roi")
         assert ctx.detected_roi is not None
         x, y, w, h = ctx.detected_roi
@@ -153,35 +154,35 @@ class TestROIPreprocessor:
 
 class TestAutoDetectPreprocessor:
     """Tests for combined auto_detect preprocessor."""
-    
+
     def test_sessile_full_detection(self):
         """Test_sessile_full_detection."""
         ctx = MockContext("sessile")
         ctx.image = create_sessile_test_image()
-        
+
         ctx = PREPROCESSORS["auto_detect"](ctx)
-        
+
         assert hasattr(ctx, "substrate_line")
         assert hasattr(ctx, "detected_contour")
         assert hasattr(ctx, "detected_roi")
-    
+
     def test_pendant_full_detection(self):
         """Test_pendant_full_detection."""
         ctx = MockContext("pendant")
         ctx.image = create_pendant_test_image()
-        
+
         ctx = PREPROCESSORS["auto_detect"](ctx)
-        
+
         assert hasattr(ctx, "detected_contour")
         assert hasattr(ctx, "detected_roi")
-    
+
     def test_respects_auto_detect_flag(self):
         """Test_respects_auto_detect_flag."""
         ctx = MockContext("sessile")
         ctx.image = create_sessile_test_image()
         ctx.auto_detect_features = False
-        
+
         ctx = PREPROCESSORS["auto_detect"](ctx)
-        
+
         # Should not detect anything when disabled
         assert not hasattr(ctx, "substrate_line") or ctx.substrate_line is None
