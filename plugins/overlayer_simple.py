@@ -2,9 +2,6 @@
 
 Registers a basic overlay handler that attaches visual metadata to the context.
 """
-from menipy.common.registry import register_overlayer
-
-
 def add_simple_overlay(ctx):
     """Placeholder docstring for add_simple_overlay.
     
@@ -37,5 +34,6 @@ def add_simple_overlay(ctx):
     ctx.overlay.append({"type": "simple", "text": "overlay"})
     return ctx
 
-
-register_overlayer("simple", add_simple_overlay)
+OVERLAYERS = {
+    "simple": add_simple_overlay
+}

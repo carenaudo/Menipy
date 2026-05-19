@@ -58,6 +58,11 @@ Alternatively, you can create an isolated environment manually.
 
 Both approaches will start the Menipy GUI (once fully implemented) and allow you to analyze droplet images.
 
+
+## Developer Plugins
+
+See [Developer Guide: Plugins](docs/guides/developer_guide_plugins.md) for the full plugin protocol, migration guide, and examples for all plugin types.
+
 ## Interface Overview
 
 When you launch Menipy, the main window displays an image view on the left and a set of controls on the right. The control area includes:

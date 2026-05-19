@@ -41,7 +41,8 @@ Use at your own risk.
 - **docs/history/** – historical planning logs and archived process notes.
 - **CHANGELOG.md** – A log of notable changes for each version.
 
-By combining these materials with CODEX automation, Menipy aims to become a fully functional droplet shape analysis tool with a PySide6 interface and automated tests, all generated with minimal human interaction.
+
+For developers: see [Developer Guide: Plugins](docs/guides/developer_guide_plugins.md) for up-to-date instructions on writing and migrating plugins for all supported types (edge, solver, acquisition, optimizer, physics, output, overlayer, scaler, validator, and more).
 
 ## Human Interaction
 

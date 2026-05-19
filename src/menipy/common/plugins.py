@@ -35,32 +35,55 @@ def _register_from_module(mod) -> None:
       3) get_edge_detectors() / get_solvers() / get_pendant_approximators()
          returning name->callable
     """
+    # Registry import moved here to avoid circulars if new types are added
+    from . import registry as _reg
+
+    # Map plugin type to (dict symbol, getter, registry function)
+    _plugin_types = [
+        ("EDGE_DETECTORS", "get_edge_detectors", _reg.register_edge),
+        ("SOLVERS", "get_solvers", _reg.register_solver),
+        ("PENDANT_APPROXIMATORS", "get_pendant_approximators", _reg.register_pendant_approximator),
+        ("ACQUISITIONS", "get_acquisitions", getattr(_reg, "register_acquisition", None)),
+        ("OPTIMIZERS", "get_optimizers", getattr(_reg, "register_optimizer", None)),
+        ("PHYSICS", "get_physics", getattr(_reg, "register_physics", None)),
+        ("OUTPUTS", "get_outputs", getattr(_reg, "register_output", None)),
+        ("OVERLAYERS", "get_overlayers", getattr(_reg, "register_overlayer", None)),
+        ("SCALERS", "get_scalers", getattr(_reg, "register_scaler", None)),
+        ("VALIDATORS", "get_validators", getattr(_reg, "register_validator", None)),
+    ]
+
+    # Unified registry dict for register() pattern
+    registries = {
+        "register_edge": _reg.register_edge,
+        "register_solver": _reg.register_solver,
+        "register_pendant_approximator": _reg.register_pendant_approximator,
+        "register_acquisition": getattr(_reg, "register_acquisition", None),
+        "register_optimizer": getattr(_reg, "register_optimizer", None),
+        "register_physics": getattr(_reg, "register_physics", None),
+        "register_output": getattr(_reg, "register_output", None),
+        "register_overlayer": getattr(_reg, "register_overlayer", None),
+        "register_scaler": getattr(_reg, "register_scaler", None),
+        "register_validator": getattr(_reg, "register_validator", None),
+    }
+
+    # Option 1: register(registries) pattern
     if hasattr(mod, "register"):
-        mod.register(
-            {
-                "register_edge": register_edge,
-                "register_solver": register_solver,
-                "register_pendant_approximator": register_pendant_approximator,
-            }
-        )
-    if hasattr(mod, "EDGE_DETECTORS"):
-        for name, fn in mod.EDGE_DETECTORS.items():
-            register_edge(name, fn)
-    if hasattr(mod, "SOLVERS"):
-        for name, fn in mod.SOLVERS.items():
-            register_solver(name, fn)
-    if hasattr(mod, "PENDANT_APPROXIMATORS"):
-        for name, fn in mod.PENDANT_APPROXIMATORS.items():
-            register_pendant_approximator(name, fn)
-    if hasattr(mod, "get_edge_detectors"):
-        for name, fn in mod.get_edge_detectors().items():
-            register_edge(name, fn)
-    if hasattr(mod, "get_solvers"):
-        for name, fn in mod.get_solvers().items():
-            register_solver(name, fn)
-    if hasattr(mod, "get_pendant_approximators"):
-        for name, fn in mod.get_pendant_approximators().items():
-            register_pendant_approximator(name, fn)
+        mod.register(registries)
+
+    # Option 2/3: Dicts or getter functions for each supported type
+    for dict_sym, getter, reg_fn in _plugin_types:
+        if reg_fn is None:
+            continue
+        if hasattr(mod, dict_sym):
+            d = getattr(mod, dict_sym)
+            if isinstance(d, dict):
+                for name, fn in d.items():
+                    reg_fn(name, fn)
+        if hasattr(mod, getter):
+            d = getattr(mod, getter)()
+            if isinstance(d, dict):
+                for name, fn in d.items():
+                    reg_fn(name, fn)
 
 
 def discover_into_db(db: PluginDB, plugin_dirs: Iterable[Path]) -> int:

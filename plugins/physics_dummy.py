@@ -2,9 +2,6 @@
 
 Registers a placeholder physics handler that provides a mock physics dictionary.
 """
-from menipy.common.registry import register_physics
-
-
 def dummy_physics(ctx):
     """Placeholder docstring for dummy_physics.
     
@@ -36,5 +33,6 @@ def dummy_physics(ctx):
     ctx.physics = {"method": "dummy", "params": {}}
     return ctx
 
-
-register_physics("dummy", dummy_physics)
+PHYSICS = {
+    "dummy": dummy_physics
+}

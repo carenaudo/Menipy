@@ -2,9 +2,6 @@
 
 Registers a simple validator that sets a basic validation flag in the context.
 """
-from menipy.common.registry import register_validator
-
-
 def basic_validator(ctx):
     """Placeholder docstring for basic_validator.
     
@@ -37,5 +34,6 @@ def basic_validator(ctx):
     ctx.qa["valid"] = True
     return ctx
 
-
-register_validator("basic", basic_validator)
+VALIDATORS = {
+    "basic": basic_validator
+}

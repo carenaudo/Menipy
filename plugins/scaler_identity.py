@@ -2,9 +2,6 @@
 
 Registers a no-op scaler that ensures the context has a scale attribute set to 1.0.
 """
-from menipy.common.registry import register_scaler
-
-
 def identity_scaler(ctx):
     """Placeholder docstring for identity_scaler.
     
@@ -37,5 +34,6 @@ def identity_scaler(ctx):
         ctx.scale = 1.0
     return ctx
 
-
-register_scaler("identity", identity_scaler)
+SCALERS = {
+    "identity": identity_scaler
+}

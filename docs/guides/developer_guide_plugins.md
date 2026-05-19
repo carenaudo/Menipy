@@ -132,11 +132,100 @@ def get_edge_detectors():
 
 After creating the plugin, you need to make sure it's discovered and activated. The application will typically discover plugins on startup. You can then use the GUI or a command-line tool to activate or deactivate your plugin.
 
-## 3. Example Plugins
 
-The `plugins/` directory in the Menipy project contains several example plugins that you can use as a reference. Some good examples to look at are:
+## 3. Extended Plugin Protocol (2026)
 
-*   `acq_file.py`: A simple acquisition plugin.
-*   `bezier_edge.py`: An edge detection plugin.
-*   `physics_dummy.py`: A dummy physics plugin.
-*   `simple_solver.py`: A basic solver plugin.
+Menipy now supports dynamic discovery and registration for all plugin types, not just edge detectors and solvers. This means you can write acquisition, optimizer, physics, output, overlayer, scaler, and validator plugins that are loaded automatically.
+
+### 3.1 Supported Plugin Types and Symbols
+
+For each plugin type, you can expose a dictionary or a getter function at module level:
+
+| Plugin Type    | Dict Symbol      | Getter Function         | Registry Function         |
+|--------------- |-----------------|------------------------ |--------------------------|
+| Acquisition    | ACQUISITIONS    | get_acquisitions()      | register_acquisition      |
+| Optimizer      | OPTIMIZERS      | get_optimizers()        | register_optimizer        |
+| Physics        | PHYSICS         | get_physics()           | register_physics          |
+| Output         | OUTPUTS         | get_outputs()           | register_output           |
+| Overlayer      | OVERLAYERS      | get_overlayers()        | register_overlayer        |
+| Scaler         | SCALERS         | get_scalers()           | register_scaler           |
+| Validator      | VALIDATORS      | get_validators()        | register_validator        |
+| Edge Detector  | EDGE_DETECTORS  | get_edge_detectors()    | register_edge             |
+| Solver         | SOLVERS         | get_solvers()           | register_solver           |
+| Pendant Approx | PENDANT_APPROXIMATORS | get_pendant_approximators() | register_pendant_approximator |
+
+Alternatively, you can define a `register(registries)` function and call the appropriate registry function(s) with your plugin(s).
+
+### 3.2 Example: Acquisition Plugin
+
+```python
+def acquire_from_file(ctx):
+    # ... implementation ...
+    return ctx
+
+ACQUISITIONS = {
+    "file": acquire_from_file
+}
+```
+
+### 3.3 Example: Optimizer Plugin
+
+```python
+def noop_optimizer(ctx):
+    ctx.optimized = True
+    return ctx
+
+OPTIMIZERS = {
+    "noop": noop_optimizer
+}
+```
+
+### 3.4 Example: Using register(registries)
+
+```python
+def my_validator(ctx):
+    ctx.qa = {"valid": True}
+    return ctx
+
+def register(registries):
+    registries["register_validator"]("basic", my_validator)
+```
+
+### 3.5 Migration Guide (Legacy to New Protocol)
+
+If your plugin previously called a registry function at module level, move that call into a `register()` function or expose your callable(s) in the appropriate dict. For example:
+
+**Before:**
+```python
+from menipy.common.registry import register_output
+def output_results_json(ctx): ...
+register_output("json", output_results_json)
+```
+
+**After:**
+```python
+def output_results_json(ctx): ...
+OUTPUTS = {"json": output_results_json}
+```
+
+Or:
+```python
+def output_results_json(ctx): ...
+def register(registries):
+    registries["register_output"]("json", output_results_json)
+```
+
+### 3.6 Testing Your Plugin
+
+After updating, run Menipy and use the plugin CLI or GUI to confirm your plugin is discovered and registered. Check the logs for any errors.
+
+---
+
+## 4. References and Further Reading
+
+- See [src/menipy/common/plugins.py](../../src/menipy/common/plugins.py) for the loader implementation.
+- See [src/menipy/common/registry.py](../../src/menipy/common/registry.py) for available registry functions.
+
+---
+
+If you have questions or want to propose a new plugin type, open an issue or see the developer chat.

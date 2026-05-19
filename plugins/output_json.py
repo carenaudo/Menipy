@@ -2,10 +2,6 @@
 
 Registers a simple JSON output handler that serializes results to a JSON string.
 """
-import json
-from menipy.common.registry import register_output
-
-
 def output_results_json(ctx):
     """Placeholder docstring for output_results_json.
     
@@ -37,6 +33,8 @@ def output_results_json(ctx):
     data = {"results": getattr(ctx, "results", None)}
     ctx._last_output = json.dumps(data)
     return ctx
+import json
 
-
-register_output("json", output_results_json)
+OUTPUTS = {
+    "json": output_results_json
+}
