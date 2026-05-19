@@ -127,6 +127,9 @@ class DialogCoordinator(QObject):
             try:
                 self.settings.overlay_config = cfg
                 self._save_settings()
+                preview_panel = getattr(self.window, "preview_panel", None)
+                if preview_panel and hasattr(preview_panel, "apply_overlay_config"):
+                    preview_panel.apply_overlay_config(cfg)
                 self.window.statusBar().showMessage("Overlay configuration saved", 1500)
                 logger.info("Overlay configuration updated: %s", cfg)
             except Exception as exc:

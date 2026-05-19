@@ -2,12 +2,14 @@ from __future__ import annotations
 
 from pathlib import Path
 from unittest.mock import Mock
+import xml.etree.ElementTree as ET
 
 from PySide6.QtCore import QFile
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import QMainWindow
 
 from menipy.gui.controllers.setup_panel_controller import SetupPanelController
+from menipy.gui.main_window import _workbench_root_sizes, _workbench_vertical_sizes
 
 
 class DummySettings:
@@ -111,3 +113,65 @@ def test_guided_setup_hides_substrate_angle_outside_sessile(qtbot):
     assert not controller.substrateAngleSpin.isHidden()
     controller.pendantBtn.click()
     assert controller.substrateAngleSpin.isHidden()
+
+
+def test_workbench_root_sizes_migrates_legacy_result_heavy_layout():
+    sizes = _workbench_root_sizes(1500, [240, 500, 760])
+
+    assert sizes[1] > sizes[0]
+
+
+def test_workbench_sizes_preserve_preview_dominant_saved_layout():
+    assert _workbench_root_sizes(1500, [260, 1240]) == [260, 1240]
+    assert _workbench_vertical_sizes(900, [640, 260]) == [640, 260]
+
+
+def test_workbench_layout_xml_places_preview_above_results():
+    tree = ET.parse("src/menipy/gui/views/main_window_split.ui")
+    root = tree.getroot()
+
+    splitter = root.find(".//widget[@name='workbenchSplitter']")
+    assert splitter is not None
+    child_names = [
+        child.attrib.get("name")
+        for child in splitter
+        if child.tag == "widget"
+    ]
+    assert child_names[:2] == ["previewHost", "inspectTabs"]
+
+
+def test_menu_xml_order_and_config_actions():
+    tree = ET.parse("src/menipy/gui/views/main_window_split.ui")
+    root = tree.getroot()
+    menubar = root.find(".//widget[@name='menubar']")
+    assert menubar is not None
+    menu_order = [
+        action.attrib["name"]
+        for action in menubar.findall("addaction")
+    ]
+    assert menu_order == [
+        "menuFile",
+        "menuConfig",
+        "menuView",
+        "menuRun",
+        "menuPlugins",
+        "menuHelp",
+    ]
+
+    config = root.find(".//widget[@name='menuConfig']")
+    assert config is not None
+    config_actions = [
+        action.attrib["name"]
+        for action in config.findall("addaction")
+        if action.attrib["name"] != "separator"
+    ]
+    assert config_actions == [
+        "actionConfigOverlay",
+        "actionConfigMarkers",
+        "actionConfigPipeline",
+        "actionConfigPreprocessing",
+        "actionConfigEdgeDetection",
+        "actionConfigGeometry",
+        "actionConfigPhysics",
+        "actionConfigAcquisition",
+    ]

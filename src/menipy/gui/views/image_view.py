@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 
 logger = logging.getLogger(__name__)
-from typing import Optional, Union
+from typing import Optional, Union, Any
 import numpy as np
 
 from PySide6.QtCore import Qt, QRectF, QPointF, QSizeF, Signal, QLineF
@@ -16,9 +16,11 @@ from PySide6.QtWidgets import (
     QGraphicsScene,
     QGraphicsPixmapItem,
     QGraphicsEllipseItem,
+    QGraphicsItem,
     QGraphicsLineItem,
     QGraphicsRectItem,
     QGraphicsPathItem,
+    QGraphicsSimpleTextItem,
 )
 
 # Drawing modes for overlays
@@ -26,6 +28,18 @@ DRAW_NONE = None
 DRAW_POINT = "point"
 DRAW_LINE = "line"
 DRAW_RECT = "rect"
+
+_TAG_LAYER_DEFAULTS = {
+    "roi": "markers",
+    "needle": "markers",
+    "contact_line": "baseline",
+    "detected_contour": "contour",
+    "cal_drop": "contour",
+    "result_contour": "contour",
+    "pendant_fit": "fit",
+    "axis": "axes",
+    "apex": "markers",
+}
 
 
 def _enum_to_int(value: object) -> int:
@@ -65,6 +79,10 @@ class ImageView(QGraphicsView):
         self._draw_mode = DRAW_NONE
         self._overlays = []  # list[QGraphicsItem]
         self._overlay_items_by_tag: dict[str, object] = {}
+        self._overlay_layers_by_tag: dict[str, str] = {}
+        self._overlay_layer_visibility: dict[str, bool] = {}
+        self._overlay_stroke_scale_mode: str = "screen"
+        self._marker_config: dict[str, object] = {}
         self._draw_tag: str | None = None
         self._tmp_item = None
         self._press_pos_scene: QPointF | None = None
@@ -103,6 +121,7 @@ class ImageView(QGraphicsView):
         self._draw_mode = mode
         self._draw_tag = tag if mode else None
         self._overlay_pen.setColor(color)
+        self._configure_pen(self._overlay_pen)
         # When drawing, disable scroll-hand drag for comfort
         self.setDragMode(QGraphicsView.NoDrag if mode else QGraphicsView.ScrollHandDrag)
 
@@ -119,6 +138,7 @@ class ImageView(QGraphicsView):
                 scene.removeItem(item)
         self._overlays.clear()
         self._overlay_items_by_tag.clear()
+        self._overlay_layers_by_tag.clear()
         self._tmp_item = None
 
     def remove_overlay(self, tag: str) -> None:
@@ -126,6 +146,35 @@ class ImageView(QGraphicsView):
         if not item:
             return
         self._remove_overlay_item(item)
+        self._overlay_layers_by_tag.pop(tag, None)
+
+    def set_overlay_layer_visible(self, layer: str, visible: bool) -> None:
+        """Show or hide all existing overlay items assigned to a logical layer."""
+        layer = str(layer or "").strip()
+        if not layer:
+            return
+        self._overlay_layer_visibility[layer] = bool(visible)
+        for item in list(self._overlays):
+            try:
+                item_layer = item.data(1)
+            except Exception:
+                item_layer = None
+            if item_layer == layer:
+                try:
+                    item.setVisible(bool(visible))
+                except RuntimeError:
+                    pass
+
+    def overlay_layer_visible(self, layer: str) -> bool:
+        return bool(self._overlay_layer_visibility.get(layer, True))
+
+    def set_overlay_stroke_scale_mode(self, mode: str) -> None:
+        self._overlay_stroke_scale_mode = (
+            "image" if str(mode).lower() == "image" else "screen"
+        )
+
+    def set_marker_config(self, config: dict | None) -> None:
+        self._marker_config = dict(config or {})
 
     def add_marker_point(
         self,
@@ -138,29 +187,39 @@ class ImageView(QGraphicsView):
         shape: str = "circle",  # circle | square | cross
         dash_pattern: tuple[float, float] | None = None,
         drop_shadow: bool = False,
+        layer: str | None = None,
         tag: str | None = None,
     ) -> None:
         # Create shape-specific QGraphicsItem
+        layer = layer or self._infer_overlay_layer(tag)
+        marker_style = self._marker_style_for_tag(tag) if layer == "markers" else {}
+        if marker_style.get("visible") is False:
+            return
+        if "color" in marker_style:
+            color = QColor(str(marker_style["color"]))
+        if "radius" in marker_style:
+            try:
+                radius = float(marker_style["radius"])
+            except Exception:
+                pass
+        if "shape" in marker_style:
+            shape = str(marker_style["shape"])
         if shape == "square":
             item = QGraphicsRectItem(
                 QRectF(point.x() - radius, point.y() - radius, 2 * radius, 2 * radius)
             )
         elif shape == "cross":
-            # use a small group: two lines
-            l1 = QGraphicsLineItem(
-                point.x() - radius,
-                point.y() - radius,
-                point.x() + radius,
-                point.y() + radius,
-            )
-            l2 = QGraphicsLineItem(
-                point.x() - radius,
-                point.y() + radius,
-                point.x() + radius,
-                point.y() - radius,
-            )
+            from PySide6.QtGui import QPainterPath
+
+            path = QPainterPath()
+            path.moveTo(point.x() - radius, point.y() - radius)
+            path.lineTo(point.x() + radius, point.y() + radius)
+            path.moveTo(point.x() - radius, point.y() + radius)
+            path.lineTo(point.x() + radius, point.y() - radius)
+            item = QGraphicsPathItem(path)
             pen = QPen(color)
             pen.setWidthF(float(stroke_width))
+            self._configure_pen(pen)
             if dash_pattern is not None:
                 try:
                     pen.setDashPattern([float(dash_pattern[0]), float(dash_pattern[1])])
@@ -173,14 +232,12 @@ class ImageView(QGraphicsView):
                     pen.setColor(c)
                 except Exception:
                     pass
-            l1.setPen(pen)
-            l2.setPen(pen)
-            l1.setZValue(12_000)
-            l2.setZValue(12_000)
-            self.scene().addItem(l1)
-            self.scene().addItem(l2)
-            self._overlays.extend([l1, l2])
-            self._register_overlay_item(l1, tag)
+            item.setPen(pen)
+            item.setZValue(12_000)
+            self.scene().addItem(item)
+            self._overlays.append(item)
+            self._register_overlay_item(item, tag, layer)
+            self._maybe_add_marker_label(QPointF(point), tag, marker_style)
             return
         else:
             item = QGraphicsEllipseItem(
@@ -189,6 +246,7 @@ class ImageView(QGraphicsView):
 
         pen = QPen(color)
         pen.setWidthF(float(stroke_width))
+        self._configure_pen(pen)
         if alpha is not None:
             try:
                 c = QColor(color)
@@ -216,7 +274,8 @@ class ImageView(QGraphicsView):
             except Exception:
                 pass
         self._overlays.append(item)
-        self._register_overlay_item(item, tag)
+        self._register_overlay_item(item, tag, layer)
+        self._maybe_add_marker_label(QPointF(point), tag, marker_style)
 
     def add_marker_line(
         self,
@@ -224,16 +283,19 @@ class ImageView(QGraphicsView):
         p2: QPointF,
         *,
         color: QColor = QColor(255, 140, 0),
+        width: float = 2.0,
+        layer: str | None = None,
         tag: str | None = None,
     ) -> None:
         item = QGraphicsLineItem(p1.x(), p1.y(), p2.x(), p2.y())
         pen = QPen(color)
-        pen.setWidth(2)
+        pen.setWidthF(float(width))
+        self._configure_pen(pen)
         item.setPen(pen)
         item.setZValue(11_000)
         self.scene().addItem(item)
         self._overlays.append(item)
-        self._register_overlay_item(item, tag)
+        self._register_overlay_item(item, tag, layer)
 
     def add_marker_rect(
         self,
@@ -241,6 +303,7 @@ class ImageView(QGraphicsView):
         *,
         color: QColor = QColor(255, 255, 0),
         width: float = 2.0,
+        layer: str | None = None,
         tag: str | None = None,
     ) -> None:
         """Add a rectangle overlay.
@@ -254,15 +317,24 @@ class ImageView(QGraphicsView):
         if isinstance(rect, tuple):
             x, y, w, h = rect
             rect = QRectF(x, y, w, h)
+
+        layer = layer or self._infer_overlay_layer(tag)
+        marker_style = self._marker_style_for_tag(tag) if layer == "markers" else {}
+        if marker_style.get("visible") is False:
+            return
+        if "color" in marker_style:
+            color = QColor(str(marker_style["color"]))
         
         item = QGraphicsRectItem(rect)
         pen = QPen(color)
         pen.setWidthF(float(width))
+        self._configure_pen(pen)
         item.setPen(pen)
         item.setZValue(11_000)
         self.scene().addItem(item)
         self._overlays.append(item)
-        self._register_overlay_item(item, tag)
+        self._register_overlay_item(item, tag, layer)
+        self._maybe_add_marker_label(rect.center(), tag, marker_style)
 
     def add_marker_contour(
         self,
@@ -272,6 +344,8 @@ class ImageView(QGraphicsView):
         width: float = 2.0,
         dash_pattern: tuple[float, float] | None = None,
         alpha: float | None = None,
+        closed: bool = True,
+        layer: str | None = None,
         tag: str | None = None,
     ) -> None:
         """Add a contour path overlay from an Nx2 array of (x,y) points.
@@ -290,12 +364,13 @@ class ImageView(QGraphicsView):
             path.moveTo(QPointF(float(pts[0, 0]), float(pts[0, 1])))
             for p in pts[1:]:
                 path.lineTo(QPointF(float(p[0]), float(p[1])))
-            # close path
-            path.lineTo(QPointF(float(pts[0, 0]), float(pts[0, 1])))
+            if closed:
+                path.lineTo(QPointF(float(pts[0, 0]), float(pts[0, 1])))
 
             item = QGraphicsPathItem(path)
             pen = QPen(color)
             pen.setWidthF(float(width))
+            self._configure_pen(pen)
             # apply alpha if provided
             if alpha is not None:
                 try:
@@ -315,9 +390,108 @@ class ImageView(QGraphicsView):
             item.setZValue(11_000)
             self.scene().addItem(item)
             self._overlays.append(item)
-            self._register_overlay_item(item, tag)
+            self._register_overlay_item(item, tag, layer)
         except Exception:
             logger.debug("Failed to add contour overlay", exc_info=True)
+
+    def add_marker_text(
+        self,
+        point: QPointF,
+        text: str,
+        *,
+        color: QColor = QColor(255, 255, 255),
+        scale: float = 1.0,
+        layer: str | None = None,
+        tag: str | None = None,
+    ) -> None:
+        layer = layer or self._infer_overlay_layer(tag)
+        marker_style = self._marker_style_for_tag(tag) if layer == "markers" else {}
+        if marker_style.get("visible") is False:
+            return
+        if marker_style:
+            color = QColor(
+                str(marker_style.get("label_color", marker_style.get("color", color.name())))
+            )
+        item = QGraphicsSimpleTextItem(str(text))
+        item.setPos(point)
+        item.setBrush(color)
+        try:
+            font = item.font()
+            if marker_style.get("font_family"):
+                font.setFamily(str(marker_style["font_family"]))
+            if marker_style.get("font_size"):
+                font.setPointSizeF(float(marker_style["font_size"]))
+            item.setFont(font)
+            item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
+        except Exception:
+            pass
+        try:
+            item.setScale(float(scale))
+        except Exception:
+            pass
+        item.setZValue(13_000)
+        self.scene().addItem(item)
+        self._overlays.append(item)
+        self._register_overlay_item(item, tag, layer)
+
+    def _configure_pen(self, pen: QPen) -> None:
+        try:
+            pen.setCosmetic(self._overlay_stroke_scale_mode != "image")
+        except Exception:
+            pass
+
+    def _marker_style_for_tag(self, tag: str | None) -> dict[str, object]:
+        config = self._marker_config or {}
+        marker_type = self._marker_type_for_tag(tag)
+        style = dict(config.get("default", {})) if isinstance(config.get("default"), dict) else {}
+        specific = config.get(marker_type)
+        if isinstance(specific, dict):
+            style.update(specific)
+        return style
+
+    def _marker_type_for_tag(self, tag: str | None) -> str:
+        tag = tag or ""
+        if "roi" in tag:
+            return "roi"
+        if "needle" in tag:
+            return "needle"
+        if "contact" in tag or "anchor" in tag:
+            return "contact"
+        if "apex" in tag:
+            return "apex"
+        if "center" in tag:
+            return "drop_center"
+        if "bg" in tag or "background" in tag:
+            return "background"
+        if "text" in tag:
+            return "result_text"
+        return "default"
+
+    def _maybe_add_marker_label(
+        self, point: QPointF, tag: str | None, style: dict[str, object]
+    ) -> None:
+        if not style.get("label_visible"):
+            return
+        label = str(style.get("label_text") or self._marker_type_for_tag(tag))
+        if not label:
+            return
+        item = QGraphicsSimpleTextItem(label)
+        item.setPos(point + QPointF(6, -18))
+        item.setBrush(QColor(str(style.get("label_color", style.get("color", "white")))))
+        try:
+            font = item.font()
+            if style.get("font_family"):
+                font.setFamily(str(style["font_family"]))
+            if style.get("font_size"):
+                font.setPointSizeF(float(style["font_size"]))
+            item.setFont(font)
+            item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
+        except Exception:
+            pass
+        item.setZValue(13_000)
+        self.scene().addItem(item)
+        self._overlays.append(item)
+        self._register_overlay_item(item, f"{tag}_label" if tag else None, "markers")
 
     def set_image(
         self,
@@ -330,6 +504,7 @@ class ImageView(QGraphicsView):
             self._last_pm_size = None
             self._overlays.clear()
             self._overlay_items_by_tag.clear()
+            self._overlay_layers_by_tag.clear()
             self._tmp_item = None
             return
 
@@ -362,6 +537,7 @@ class ImageView(QGraphicsView):
         self._scene.clear()
         self._overlays.clear()
         self._overlay_items_by_tag.clear()
+        self._overlay_layers_by_tag.clear()
         self._tmp_item = None
         self._pix_item = self._scene.addPixmap(pm)
         self._scene.setSceneRect(QRectF(pm.rect()))
@@ -456,14 +632,46 @@ class ImageView(QGraphicsView):
             if value is item:
                 del self._overlay_items_by_tag[key]
 
-    def _register_overlay_item(self, item, tag: str | None = None) -> None:
+    def _set_overlay_item_metadata(
+        self, item: Any, tag: str | None = None, layer: str | None = None
+    ) -> None:
         tag = tag or self._draw_tag
+        layer = layer or (self._infer_overlay_layer(tag) if tag else None)
+        if tag:
+            try:
+                item.setData(0, tag)
+            except Exception:
+                pass
+        if layer:
+            try:
+                item.setData(1, layer)
+                item.setVisible(self.overlay_layer_visible(layer))
+            except Exception:
+                pass
+
+    def _register_overlay_item(
+        self, item, tag: str | None = None, layer: str | None = None
+    ) -> None:
+        tag = tag or self._draw_tag
+        layer = layer or (self._infer_overlay_layer(tag) if tag else None)
+        self._set_overlay_item_metadata(item, tag, layer)
         if not tag:
             return
         existing = self._overlay_items_by_tag.get(tag)
         if existing and existing is not item:
             self._remove_overlay_item(existing)
         self._overlay_items_by_tag[tag] = item
+        if layer:
+            self._overlay_layers_by_tag[tag] = layer
+
+    def _infer_overlay_layer(self, tag: str | None) -> str | None:
+        if not tag:
+            return None
+        if tag in _TAG_LAYER_DEFAULTS:
+            return _TAG_LAYER_DEFAULTS[tag]
+        if tag.startswith("marker_") or tag.startswith("cal_contact"):
+            return "markers"
+        return None
 
     def overlay_rect_scene(self, tag: str) -> QRectF | None:
         item = self._overlay_items_by_tag.get(tag)

@@ -374,8 +374,7 @@ class PipelineController:
             ctx = pipeline.run(**ctx.__dict__)
 
             # Update UI with results
-            if ctx.preview is not None:
-                self.preview_panel.display(ctx.preview)
+            self._display_context(ctx)
             if ctx.results:
 
                 # Add to measurement history
@@ -454,11 +453,7 @@ class PipelineController:
         # If the run returned a Context, perform UI updates (this also handles
         # the case where tests patch _run_pipeline_direct to return a mock ctx).
         if ctx_ret is not None:
-            if getattr(ctx_ret, "preview", None) is not None:
-                try:
-                    self.preview_panel.display(ctx_ret.preview)
-                except Exception:
-                    pass
+            self._display_context(ctx_ret)
             if getattr(ctx_ret, "results", None):
                 self.add_measurement_to_history(ctx_ret, name)
             try:
@@ -527,11 +522,7 @@ class PipelineController:
 
         ctx_ret = self._run_pipeline_direct(pipeline_cls, **run_kwargs)
         if ctx_ret is not None:
-            if getattr(ctx_ret, "preview", None) is not None:
-                try:
-                    self.preview_panel.display(ctx_ret.preview)
-                except Exception:
-                    pass
+            self._display_context(ctx_ret)
             if getattr(ctx_ret, "results", None):
                 self.add_measurement_to_history(ctx_ret, name)
             try:
@@ -626,11 +617,7 @@ class PipelineController:
             # consistent post-run updates are applied there
             ctx_ret = self._run_pipeline_direct(pipeline_cls, **run_kwargs_pipe)
             if ctx_ret is not None:
-                if getattr(ctx_ret, "preview", None) is not None:
-                    try:
-                        self.preview_panel.display(ctx_ret.preview)
-                    except Exception:
-                        pass
+                self._display_context(ctx_ret)
                 if getattr(ctx_ret, "results", None):
                     self.add_measurement_to_history(ctx_ret, name)
                 try:
@@ -646,6 +633,26 @@ class PipelineController:
         except Exception:
             pass
         self.window.statusBar().showMessage("Preview updated", 1000)
+
+    def on_context_ready(self, ctx: Any) -> None:
+        self._display_context(ctx)
+        self.window.statusBar().showMessage("Preview updated", 1000)
+
+    def _display_context(self, ctx: Any) -> None:
+        if ctx is None:
+            return
+        try:
+            display_context = getattr(type(self.preview_panel), "display_context", None)
+            if callable(display_context):
+                display_context(self.preview_panel, ctx)
+                return
+        except Exception:
+            pass
+        if getattr(ctx, "preview", None) is not None:
+            try:
+                self.preview_panel.display(ctx.preview)
+            except Exception:
+                pass
 
     def on_results_ready(self, results: Mapping[str, Any]) -> None:
         params = self.setup_ctrl.gather_run_params()

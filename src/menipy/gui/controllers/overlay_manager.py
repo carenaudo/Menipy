@@ -29,6 +29,20 @@ class OverlayManager:
         """
         self.image_view = image_view
         self.settings = settings
+        if self.image_view:
+            overlay_cfg = getattr(self.settings, "overlay_config", None) or {}
+            try:
+                self.image_view.set_overlay_stroke_scale_mode(
+                    str(overlay_cfg.get("stroke_scale_mode", "screen"))
+                )
+            except Exception:
+                pass
+            try:
+                self.image_view.set_marker_config(
+                    getattr(self.settings, "marker_config", {}) or {}
+                )
+            except Exception:
+                pass
 
     def clear_calibration_overlays(self):
         """Clears all calibration-related overlays."""
@@ -37,7 +51,7 @@ class OverlayManager:
         tags = (
             'roi', 'needle', 'contact_line', 
             'cal_roi', 'cal_needle', 'cal_substrate', 'cal_drop', 
-            'cal_contact_left', 'cal_contact_right'
+            'cal_contact_left', 'cal_contact_right', 'apex'
         )
         for tag in tags:
             try:
@@ -59,6 +73,7 @@ class OverlayManager:
                 QRectF(x, y, w, h),
                 color=QColor(255, 255, 0),
                 width=2.0,
+                layer='markers',
                 tag='roi'
             )
 
@@ -69,6 +84,7 @@ class OverlayManager:
                 QRectF(x, y, w, h),
                 color=QColor(0, 0, 255),
                 width=2.0,
+                layer='markers',
                 tag='needle'
             )
 
@@ -79,6 +95,7 @@ class OverlayManager:
                 QPointF(p1[0], p1[1]),
                 QPointF(p2[0], p2[1]),
                 color=QColor(255, 0, 255),
+                layer='baseline',
                 tag='contact_line'
             )
 
@@ -89,13 +106,26 @@ class OverlayManager:
                 QPointF(left[0], left[1]),
                 color=QColor(255, 0, 0),
                 radius=5.0,
+                layer='markers',
                 tag='cal_contact_left'
             )
             self.image_view.add_marker_point(
                 QPointF(right[0], right[1]),
                 color=QColor(255, 0, 0),
                 radius=5.0,
+                layer='markers',
                 tag='cal_contact_right'
+            )
+
+        if getattr(result, "apex_point", None):
+            apex = result.apex_point
+            self.image_view.add_marker_point(
+                QPointF(apex[0], apex[1]),
+                color=QColor(255, 0, 0),
+                radius=6.0,
+                shape='cross',
+                layer='markers',
+                tag='apex'
             )
 
         # Draw drop contour
@@ -106,6 +136,7 @@ class OverlayManager:
                     contour,
                     color=QColor(0, 255, 0),
                     width=2.0,
+                    layer='contour',
                     tag='cal_drop'
                 )
 
@@ -150,6 +181,7 @@ class OverlayManager:
                     width=c_width, 
                     dash_pattern=dash, 
                     alpha=c_alpha, 
+                    layer='contour',
                     tag='detected_contour'
                 )
         except Exception:
@@ -176,6 +208,7 @@ class OverlayManager:
                     QPointF(left_pt[0], left_pt[1]), 
                     color=color, 
                     radius=p_radius, 
+                    layer='markers',
                     tag='detected_left'
                 )
             
@@ -199,6 +232,7 @@ class OverlayManager:
                     QPointF(right_pt[0], right_pt[1]), 
                     color=color, 
                     radius=p_radius, 
+                    layer='markers',
                     tag='detected_right'
                 )
         except Exception:

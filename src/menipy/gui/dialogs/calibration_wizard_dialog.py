@@ -380,9 +380,9 @@ class CalibrationWizardDialog(QDialog):
         
         try:
             logger.info(f"Running auto-calibration for {self.pipeline_name}...")
-            self.result = run_auto_calibration(
-                self.original_image,
-                self.pipeline_name
+            self.result = self._run_best_auto_calibration(
+                run_auto_calibration,
+                allow_fallback=not (manual_substrate or manual_roi or manual_needle),
             )
             
             # Restore manually set values
@@ -429,6 +429,60 @@ class CalibrationWizardDialog(QDialog):
         finally:
             self._progress.hide()
             self._detect_btn.setEnabled(True)
+
+    def _run_best_auto_calibration(self, runner, *, allow_fallback: bool = True):
+        """Run requested calibration, then try supported detector branches if needed."""
+        primary = runner(self.original_image, self.pipeline_name)
+        if not allow_fallback:
+            return primary
+
+        candidates = [(self.pipeline_name, primary)]
+        for detector_name in ("pendant", "sessile"):
+            if detector_name == self.pipeline_name:
+                continue
+            try:
+                candidates.append(
+                    (detector_name, runner(self.original_image, detector_name))
+                )
+            except Exception:
+                logger.debug("Fallback auto-calibration failed for %s", detector_name, exc_info=True)
+
+        best_name, best = max(candidates, key=lambda item: self._calibration_score(item[1]))
+        primary_score = self._calibration_score(primary)
+        best_score = self._calibration_score(best)
+        if best is not primary and best_score > primary_score + 0.15:
+            best.confidence_scores["detector_pipeline"] = best_name
+            logger.info(
+                "Auto-calibration used %s detector instead of %s (score %.2f > %.2f)",
+                best_name,
+                self.pipeline_name,
+                best_score,
+                primary_score,
+            )
+            return best
+        primary.confidence_scores.setdefault("detector_pipeline", self.pipeline_name)
+        return primary
+
+    def _calibration_score(self, result) -> float:
+        """Score a calibration result by useful detected geometry."""
+        if result is None:
+            return 0.0
+        score = float(result.confidence_scores.get("overall", 0.0) or 0.0)
+        if result.drop_contour is not None:
+            try:
+                if len(result.drop_contour) > 0:
+                    score += 0.35
+            except Exception:
+                score += 0.2
+        if result.needle_rect:
+            score += 0.12
+        if result.contact_points:
+            score += 0.1
+        if result.roi_rect:
+            score += 0.08
+        if result.substrate_line:
+            score += 0.06
+        return score
     
     def _show_results(self) -> None:
         """Display detection results with overlays."""

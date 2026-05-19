@@ -15,7 +15,7 @@ except Exception:  # pragma: no cover - optional dependency
 
 logger = logging.getLogger(__name__)
 from PySide6.QtCore import QObject, Slot, QPointF
-from PySide6.QtWidgets import QFileDialog, QMessageBox
+from PySide6.QtWidgets import QFileDialog, QMessageBox, QDialog
 from PySide6.QtGui import QImage, QColor
 
 from menipy.gui.controllers.camera_manager import CameraManager
@@ -140,6 +140,8 @@ class MainController(QObject):
         # Pipeline Runner VM
         run_vm = getattr(self.window, "run_vm", None)
         if run_vm:
+            if hasattr(run_vm, "context_ready"):
+                run_vm.context_ready.connect(self.pipeline_ctrl.on_context_ready)
             if hasattr(run_vm, "preview_ready"):
                 run_vm.preview_ready.connect(self.pipeline_ctrl.on_preview_ready)
             if hasattr(run_vm, "results_ready"):
@@ -275,6 +277,15 @@ class MainController(QObject):
                 return
             self._last_calibration_result = result
             setattr(self.window, "_last_calibration_result", result)
+
+            try:
+                self.preview_panel.set_layer_visible("markers", True)
+                if result.drop_contour is not None:
+                    self.preview_panel.set_layer_visible("contour", True)
+                if result.substrate_line or result.contact_points:
+                    self.preview_panel.set_layer_visible("baseline", True)
+            except Exception:
+                logger.debug("Could not reveal calibration overlay layers", exc_info=True)
             
             # Delegate drawing to OverlayManager
             self.overlay_manager.draw_calibration_result(result)
@@ -317,6 +328,96 @@ class MainController(QObject):
             QMessageBox.warning(
                 self.window, "Export Results", f"Failed to export results:\n{exc}"
             )
+
+    @Slot()
+    def open_overlay(self) -> None:
+        """Open overlay appearance settings."""
+        self.dialog_coordinator.show_dialog_for_stage("overlay")
+
+    @Slot()
+    def open_marker_config(self) -> None:
+        """Open marker and label display settings."""
+        from menipy.gui.dialogs.marker_config_dialog import MarkerConfigDialog
+
+        dialog = MarkerConfigDialog(
+            getattr(self.settings, "marker_config", {}) or {}, parent=self.window
+        )
+        if dialog.exec() != QDialog.Accepted:
+            return
+        self.settings.marker_config = dialog.get_config()
+        try:
+            self.settings.save()
+        except OSError as exc:
+            logger.warning("Failed to persist marker settings: %s", exc)
+        try:
+            self.preview_panel.apply_marker_config(self.settings.marker_config)
+        except Exception:
+            logger.debug("Failed to apply marker config to preview", exc_info=True)
+        try:
+            if getattr(self.overlay_manager, "image_view", None):
+                self.overlay_manager.image_view.set_marker_config(
+                    self.settings.marker_config
+                )
+        except Exception:
+            logger.debug("Failed to apply marker config to overlay manager", exc_info=True)
+        self.window.statusBar().showMessage("Marker configuration saved", 1500)
+
+    @Slot()
+    def open_pipeline_config(self) -> None:
+        """Open the consolidated pipeline settings dialog."""
+        from menipy.gui.dialogs.analysis_settings_dialog import AnalysisSettingsDialog
+        from menipy.models.config import EdgeDetectionSettings, PreprocessingSettings
+
+        pipeline_name = self.setup_ctrl.current_pipeline_name() or "generic"
+        preprocessing = getattr(
+            self.preprocessing_ctrl, "settings", PreprocessingSettings()
+        )
+        edge = getattr(self.edge_detection_ctrl, "settings", EdgeDetectionSettings())
+        pipeline_settings = getattr(self.settings, "pipeline_settings", {})
+        dialog = AnalysisSettingsDialog(
+            pipeline_name,
+            preprocessing=preprocessing,
+            edge=edge,
+            pipeline_settings=pipeline_settings,
+            parent=self.window,
+        )
+        if dialog.exec() != QDialog.Accepted:
+            return
+        pre = dialog.preprocessing_settings()
+        edge_settings = dialog.edge_settings()
+        pipe = dialog.pipeline_settings()
+        if hasattr(dialog, "persist"):
+            dialog.persist()
+        if self.preprocessing_ctrl is not None:
+            self.preprocessing_ctrl.set_settings(pre)
+        if self.edge_detection_ctrl is not None:
+            self.edge_detection_ctrl.set_settings(edge_settings)
+        self.settings.pipeline_settings = pipe or {}
+        try:
+            self.settings.save()
+        except OSError as exc:
+            logger.warning("Failed to persist pipeline settings: %s", exc)
+        self.window.statusBar().showMessage("Pipeline settings saved", 1500)
+
+    @Slot()
+    def open_preprocessing_config(self) -> None:
+        self.dialog_coordinator.show_dialog_for_stage("preprocessing")
+
+    @Slot()
+    def open_edge_detection_config(self) -> None:
+        self.dialog_coordinator.show_dialog_for_stage("edge_detection")
+
+    @Slot()
+    def open_geometry_config(self) -> None:
+        self.dialog_coordinator.show_dialog_for_stage("geometry")
+
+    @Slot()
+    def open_physics_config(self) -> None:
+        self.dialog_coordinator.show_dialog_for_stage("physics")
+
+    @Slot()
+    def open_acquisition_config(self) -> None:
+        self.dialog_coordinator.show_dialog_for_stage("acquisition")
 
     @Slot(str)
     def on_pipeline_changed(self, pipeline_name: str):

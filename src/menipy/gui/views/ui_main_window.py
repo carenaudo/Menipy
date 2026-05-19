@@ -1,14 +1,9 @@
 # -*- coding: utf-8 -*-
-"""Ui Main Window.
-
-Module implementation."""
-
-
 
 ################################################################################
 ## Form generated from reading UI file 'main_window_split.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.10.1
+## Created by: Qt User Interface Compiler version 6.10.0
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -21,10 +16,10 @@ from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
     QIcon, QImage, QKeySequence, QLinearGradient,
     QPainter, QPalette, QPixmap, QRadialGradient,
     QTransform)
-from PySide6.QtWidgets import (QApplication, QFrame, QHBoxLayout, QLabel,
-    QMainWindow, QMenu, QMenuBar, QSizePolicy,
-    QSpacerItem, QSplitter, QStatusBar, QTabWidget,
-    QToolButton, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QApplication, QHBoxLayout, QMainWindow, QMenu,
+    QMenuBar, QSizePolicy, QSpacerItem, QSplitter,
+    QStatusBar, QTabWidget, QToolButton, QVBoxLayout,
+    QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -53,15 +48,35 @@ class Ui_MainWindow(object):
         icon = QIcon()
         icon.addFile(u":/icons/overlay.svg", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
         self.actionOverlay.setIcon(icon)
+        self.actionConfigOverlay = QAction(MainWindow)
+        self.actionConfigOverlay.setObjectName(u"actionConfigOverlay")
+        self.actionConfigMarkers = QAction(MainWindow)
+        self.actionConfigMarkers.setObjectName(u"actionConfigMarkers")
+        self.actionConfigPipeline = QAction(MainWindow)
+        self.actionConfigPipeline.setObjectName(u"actionConfigPipeline")
+        self.actionConfigPreprocessing = QAction(MainWindow)
+        self.actionConfigPreprocessing.setObjectName(u"actionConfigPreprocessing")
+        self.actionConfigEdgeDetection = QAction(MainWindow)
+        self.actionConfigEdgeDetection.setObjectName(u"actionConfigEdgeDetection")
+        self.actionConfigGeometry = QAction(MainWindow)
+        self.actionConfigGeometry.setObjectName(u"actionConfigGeometry")
+        self.actionConfigPhysics = QAction(MainWindow)
+        self.actionConfigPhysics.setObjectName(u"actionConfigPhysics")
+        self.actionConfigAcquisition = QAction(MainWindow)
+        self.actionConfigAcquisition.setObjectName(u"actionConfigAcquisition")
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
         self.menubar.setNativeMenuBar(False)
         self.menuFile = QMenu(self.menubar)
         self.menuFile.setObjectName(u"menuFile")
+        self.menuConfig = QMenu(self.menubar)
+        self.menuConfig.setObjectName(u"menuConfig")
         self.menuView = QMenu(self.menubar)
         self.menuView.setObjectName(u"menuView")
         self.menuRun = QMenu(self.menubar)
         self.menuRun.setObjectName(u"menuRun")
+        self.menuPlugins = QMenu(self.menubar)
+        self.menuPlugins.setObjectName(u"menuPlugins")
         self.menuHelp = QMenu(self.menubar)
         self.menuHelp.setObjectName(u"menuHelp")
         MainWindow.setMenuBar(self.menubar)
@@ -128,13 +143,21 @@ class Ui_MainWindow(object):
         self.setupHostLayout.setObjectName(u"setupHostLayout")
         self.setupHostLayout.setContentsMargins(0, 0, 0, 0)
         self.rootSplitter.addWidget(self.setupHost)
-        self.previewHost = QWidget(self.rootSplitter)
+        self.workbenchHost = QWidget(self.rootSplitter)
+        self.workbenchHost.setObjectName(u"workbenchHost")
+        self.workbenchHostLayout = QVBoxLayout(self.workbenchHost)
+        self.workbenchHostLayout.setObjectName(u"workbenchHostLayout")
+        self.workbenchHostLayout.setContentsMargins(0, 0, 0, 0)
+        self.workbenchSplitter = QSplitter(self.workbenchHost)
+        self.workbenchSplitter.setObjectName(u"workbenchSplitter")
+        self.workbenchSplitter.setOrientation(Qt.Vertical)
+        self.previewHost = QWidget(self.workbenchSplitter)
         self.previewHost.setObjectName(u"previewHost")
         self.previewHostLayout = QVBoxLayout(self.previewHost)
         self.previewHostLayout.setObjectName(u"previewHostLayout")
         self.previewHostLayout.setContentsMargins(0, 0, 0, 0)
-        self.rootSplitter.addWidget(self.previewHost)
-        self.inspectTabs = QTabWidget(self.rootSplitter)
+        self.workbenchSplitter.addWidget(self.previewHost)
+        self.inspectTabs = QTabWidget(self.workbenchSplitter)
         self.inspectTabs.setObjectName(u"inspectTabs")
         self.inspectTabs.setTabPosition(QTabWidget.North)
         self.resultsTab = QWidget()
@@ -157,7 +180,11 @@ class Ui_MainWindow(object):
         self.logHostLayout = QVBoxLayout(self.logTab)
         self.logHostLayout.setObjectName(u"logHostLayout")
         self.inspectTabs.addTab(self.logTab, "")
-        self.rootSplitter.addWidget(self.inspectTabs)
+        self.workbenchSplitter.addWidget(self.inspectTabs)
+
+        self.workbenchHostLayout.addWidget(self.workbenchSplitter)
+
+        self.rootSplitter.addWidget(self.workbenchHost)
 
         self.centralLayout.addWidget(self.rootSplitter)
 
@@ -167,14 +194,26 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.menubar.addAction(self.menuFile.menuAction())
+        self.menubar.addAction(self.menuConfig.menuAction())
         self.menubar.addAction(self.menuView.menuAction())
         self.menubar.addAction(self.menuRun.menuAction())
+        self.menubar.addAction(self.menuPlugins.menuAction())
         self.menubar.addAction(self.menuHelp.menuAction())
         self.menuFile.addAction(self.actionOpenImage)
         self.menuFile.addAction(self.actionOpenCamera)
         self.menuFile.addAction(self.actionExportCsv)
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.actionQuit)
+        self.menuConfig.addAction(self.actionConfigOverlay)
+        self.menuConfig.addAction(self.actionConfigMarkers)
+        self.menuConfig.addSeparator()
+        self.menuConfig.addAction(self.actionConfigPipeline)
+        self.menuConfig.addSeparator()
+        self.menuConfig.addAction(self.actionConfigPreprocessing)
+        self.menuConfig.addAction(self.actionConfigEdgeDetection)
+        self.menuConfig.addAction(self.actionConfigGeometry)
+        self.menuConfig.addAction(self.actionConfigPhysics)
+        self.menuConfig.addAction(self.actionConfigAcquisition)
         self.menuView.addAction(self.actionOverlay)
         self.menuRun.addAction(self.actionPreview)
         self.menuRun.addAction(self.actionRunFull)
@@ -189,51 +228,57 @@ class Ui_MainWindow(object):
     # setupUi
 
     def retranslateUi(self, MainWindow):
-        """retranslateUi.
-
-        Parameters
-        ----------
-        MainWindow : type
-        Description.
-        """
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"Menipy ADSA", None))
         self.actionOpenImage.setText(QCoreApplication.translate("MainWindow", u"Open &Image\u2026", None))
-        #if QT_CONFIG(shortcut)
+#if QT_CONFIG(shortcut)
         self.actionOpenImage.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+O", None))
-        #endif // QT_CONFIG(shortcut)
+#endif // QT_CONFIG(shortcut)
         self.actionPreview.setText(QCoreApplication.translate("MainWindow", u"&Preview", None))
-        #if QT_CONFIG(shortcut)
+#if QT_CONFIG(shortcut)
         self.actionPreview.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+P", None))
-        #endif // QT_CONFIG(shortcut)
+#endif // QT_CONFIG(shortcut)
         self.actionExportCsv.setText(QCoreApplication.translate("MainWindow", u"Export &CSV\u2026", None))
         self.actionOpenCamera.setText(QCoreApplication.translate("MainWindow", u"Open &Camera", None))
         self.actionRunFull.setText(QCoreApplication.translate("MainWindow", u"Run &Full", None))
-        #if QT_CONFIG(shortcut)
+#if QT_CONFIG(shortcut)
         self.actionRunFull.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+R", None))
-        #endif // QT_CONFIG(shortcut)
+#endif // QT_CONFIG(shortcut)
         self.actionRunSelected.setText(QCoreApplication.translate("MainWindow", u"Run &Selected", None))
-        #if QT_CONFIG(shortcut)
+#if QT_CONFIG(shortcut)
         self.actionRunSelected.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+Shift+R", None))
-        #endif // QT_CONFIG(shortcut)
+#endif // QT_CONFIG(shortcut)
         self.actionStop.setText(QCoreApplication.translate("MainWindow", u"&Stop", None))
         self.actionQuit.setText(QCoreApplication.translate("MainWindow", u"&Quit", None))
-        #if QT_CONFIG(shortcut)
+#if QT_CONFIG(shortcut)
         self.actionQuit.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+Q", None))
-        #endif // QT_CONFIG(shortcut)
+#endif // QT_CONFIG(shortcut)
         self.actionAbout.setText(QCoreApplication.translate("MainWindow", u"&About", None))
         self.actionOverlay.setText(QCoreApplication.translate("MainWindow", u"&Overlay\u2026", None))
-        #if QT_CONFIG(shortcut)
+#if QT_CONFIG(shortcut)
         self.actionOverlay.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+Shift+O", None))
-        #endif // QT_CONFIG(shortcut)
-        #if QT_CONFIG(tooltip)
+#endif // QT_CONFIG(shortcut)
+#if QT_CONFIG(tooltip)
         self.actionOverlay.setToolTip(QCoreApplication.translate("MainWindow", u"Open overlay configuration and preview overlay styling", None))
-        #endif // QT_CONFIG(tooltip)
-        #if QT_CONFIG(statustip)
+#endif // QT_CONFIG(tooltip)
+#if QT_CONFIG(statustip)
         self.actionOverlay.setStatusTip(QCoreApplication.translate("MainWindow", u"Configure overlay appearance", None))
-        #endif // QT_CONFIG(statustip)
+#endif // QT_CONFIG(statustip)
+        self.actionConfigOverlay.setText(QCoreApplication.translate("MainWindow", u"Overlay Appearance\u2026", None))
+#if QT_CONFIG(shortcut)
+        self.actionConfigOverlay.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+Shift+O", None))
+#endif // QT_CONFIG(shortcut)
+        self.actionConfigMarkers.setText(QCoreApplication.translate("MainWindow", u"Marker Display\u2026", None))
+        self.actionConfigPipeline.setText(QCoreApplication.translate("MainWindow", u"Pipeline Settings\u2026", None))
+        self.actionConfigPreprocessing.setText(QCoreApplication.translate("MainWindow", u"Preprocessing\u2026", None))
+        self.actionConfigEdgeDetection.setText(QCoreApplication.translate("MainWindow", u"Edge Detection\u2026", None))
+        self.actionConfigGeometry.setText(QCoreApplication.translate("MainWindow", u"Geometry\u2026", None))
+        self.actionConfigPhysics.setText(QCoreApplication.translate("MainWindow", u"Physics\u2026", None))
+        self.actionConfigAcquisition.setText(QCoreApplication.translate("MainWindow", u"Acquisition\u2026", None))
         self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"&File", None))
+        self.menuConfig.setTitle(QCoreApplication.translate("MainWindow", u"&Config", None))
         self.menuView.setTitle(QCoreApplication.translate("MainWindow", u"&View", None))
         self.menuRun.setTitle(QCoreApplication.translate("MainWindow", u"&Run", None))
+        self.menuPlugins.setTitle(QCoreApplication.translate("MainWindow", u"&Plugins", None))
         self.menuHelp.setTitle(QCoreApplication.translate("MainWindow", u"&Help", None))
         self.actionOpenImageBtn.setText(QCoreApplication.translate("MainWindow", u"Open Image", None))
         self.workflowAutoCalibrateBtn.setText(QCoreApplication.translate("MainWindow", u"Auto-Calibrate", None))
@@ -244,4 +289,5 @@ class Ui_MainWindow(object):
         self.inspectTabs.setTabText(self.inspectTabs.indexOf(self.residualsTab), QCoreApplication.translate("MainWindow", u"Residuals", None))
         self.inspectTabs.setTabText(self.inspectTabs.indexOf(self.timingsTab), QCoreApplication.translate("MainWindow", u"Timings", None))
         self.inspectTabs.setTabText(self.inspectTabs.indexOf(self.logTab), QCoreApplication.translate("MainWindow", u"Log", None))
-        # retranslateUi
+    # retranslateUi
+

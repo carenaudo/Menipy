@@ -626,6 +626,8 @@ class PendantPipeline(PipelineBase):
                 "color": "white",
                 "scale": 0.7,
                 "thickness": 2,
+                "tag": "measurement_text",
+                "layer": "markers",
             },
             {
                 "type": "polyline",
@@ -633,6 +635,8 @@ class PendantPipeline(PipelineBase):
                 "closed": True,
                 "color": "yellow",
                 "thickness": 2,
+                "tag": "result_contour",
+                "layer": "contour",
             },
             {
                 "type": "line",
@@ -640,6 +644,8 @@ class PendantPipeline(PipelineBase):
                 "p2": (axis_x, int(np.max(xy[:, 1]) + 10)),
                 "color": "cyan",
                 "thickness": 1,
+                "tag": "axis",
+                "layer": "axes",
             },
             {
                 "type": "cross",
@@ -647,6 +653,8 @@ class PendantPipeline(PipelineBase):
                 "color": "red",
                 "size": 6,
                 "thickness": 2,
+                "tag": "apex",
+                "layer": "markers",
             },
             {
                 "type": "text",
@@ -654,10 +662,13 @@ class PendantPipeline(PipelineBase):
                 "text": text,
                 "color": "white",
                 "scale": 0.55,
+                "tag": "fit_text",
+                "layer": "markers",
             },
         ]
-        model_profile_px = (ctx.fit or {}).get("model_profile_px")
-        if model_profile_px:
+        fit = ctx.fit or {}
+        model_profile_px = fit.get("model_profile_px")
+        if fit.get("strict_fit_success") and model_profile_px:
             try:
                 model_xy = np.asarray(model_profile_px, dtype=float)
                 if model_xy.ndim == 2 and model_xy.shape[0] >= 2:
@@ -668,6 +679,8 @@ class PendantPipeline(PipelineBase):
                             "closed": False,
                             "color": "green",
                             "thickness": 2,
+                            "tag": "pendant_fit",
+                            "layer": "fit",
                         }
                     )
             except Exception:

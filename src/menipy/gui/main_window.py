@@ -42,6 +42,47 @@ from menipy.pipelines.discover import PIPELINE_MAP
 
 logger = logging.getLogger(__name__)
 
+
+def _workbench_root_sizes(
+    available: int, saved: Optional[list[int]] = None
+) -> list[int]:
+    """Return horizontal sizes for setup rail plus workbench area."""
+    total = max(900, int(available or 0))
+    if saved:
+        values = [max(0, int(v)) for v in saved]
+        if len(values) >= 3:
+            setup = values[0]
+            workbench = values[1] + values[2]
+            if workbench > setup:
+                return [setup, workbench]
+        elif len(values) >= 2 and values[1] > values[0]:
+            return values[:2]
+    setup = min(340, max(250, int(total * 0.22)))
+    return [setup, max(420, total - setup)]
+
+
+def _workbench_vertical_sizes(
+    available: int, saved: Optional[list[int]] = None
+) -> list[int]:
+    """Return vertical sizes that keep the image preview above the results."""
+    total = max(620, int(available or 0))
+    if saved and len(saved) >= 2:
+        saved2 = [max(0, int(v)) for v in saved[:2]]
+        if saved2[0] > saved2[1]:
+            return saved2
+    results = max(220, int(total * 0.30))
+    preview = max(360, total - results)
+    return [preview, results]
+
+
+def _preview_dominant_sizes(
+    available: int, saved: Optional[list[int]] = None
+) -> list[int]:
+    """Compatibility wrapper for older tests/imports."""
+    root = _workbench_root_sizes(available, saved)
+    vertical = _workbench_vertical_sizes(available, None)
+    return [root[0], vertical[0], vertical[1]]
+
 # --- promoted preview widget (registered into QUiLoader) ---
 try:
     from .views.image_view import ImageView
@@ -70,6 +111,10 @@ except Exception:
         main_window_state_b64: Optional[str] = None
         main_window_geom_b64: Optional[str] = None
         splitter_sizes: Optional[list[int]] = None
+        guided_splitter_sizes: Optional[list[int]] = None
+        guided_vertical_splitter_sizes: Optional[list[int]] = None
+        overlay_config: Optional[dict] = None
+        marker_config: dict = {}
         unit_system: str = "SI"
 
         @classmethod
@@ -143,7 +188,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._embed(self.overlay_panel, self.previewHostLayout)
         self._embed(self.results_panel, self.resultsHostLayout)
 
-        self.preview_panel = PreviewPanel(self.overlay_panel, ImageView)
+        self.preview_panel = PreviewPanel(self.overlay_panel, ImageView, self.settings)
         self.results_panel_ctrl = ResultsPanel(self.results_panel)
 
         self.preprocessing_ctrl = PreprocessingPipelineController(self)
@@ -214,12 +259,32 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             except Exception:
                 pass
 
-        # restore saved splitter sizes (optional)
-        if getattr(self.settings, "splitter_sizes", None):
-            try:
-                self.rootSplitter.setSizes(self.settings.splitter_sizes)  # type: ignore[attr-defined]
-            except Exception:
-                pass
+        # Restore only preview-dominant saved sizes; migrate older layouts where
+        # the image canvas was smaller than setup/results.
+        guided_sizes = getattr(self.settings, "guided_splitter_sizes", None)
+        guided_vertical_sizes = getattr(
+            self.settings, "guided_vertical_splitter_sizes", None
+        )
+        legacy_sizes = getattr(self.settings, "splitter_sizes", None)
+        saved_sizes = guided_sizes or legacy_sizes
+        try:
+            self.setupHost.setMinimumWidth(230)  # type: ignore[attr-defined]
+            self.setupHost.setMaximumWidth(360)  # type: ignore[attr-defined]
+            self.workbenchHost.setMinimumWidth(520)  # type: ignore[attr-defined]
+            self.previewHost.setMinimumHeight(320)  # type: ignore[attr-defined]
+            self.inspectTabs.setMinimumHeight(190)  # type: ignore[attr-defined]
+            self.rootSplitter.setStretchFactor(0, 0)  # type: ignore[attr-defined]
+            self.rootSplitter.setStretchFactor(1, 1)  # type: ignore[attr-defined]
+            self.rootSplitter.setSizes(  # type: ignore[attr-defined]
+                _workbench_root_sizes(self.width(), saved_sizes)
+            )
+            self.workbenchSplitter.setStretchFactor(0, 1)  # type: ignore[attr-defined]
+            self.workbenchSplitter.setStretchFactor(1, 0)  # type: ignore[attr-defined]
+            self.workbenchSplitter.setSizes(  # type: ignore[attr-defined]
+                _workbench_vertical_sizes(self.height(), guided_vertical_sizes)
+            )
+        except Exception:
+            pass
 
         # focus
         self.statusBar().showMessage("Ready", 1500)
@@ -248,7 +313,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         from PySide6.QtGui import QAction, QActionGroup
 
         menu_bar = self.menuBar()
-        units_menu = menu_bar.addMenu("&Units")
+        units_menu = getattr(self, "menuUnits", None)
+        if units_menu is None:
+            units_menu = menu_bar.addMenu("&Units")
+            units_menu.setObjectName("menuUnits")
+            help_menu = getattr(self, "menuHelp", None)
+            if help_menu is not None:
+                menu_bar.removeAction(units_menu.menuAction())
+                menu_bar.insertMenu(help_menu.menuAction(), units_menu)
+            self.menuUnits = units_menu
+        else:
+            units_menu.clear()
 
         si_action = QAction("SI (mm, kg/m³)", self)
         si_action.setCheckable(True)
@@ -298,6 +373,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             "actionRunSelected": "run_full_pipeline",
             "actionStop": "stop_pipeline",
             "actionOverlay": "open_overlay",
+            "actionConfigOverlay": "open_overlay",
+            "actionConfigMarkers": "open_marker_config",
+            "actionConfigPipeline": "open_pipeline_config",
+            "actionConfigPreprocessing": "open_preprocessing_config",
+            "actionConfigEdgeDetection": "open_edge_detection_config",
+            "actionConfigGeometry": "open_geometry_config",
+            "actionConfigPhysics": "open_physics_config",
+            "actionConfigAcquisition": "open_acquisition_config",
             "actionAbout": "show_about_dialog",
             "actionPreview": "on_preview_requested",
             "actionExportCsv": "export_results_csv",
@@ -318,11 +401,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 handler = self.close
             elif method_name == "select_camera":
                 handler = lambda: self.main_controller.select_camera(True)  # type: ignore
-            elif method_name == "open_overlay":
-                # Always call the MainController to open the overlay config
-                handler = lambda: self.main_controller.on_config_stage_requested(
-                    "overlay"
-                )
             else:
                 handler = getattr(self.main_controller, method_name)
 
@@ -357,7 +435,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if auto_calibrate and getattr(self, "setup_panel_ctrl", None):
             try:
                 auto_calibrate.clicked.connect(
-                    self.setup_panel_ctrl.auto_calibrate_requested.emit
+                    lambda _checked=False: self.setup_panel_ctrl.auto_calibrate_requested.emit()
                 )
             except Exception:
                 pass
@@ -412,6 +490,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def _wire_layout_controls(self) -> None:
         self._splitter_sizes_full: Optional[list[int]] = None
+        self._workbench_splitter_sizes_full: Optional[list[int]] = None
         layout_buttons = {
             "layoutAnalysisBtn": "analysis",
             "layoutSetupBtn": "setup",
@@ -457,6 +536,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if setup_visible and inspect_visible:
             try:
                 self._splitter_sizes_full = list(self.rootSplitter.sizes())  # type: ignore[attr-defined]
+                self._workbench_splitter_sizes_full = list(
+                    self.workbenchSplitter.sizes()  # type: ignore[attr-defined]
+                )
             except Exception:
                 pass
 
@@ -484,22 +566,33 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         try:
             sizes = self.rootSplitter.sizes()  # type: ignore[attr-defined]
         except Exception:
-            sizes = [240, 600, 280]
+            sizes = [260, 740]
+        try:
+            vertical_sizes = self.workbenchSplitter.sizes()  # type: ignore[attr-defined]
+        except Exception:
+            vertical_sizes = [560, 240]
 
         if show_setup and show_inspector:
             target_sizes = self._splitter_sizes_full or sizes
+            target_vertical_sizes = getattr(
+                self, "_workbench_splitter_sizes_full", None
+            ) or vertical_sizes
         elif show_setup and not show_inspector:
-            total = sizes[0] + sizes[1] + sizes[2]
-            target_sizes = [max(200, sizes[0]), max(1, total - sizes[0]), 0]
+            total = max(1, sum(sizes))
+            target_sizes = [max(200, sizes[0]), max(1, total - sizes[0])]
+            target_vertical_sizes = [max(1, sum(vertical_sizes)), 0]
         elif not show_setup and show_inspector:
-            total = sizes[0] + sizes[1] + sizes[2]
-            target_sizes = [0, max(1, total - sizes[2]), max(200, sizes[2])]
+            total = max(1, sum(sizes))
+            target_sizes = [0, total]
+            target_vertical_sizes = vertical_sizes
         else:
             total = max(1, sum(sizes))
-            target_sizes = [0, total, 0]
+            target_sizes = [0, total]
+            target_vertical_sizes = [max(1, sum(vertical_sizes)), 0]
 
         try:
             self.rootSplitter.setSizes(target_sizes)  # type: ignore[attr-defined]
+            self.workbenchSplitter.setSizes(target_vertical_sizes)  # type: ignore[attr-defined]
         except Exception:
             pass
 

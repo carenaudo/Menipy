@@ -24,31 +24,43 @@
       <widget class="QToolButton" name="overlayMenuBtn">
        <property name="text"><string>Overlays</string></property>
        <property name="popupMode"><enum>QToolButton::InstantPopup</enum></property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QToolButton" name="markMenuBtn">
-       <property name="text"><string>Mark</string></property>
-       <property name="popupMode"><enum>QToolButton::InstantPopup</enum></property>
+       <property name="visible"><bool>false</bool></property>
       </widget>
      </item>
      <item>
       <widget class="QCheckBox" name="showContourCheck">
        <property name="text"><string>Contour</string></property>
        <property name="checked"><bool>true</bool></property>
-       <property name="visible"><bool>false</bool></property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="showFitCheck">
+       <property name="text"><string>Fit</string></property>
+       <property name="checked"><bool>true</bool></property>
       </widget>
      </item>
      <item>
       <widget class="QCheckBox" name="showAxesCheck">
-       <property name="text"><string>Axes</string></property>
-       <property name="visible"><bool>false</bool></property>
+       <property name="text"><string>Axis</string></property>
+       <property name="checked"><bool>true</bool></property>
       </widget>
      </item>
      <item>
       <widget class="QCheckBox" name="showBaselineCheck">
        <property name="text"><string>Baseline</string></property>
-       <property name="visible"><bool>false</bool></property>
+       <property name="checked"><bool>true</bool></property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="showMarkersCheck">
+       <property name="text"><string>Markers</string></property>
+       <property name="checked"><bool>true</bool></property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QToolButton" name="markMenuBtn">
+       <property name="text"><string>Mark</string></property>
+       <property name="popupMode"><enum>QToolButton::InstantPopup</enum></property>
       </widget>
      </item>
      <item>

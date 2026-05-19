@@ -196,24 +196,31 @@ class ImageMarkerHelper(QObject):
             view.add_marker_point(
                 QPointF(*markers.drop_center),
                 color=QColor(0, 255, 0),
+                layer="markers",
                 tag=self._tags.center,
             )
 
         for idx, anchor in enumerate(markers.contact_line_anchors):
             tag = f"marker_anchor_{idx}"
             self._tags.anchors.append(tag)
-            view.add_marker_point(QPointF(*anchor), color=QColor(255, 200, 0), tag=tag)
+            view.add_marker_point(
+                QPointF(*anchor), color=QColor(255, 200, 0), layer="markers", tag=tag
+            )
 
         if len(markers.contact_line_anchors) >= 2:
             p1 = QPointF(*markers.contact_line_anchors[0])
             p2 = QPointF(*markers.contact_line_anchors[-1])
             view.add_marker_line(
-                p1, p2, color=QColor(255, 140, 0), tag=self._tags.contact_line
+                p1,
+                p2,
+                color=QColor(255, 140, 0),
+                layer="baseline",
+                tag=self._tags.contact_line,
             )
 
         for idx, sample in enumerate(markers.background_samples):
             tag = f"marker_bg_{idx}"
             self._tags.background.append(tag)
             view.add_marker_point(
-                QPointF(*sample), color=QColor(100, 149, 237), tag=tag
+                QPointF(*sample), color=QColor(100, 149, 237), layer="markers", tag=tag
             )

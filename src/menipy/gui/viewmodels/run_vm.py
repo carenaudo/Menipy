@@ -8,6 +8,7 @@ from menipy.gui.services.image_convert import to_pixmap
 
 
 class RunViewModel(QObject):
+    context_ready = Signal(object)
     preview_ready = Signal(object)  # QPixmap
     results_ready = Signal(dict)
     error_occurred = Signal(str)
@@ -66,7 +67,9 @@ class RunViewModel(QObject):
             self.error_occurred.emit(payload["err"] or "Unknown error")
             return
         ctx = payload["ctx"]
-        if getattr(ctx, "preview", None) is not None:
+        if getattr(ctx, "overlay_commands", None) or getattr(ctx, "image", None) is not None:
+            self.context_ready.emit(ctx)
+        elif getattr(ctx, "preview", None) is not None:
             self.preview_ready.emit(to_pixmap(ctx.preview))
         if getattr(ctx, "results", None) is not None:
             self.results_ready.emit(dict(ctx.results))

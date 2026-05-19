@@ -15,6 +15,19 @@
    <addaction name="separator"/>
    <addaction name="actionQuit"/>
    </widget>
+   <widget class="QMenu" name="menuConfig">
+    <property name="title"><string>&amp;Config</string></property>
+    <addaction name="actionConfigOverlay"/>
+    <addaction name="actionConfigMarkers"/>
+    <addaction name="separator"/>
+    <addaction name="actionConfigPipeline"/>
+    <addaction name="separator"/>
+    <addaction name="actionConfigPreprocessing"/>
+    <addaction name="actionConfigEdgeDetection"/>
+    <addaction name="actionConfigGeometry"/>
+    <addaction name="actionConfigPhysics"/>
+    <addaction name="actionConfigAcquisition"/>
+   </widget>
    <widget class="QMenu" name="menuView">
     <property name="title"><string>&amp;View</string></property>
     <!-- You can add pane toggles or dock toggles here in code -->
@@ -28,17 +41,22 @@
     <addaction name="separator"/>
     <addaction name="actionStop"/>
    </widget>
+   <widget class="QMenu" name="menuPlugins">
+    <property name="title"><string>&amp;Plugins</string></property>
+   </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title"><string>&amp;Help</string></property>
     <addaction name="actionAbout"/>
    </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuConfig"/>
    <addaction name="menuView"/>
    <addaction name="menuRun"/>
+   <addaction name="menuPlugins"/>
    <addaction name="menuHelp"/>
   </widget>
 
-  <!-- Central area: 3-way splitter -->
+  <!-- Central area: workbench splitter -->
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="centralLayout">
     <item>
@@ -115,30 +133,41 @@
        <layout class="QVBoxLayout" name="setupHostLayout"/>
       </widget>
 
-      <!-- Center: Preview host -->
-      <widget class="QWidget" name="previewHost">
-       <layout class="QVBoxLayout" name="previewHostLayout"/>
-      </widget>
-
-      <!-- Right: Inspector tabs -->
-      <widget class="QTabWidget" name="inspectTabs">
-       <property name="tabPosition"><enum>QTabWidget::North</enum></property>
-       <widget class="QWidget" name="resultsTab">
-        <attribute name="title"><string>Results</string></attribute>
-        <layout class="QVBoxLayout" name="resultsHostLayout"/>
-       </widget>
-       <widget class="QWidget" name="residualsTab">
-        <attribute name="title"><string>Residuals</string></attribute>
-        <layout class="QVBoxLayout" name="residualsHostLayout"/>
-       </widget>
-       <widget class="QWidget" name="timingsTab">
-        <attribute name="title"><string>Timings</string></attribute>
-        <layout class="QVBoxLayout" name="timingsHostLayout"/>
-       </widget>
-       <widget class="QWidget" name="logTab">
-        <attribute name="title"><string>Log</string></attribute>
-        <layout class="QVBoxLayout" name="logHostLayout"/>
-       </widget>
+      <!-- Right workbench: Preview above results/diagnostics -->
+      <widget class="QWidget" name="workbenchHost">
+       <layout class="QVBoxLayout" name="workbenchHostLayout">
+        <property name="leftMargin"><number>0</number></property>
+        <property name="topMargin"><number>0</number></property>
+        <property name="rightMargin"><number>0</number></property>
+        <property name="bottomMargin"><number>0</number></property>
+        <item>
+         <widget class="QSplitter" name="workbenchSplitter">
+          <property name="orientation"><enum>Qt::Vertical</enum></property>
+          <widget class="QWidget" name="previewHost">
+           <layout class="QVBoxLayout" name="previewHostLayout"/>
+          </widget>
+          <widget class="QTabWidget" name="inspectTabs">
+           <property name="tabPosition"><enum>QTabWidget::North</enum></property>
+           <widget class="QWidget" name="resultsTab">
+            <attribute name="title"><string>Results</string></attribute>
+            <layout class="QVBoxLayout" name="resultsHostLayout"/>
+           </widget>
+           <widget class="QWidget" name="residualsTab">
+            <attribute name="title"><string>Residuals</string></attribute>
+            <layout class="QVBoxLayout" name="residualsHostLayout"/>
+           </widget>
+           <widget class="QWidget" name="timingsTab">
+            <attribute name="title"><string>Timings</string></attribute>
+            <layout class="QVBoxLayout" name="timingsHostLayout"/>
+           </widget>
+           <widget class="QWidget" name="logTab">
+            <attribute name="title"><string>Log</string></attribute>
+            <layout class="QVBoxLayout" name="logHostLayout"/>
+           </widget>
+          </widget>
+         </widget>
+        </item>
+       </layout>
       </widget>
      </widget>
     </item>
@@ -181,7 +210,7 @@
   <action name="actionAbout">
    <property name="text"><string>&amp;About</string></property>
   </action>
-    <action name="actionOverlay">
+  <action name="actionOverlay">
      <property name="text"><string>&amp;Overlay…</string></property>
      <property name="shortcut"><string>Ctrl+Shift+O</string></property>
     <property name="icon">
@@ -191,6 +220,31 @@
     </property>
     <property name="toolTip"><string>Open overlay configuration and preview overlay styling</string></property>
     <property name="statusTip"><string>Configure overlay appearance</string></property>
+  </action>
+  <action name="actionConfigOverlay">
+   <property name="text"><string>Overlay Appearance…</string></property>
+   <property name="shortcut"><string>Ctrl+Shift+O</string></property>
+  </action>
+  <action name="actionConfigMarkers">
+   <property name="text"><string>Marker Display…</string></property>
+  </action>
+  <action name="actionConfigPipeline">
+   <property name="text"><string>Pipeline Settings…</string></property>
+  </action>
+  <action name="actionConfigPreprocessing">
+   <property name="text"><string>Preprocessing…</string></property>
+  </action>
+  <action name="actionConfigEdgeDetection">
+   <property name="text"><string>Edge Detection…</string></property>
+  </action>
+  <action name="actionConfigGeometry">
+   <property name="text"><string>Geometry…</string></property>
+  </action>
+  <action name="actionConfigPhysics">
+   <property name="text"><string>Physics…</string></property>
+  </action>
+  <action name="actionConfigAcquisition">
+   <property name="text"><string>Acquisition…</string></property>
   </action>
  </widget>
  <resources/>
