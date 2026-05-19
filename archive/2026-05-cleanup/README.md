@@ -9,6 +9,9 @@ No files were deleted.
 - `doc_audit/`: one-time documentation audit outputs.
 - `mypy_report.txt`: point-in-time report output.
 - `profile_run1.csv`: point-in-time profiling output.
+- `scripts/archive/`: historical scripts and planning markdowns, not part of active implementation.
+- `docs/history/`: historical documentation, logs, and refactor plans.
+- `doc/`: legacy explanations, not referenced in active guides.
 
 ## Restore
 
@@ -19,4 +22,7 @@ mv archive/2026-05-cleanup/build ./
 mv archive/2026-05-cleanup/doc_audit ./
 mv archive/2026-05-cleanup/mypy_report.txt ./
 mv archive/2026-05-cleanup/profile_run1.csv ./
+mv archive/2026-05-cleanup/scripts/archive ./scripts/
+mv archive/2026-05-cleanup/docs/history ./docs/
+mv archive/2026-05-cleanup/doc ./
 ```
