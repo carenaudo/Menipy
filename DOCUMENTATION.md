@@ -4,14 +4,14 @@ Menipy is a Python toolkit for droplet shape analysis. It provides image process
 
 This guide explains how to set up the environment and launch the application.
 
-## Using `setup.py`
+## Package Installation (Recommended)
 
-1. Ensure Python 3.9 or newer is installed.
+1. Ensure Python 3.10 or newer is installed.
 2. Install Menipy and its dependencies in editable mode:
    ```bash
    pip install -e .
    ```
-   This command uses `setup.py` to register the `menipy` console script.
+   This command installs Menipy from `pyproject.toml` and registers the `menipy` console script.
 3. Run the application from the command line:
    ```bash
    menipy
@@ -27,7 +27,7 @@ you installed the package or are running from the source tree.
    menipy
    ```
 
-- From source without installing:
+- From source without installing (development fallback):
    ```bash
    python -m src
    ```

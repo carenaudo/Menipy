@@ -4,7 +4,7 @@ The current main branch is under current refactorization of file structure. **Th
 To test the original Menipy code made with minimal interaction use the branch: **https://github.com/carenaudo/Menipy/tree/Min-Human-Interaction**
 
 
-Menipy is a Python-based toolkit aimed at analyzing droplet shapes from images. The goal is to create the software with minimal human involvement in the coding phase. Development is driven by CODEX, an AI agent that orchestrates several specialized sub-agents defined in `AGENTS.md`.
+Menipy is a Python-based toolkit aimed at analyzing droplet shapes from images. The goal is to create the software with minimal human involvement in the coding phase. Development is driven by CODEX with AI-assisted workflows.
 
 ## Objectives and Scope
 
@@ -23,7 +23,7 @@ The original intention of this repository was to explore the feasibility of prot
 - Maintainer: Carlos Renaudo (PLAPIQUI — Planta Piloto de Ingeniería Química, Universidad Nacional del Sur/CONICET)
 - Group: Tecnología de Partículas, PLAPIQUI
 
-These sub-agents read the step-by-step instructions in `PLAN.md` and consult the reference material under `doc/` to automatically scaffold the project, implement processing and modeling algorithms, build the PySide6 GUI, and configure testing and packaging.
+The implementation roadmap is tracked in `PLAN.md`, while active reference material lives under `docs/guides/` and `docs/contracts/`.
 
 <img width="1909" height="1028" alt="image" src="https://github.com/user-attachments/assets/45fd8f53-98cc-4c6d-bf59-0e0687c5c7fe" />
 
@@ -35,9 +35,10 @@ Use at your own risk.
 
 ## Repository Overview
 
-- **AGENTS.md** – roles for Documentation, Scaffold, Environment, Processing, Modeling, GUI, Batch, and CI & Packaging agents.
-- **PLAN.md** – a high-level plan detailing the desired directory layout, technology stack, and feature set.
-- **doc/** – supporting Markdown files (`physics_models.md`, `numerical_methods.md`, `image_processing.md`, `gui_design.md`, `drop_analysis.md`) that supply equations and workflow descriptions for CODEX.
+- **PLAN.md** – a high-level roadmap for the current implementation phases.
+- **docs/guides/** – user and developer guides (workflows, methods, and feature usage).
+- **docs/contracts/** – pipeline results schemas and results panel integration contracts.
+- **docs/history/** – historical planning logs and archived process notes.
 - **CHANGELOG.md** – A log of notable changes for each version.
 
 By combining these materials with CODEX automation, Menipy aims to become a fully functional droplet shape analysis tool with a PySide6 interface and automated tests, all generated with minimal human interaction.
@@ -102,17 +103,16 @@ The GUI includes a **Drop Analysis** tab for pendant and contact-angle modes. Af
 needle and drop regions, the application detects the needle width, extracts the
 outer drop contour and overlays key features such as the apex and symmetry axis.
 Metrics including height, diameter, volume and surface tension are displayed in
-the panel. Detailed instructions are available in `doc/drop_analysis.md`.
+the panel. Detailed instructions are available in `docs/guides/drop_analysis.md`.
 
 ## Developer note: runtime resources and GUI logging
 
 During recent refactor work, the application now emits clear per-stage pipeline logs and a status message that is shown in the GUI status bar. If you run the GUI and see missing icon warnings for paths like `:/icons/...`, run the resource build helper:
 
 - In the project root, run the build script to produce `icons.rcc` (requires PySide6 tools):
-  - Windows PowerShell:
-    ```powershell
-    D:/programacion/Menipy/.venv/Scripts/python.exe tools/build_resources.py
-    ```
+   ```bash
+   python tools/build_resources.py
+   ```
 
 After producing `icons.rcc`, the application will register it automatically at startup and QIcon lookups for `:/icons/...` should resolve. If you prefer a quick workaround, the GUI will fall back to the on-disk SVG files under `src/menipy/gui/resources/icons/` when the compiled resource is not available.
 
