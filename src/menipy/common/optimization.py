@@ -1,5 +1,6 @@
 # src/menipy/common/optimization.py
 """Optimization stage utilities for refining solver results."""
+
 from __future__ import annotations
 
 

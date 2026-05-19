@@ -136,7 +136,10 @@ class PreprocessingPipelineController(QObject):
         ctx.preprocessing_settings = self._settings
 
         # Run auto-detection if enabled in settings
-        if hasattr(self._settings, "auto_detect") and self._settings.auto_detect.enabled:
+        if (
+            hasattr(self._settings, "auto_detect")
+            and self._settings.auto_detect.enabled
+        ):
             detect_plugin = registry.PREPROCESSORS.get("auto_detect")
             if detect_plugin:
                 try:
@@ -144,7 +147,7 @@ class PreprocessingPipelineController(QObject):
                 except Exception as exc:
                     logger.warning("Auto-detection plugin failed: %s", exc)
                     # Don't fail the whole run, just continue with manual settings
-        
+
         try:
             preprocessing.run(ctx, self._settings)
         except Exception as exc:  # pragma: no cover - guard for runtime issues
@@ -207,6 +210,7 @@ class PreprocessingPipelineController(QObject):
         # ------------------------------------------------------------------
         # Internal helpers
         # ------------------------------------------------------------------
+
     def _emit_preview_from_state(self) -> None:
         """_emit_preview_from_state."""
         if self._image is None or self._state is None:

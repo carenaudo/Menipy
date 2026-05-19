@@ -104,7 +104,9 @@ class TestComputeSessileMetrics:
         assert metrics["diameter_mm"] > 0
         assert metrics["height_mm"] > 0
 
-    @pytest.mark.skip(reason="manual vs auto consistency currently failing; skipping until fixed")
+    @pytest.mark.skip(
+        reason="manual vs auto consistency currently failing; skipping until fixed"
+    )
     def test_manual_vs_auto_consistency(self):
         """Test that manual and auto methods give reasonable results."""
         # Create test contour

@@ -132,9 +132,12 @@ class ResultsHistory:
 
         return headers, rows
 
-    def export_csv(self, file_path: str | Path, pipeline_filter: Optional[str] = None) -> bool:
+    def export_csv(
+        self, file_path: str | Path, pipeline_filter: Optional[str] = None
+    ) -> bool:
         """Export measurement history to a CSV file."""
         import csv
+
         try:
             headers, rows = self.get_table_data(pipeline_filter=pipeline_filter)
             if not headers:

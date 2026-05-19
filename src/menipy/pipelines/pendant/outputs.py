@@ -2,6 +2,7 @@
 Minimal outputs stage for the pendant pipeline.
 Collects fit parameters into `ctx.results` and ensures predictable keys.
 """
+
 from __future__ import annotations
 
 from typing import Optional

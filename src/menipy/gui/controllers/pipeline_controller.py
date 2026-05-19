@@ -17,7 +17,6 @@ from PySide6.QtWidgets import QMessageBox, QPlainTextEdit, QMainWindow
 
 from menipy.models.config import PhysicsParams
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -335,14 +334,26 @@ class PipelineController:
             # Get calibration params from the setup controller (normalized to SI)
             calibration_params = self.setup_ctrl.get_calibration_params()
             try:
-                needle_diameter_mm = float(calibration_params.get("needle_diameter_mm", 0.54))
+                needle_diameter_mm = float(
+                    calibration_params.get("needle_diameter_mm", 0.54)
+                )
             except (ValueError, TypeError):
                 needle_diameter_mm = 0.54
-            
+
             # Get actual needle width from detected needle_rect overlay
-            needle_rect = self.preview_panel.needle_rect() if hasattr(self.preview_panel, 'needle_rect') else None
-            if needle_rect and isinstance(needle_diameter_mm, (int, float)) and needle_diameter_mm > 0:
-                needle_diameter_px = needle_rect[2]  # (x, y, w, h) -> w (width = diameter)
+            needle_rect = (
+                self.preview_panel.needle_rect()
+                if hasattr(self.preview_panel, "needle_rect")
+                else None
+            )
+            if (
+                needle_rect
+                and isinstance(needle_diameter_mm, (int, float))
+                and needle_diameter_mm > 0
+            ):
+                needle_diameter_px = needle_rect[
+                    2
+                ]  # (x, y, w, h) -> w (width = diameter)
                 px_per_mm = needle_diameter_px / needle_diameter_mm
             else:
                 # Fallback: use approximate estimate
@@ -355,8 +366,12 @@ class PipelineController:
 
             # Set physics parameters from calibration
             ctx.physics = {
-                "rho1": calibration_params.get("drop_density_kg_m3", 1000.0),  # Drop density
-                "rho2": calibration_params.get("fluid_density_kg_m3", 1.2),  # Fluid density
+                "rho1": calibration_params.get(
+                    "drop_density_kg_m3", 1000.0
+                ),  # Drop density
+                "rho2": calibration_params.get(
+                    "fluid_density_kg_m3", 1.2
+                ),  # Fluid density
                 "g": 9.80665,  # Gravity
             }
 
@@ -406,17 +421,23 @@ class PipelineController:
         image = params.get("image")
         cam_id = params.get("cam_id")
         frames = params.get("frames")
-        
+
         # Calculate scale from detected needle diameter (width)
         # Get calibration params from the setup controller (normalized to SI)
         calibration_params = self.setup_ctrl.get_calibration_params()
         try:
-            needle_diameter_mm = float(calibration_params.get("needle_diameter_mm", 0.54))
+            needle_diameter_mm = float(
+                calibration_params.get("needle_diameter_mm", 0.54)
+            )
         except (ValueError, TypeError):
             needle_diameter_mm = 0.54
 
-        needle_rect = overlays.get('needle_rect')
-        if needle_rect and isinstance(needle_diameter_mm, (int, float)) and needle_diameter_mm > 0:
+        needle_rect = overlays.get("needle_rect")
+        if (
+            needle_rect
+            and isinstance(needle_diameter_mm, (int, float))
+            and needle_diameter_mm > 0
+        ):
             needle_diameter_px = needle_rect[2]  # (x, y, w, h) -> w (width = diameter)
             px_per_mm = needle_diameter_px / needle_diameter_mm
         else:
@@ -426,14 +447,14 @@ class PipelineController:
 
         run_kwargs = dict(overlays)
         # Pass structured context data
-        run_kwargs['calibration_params'] = calibration_params
-        run_kwargs['scale'] = {"px_per_mm": px_per_mm}
-        run_kwargs['physics'] = {
+        run_kwargs["calibration_params"] = calibration_params
+        run_kwargs["scale"] = {"px_per_mm": px_per_mm}
+        run_kwargs["physics"] = {
             "rho1": calibration_params.get("drop_density_kg_m3", 1000.0),
             "rho2": calibration_params.get("fluid_density_kg_m3", 1.2),
             "g": 9.80665,
         }
-        
+
         if image is not None:
             run_kwargs["image"] = image
         if cam_id is not None:
@@ -708,7 +729,11 @@ class PipelineController:
             file_name = None
         else:
             # Fallback to image string if available
-            if file_name is None and hasattr(ctx, "image") and isinstance(ctx.image, str):
+            if (
+                file_name is None
+                and hasattr(ctx, "image")
+                and isinstance(ctx.image, str)
+            ):
                 try:
                     from pathlib import Path
 
@@ -785,11 +810,11 @@ class PipelineController:
     def on_pipeline_error(self, message: str) -> None:
         """Handles pipeline errors by showing a dialog and logging the incident."""
         logger.error(f"Pipeline Error: {message}")
-        
+
         # Use the static method to maintain compatibility with existing test mocks
         display_msg = "An error occurred during the analysis pipeline.\n\n" + message
         QMessageBox.critical(None, "Pipeline Error", display_msg)
-        
+
         try:
             self.window.statusBar().showMessage(f"Error: {message[:50]}...", 5000)
         except Exception:

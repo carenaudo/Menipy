@@ -140,7 +140,9 @@ class SetupPanelController(QObject):
         self.previewBtn: Optional[QToolButton] = panel.findChild(
             QToolButton, "previewBtn"
         )
-        self.autoCalibrateBtn: Optional[QPushButton] = panel.findChild(QPushButton, "autoCalibrateBtn")
+        self.autoCalibrateBtn: Optional[QPushButton] = panel.findChild(
+            QPushButton, "autoCalibrateBtn"
+        )
 
         self.drawPointBtn: Optional[QPushButton] = panel.findChild(
             QPushButton, "drawPointBtn"
@@ -158,15 +160,31 @@ class SetupPanelController(QObject):
         self.framesSpin: Optional[QSpinBox] = panel.findChild(QSpinBox, "framesSpin")
 
         # Calibration labels for unit dynamic updates
-        self.needleLengthLabel: Optional[QLabel] = panel.findChild(QLabel, "needleLengthLabel")
-        self.dropDensityLabel: Optional[QLabel] = panel.findChild(QLabel, "dropDensityLabel")
-        self.fluidDensityLabel: Optional[QLabel] = panel.findChild(QLabel, "fluidDensityLabel")
-        self.substrateAngleLabel: Optional[QLabel] = panel.findChild(QLabel, "substrateAngleLabel")
-        
-        self.needleLengthSpin: Optional[QDoubleSpinBox] = panel.findChild(QDoubleSpinBox, "needleLengthSpin")
-        self.dropDensitySpin: Optional[QDoubleSpinBox] = panel.findChild(QDoubleSpinBox, "dropDensitySpin")
-        self.fluidDensitySpin: Optional[QDoubleSpinBox] = panel.findChild(QDoubleSpinBox, "fluidDensitySpin")
-        self.substrateAngleSpin: Optional[QDoubleSpinBox] = panel.findChild(QDoubleSpinBox, "substrateAngleSpin")
+        self.needleLengthLabel: Optional[QLabel] = panel.findChild(
+            QLabel, "needleLengthLabel"
+        )
+        self.dropDensityLabel: Optional[QLabel] = panel.findChild(
+            QLabel, "dropDensityLabel"
+        )
+        self.fluidDensityLabel: Optional[QLabel] = panel.findChild(
+            QLabel, "fluidDensityLabel"
+        )
+        self.substrateAngleLabel: Optional[QLabel] = panel.findChild(
+            QLabel, "substrateAngleLabel"
+        )
+
+        self.needleLengthSpin: Optional[QDoubleSpinBox] = panel.findChild(
+            QDoubleSpinBox, "needleLengthSpin"
+        )
+        self.dropDensitySpin: Optional[QDoubleSpinBox] = panel.findChild(
+            QDoubleSpinBox, "dropDensitySpin"
+        )
+        self.fluidDensitySpin: Optional[QDoubleSpinBox] = panel.findChild(
+            QDoubleSpinBox, "fluidDensitySpin"
+        )
+        self.substrateAngleSpin: Optional[QDoubleSpinBox] = panel.findChild(
+            QDoubleSpinBox, "substrateAngleSpin"
+        )
         self.sopGroup: Optional[QGroupBox] = panel.findChild(QGroupBox, "sopGroup")
         self.stepsGroup: Optional[QGroupBox] = panel.findChild(QGroupBox, "stepsGroup")
         self.advancedToggleBtn: Optional[QToolButton] = panel.findChild(
@@ -295,13 +313,14 @@ class SetupPanelController(QObject):
     def get_calibration_params(self) -> dict[str, Any]:
         """Returns calibration parameters normalized to SI units."""
         from menipy.common.units import convert_to_si
+
         system = getattr(self.settings, "unit_system", "SI")
-        
+
         # Use defaults if widgets missing
         needle_diameter = 0.54
         drop_rho = 1000.0
         fluid_rho = 1.2
-        
+
         if self.needleLengthSpin:
             needle_val = self.needleLengthSpin.value()
             needle_diameter = convert_to_si(needle_val, "length", system)
@@ -311,7 +330,7 @@ class SetupPanelController(QObject):
         if self.fluidDensitySpin:
             fluid_val = self.fluidDensitySpin.value()
             fluid_rho = convert_to_si(fluid_val, "density", system)
-            
+
         return {
             "needle_diameter_mm": needle_diameter,
             "drop_density_kg_m3": drop_rho,
@@ -321,16 +340,22 @@ class SetupPanelController(QObject):
     def refresh_ui_labels(self) -> None:
         """Updates setup panel labels based on the current unit system."""
         system = getattr(self.settings, "unit_system", "SI")
-        
+
         if system == "SI":
-            if self.needleLengthLabel: self.needleLengthLabel.setText("Needle (mm)")
-            if self.dropDensityLabel: self.dropDensityLabel.setText("Drop rho")
-            if self.fluidDensityLabel: self.fluidDensityLabel.setText("Fluid rho")
+            if self.needleLengthLabel:
+                self.needleLengthLabel.setText("Needle (mm)")
+            if self.dropDensityLabel:
+                self.dropDensityLabel.setText("Drop rho")
+            if self.fluidDensityLabel:
+                self.fluidDensityLabel.setText("Fluid rho")
         else:
-            if self.needleLengthLabel: self.needleLengthLabel.setText("Needle (cm)")
-            if self.dropDensityLabel: self.dropDensityLabel.setText("Drop rho")
-            if self.fluidDensityLabel: self.fluidDensityLabel.setText("Fluid rho")
-            
+            if self.needleLengthLabel:
+                self.needleLengthLabel.setText("Needle (cm)")
+            if self.dropDensityLabel:
+                self.dropDensityLabel.setText("Drop rho")
+            if self.fluidDensityLabel:
+                self.fluidDensityLabel.setText("Fluid rho")
+
         # Optional: convert current spinbox values to stay consistent when units toggle
         # (This is tricky if done multiple times without precision loss, but helpful for UX)
         # For now, just refreshing the labels as requested.
@@ -439,7 +464,9 @@ class SetupPanelController(QObject):
         if self.previewBtn:
             self.previewBtn.clicked.connect(lambda: self.preview_requested.emit())
         if self.autoCalibrateBtn:
-            self.autoCalibrateBtn.clicked.connect(lambda: self.auto_calibrate_requested.emit())
+            self.autoCalibrateBtn.clicked.connect(
+                lambda: self.auto_calibrate_requested.emit()
+            )
         if self.advancedToggleBtn:
             self.advancedToggleBtn.toggled.connect(
                 lambda checked: self.set_advanced_visible(bool(checked))
@@ -480,7 +507,9 @@ class SetupPanelController(QObject):
             (self.cameraModeRadio, self.MODE_CAMERA),
         ):
             if btn:
-                btn.clicked.connect(lambda _checked=False, m=mode: self._apply_mode(m, emit=True))
+                btn.clicked.connect(
+                    lambda _checked=False, m=mode: self._apply_mode(m, emit=True)
+                )
         combo = self.testCombo or self.pipelineCombo
         if combo:
             combo.currentTextChanged.connect(self._on_pipeline_combo_changed)

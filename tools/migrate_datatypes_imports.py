@@ -244,8 +244,7 @@ def apply_rewrites(planned: Dict[Path, List[Tuple[str, str, str]]]) -> None:
 
 
 def main() -> None:
-    """Entry point.
-    """
+    """Entry point."""
     parser = argparse.ArgumentParser(
         description="Migrate imports from menipy.models.datatypes to new model modules"
     )

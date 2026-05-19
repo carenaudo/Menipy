@@ -71,12 +71,14 @@ class TestSessileControllerFlows:
         mock_window.setupPanel.get_calibration_params.return_value = {
             "needle_length_mm": 0.5,
             "drop_density_kg_m3": 1000.0,
-            "fluid_density_kg_m3": 1.2
+            "fluid_density_kg_m3": 1.2,
         }
 
         # Patch QMessageBox globally for all tests in this class
-        with patch("PySide6.QtWidgets.QMessageBox.critical") as mock_critical, \
-             patch("PySide6.QtWidgets.QMessageBox.warning") as mock_warning:
+        with (
+            patch("PySide6.QtWidgets.QMessageBox.critical") as mock_critical,
+            patch("PySide6.QtWidgets.QMessageBox.warning") as mock_warning,
+        ):
             yield mock_critical, mock_warning
 
     @pytest.fixture
@@ -114,11 +116,10 @@ class TestSessileControllerFlows:
             10, 10, 100, 100
         )
 
-
         with patch("menipy.pipelines.discover.PIPELINE_MAP", PIPELINE_MAP):
             try:
                 controller.run_simple_analysis()
-                
+
                 # Verify pipeline was called and results were updated
                 controller.results_panel.update.assert_called_once()
                 controller.preview_panel.display.assert_called_once()
@@ -196,9 +197,10 @@ class TestSessileControllerFlows:
 
         controller._collect_acquisition_inputs = Mock(return_value=(True, {}))
 
-        with patch.object(controller, "_run_pipeline_direct") as mock_direct, patch(
-            "PySide6.QtWidgets.QMessageBox.critical"
-        ) as mock_critical:
+        with (
+            patch.object(controller, "_run_pipeline_direct") as mock_direct,
+            patch("PySide6.QtWidgets.QMessageBox.critical") as mock_critical,
+        ):
             mock_ctx = Mock()
             mock_ctx.preview = Mock()
             mock_ctx.results = {"diameter_mm": 2.0, "height_mm": 1.5}
@@ -317,10 +319,12 @@ class TestSessileControllerFlows:
                 # Verify that the critical dialog was shown
                 mock_critical.assert_called_once()
 
-    def test_context_population_for_staged_run(self, controller, tmp_path, mock_dialogs):
+    def test_context_population_for_staged_run(
+        self, controller, tmp_path, mock_dialogs
+    ):
         """Test that context is properly populated for staged sessile runs."""
         mock_critical, mock_warning = mock_dialogs
-        
+
         # Create test image
         img = np.zeros((120, 120, 3), dtype=np.uint8)
         cv2.circle(img, (60, 60), 30, (255, 255, 255), -1)
@@ -349,7 +353,7 @@ class TestSessileControllerFlows:
 
             try:
                 controller.run_simple_analysis()
-                
+
                 # Check for errors swallowed by mock_dialogs
                 if mock_critical.called:
                     print(f"\nCRITICAL ERROR CAPTURED: {mock_critical.call_args}")

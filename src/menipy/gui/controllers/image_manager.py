@@ -1,4 +1,5 @@
 """Image lifecycle and loading management."""
+
 from __future__ import annotations
 
 import logging
@@ -55,7 +56,7 @@ class ImageManager(QObject):
         self.setup_ctrl = setup_ctrl
         self.preview_panel = preview_panel
         self.preprocessing_ctrl = preprocessing_ctrl
-        
+
         self._cached_image_path: Optional[str] = None
         self._cached_image_data: Optional[np.ndarray] = None
 

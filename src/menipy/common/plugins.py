@@ -11,7 +11,6 @@ from .registry import register_edge, register_pendant_approximator, register_sol
 from .plugin_db import PluginDB
 from ._module_loader import load_module_from_path
 
-
 _loaded = False
 
 
@@ -42,8 +41,16 @@ def _register_from_module(mod) -> None:
     _plugin_types = [
         ("EDGE_DETECTORS", "get_edge_detectors", _reg.register_edge),
         ("SOLVERS", "get_solvers", _reg.register_solver),
-        ("PENDANT_APPROXIMATORS", "get_pendant_approximators", _reg.register_pendant_approximator),
-        ("ACQUISITIONS", "get_acquisitions", getattr(_reg, "register_acquisition", None)),
+        (
+            "PENDANT_APPROXIMATORS",
+            "get_pendant_approximators",
+            _reg.register_pendant_approximator,
+        ),
+        (
+            "ACQUISITIONS",
+            "get_acquisitions",
+            getattr(_reg, "register_acquisition", None),
+        ),
         ("OPTIMIZERS", "get_optimizers", getattr(_reg, "register_optimizer", None)),
         ("PHYSICS", "get_physics", getattr(_reg, "register_physics", None)),
         ("OUTPUTS", "get_outputs", getattr(_reg, "register_output", None)),
@@ -98,7 +105,7 @@ def discover_into_db(db: PluginDB, plugin_dirs: Iterable[Path]) -> int:
         for path in d.glob("*.py"):
             # naive introspection: prefer filename as name
             name = path.stem
-            
+
             # Detect kind by filename keywords
             if "approximator" in name or "approximation" in name:
                 kind = "pendant_approximator"
@@ -113,7 +120,7 @@ def discover_into_db(db: PluginDB, plugin_dirs: Iterable[Path]) -> int:
             elif "drop" in name and "detect" in name:
                 kind = "drop_detector"
             elif "apex" in name:
-                 kind = "apex_detector"
+                kind = "apex_detector"
             elif "edge" in name:
                 kind = "edge"
             else:
@@ -134,7 +141,7 @@ def discover_into_db(db: PluginDB, plugin_dirs: Iterable[Path]) -> int:
 def load_active_plugins(db: PluginDB) -> int:
     """Load all ACTIVE plugins from SQLite and register them in the in-memory registry."""
     count = 0
-    
+
     # helper to load a single plugin row
     def _load_plugin(row):
         """_load_plugin."""
@@ -148,14 +155,17 @@ def load_active_plugins(db: PluginDB) -> int:
             if not p.exists():
                 raise FileNotFoundError(str(p))
 
-            mod_name = f"menipy_plugins.{name}" # Use consistent module naming
+            mod_name = f"menipy_plugins.{name}"  # Use consistent module naming
             mod = load_module_from_path(p, mod_name)
             _register_from_module(mod)
             return True
         except Exception as exc:
             logging.error(
                 "Failed to load %s plugin '%s' from %s: %s",
-                kind, name, file_path, exc,
+                kind,
+                name,
+                file_path,
+                exc,
             )
             return False
 
@@ -172,9 +182,9 @@ def discover_and_load_from_db(
     db: PluginDB, *, settings_key: str = "plugin_dirs"
 ) -> int:
     """Placeholder docstring for discover_and_load_from_db.
-    
+
     TODO: Complete docstring with full description.
-    
+
     Returns
     -------
     type

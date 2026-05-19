@@ -2,7 +2,6 @@
 
 Module implementation."""
 
-
 from __future__ import annotations
 
 import numpy as np
@@ -88,7 +87,9 @@ def compute_sessile_metrics(
             x_max = float(max(p1[0], p2[0]))
             # Slightly expand search window to tolerate detection noise
             pad = 0.1 * (x_max - x_min + 1.0)
-            mask = (contour_2d[:, 0] >= (x_min - pad)) & (contour_2d[:, 0] <= (x_max + pad))
+            mask = (contour_2d[:, 0] >= (x_min - pad)) & (
+                contour_2d[:, 0] <= (x_max + pad)
+            )
             candidates = contour_2d[mask]
             if candidates.size > 0:
                 min_idx = int(np.argmin(candidates[:, 1]))

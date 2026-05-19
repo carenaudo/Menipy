@@ -2,6 +2,7 @@
 Minimal validation stage for the pendant pipeline.
 Basic QA: true if solver succeeded or geometry exists.
 """
+
 from __future__ import annotations
 
 from typing import Optional
@@ -22,7 +23,9 @@ def run(ctx: Context) -> Optional[Context]:
         Description.
     """
     ok = False
-    if getattr(ctx, "fit", None) and (ctx.fit or {}).get("solver", {}).get("success", False):
+    if getattr(ctx, "fit", None) and (ctx.fit or {}).get("solver", {}).get(
+        "success", False
+    ):
         ok = True
     elif getattr(ctx, "geometry", None) is not None:
         ok = True

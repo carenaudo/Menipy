@@ -1,4 +1,5 @@
 """Pipeline-specific settings panel for the sessile drop pipeline."""
+
 from __future__ import annotations
 
 from PySide6.QtWidgets import (
@@ -25,7 +26,11 @@ class PipelineSettingsWidget(QWidget):
 
         self._contact_method = QComboBox()
         self._contact_method.addItems(["tangent", "circle_fit", "spherical_cap"])
-        if settings.get("contact_angle_method") in ["tangent", "circle_fit", "spherical_cap"]:
+        if settings.get("contact_angle_method") in [
+            "tangent",
+            "circle_fit",
+            "spherical_cap",
+        ]:
             self._contact_method.setCurrentText(settings["contact_angle_method"])
         form.addRow("Contact angle method", self._contact_method)
 

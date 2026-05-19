@@ -17,7 +17,6 @@ from menipy.gui.controllers.preprocessing_controller import (
 )
 from menipy.gui.panels.preview_panel import PreviewPanel
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -70,6 +69,7 @@ class ImageMarkerHelper(QObject):
         # ------------------------------------------------------------------
         # Slots
         # ------------------------------------------------------------------
+
     def _on_point_clicked(self, point: QPointF, button: int, modifiers: int) -> None:
         if self._view is None:
             return

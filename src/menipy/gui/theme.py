@@ -8,43 +8,43 @@ for the ADSA application UI based on the design mockup.
 # =============================================================================
 # Background Colors
 # =============================================================================
-BG_PRIMARY = "#2B2B2B"      # Main window background
-BG_SECONDARY = "#353535"    # Panel backgrounds
-BG_TERTIARY = "#1A1A1A"     # Image viewer, darker areas
-BG_HOVER = "#404040"        # Hover state for interactive elements
+BG_PRIMARY = "#2B2B2B"  # Main window background
+BG_SECONDARY = "#353535"  # Panel backgrounds
+BG_TERTIARY = "#1A1A1A"  # Image viewer, darker areas
+BG_HOVER = "#404040"  # Hover state for interactive elements
 
 # =============================================================================
 # Accent Colors
 # =============================================================================
-ACCENT_BLUE = "#4A90E2"         # Primary actions, highlights, focus
-ACCENT_BLUE_HOVER = "#5BA3F5"   # Hover state for accent
-SUCCESS_GREEN = "#5CB85C"       # Calibrated, valid, success states
-WARNING_ORANGE = "#F0AD4E"      # Needs attention, warnings
-ERROR_RED = "#D9534F"           # Invalid, errors
+ACCENT_BLUE = "#4A90E2"  # Primary actions, highlights, focus
+ACCENT_BLUE_HOVER = "#5BA3F5"  # Hover state for accent
+SUCCESS_GREEN = "#5CB85C"  # Calibrated, valid, success states
+WARNING_ORANGE = "#F0AD4E"  # Needs attention, warnings
+ERROR_RED = "#D9534F"  # Invalid, errors
 
 # =============================================================================
 # Text Colors
 # =============================================================================
-TEXT_PRIMARY = "#E8E8E8"    # Main text
+TEXT_PRIMARY = "#E8E8E8"  # Main text
 TEXT_SECONDARY = "#A0A0A0"  # Labels, hints, disabled text
-TEXT_DISABLED = "#666666"   # Disabled state
+TEXT_DISABLED = "#666666"  # Disabled state
 
 # =============================================================================
 # Border Colors
 # =============================================================================
 BORDER_DEFAULT = "#4A4A4A"  # Default borders
-BORDER_FOCUS = "#4A90E2"    # Focused element borders
+BORDER_FOCUS = "#4A90E2"  # Focused element borders
 
 # =============================================================================
 # Overlay Colors (for image annotations)
 # =============================================================================
-OVERLAY_CONTOUR = "#FFFFFF"         # Drop contour - white
-OVERLAY_BASELINE = "#FF00FF"        # Detected baseline - magenta
-OVERLAY_CONTACT_POINT = "#FF0000"   # Contact points - red
-OVERLAY_ANGLE_LINE = "#00FFFF"      # Tangent lines - cyan
-OVERLAY_BOUNDING_BOX = "#FFFF00"    # Bounding box - yellow
-OVERLAY_ADVANCING = "#00FF00"       # Advancing angle (tilted) - green
-OVERLAY_RECEDING = "#FF8800"        # Receding angle (tilted) - orange
+OVERLAY_CONTOUR = "#FFFFFF"  # Drop contour - white
+OVERLAY_BASELINE = "#FF00FF"  # Detected baseline - magenta
+OVERLAY_CONTACT_POINT = "#FF0000"  # Contact points - red
+OVERLAY_ANGLE_LINE = "#00FFFF"  # Tangent lines - cyan
+OVERLAY_BOUNDING_BOX = "#FFFF00"  # Bounding box - yellow
+OVERLAY_ADVANCING = "#00FF00"  # Advancing angle (tilted) - green
+OVERLAY_RECEDING = "#FF8800"  # Receding angle (tilted) - orange
 
 # =============================================================================
 # Experiment Types
@@ -59,23 +59,23 @@ EXPERIMENT_DYNAMIC_CA = "dynamic_ca"
 # =============================================================================
 # Layout Constants
 # =============================================================================
-LEFT_PANEL_WIDTH = 300      # Setup panel width in pixels
-RIGHT_PANEL_WIDTH = 350     # Results panel width in pixels
-MIN_WINDOW_WIDTH = 1280     # Minimum window width
-MIN_WINDOW_HEIGHT = 720     # Minimum window height
-CARD_SPACING = 16           # Spacing between cards
-PANEL_MARGIN = 12           # Panel internal margins
+LEFT_PANEL_WIDTH = 300  # Setup panel width in pixels
+RIGHT_PANEL_WIDTH = 350  # Results panel width in pixels
+MIN_WINDOW_WIDTH = 1280  # Minimum window width
+MIN_WINDOW_HEIGHT = 720  # Minimum window height
+CARD_SPACING = 16  # Spacing between cards
+PANEL_MARGIN = 12  # Panel internal margins
 
 # =============================================================================
 # Animation Constants
 # =============================================================================
-TRANSITION_DURATION_MS = 200    # Default transition time
+TRANSITION_DURATION_MS = 200  # Default transition time
 NOTIFICATION_DISMISS_MS = 3000  # Auto-dismiss notification time
 
 # =============================================================================
 # Font Settings
 # =============================================================================
-FONT_FAMILY = "Segoe UI"    # Primary font (Windows)
+FONT_FAMILY = "Segoe UI"  # Primary font (Windows)
 FONT_SIZE_SMALL = 10
 FONT_SIZE_NORMAL = 12
 FONT_SIZE_LARGE = 14

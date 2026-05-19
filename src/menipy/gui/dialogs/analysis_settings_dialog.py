@@ -3,6 +3,7 @@ Analysis Settings Dialog
 
 Generic dialog that wraps waiting for pipeline steps selection and configuration.
 """
+
 from __future__ import annotations
 
 from importlib import import_module
@@ -26,7 +27,11 @@ from PySide6.QtWidgets import (
     QGroupBox,
 )
 
-from menipy.models.config import PreprocessingSettings, EdgeDetectionSettings, PhysicsParams
+from menipy.models.config import (
+    PreprocessingSettings,
+    EdgeDetectionSettings,
+    PhysicsParams,
+)
 from menipy.gui.dialogs.preprocessing_config_dialog import PreprocessingConfigDialog
 from menipy.gui.dialogs.physics_config_dialog import PhysicsConfigDialog
 from menipy.gui.dialogs.geometry_config_dialog import GeometryConfigDialog
@@ -58,22 +63,28 @@ class AnalysisSettingsDialog(QDialog):
         self._preproc = saved.get("preproc") or preprocessing or PreprocessingSettings()
         self._edge = saved.get("edge") or edge or EdgeDetectionSettings()
         self._pipeline_settings_dict = saved.get("pipeline") or pipeline_settings or {}
-        
+
         # Load other settings from dict if present, or defaults
-        self._physics_params = PhysicsParams(**self._pipeline_settings_dict.get("physics", {}))
+        self._physics_params = PhysicsParams(
+            **self._pipeline_settings_dict.get("physics", {})
+        )
         self._geometry_config = self._pipeline_settings_dict.get("geometry_config", {})
         self._overlay_config = self._pipeline_settings_dict.get("overlay_config", {})
-        
+
         # Pipeline metadata for steps
         self._pipeline_class = PIPELINE_MAP.get(self._pipeline_name.lower())
-        self._ui_metadata = getattr(self._pipeline_class, "ui_metadata", {}) if self._pipeline_class else {}
-        
+        self._ui_metadata = (
+            getattr(self._pipeline_class, "ui_metadata", {})
+            if self._pipeline_class
+            else {}
+        )
+
         # Determine available stages from pipeline metadata or fallback
         self._available_stages = self._ui_metadata.get("stages", [])
         if not self._available_stages and self._pipeline_class:
             # Fallback to DEFAULT_SEQ if no metadata
             self._available_stages = [n for n, _ in self._pipeline_class.DEFAULT_SEQ]
-            
+
         # Determine enabled stages
         # Default to all if not specified in settings
         self._enabled_stages = set(
@@ -81,7 +92,7 @@ class AnalysisSettingsDialog(QDialog):
         )
 
         self._tabs_map = {}  # Map stage name -> QWidget tab
-        
+
         self._build_ui()
         self._update_tabs_visibility()
 
@@ -97,7 +108,7 @@ class AnalysisSettingsDialog(QDialog):
         # Create tabs for all potential stages
         # We create them all once, then show/hide based on enabled status
         self._create_stage_tabs()
-        
+
         # Footer buttons
         buttons = QHBoxLayout()
         buttons.addStretch()
@@ -114,81 +125,82 @@ class AnalysisSettingsDialog(QDialog):
         """Iterate over available stages and create tabs for relevant ones."""
         # Define a consistent order or use the pipeline order
         # We can use _available_stages for order
-        
+
         seen_stages = set()
-        
+
         for stage in self._available_stages:
-            if stage in seen_stages: 
-                continue # Avoid dups
-            
+            if stage in seen_stages:
+                continue  # Avoid dups
+
             seen_stages.add(stage)
             tab_widget = None
             tab_title = stage.replace("_", " ").title()
-            
+
             if stage == "preprocessing":
                 tab_widget = self._build_preproc_tab()
-            
+
             elif stage in ("contour_extraction", "edge_detection"):
-                 # Share the same tab builder
-                 tab_widget = self._build_edge_tab()
-                 tab_title = "Edge Detection" # Nicer name
-                 
+                # Share the same tab builder
+                tab_widget = self._build_edge_tab()
+                tab_title = "Edge Detection"  # Nicer name
+
             elif stage == "geometric_features":
                 tab_widget = self._build_geometry_tab()
                 tab_title = "Geometry"
-            
+
             elif stage == "physics":
                 tab_widget = self._build_physics_tab()
                 tab_title = "Physics"
-                
+
             elif stage == "overlay":
-                 tab_widget = self._build_overlay_tab()
-                 tab_title = "Overlay"
-                 
+                tab_widget = self._build_overlay_tab()
+                tab_title = "Overlay"
+
             elif stage == "contour_refinement":
                 # For now optional, maybe just a placeholder or simple settings
                 # Leaving blank/None means no tab created for this stage
-                pass 
-                
+                pass
+
             elif stage == "calibration":
                 # Calibration usually happens via wizard, but maybe manual params?
                 pass
-                
+
             # Check for generic/custom if not handled above
             if tab_widget is None:
-                 # Try optional custom builder or pipeline-specific overrides?
-                 # For now, skip unhandled steps
-                 pass
-            
+                # Try optional custom builder or pipeline-specific overrides?
+                # For now, skip unhandled steps
+                pass
+
             if tab_widget:
                 self._tabs.addTab(tab_widget, tab_title)
                 self._tabs_map[stage] = tab_widget
-                
+
         # Finally, Pipeline-specific custom tab (always added if exists)
         self._pipeline_widget = self._build_pipeline_custom_tab()
         if self._pipeline_widget:
-            self._tabs.addTab(self._pipeline_widget, f"{self._pipeline_name.title()} specific")
+            self._tabs.addTab(
+                self._pipeline_widget, f"{self._pipeline_name.title()} specific"
+            )
             # Map this to a special key
             self._tabs_map["__pipeline_custom__"] = self._pipeline_widget
-
 
     def _build_steps_tab(self) -> QWidget:
         """Create the tab for selecting enabled pipeline steps."""
         w = QWidget()
         layout = QVBoxLayout(w)
         layout.setContentsMargins(16, 16, 16, 16)
-        
+
         info = QLabel("Select the analysis steps to perform:")
         info.setStyleSheet("font-weight: bold; margin-bottom: 8px;")
         layout.addWidget(info)
-        
+
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QScrollArea.Shape.NoFrame)
         content = QWidget()
         v = QVBoxLayout(content)
         v.setSpacing(10)
-        
+
         stage_names = {
             "acquisition": "Image Acquisition",
             "preprocessing": "Preprocessing",
@@ -203,26 +215,26 @@ class AnalysisSettingsDialog(QDialog):
             "overlay": "Result Overlay",
             "validation": "Validation",
         }
-        
+
         self._stage_checkboxes = {}
-        
+
         for stage in self._available_stages:
             name = stage_names.get(stage, stage.replace("_", " ").title())
             chk = QCheckBox(name)
             chk.setChecked(stage in self._enabled_stages)
             chk.stateChanged.connect(lambda s, st=stage: self._on_step_toggled(st, s))
-            
+
             if stage == "acquisition":
                 chk.setEnabled(False)
                 chk.setChecked(True)
-                
+
             v.addWidget(chk)
             self._stage_checkboxes[stage] = chk
-            
+
         v.addStretch()
         scroll.setWidget(content)
         layout.addWidget(scroll)
-        
+
         # Helper buttons
         btn_layout = QHBoxLayout()
         btn_all = QPushButton("Select All")
@@ -233,11 +245,11 @@ class AnalysisSettingsDialog(QDialog):
         btn_layout.addWidget(btn_none)
         btn_layout.addStretch()
         layout.addLayout(btn_layout)
-        
+
         return w
 
     def _on_step_toggled(self, stage: str, state: int):
-        checked = (state == Qt.CheckState.Checked.value)
+        checked = state == Qt.CheckState.Checked.value
         if checked:
             self._enabled_stages.add(stage)
         else:
@@ -263,16 +275,18 @@ class AnalysisSettingsDialog(QDialog):
                 # Or assume it relies on 'profile_fitting' or similar?
                 # For now let's always show it if it exists
                 continue
-                
+
             idx = self._tabs.indexOf(widget)
             if idx >= 0:
                 is_enabled = stage in self._enabled_stages
                 # Edge detection alias
-                if stage == "contour_extraction": 
-                    is_enabled = is_enabled or ("edge_detection" in self._enabled_stages)
-                
+                if stage == "contour_extraction":
+                    is_enabled = is_enabled or (
+                        "edge_detection" in self._enabled_stages
+                    )
+
                 self._tabs.setTabVisible(idx, is_enabled)
-                
+
     # --- Tab Builders ---
 
     def _build_preproc_tab(self) -> QWidget:
@@ -302,12 +316,19 @@ class AnalysisSettingsDialog(QDialog):
 
         # Import specific registry for edge detectors
         from menipy.common.registry import EDGE_DETECTORS
-        
+
         # Get available methods from registry, fallback to defaults if empty
         methods = sorted(EDGE_DETECTORS.keys())
         if not methods:
-            methods = ["canny", "sobel", "scharr", "laplacian", "threshold", "active_contour"]
-            
+            methods = [
+                "canny",
+                "sobel",
+                "scharr",
+                "laplacian",
+                "threshold",
+                "active_contour",
+            ]
+
         self._edge_method = QComboBox()
         self._edge_method.addItems(methods)
         self._edge_method.setCurrentText(self._edge.method)
@@ -320,7 +341,7 @@ class AnalysisSettingsDialog(QDialog):
 
         # Add some summary text or status if desired?
         # For now, just the button as requested.
-        
+
         return w
 
     def _configure_edge_parameters(self):
@@ -328,16 +349,19 @@ class AnalysisSettingsDialog(QDialog):
         # Ensure current method selection is synced
         method = self._edge_method.currentText()
         self._edge.method = method
-        
+
         from menipy.common.plugin_settings import get_detector_settings_model
         from menipy.gui.dialogs.plugin_config_dialog import PluginConfigDialog
-        
+
         plugin_model = get_detector_settings_model(method)
-        
+
         if not plugin_model:
             # Fallback for unconfigured methods
             from PySide6.QtWidgets import QMessageBox
-            QMessageBox.information(self, "Configuration", f"No specific settings for '{method}'.")
+
+            QMessageBox.information(
+                self, "Configuration", f"No specific settings for '{method}'."
+            )
             return
 
         # Prepare defaults from legacy fields to ensure UI reflects current state
@@ -348,138 +372,164 @@ class AnalysisSettingsDialog(QDialog):
                 "threshold1": s.canny_threshold1,
                 "threshold2": s.canny_threshold2,
                 "aperture_size": s.canny_aperture_size,
-                "L2gradient": s.canny_L2_gradient
+                "L2gradient": s.canny_L2_gradient,
             }
         elif method == "threshold":
             defaults = {
                 "threshold_value": s.threshold_value,
                 "max_value": s.threshold_max_value,
-                "type": s.threshold_type
+                "type": s.threshold_type,
             }
         elif method == "sobel":
             defaults = {
                 "kernel_size": s.sobel_kernel_size,
                 "threshold_value": s.threshold_value,
-                "max_value": s.threshold_max_value
+                "max_value": s.threshold_max_value,
             }
         elif method == "scharr":
             defaults = {
                 "threshold_value": s.threshold_value,
-                "max_value": s.threshold_max_value
+                "max_value": s.threshold_max_value,
             }
         elif method == "laplacian":
             defaults = {
                 "kernel_size": s.laplacian_kernel_size,
                 "threshold_value": s.threshold_value,
-                "max_value": s.threshold_max_value
+                "max_value": s.threshold_max_value,
             }
         elif method in ("legacy_snake", "active_contour", "improved_snake"):
             defaults = {
                 "iterations": s.snake_iterations,
                 "alpha": s.snake_alpha,
                 "beta": s.snake_beta,
-                "gamma": s.snake_gamma
+                "gamma": s.snake_gamma,
             }
 
         # Resolve current settings: plugin specific takes precedence?
         # Actually, legacy fields are the "true" state for core methods currently.
-        # So defaults (legacy) should override stored plugin_settings if present, 
+        # So defaults (legacy) should override stored plugin_settings if present,
         # unless we consider plugin_settings the new truth?
         # Let's assume legacy fields are strict master for now.
-        
+
         saved_data = s.plugin_settings.get(method, {})
         # Start with saved, update with legacy defaults
         current_data = saved_data.copy()
         current_data.update(defaults)
-        
+
         dlg = PluginConfigDialog(plugin_model, current_data, parent=self)
         if dlg.exec():
             new_settings = dlg.get_settings()
-            
+
             # 1. Update plugin_settings dict
             if self._edge.plugin_settings is None:
                 self._edge.plugin_settings = {}
             self._edge.plugin_settings[method] = new_settings
-            
+
             # 2. Scync BACK to legacy fields
             if method == "canny":
                 s.canny_threshold1 = new_settings.get("threshold1", s.canny_threshold1)
                 s.canny_threshold2 = new_settings.get("threshold2", s.canny_threshold2)
-                s.canny_aperture_size = new_settings.get("aperture_size", s.canny_aperture_size)
-                s.canny_L2_gradient = new_settings.get("L2gradient", s.canny_L2_gradient)
+                s.canny_aperture_size = new_settings.get(
+                    "aperture_size", s.canny_aperture_size
+                )
+                s.canny_L2_gradient = new_settings.get(
+                    "L2gradient", s.canny_L2_gradient
+                )
             elif method == "threshold":
-                s.threshold_value = new_settings.get("threshold_value", s.threshold_value)
-                s.threshold_max_value = new_settings.get("max_value", s.threshold_max_value)
+                s.threshold_value = new_settings.get(
+                    "threshold_value", s.threshold_value
+                )
+                s.threshold_max_value = new_settings.get(
+                    "max_value", s.threshold_max_value
+                )
                 s.threshold_type = new_settings.get("type", s.threshold_type)
             elif method == "sobel":
-                s.sobel_kernel_size = new_settings.get("kernel_size", s.sobel_kernel_size)
-                s.threshold_value = new_settings.get("threshold_value", s.threshold_value)
-                s.threshold_max_value = new_settings.get("max_value", s.threshold_max_value)
+                s.sobel_kernel_size = new_settings.get(
+                    "kernel_size", s.sobel_kernel_size
+                )
+                s.threshold_value = new_settings.get(
+                    "threshold_value", s.threshold_value
+                )
+                s.threshold_max_value = new_settings.get(
+                    "max_value", s.threshold_max_value
+                )
             elif method == "scharr":
-                s.threshold_value = new_settings.get("threshold_value", s.threshold_value)
-                s.threshold_max_value = new_settings.get("max_value", s.threshold_max_value)
+                s.threshold_value = new_settings.get(
+                    "threshold_value", s.threshold_value
+                )
+                s.threshold_max_value = new_settings.get(
+                    "max_value", s.threshold_max_value
+                )
             elif method == "laplacian":
-                s.laplacian_kernel_size = new_settings.get("kernel_size", s.laplacian_kernel_size)
-                s.threshold_value = new_settings.get("threshold_value", s.threshold_value)
-                s.threshold_max_value = new_settings.get("max_value", s.threshold_max_value)
+                s.laplacian_kernel_size = new_settings.get(
+                    "kernel_size", s.laplacian_kernel_size
+                )
+                s.threshold_value = new_settings.get(
+                    "threshold_value", s.threshold_value
+                )
+                s.threshold_max_value = new_settings.get(
+                    "max_value", s.threshold_max_value
+                )
             elif method in ("legacy_snake", "active_contour", "improved_snake"):
                 s.snake_iterations = new_settings.get("iterations", s.snake_iterations)
                 s.snake_alpha = new_settings.get("alpha", s.snake_alpha)
                 s.snake_beta = new_settings.get("beta", s.snake_beta)
                 s.snake_gamma = new_settings.get("gamma", s.snake_gamma)
-        
+
     def _build_physics_tab(self) -> QWidget:
         """Tab for PhysicsParams using PhysicsConfigDialog."""
         w = QWidget()
         v = QVBoxLayout(w)
         v.setContentsMargins(12, 12, 12, 12)
-        
+
         lbl = QLabel("Configure physical parameters (density, gravity, etc).")
         v.addWidget(lbl)
-        
-        self._physics_summary = QLabel(str(self._physics_params)) # Just basic str for now
+
+        self._physics_summary = QLabel(
+            str(self._physics_params)
+        )  # Just basic str for now
         self._physics_summary.setWordWrap(True)
         self._physics_summary.setStyleSheet("color: #7f8c8d;")
         v.addWidget(self._physics_summary)
-        
+
         btn = QPushButton("Configure Physics...")
         btn.clicked.connect(self._open_physics_dialog)
         v.addWidget(btn)
         v.addStretch(1)
         return w
-        
+
     def _build_geometry_tab(self) -> QWidget:
         """Tab for Geometry settings using GeometryConfigDialog."""
         w = QWidget()
         v = QVBoxLayout(w)
         v.setContentsMargins(12, 12, 12, 12)
-        
+
         lbl = QLabel("Configure geometry and detector options.")
         v.addWidget(lbl)
-        
+
         self._geometry_summary = QLabel(f"Config: {len(self._geometry_config)} keys")
         self._geometry_summary.setStyleSheet("color: #7f8c8d;")
         v.addWidget(self._geometry_summary)
-        
+
         btn = QPushButton("Configure Geometry...")
         btn.clicked.connect(self._open_geometry_dialog)
         v.addWidget(btn)
         v.addStretch(1)
         return w
-        
+
     def _build_overlay_tab(self) -> QWidget:
         """Tab for Overlay settings using OverlayConfigDialog."""
         w = QWidget()
         v = QVBoxLayout(w)
         v.setContentsMargins(12, 12, 12, 12)
-        
+
         lbl = QLabel("Configure result overlay styling.")
         v.addWidget(lbl)
-        
+
         self._overlay_summary = QLabel(f"Overlay style configured.")
         self._overlay_summary.setStyleSheet("color: #7f8c8d;")
         v.addWidget(self._overlay_summary)
-        
+
         btn = QPushButton("Configure Overlay...")
         btn.clicked.connect(self._open_overlay_dialog)
         v.addWidget(btn)
@@ -488,12 +538,16 @@ class AnalysisSettingsDialog(QDialog):
 
     def _build_pipeline_custom_tab(self) -> Optional[QWidget]:
         """Load pipeline-specific settings widget if available."""
-        module_name = f"menipy.gui.dialogs.analysis_settings.{self._pipeline_name}_settings"
+        module_name = (
+            f"menipy.gui.dialogs.analysis_settings.{self._pipeline_name}_settings"
+        )
         try:
             mod = import_module(module_name)
             widget_cls = getattr(mod, "PipelineSettingsWidget", None)
             if widget_cls:
-                self._pipeline_widget = widget_cls(parent=self, settings=self._pipeline_settings_dict)
+                self._pipeline_widget = widget_cls(
+                    parent=self, settings=self._pipeline_settings_dict
+                )
                 return self._pipeline_widget
         except ModuleNotFoundError:
             pass
@@ -518,23 +572,24 @@ class AnalysisSettingsDialog(QDialog):
     def _open_geometry_dialog(self):
         dlg = GeometryConfigDialog(parent=self)
         dlg.set_config(self._geometry_config)
-        dlg.configApplied.connect(lambda cfg: setattr(self, '_geometry_config', cfg))
+        dlg.configApplied.connect(lambda cfg: setattr(self, "_geometry_config", cfg))
         if dlg.exec():
             # Already handled by signal or just update on accept
-             pass
+            pass
         # After exec, assume configApplied handled it or get it
         self._geometry_config = dlg.get_config()
-        self._geometry_summary.setText(f"Detector: {self._geometry_config.get('detector')}")
+        self._geometry_summary.setText(
+            f"Detector: {self._geometry_config.get('detector')}"
+        )
 
     def _open_overlay_dialog(self):
         """_open_overlay_dialog."""
         dlg = OverlayConfigDialog(parent=self)
         dlg.set_config(self._overlay_config)
-        dlg.configApplied.connect(lambda cfg: setattr(self, '_overlay_config', cfg))
+        dlg.configApplied.connect(lambda cfg: setattr(self, "_overlay_config", cfg))
         if dlg.exec():
             pass
         self._overlay_config = dlg.get_config()
-
 
     def _preproc_summary(self) -> str:
         """_preproc_summary."""
@@ -551,8 +606,16 @@ class AnalysisSettingsDialog(QDialog):
             return {}
         try:
             data = json.loads(raw)
-            pre = PreprocessingSettings(**data.get("preproc", {})) if data.get("preproc") else None
-            edge = EdgeDetectionSettings(**data.get("edge", {})) if data.get("edge") else None
+            pre = (
+                PreprocessingSettings(**data.get("preproc", {}))
+                if data.get("preproc")
+                else None
+            )
+            edge = (
+                EdgeDetectionSettings(**data.get("edge", {}))
+                if data.get("edge")
+                else None
+            )
             pipe = data.get("pipeline") or {}
             # We don't unpack physics/overlay from 'pipeline' key here directly, caller init takes care of defaults
             return {"preproc": pre, "edge": edge, "pipeline": pipe}
@@ -563,7 +626,7 @@ class AnalysisSettingsDialog(QDialog):
         """Persist current selections to QSettings."""
         # Update pipeline settings with all sub-configs
         pipe_settings = self.pipeline_settings() or {}
-        
+
         payload = {
             "preproc": self._preproc.model_dump(),
             "edge": self.edge_settings().model_dump(),
@@ -594,11 +657,11 @@ class AnalysisSettingsDialog(QDialog):
         settings = {}
         if self._pipeline_widget and hasattr(self._pipeline_widget, "get_settings"):
             settings = self._pipeline_widget.get_settings() or {}
-        
+
         # Merge all our dynamic tabs
         settings["enabled_stages"] = list(self._enabled_stages)
         settings["physics"] = self._physics_params.model_dump()
         settings["geometry_config"] = self._geometry_config
         settings["overlay_config"] = self._overlay_config
-        
+
         return settings

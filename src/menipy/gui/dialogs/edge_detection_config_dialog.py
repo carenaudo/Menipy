@@ -73,7 +73,7 @@ class EdgeDetectionConfigDialog(QDialog):
         # Indices: 0=General, 1=Canny, 2=Threshold, 3=Sobel/etc, 4=Result?, 5=Refinement?, 6=Interface
         # This is brittle relying on order, but _build_ui defines order.
         # General=0, Canny=1, Threshold=2, Sobel=3, Active=4, Refinement=5, Interface=6
-        
+
         if method == "canny":
             self.pages.setCurrentIndex(1)
         elif method == "threshold":
@@ -153,8 +153,7 @@ class EdgeDetectionConfigDialog(QDialog):
         self.preview_label.setScaledContents(True)
         pages_layout.addWidget(self.preview_label)
 
-        self.setStyleSheet(
-            """
+        self.setStyleSheet("""
             QFrame#navFrame, QFrame#pagesFrame {
                 background-color: palette(base);
                 border: 1px solid palette(mid);
@@ -174,8 +173,7 @@ class EdgeDetectionConfigDialog(QDialog):
             QPushButton {
                 min-width: 110px;
             }
-            """
-        )
+            """)
 
         self._build_general_page()
         self._build_canny_page()
@@ -219,11 +217,16 @@ class EdgeDetectionConfigDialog(QDialog):
         self.method_combo = QComboBox(widget)
         # Core methods
         core_methods = [
-            "canny", "sobel", "scharr", "laplacian", "threshold", "active_contour"
+            "canny",
+            "sobel",
+            "scharr",
+            "laplacian",
+            "threshold",
+            "active_contour",
         ]
         for label in core_methods:
             self.method_combo.addItem(label)
-            
+
         # Plugin methods
         for name in EDGE_DETECTORS.keys():
             if name not in core_methods:
@@ -384,7 +387,9 @@ class EdgeDetectionConfigDialog(QDialog):
     def _build_plugin_page(self) -> None:
         """Page for dynamic plugin settings."""
         self.plugin_settings_widget = PluginSettingsWidget(self)
-        self.plugin_settings_widget.settingsChanged.connect(self._on_plugin_settings_changed)
+        self.plugin_settings_widget.settingsChanged.connect(
+            self._on_plugin_settings_changed
+        )
         self.pages.addWidget(self.plugin_settings_widget)
 
     # ------------------------------------------------------------------
@@ -415,7 +420,14 @@ class EdgeDetectionConfigDialog(QDialog):
 
         # Load plugin settings into widget if current method is a plugin
         current_method = s.method
-        if current_method not in ["canny", "sobel", "scharr", "laplacian", "threshold", "active_contour"]:
+        if current_method not in [
+            "canny",
+            "sobel",
+            "scharr",
+            "laplacian",
+            "threshold",
+            "active_contour",
+        ]:
             # It's a plugin or unhandled
             plugin_config = s.plugin_settings.get(current_method, {})
             self.plugin_settings_widget.set_plugin(current_method, plugin_config)
@@ -585,22 +597,29 @@ class EdgeDetectionConfigDialog(QDialog):
         self.solid_interface_proximity_spin.setEnabled(
             enabled and self.detect_solid_interface_checkbox.isChecked()
         )
-        
+
         # Check if we should switch to plugin page
-        core_methods = {"canny", "sobel", "scharr", "laplacian", "threshold", "active_contour"}
+        core_methods = {
+            "canny",
+            "sobel",
+            "scharr",
+            "laplacian",
+            "threshold",
+            "active_contour",
+        }
         if method not in core_methods and enabled:
-             # It is a plugin
-             if self.pages.currentWidget() != self.plugin_settings_widget:
-                 self.pages.setCurrentWidget(self.plugin_settings_widget)
-                 # Also refresh the widget content if needed, though usually handled by load_settings or manual trigger
-                 # We trigger a reload of settings for this plugin
-                 current_config = self._settings.plugin_settings.get(method, {})
-                 self.plugin_settings_widget.set_plugin(method, current_config)
-             
-             # Disable other pages in list? Or just let stacked widget handle view.
-             # Ideally we highlight "Plugin Settings" in list if we added it, but we didn't add it to the list.
-             # Instead we are hijacking the view.
-             
+            # It is a plugin
+            if self.pages.currentWidget() != self.plugin_settings_widget:
+                self.pages.setCurrentWidget(self.plugin_settings_widget)
+                # Also refresh the widget content if needed, though usually handled by load_settings or manual trigger
+                # We trigger a reload of settings for this plugin
+                current_config = self._settings.plugin_settings.get(method, {})
+                self.plugin_settings_widget.set_plugin(method, current_config)
+
+            # Disable other pages in list? Or just let stacked widget handle view.
+            # Ideally we highlight "Plugin Settings" in list if we added it, but we didn't add it to the list.
+            # Instead we are hijacking the view.
+
         elif enabled:
             # If it's a core method, ensure we are not on plugin page (unless user clicked it?)
             # The list widget drives the page, but we want method combo to ALSO drive the page?
@@ -619,10 +638,9 @@ class EdgeDetectionConfigDialog(QDialog):
             if self._settings.plugin_settings is None:
                 self._settings.plugin_settings = {}
             self._settings.plugin_settings[method] = new_settings
-            
-            # Trigger preview if auto-preview is desired?
-            # self._on_preview() 
 
+            # Trigger preview if auto-preview is desired?
+            # self._on_preview()
 
     # ------------------------------------------------------------------
     # Public accessors

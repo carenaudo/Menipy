@@ -53,6 +53,7 @@ def _discover_pipelines_from_subdirs():
 
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 PIPELINE_MAP = _discover_pipelines_from_subdirs()

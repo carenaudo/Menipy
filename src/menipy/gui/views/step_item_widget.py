@@ -137,16 +137,13 @@ class StepItemWidget(QWidget):
             self.style().polish(self)
             return
         color = _STATUS_COLORS[status]
-        self.statusLbl.setStyleSheet(
-            f"background-color: {color}; border-radius: 5px;"
-        )
+        self.statusLbl.setStyleSheet(f"background-color: {color}; border-radius: 5px;")
         self.statusLbl.setToolTip(status.title())
         self.style().unpolish(self)
         self.style().polish(self)
 
     def _apply_widget_style(self) -> None:
-        self.setStyleSheet(
-            """
+        self.setStyleSheet("""
             QWidget[stepState="pending"] {
                 background: #ffffff;
                 border: 1px solid #d7dde5;
@@ -196,5 +193,4 @@ class StepItemWidget(QWidget):
                 background: #f1f5f9;
                 border-color: #e2e8f0;
             }
-            """
-        )
+            """)

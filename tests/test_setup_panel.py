@@ -2,7 +2,6 @@
 
 Unit tests."""
 
-
 import pytest
 from menipy.gui.main_window import MainWindow
 from menipy.gui.controllers.setup_panel_controller import SetupPanelController

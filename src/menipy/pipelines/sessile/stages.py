@@ -2,7 +2,6 @@
 
 Module implementation."""
 
-
 from __future__ import annotations
 
 import logging
@@ -52,7 +51,14 @@ class SessilePipeline(PipelineBase):
         "display_name": "Sessile Drop",
         "icon": "sessile.svg",
         "color": "#4A90E2",
-        "stages": ["acquisition", "contour_extraction", "contour_refinement", "geometric_features", "overlay", "physics"],
+        "stages": [
+            "acquisition",
+            "contour_extraction",
+            "contour_refinement",
+            "geometric_features",
+            "overlay",
+            "physics",
+        ],
         "calibration_params": [
             "needle_diameter_mm",
             "drop_density_kg_m3",
@@ -65,6 +71,7 @@ class SessilePipeline(PipelineBase):
     def do_acquisition(self, ctx: Context) -> Optional[Context]:
         """Load frames from disk or wrap existing image in frames."""
         from menipy.common.acquisition_stage import do_acquisition
+
         return do_acquisition(ctx, self.logger)
 
     def do_preprocessing(self, ctx: Context) -> Optional[Context]:
@@ -73,6 +80,7 @@ class SessilePipeline(PipelineBase):
             fn = registry.PREPROCESSORS[self.preprocessor_name]
             return fn(ctx) or ctx
         from menipy.pipelines.sessile.preprocessing import do_preprocessing
+
         return do_preprocessing(ctx)
 
     def do_contour_extraction(self, ctx: Context) -> Optional[Context]:
@@ -81,6 +89,7 @@ class SessilePipeline(PipelineBase):
         drop_contour = getattr(ctx, "drop_contour", None)
         if drop_contour is not None:
             from menipy.models.geometry import Contour
+
             if isinstance(drop_contour, Contour):
                 ctx.contour = Contour(
                     xy=_contour_to_xy(drop_contour.xy),
@@ -91,13 +100,13 @@ class SessilePipeline(PipelineBase):
                 )
             else:
                 ctx.contour = Contour(xy=_contour_to_xy(drop_contour))
-            
+
             logger.info("Using pre-detected drop contour from calibration")
             return ctx
 
         from menipy.common import edge_detection
         from menipy.models.config import EdgeDetectionSettings
-        
+
         # Use custom edge detector if specified
         if self.edge_detector_name:
             settings = self.edge_detection_settings or EdgeDetectionSettings()
@@ -113,18 +122,19 @@ class SessilePipeline(PipelineBase):
         # If using pre-detected contour, skip clipping to preserve the closed polygon
         if getattr(ctx, "drop_contour", None) is not None:
             # Still apply smoothing if enabled
-            smoothing_settings = getattr(ctx, 'contour_smoothing_settings', None)
+            smoothing_settings = getattr(ctx, "contour_smoothing_settings", None)
             if smoothing_settings and smoothing_settings.enabled:
                 from menipy.common import contour_smoothing
+
                 ctx = contour_smoothing.run(ctx, smoothing_settings)
             return ctx
-            
+
         xy = ensure_contour(ctx)
-        
+
         substrate_line = getattr(ctx, "substrate_line", None)
         if not substrate_line:
             return ctx
-            
+
         # Get apex for reference
         x, y = xy[:, 0], xy[:, 1]
         if getattr(ctx, "apex_point", None) is not None:
@@ -135,25 +145,29 @@ class SessilePipeline(PipelineBase):
         else:
             apex_i = int(np.argmin(y))
             apex_xy = (float(x[apex_i]), float(y[apex_i]))
-        
+
         from .geometry import clip_contour_to_substrate
-        
-        xy, refined_contact_points = clip_contour_to_substrate(xy, substrate_line, apex_xy)
-        
+
+        xy, refined_contact_points = clip_contour_to_substrate(
+            xy, substrate_line, apex_xy
+        )
+
         # Update contour in context
         from menipy.models.geometry import Contour
+
         ctx.contour = Contour(xy=xy)
-        
+
         # Store refined contact points for use in geometric_features
         if refined_contact_points:
             ctx.contact_points = refined_contact_points
-        
+
         # Apply optional contour smoothing
-        smoothing_settings = getattr(ctx, 'contour_smoothing_settings', None)
+        smoothing_settings = getattr(ctx, "contour_smoothing_settings", None)
         if smoothing_settings and smoothing_settings.enabled:
             from menipy.common import contour_smoothing
+
             ctx = contour_smoothing.run(ctx, smoothing_settings)
-            
+
         return ctx
 
     def do_geometric_features(self, ctx: Context) -> Optional[Context]:
@@ -193,15 +207,15 @@ class SessilePipeline(PipelineBase):
             px_per_mm = ctx.px_per_mm
         else:
             px_per_mm = 1.0
-            
+
         # Get contact angle method
         contact_angle_method = getattr(ctx, "contact_angle_method", "tangent")
         if contact_angle_method not in ["tangent", "circle_fit", "spherical_cap"]:
             contact_angle_method = "tangent"
-        
+
         # Get contact points (may have been set by contour_refinement)
         use_contact_points = getattr(ctx, "contact_points", None)
-        
+
         from .metrics import compute_sessile_metrics
 
         # Compute metrics (will be stored in ctx.results by compute_metrics stage)
@@ -216,7 +230,7 @@ class SessilePipeline(PipelineBase):
             contact_angle_method=contact_angle_method,
             contact_points=use_contact_points,
         )
-        
+
         # Store metrics temporarily for compute_metrics stage
         ctx._sessile_metrics = metrics
 
@@ -239,8 +253,10 @@ class SessilePipeline(PipelineBase):
     def do_profile_fitting(self, ctx: Context) -> Optional[Context]:
         """Fit spherical Young-Laplace profile."""
         integrator = get_solver(self.solver_name, fallback=young_laplace_default)
-        assert integrator is not None, f"Solver {self.solver_name} not found and no fallback available."
-        
+        assert (
+            integrator is not None
+        ), f"Solver {self.solver_name} not found and no fallback available."
+
         # New ODE solver requires [R0_mm, beta]. beta ~ 0.5 for a typical drop
         cfg = FitConfig(
             x0=[20.0, 0.1],
@@ -249,7 +265,7 @@ class SessilePipeline(PipelineBase):
             distance="pointwise",
             param_names=["R0_mm", "beta"],
         )
-        
+
         common_solver.run(ctx, integrator=integrator, config=cfg)
         return ctx
 
@@ -268,11 +284,11 @@ class SessilePipeline(PipelineBase):
             rmse = float("nan")
         if np.isfinite(rmse) and rmse > 25.0:
             res["fit_warning"] = "profile_fit_unreliable"
-        
+
         # Merge sessile metrics from geometric_features stage
         if hasattr(ctx, "_sessile_metrics") and ctx._sessile_metrics:
             res.update(ctx._sessile_metrics)
-        
+
         # Merge with existing results
         if hasattr(ctx, "results") and ctx.results:
             ctx.results.update(res)
@@ -282,75 +298,90 @@ class SessilePipeline(PipelineBase):
 
     def do_overlay(self, ctx: Context) -> Optional[Context]:
         xy = ensure_contour(ctx)
-        
+
         cmds = []
         if len(xy) > 0:
-            cmds.append({
-                "type": "polyline",
-                "points": xy.tolist(),
-                "closed": False,
-                "color": "green",
-                "thickness": 2
-            })
-            
-        if hasattr(ctx, "measurement_sequence") and ctx.measurement_sequence is not None:
-            cmds.append({
-                "type": "text", 
-                "p": (10, 15), 
-                "text": f"Measurement #{ctx.measurement_sequence}",
-                "color": "white",
-                "scale": 0.7,
-                "thickness": 2
-            })
-            
+            cmds.append(
+                {
+                    "type": "polyline",
+                    "points": xy.tolist(),
+                    "closed": False,
+                    "color": "green",
+                    "thickness": 2,
+                }
+            )
+
+        if (
+            hasattr(ctx, "measurement_sequence")
+            and ctx.measurement_sequence is not None
+        ):
+            cmds.append(
+                {
+                    "type": "text",
+                    "p": (10, 15),
+                    "text": f"Measurement #{ctx.measurement_sequence}",
+                    "color": "white",
+                    "scale": 0.7,
+                    "thickness": 2,
+                }
+            )
+
         if ctx.geometry:
             geom = ctx.geometry
             if geom.apex_xy:
-                cmds.append({
-                    "type": "circle",
-                    "center": geom.apex_xy,
-                    "radius": 5,
-                    "color": "blue",
-                    "thickness": -1
-                })
+                cmds.append(
+                    {
+                        "type": "circle",
+                        "center": geom.apex_xy,
+                        "radius": 5,
+                        "color": "blue",
+                        "thickness": -1,
+                    }
+                )
             if geom.axis_x is not None:
                 # Need an arbitrary Y for a vertical line (overlay handles lines in px space)
                 shape = (1000, 1000)
                 if ctx.image is not None and hasattr(ctx.image, "shape"):
                     shape = ctx.image.shape
-                cmds.append({
-                    "type": "line",
-                    "p1": (geom.axis_x, 0),
-                    "p2": (geom.axis_x, shape[0]),
-                    "color": "cyan",
-                    "thickness": 1
-                })
+                cmds.append(
+                    {
+                        "type": "line",
+                        "p1": (geom.axis_x, 0),
+                        "p2": (geom.axis_x, shape[0]),
+                        "color": "cyan",
+                        "thickness": 1,
+                    }
+                )
             if geom.baseline_y is not None:
                 shape = (1000, 1000)
                 if ctx.image is not None and hasattr(ctx.image, "shape"):
                     shape = ctx.image.shape
-                cmds.append({
-                    "type": "line",
-                    "p1": (0, geom.baseline_y),
-                    "p2": (shape[1], geom.baseline_y),
-                    "color": "yellow",
-                    "thickness": 1
-                })
-                
+                cmds.append(
+                    {
+                        "type": "line",
+                        "p1": (0, geom.baseline_y),
+                        "p2": (shape[1], geom.baseline_y),
+                        "color": "yellow",
+                        "thickness": 1,
+                    }
+                )
+
         if ctx.results:
             y_offset = 30
             for key in ["diameter_mm", "height_mm", "contact_angle_deg", "volume_uL"]:
                 if key in ctx.results:
                     val = ctx.results[key]
                     if isinstance(val, (int, float)):
-                        cmds.append({
-                            "type": "text", 
-                            "p": (10, y_offset), 
-                            "text": f"{key.replace('_', ' ').title()}: {val:.2f}",
-                            "color": "white",
-                            "scale": 0.6,
-                            "thickness": 2
-                        })
+                        cmds.append(
+                            {
+                                "type": "text",
+                                "p": (10, y_offset),
+                                "text": f"{key.replace('_', ' ').title()}: {val:.2f}",
+                                "color": "white",
+                                "scale": 0.6,
+                                "thickness": 2,
+                            }
+                        )
                         y_offset += 25
-                        
+
         return ovl.run(ctx, commands=cmds, alpha=0.6)

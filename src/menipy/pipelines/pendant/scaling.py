@@ -2,6 +2,7 @@
 Minimal scaling stage for the pendant pipeline.
 Sets a conservative default `px_per_mm` if none is present.
 """
+
 from __future__ import annotations
 
 from menipy.models.context import Context

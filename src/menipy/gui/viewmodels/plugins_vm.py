@@ -17,9 +17,9 @@ class PluginsViewModel(QObject):
 
     def refresh(self):
         """Placeholder docstring for refresh.
-    
+
         TODO: Complete docstring with full description.
-    
+
         Returns
         -------
         type
@@ -29,9 +29,9 @@ class PluginsViewModel(QObject):
 
     def discover(self, dirs):
         """Placeholder docstring for discover.
-    
+
         TODO: Complete docstring with full description.
-    
+
         Returns
         -------
         type
@@ -42,14 +42,14 @@ class PluginsViewModel(QObject):
 
     def toggle(self, name: str, kind: str, active: bool):
         """Placeholder docstring for toggle.
-    
+
         TODO: Complete docstring with full description.
-    
+
         Parameters
         ----------
         dirs : type
         Description of dirs.
-    
+
         Returns
         -------
         type
@@ -61,14 +61,14 @@ class PluginsViewModel(QObject):
 
     def rows(self):
         """Placeholder docstring for rows.
-    
+
         TODO: Complete docstring with full description.
-    
+
         Parameters
         ----------
         dirs : type
         Description of dirs.
-    
+
         Returns
         -------
         type

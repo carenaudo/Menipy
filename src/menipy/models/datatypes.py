@@ -1,5 +1,6 @@
 # src/menipy/models/datatypes.py
 """Common data types and structures for analysis records and preprocessing state."""
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Literal, Optional, Tuple, TYPE_CHECKING
@@ -8,6 +9,7 @@ from datetime import datetime
 if TYPE_CHECKING:
     from .frame import Frame, Calibration, CameraMeta
     from .geometry import Contour, Geometry
+
     # PhysicsParams is not exported from models.physics; use a loose alias for typing
     from typing import Any as PhysicsParams
 
@@ -67,7 +69,6 @@ class PreprocessingState(BaseModel):
         Description.
         """
         return self.model_copy(deep=True)
-
 
         # ---- Aggregated analysis record --------------------------------------------
 

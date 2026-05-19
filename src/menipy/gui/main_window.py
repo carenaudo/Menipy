@@ -83,6 +83,7 @@ def _preview_dominant_sizes(
     vertical = _workbench_vertical_sizes(available, None)
     return [root[0], vertical[0], vertical[1]]
 
+
 # --- promoted preview widget (registered into QUiLoader) ---
 try:
     from .views.image_view import ImageView
@@ -574,9 +575,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         if show_setup and show_inspector:
             target_sizes = self._splitter_sizes_full or sizes
-            target_vertical_sizes = getattr(
-                self, "_workbench_splitter_sizes_full", None
-            ) or vertical_sizes
+            target_vertical_sizes = (
+                getattr(self, "_workbench_splitter_sizes_full", None) or vertical_sizes
+            )
         elif show_setup and not show_inspector:
             total = max(1, sum(sizes))
             target_sizes = [max(200, sizes[0]), max(1, total - sizes[0])]

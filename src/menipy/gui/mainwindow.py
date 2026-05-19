@@ -4,6 +4,7 @@ Compatibility shim for tests expecting menipy.gui.mainwindow.MainWindow.
 Provides a lightweight MainWindow with just enough UI wiring for
 `tests/test_setup_panel.py` to exercise controller signals.
 """
+
 from __future__ import annotations
 
 from PySide6.QtCore import QObject, Signal, QTimer
@@ -89,7 +90,9 @@ class _DummySetupController(QObject):
         self.browseBtn.clicked.connect(self.browse_requested)
         self.batchBrowseBtn.clicked.connect(self.browse_batch_requested)
         self.previewBtn.clicked.connect(self.preview_requested)
-        self.drawPointBtn.clicked.connect(lambda: self.draw_mode_requested.emit("point"))
+        self.drawPointBtn.clicked.connect(
+            lambda: self.draw_mode_requested.emit("point")
+        )
         self.drawLineBtn.clicked.connect(lambda: self.draw_mode_requested.emit("line"))
         self.drawRectBtn.clicked.connect(lambda: self.draw_mode_requested.emit("rect"))
         self.clearOverlayBtn.clicked.connect(self.clear_overlays_requested)
@@ -101,6 +104,7 @@ class _DummySetupController(QObject):
         self.testCombo.currentTextChanged.connect(
             lambda txt: self.pipeline_changed.emit(txt.lower().replace(" ", "_"))
         )
+
         def _throttled_refresh():
             if self._refresh_guard:
                 return

@@ -7,9 +7,16 @@ from pathlib import Path
 
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtWidgets import (
-    QDialog, QTableWidgetItem, QMessageBox, QAbstractItemView, 
-    QPushButton, QStyle, QWidget, QHBoxLayout, QToolButton,
-    QInputDialog
+    QDialog,
+    QTableWidgetItem,
+    QMessageBox,
+    QAbstractItemView,
+    QPushButton,
+    QStyle,
+    QWidget,
+    QHBoxLayout,
+    QToolButton,
+    QInputDialog,
 )
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import QFile
@@ -19,7 +26,9 @@ from menipy.gui.services.settings_service import AppSettings
 from menipy.common.plugin_settings import get_detector_settings_model, DETECTOR_SETTINGS
 from menipy.gui.dialogs.plugin_config_dialog import PluginConfigDialog
 
-_COL_ACTIVE, _COL_NAME, _COL_KIND, _COL_CONFIG, _COL_PATH, _COL_DESC, _COL_VER = range(7)
+_COL_ACTIVE, _COL_NAME, _COL_KIND, _COL_CONFIG, _COL_PATH, _COL_DESC, _COL_VER = range(
+    7
+)
 
 
 class PluginManagerDialog(QDialog):
@@ -75,7 +84,7 @@ class PluginManagerDialog(QDialog):
         t.setColumnWidth(_COL_ACTIVE, 60)
         t.setColumnWidth(_COL_NAME, 150)
         t.setColumnWidth(_COL_KIND, 90)
-        t.setColumnWidth(_COL_CONFIG, 60) # Small width for button
+        t.setColumnWidth(_COL_CONFIG, 60)  # Small width for button
         t.setColumnWidth(_COL_PATH, 280)
         t.horizontalHeader().setStretchLastSection(True)
         t.cellChanged.connect(self._on_cell_changed)
@@ -96,8 +105,7 @@ class PluginManagerDialog(QDialog):
     # --------------------------- actions -------------------------------------
 
     def refresh(self):
-        """refresh.
-        """
+        """refresh."""
         self._updating = True
         rows = self.vm.rows()  # list of tuples from DB
         t = self.ui.pluginsTable
@@ -115,7 +123,7 @@ class PluginManagerDialog(QDialog):
             # Name / Kind / Path / Desc / Version
             t.setItem(i, _COL_NAME, QTableWidgetItem(str(name)))
             t.setItem(i, _COL_KIND, QTableWidgetItem(str(kind)))
-            
+
             # Config Button
             # Use a container widget to center the button and avoid full-cell stretch
             container = QWidget()
@@ -124,19 +132,23 @@ class PluginManagerDialog(QDialog):
             layout = QHBoxLayout(container)
             layout.setContentsMargins(0, 0, 0, 0)
             layout.setAlignment(Qt.AlignCenter)
-            
+
             btn = QToolButton()
             btn.setIcon(self.style().standardIcon(QStyle.SP_FileDialogDetailedView))
             btn.setToolTip("Configure Plugin")
-            btn.setAutoRaise(True) # Make it look cleaner (flat)
-            btn.setFixedSize(28, 28) # Slightly larger touch target
-            btn.setIconSize(QSize(18, 18)) # Ensure icon is readable
+            btn.setAutoRaise(True)  # Make it look cleaner (flat)
+            btn.setFixedSize(28, 28)  # Slightly larger touch target
+            btn.setIconSize(QSize(18, 18))  # Ensure icon is readable
             # Add a style for the button to ensure it doesn't look like a solid block
-            btn.setStyleSheet("QToolButton { border: none; background: transparent; } QToolButton:hover { background: rgba(255, 255, 255, 30); border-radius: 4px; }")
+            btn.setStyleSheet(
+                "QToolButton { border: none; background: transparent; } QToolButton:hover { background: rgba(255, 255, 255, 30); border-radius: 4px; }"
+            )
 
             # Connect using closure to capture variables
-            btn.clicked.connect(lambda checked=False, n=name, k=kind: self._on_configure(n, k))
-            
+            btn.clicked.connect(
+                lambda checked=False, n=name, k=kind: self._on_configure(n, k)
+            )
+
             layout.addWidget(btn)
             t.setCellWidget(i, _COL_CONFIG, container)
 
@@ -207,10 +219,13 @@ class PluginManagerDialog(QDialog):
         matches = {}
         # Expected module name for the plugin
         module_name = f"menipy_plugins.{plugin_name}"
-        
+
         # Iterate all registered detector settings
         # We access the internal dict of the Registry
-        for method_name, model_cls in DETECTOR_SETTINGS.items(): # Registry supports items()
+        for (
+            method_name,
+            model_cls,
+        ) in DETECTOR_SETTINGS.items():  # Registry supports items()
             if model_cls.__module__ == module_name:
                 matches[method_name] = model_cls
         return matches
@@ -219,15 +234,15 @@ class PluginManagerDialog(QDialog):
         """Open configuration dialog for the plugin."""
         # 1. Try to find settings models associated with this plugin name (module)
         models = self._find_settings_models_for_plugin(name)
-        
+
         target_name = name
         model_cls = None
-        
+
         if not models:
-             # Fallback: maybe the name itself IS the method name (unlikely given naming convention, but possible)
-             model_cls = get_detector_settings_model(name)
-             if model_cls:
-                 target_name = name
+            # Fallback: maybe the name itself IS the method name (unlikely given naming convention, but possible)
+            model_cls = get_detector_settings_model(name)
+            if model_cls:
+                target_name = name
         elif len(models) == 1:
             # Only one configurable item, auto-select
             target_name, model_cls = list(models.items())[0]
@@ -235,12 +250,12 @@ class PluginManagerDialog(QDialog):
             # Multiple items, ask user
             items = list(models.keys())
             item, ok = QInputDialog.getItem(
-                self, 
-                "Select Configuration", 
-                "Choose component to configure:", 
-                items, 
-                0, 
-                False
+                self,
+                "Select Configuration",
+                "Choose component to configure:",
+                items,
+                0,
+                False,
             )
             if ok and item:
                 target_name = item
@@ -250,21 +265,21 @@ class PluginManagerDialog(QDialog):
 
         if not model_cls:
             QMessageBox.information(
-                self, 
-                "No Configuration", 
-                f"No configurable settings found for plugin '{name}'."
+                self,
+                "No Configuration",
+                f"No configurable settings found for plugin '{name}'.",
             )
             return
- 
+
         # Load existing settings from DB (key uses the *target_name*, i.e., the method name)
         # We use a specific key format for method-specific defaults
         conf_key = f"plugin:{target_name}:config"
-        
+
         current_values = {}
         try:
             db_val = None
             if hasattr(self.vm, "svc") and hasattr(self.vm.svc, "db"):
-                 db_val = self.vm.svc.db.get_setting(conf_key)
+                db_val = self.vm.svc.db.get_setting(conf_key)
             if db_val:
                 current_values = json.loads(db_val)
         except Exception as e:
@@ -279,5 +294,6 @@ class PluginManagerDialog(QDialog):
                 if hasattr(self.vm, "svc") and hasattr(self.vm.svc, "db"):
                     self.vm.svc.db.set_setting(conf_key, json.dumps(new_settings))
             except Exception as e:
-                QMessageBox.critical(self, "Save Failed", f"Could not save settings: {e}")
-
+                QMessageBox.critical(
+                    self, "Save Failed", f"Could not save settings: {e}"
+                )

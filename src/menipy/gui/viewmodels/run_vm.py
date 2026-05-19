@@ -67,7 +67,10 @@ class RunViewModel(QObject):
             self.error_occurred.emit(payload["err"] or "Unknown error")
             return
         ctx = payload["ctx"]
-        if getattr(ctx, "overlay_commands", None) or getattr(ctx, "image", None) is not None:
+        if (
+            getattr(ctx, "overlay_commands", None)
+            or getattr(ctx, "image", None) is not None
+        ):
             self.context_ready.emit(ctx)
         elif getattr(ctx, "preview", None) is not None:
             self.preview_ready.emit(to_pixmap(ctx.preview))

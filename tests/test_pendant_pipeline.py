@@ -169,9 +169,7 @@ def test_strict_young_laplace_recovers_synthetic_calibrated_contour():
     px_per_mm = 100.0
     axis_x = 250.0
     apex_y = 300.0
-    model_mm = integrate_young_laplace_profile_mm(
-        r0_mm, beta, target_height_mm=2.0
-    )
+    model_mm = integrate_young_laplace_profile_mm(r0_mm, beta, target_height_mm=2.0)
     model_mm = model_mm[model_mm[:, 1] <= 2.0]
     contour_px = model_mm_to_pendant_px(
         model_mm,
@@ -195,14 +193,14 @@ def test_strict_young_laplace_recovers_synthetic_calibrated_contour():
     assert ctx.results["strict_fit_success"] is True
     assert ctx.results["r0_mm"] == pytest.approx(r0_mm, rel=1e-6)
     assert ctx.results["beta"] == pytest.approx(beta, rel=1e-6)
-    assert ctx.results["surface_tension_mN_m"] == pytest.approx(expected_gamma, rel=1e-6)
+    assert ctx.results["surface_tension_mN_m"] == pytest.approx(
+        expected_gamma, rel=1e-6
+    )
     assert ctx.fit["residuals"]["units"] == "mm"
 
 
 def test_pendant_overlay_marks_strict_fit_curve_as_open_fit_layer():
-    contour = np.array(
-        [[90.0, 100.0], [120.0, 140.0], [100.0, 180.0], [80.0, 140.0]]
-    )
+    contour = np.array([[90.0, 100.0], [120.0, 140.0], [100.0, 180.0], [80.0, 140.0]])
     model = np.array([[100.0, 180.0], [110.0, 150.0], [115.0, 120.0]])
     ctx = Context(
         frames=np.zeros((220, 220, 3), dtype=np.uint8),
@@ -214,18 +212,14 @@ def test_pendant_overlay_marks_strict_fit_curve_as_open_fit_layer():
 
     PendantPipeline().do_overlay(ctx)
 
-    fit_cmds = [
-        cmd for cmd in ctx.overlay_commands if cmd.get("tag") == "pendant_fit"
-    ]
+    fit_cmds = [cmd for cmd in ctx.overlay_commands if cmd.get("tag") == "pendant_fit"]
     assert len(fit_cmds) == 1
     assert fit_cmds[0]["layer"] == "fit"
     assert fit_cmds[0]["closed"] is False
 
 
 def test_pendant_overlay_omits_fit_curve_when_strict_fit_rejected():
-    contour = np.array(
-        [[90.0, 100.0], [120.0, 140.0], [100.0, 180.0], [80.0, 140.0]]
-    )
+    contour = np.array([[90.0, 100.0], [120.0, 140.0], [100.0, 180.0], [80.0, 140.0]])
     model = np.array([[100.0, 180.0], [110.0, 150.0], [115.0, 120.0]])
     ctx = Context(
         frames=np.zeros((220, 220, 3), dtype=np.uint8),
@@ -248,9 +242,7 @@ def test_strict_young_laplace_recovers_shifted_noisy_contour_offsets():
     axis_x = 250.0
     apex_y = 300.0
     shift_mm = np.array([0.04, -0.03])
-    model_mm = integrate_young_laplace_profile_mm(
-        r0_mm, beta, target_height_mm=2.0
-    )
+    model_mm = integrate_young_laplace_profile_mm(r0_mm, beta, target_height_mm=2.0)
     model_mm = model_mm[model_mm[:, 1] <= 2.0] + shift_mm
     contour_px = model_mm_to_pendant_px(
         model_mm,

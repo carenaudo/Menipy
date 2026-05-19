@@ -235,12 +235,10 @@ class PluginDB:
         import json
 
         with self.connect() as con:
-            rows = con.execute(
-                """
+            rows = con.execute("""
             SELECT pipeline_name, display_name, icon, color, stages, calibration_params, primary_metrics
             FROM pipeline_metadata ORDER BY display_name
-            """
-            ).fetchall()
+            """).fetchall()
 
             result = []
             for row in rows:
