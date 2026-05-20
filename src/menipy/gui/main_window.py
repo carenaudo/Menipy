@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from PySide6.QtCore import QByteArray, QFile, Qt, QTimer
-from PySide6.QtGui import QCloseEvent
+from PySide6.QtGui import QAction, QCloseEvent
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import (
     QLayout,
@@ -55,7 +55,7 @@ def _workbench_root_sizes(
                 return [setup, workbench]
         elif len(values) >= 2 and values[1] > values[0]:
             return values[:2]
-    setup = min(340, max(250, int(total * 0.22)))
+    setup = min(340, max(300, int(total * 0.22)))
     return [setup, max(420, total - setup)]
 
 
@@ -271,7 +271,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         legacy_sizes = getattr(self.settings, "splitter_sizes", None)
         saved_sizes = guided_sizes or legacy_sizes
         try:
-            self.setupHost.setMinimumWidth(230)  # type: ignore[attr-defined]
+            self.setupHost.setMinimumWidth(300)  # type: ignore[attr-defined]
             self.setupHost.setMaximumWidth(360)  # type: ignore[attr-defined]
             self.workbenchHost.setMinimumWidth(520)  # type: ignore[attr-defined]
             self.previewHost.setMinimumHeight(320)  # type: ignore[attr-defined]
@@ -289,7 +289,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             if hasattr(self, "previewResultsSplitter"):
                 self.previewResultsSplitter.setStretchFactor(0, 1)  # type: ignore[attr-defined]
                 self.previewResultsSplitter.setStretchFactor(1, 0)  # type: ignore[attr-defined]
-                self.previewResultsSplitter.setSizes([900, 300])  # type: ignore[attr-defined]
+                self.previewResultsSplitter.setSizes([900, 320])  # type: ignore[attr-defined]
         except Exception:
             pass
 
@@ -317,7 +317,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def _setup_units_menu(self):
         """Creates a Units menu to toggle between SI and CGS."""
-        from PySide6.QtGui import QAction, QActionGroup
+        from PySide6.QtGui import QActionGroup
 
         menu_bar = self.menuBar()
         units_menu = getattr(self, "menuUnits", None)
@@ -415,6 +415,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             QWidget#keyResultsHost {{
                 background-color: {theme.BG_SECONDARY};
                 border-left: 1px solid {theme.BORDER_DEFAULT};
+            }}
+            QToolButton#toggleSetupBtn,
+            QToolButton#toggleInspectBtn,
+            QToolButton#toggleKeyResultsBtn {{
+                min-width: 56px;
+                padding-left: 8px;
+                padding-right: 8px;
             }}
             QTabWidget#inspectTabs {{
                 background-color: {theme.BG_PRIMARY};
@@ -555,6 +562,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def _wire_layout_controls(self) -> None:
         self._splitter_sizes_full: Optional[list[int]] = None
         self._workbench_splitter_sizes_full: Optional[list[int]] = None
+        self._preview_results_sizes_full: Optional[list[int]] = None
         layout_buttons = {
             "layoutAnalysisBtn": "analysis",
             "layoutSetupBtn": "setup",
@@ -573,11 +581,40 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         setup_toggle = getattr(self, "toggleSetupBtn", None)
         inspect_toggle = getattr(self, "toggleInspectBtn", None)
+        key_results_toggle = getattr(self, "toggleKeyResultsBtn", None)
+        setup_action = getattr(self, "actionToggleSetup", None)
+        inspect_action = getattr(self, "actionToggleResultsTable", None)
+        key_results_action = getattr(self, "actionToggleKeyResults", None)
+
+        def _connect_checkable(source, target) -> None:
+            if not source or not target:
+                return
+            try:
+                source.toggled.connect(target.setChecked)
+                target.toggled.connect(source.setChecked)
+            except Exception:
+                pass
+
+        _connect_checkable(setup_toggle, setup_action)
+        _connect_checkable(inspect_toggle, inspect_action)
+        _connect_checkable(key_results_toggle, key_results_action)
+
+        def _current_setup_visible() -> bool:
+            return bool(getattr(setup_toggle, "isChecked", lambda: True)())
+
+        def _current_inspect_visible() -> bool:
+            return bool(getattr(inspect_toggle, "isChecked", lambda: True)())
+
+        def _current_key_results_visible() -> bool:
+            return bool(getattr(key_results_toggle, "isChecked", lambda: True)())
+
         if setup_toggle:
             try:
                 setup_toggle.toggled.connect(
                     lambda checked=False: self._set_panel_visibility(
-                        checked, getattr(inspect_toggle, "isChecked", lambda: True)()
+                        checked,
+                        _current_inspect_visible(),
+                        _current_key_results_visible(),
                     )
                 )
             except Exception:
@@ -586,22 +623,55 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             try:
                 inspect_toggle.toggled.connect(
                     lambda checked=False: self._set_panel_visibility(
-                        getattr(setup_toggle, "isChecked", lambda: True)(), checked
+                        _current_setup_visible(),
+                        checked,
+                        _current_key_results_visible(),
                     )
                 )
             except Exception:
                 pass
+        if key_results_toggle:
+            try:
+                key_results_toggle.toggled.connect(
+                    lambda checked=False: self._set_panel_visibility(
+                        _current_setup_visible(),
+                        _current_inspect_visible(),
+                        checked,
+                    )
+                )
+            except Exception:
+                pass
+
+        reset_action = getattr(self, "actionResetLayout", None)
+        if reset_action:
+            try:
+                reset_action.triggered.connect(self._reset_workbench_layout)
+            except Exception:
+                pass
+
+        fit_action = getattr(self, "actionFitPreview", None)
+        if fit_action:
+            try:
+                fit_action.triggered.connect(self._fit_preview_to_window)
+            except Exception:
+                pass
+
+        self._set_panel_visibility(True, True, True)
 
     def _cache_splitter_sizes(self) -> None:
         if not hasattr(self, "rootSplitter"):
             return
         setup_visible = bool(getattr(self, "setupHost", None)) and self.setupHost.isVisible()  # type: ignore[attr-defined]
         inspect_visible = bool(getattr(self, "inspectTabs", None)) and self.inspectTabs.isVisible()  # type: ignore[attr-defined]
-        if setup_visible and inspect_visible:
+        key_results_visible = bool(getattr(self, "keyResultsHost", None)) and self.keyResultsHost.isVisible()  # type: ignore[attr-defined]
+        if setup_visible and inspect_visible and key_results_visible:
             try:
                 self._splitter_sizes_full = list(self.rootSplitter.sizes())  # type: ignore[attr-defined]
                 self._workbench_splitter_sizes_full = list(
                     self.workbenchSplitter.sizes()  # type: ignore[attr-defined]
+                )
+                self._preview_results_sizes_full = list(
+                    self.previewResultsSplitter.sizes()  # type: ignore[attr-defined]
                 )
             except Exception:
                 pass
@@ -611,21 +681,33 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return
         self._cache_splitter_sizes()
         if mode == "analysis":
-            self._set_panel_visibility(False, False)
+            self._set_panel_visibility(False, False, True)
         elif mode == "setup":
-            self._set_panel_visibility(True, False)
+            self._set_panel_visibility(True, False, True)
         else:
-            self._set_panel_visibility(True, True)
+            self._set_panel_visibility(True, True, True)
 
-    def _set_panel_visibility(self, show_setup: bool, show_inspector: bool) -> None:
+    def _set_panel_visibility(
+        self,
+        show_setup: bool,
+        show_inspector: bool,
+        show_key_results: Optional[bool] = None,
+    ) -> None:
         if not hasattr(self, "rootSplitter"):
             return
         setup_host = getattr(self, "setupHost", None)
         inspect_tabs = getattr(self, "inspectTabs", None)
+        key_results_host = getattr(self, "keyResultsHost", None)
+        if show_key_results is None:
+            show_key_results = (
+                bool(key_results_host.isVisible()) if key_results_host else True
+            )
         if setup_host is not None:
             setup_host.setVisible(show_setup)
         if inspect_tabs is not None:
             inspect_tabs.setVisible(show_inspector)
+        if key_results_host is not None:
+            key_results_host.setVisible(show_key_results)
 
         try:
             sizes = self.rootSplitter.sizes()  # type: ignore[attr-defined]
@@ -635,6 +717,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             vertical_sizes = self.workbenchSplitter.sizes()  # type: ignore[attr-defined]
         except Exception:
             vertical_sizes = [560, 240]
+        try:
+            preview_results_sizes = self.previewResultsSplitter.sizes()  # type: ignore[attr-defined]
+        except Exception:
+            preview_results_sizes = [900, 320]
 
         if show_setup and show_inspector:
             target_sizes = self._splitter_sizes_full or sizes
@@ -659,19 +745,62 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.workbenchSplitter.setSizes(target_vertical_sizes)  # type: ignore[attr-defined]
         except Exception:
             pass
+        try:
+            if show_key_results:
+                target_preview_results = (
+                    self._preview_results_sizes_full or preview_results_sizes
+                )
+                if len(target_preview_results) < 2 or target_preview_results[1] <= 0:
+                    total = max(1, sum(preview_results_sizes))
+                    target_preview_results = [max(1, total - 320), 320]
+            else:
+                target_preview_results = [max(1, sum(preview_results_sizes)), 0]
+            self.previewResultsSplitter.setSizes(target_preview_results)  # type: ignore[attr-defined]
+        except Exception:
+            pass
 
         toggle_setup = getattr(self, "toggleSetupBtn", None)
         toggle_inspect = getattr(self, "toggleInspectBtn", None)
-        if toggle_setup:
-            toggle_setup.blockSignals(True)
-            toggle_setup.setChecked(show_setup)
-            toggle_setup.blockSignals(False)
-        if toggle_inspect:
-            toggle_inspect.blockSignals(True)
-            toggle_inspect.setChecked(show_inspector)
-            toggle_inspect.blockSignals(False)
+        toggle_key_results = getattr(self, "toggleKeyResultsBtn", None)
+        action_setup = getattr(self, "actionToggleSetup", None)
+        action_inspect = getattr(self, "actionToggleResultsTable", None)
+        action_key_results = getattr(self, "actionToggleKeyResults", None)
+
+        for control, visible in (
+            (toggle_setup, show_setup),
+            (toggle_inspect, show_inspector),
+            (toggle_key_results, show_key_results),
+            (action_setup, show_setup),
+            (action_inspect, show_inspector),
+            (action_key_results, show_key_results),
+        ):
+            if control:
+                control.blockSignals(True)
+                control.setChecked(visible)
+                control.blockSignals(False)
 
         self._sync_layout_buttons(show_setup, show_inspector)
+
+    def _reset_workbench_layout(self) -> None:
+        self._splitter_sizes_full = None
+        self._workbench_splitter_sizes_full = None
+        self._preview_results_sizes_full = None
+        self._set_panel_visibility(True, True, True)
+        try:
+            self.rootSplitter.setSizes(_workbench_root_sizes(self.width(), None))  # type: ignore[attr-defined]
+            self.workbenchSplitter.setSizes(  # type: ignore[attr-defined]
+                _workbench_vertical_sizes(self.height(), None)
+            )
+            self.previewResultsSplitter.setSizes([900, 320])  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
+    def _fit_preview_to_window(self) -> None:
+        preview = getattr(self, "preview_panel", None)
+        image_view = getattr(preview, "image_view", None)
+        fit = getattr(image_view, "fit_to_window", None)
+        if callable(fit):
+            fit()
 
     def _sync_layout_buttons(self, show_setup: bool, show_inspector: bool) -> None:
         layout_analysis = getattr(self, "layoutAnalysisBtn", None)

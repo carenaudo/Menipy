@@ -19,12 +19,9 @@
    <item>
     <widget class="QGroupBox" name="pipelineGroup">
      <property name="title"><string>Analysis Type</string></property>
-     <layout class="QVBoxLayout" name="pipelineButtonLayout">
+     <layout class="QGridLayout" name="pipelineButtonLayout">
       <property name="spacing"><number>6</number></property>
-      <item>
-       <layout class="QHBoxLayout" name="pipelineButtons">
-        <property name="spacing"><number>6</number></property>
-        <item>
+      <item row="0" column="0">
          <widget class="QPushButton" name="sessileBtn">
           <property name="text"><string>Sessile</string></property>
           <property name="checkable"><bool>true</bool></property>
@@ -35,8 +32,8 @@ QPushButton:hover { background: #EAEFF4; color: #24292F; }
 QPushButton:checked { background: #DDF4FF; border: 1px solid #0969DA; color: #0969DA; font-weight: 600; }</string>
           </property>
          </widget>
-        </item>
-        <item>
+      </item>
+      <item row="0" column="1">
          <widget class="QPushButton" name="pendantBtn">
           <property name="text"><string>Pendant</string></property>
           <property name="checkable"><bool>true</bool></property>
@@ -47,8 +44,8 @@ QPushButton:hover { background: #EAEFF4; color: #24292F; }
 QPushButton:checked { background: #DDF4FF; border: 1px solid #0969DA; color: #0969DA; font-weight: 600; }</string>
           </property>
          </widget>
-        </item>
-        <item>
+      </item>
+      <item row="1" column="0">
          <widget class="QPushButton" name="oscillatingBtn">
           <property name="text"><string>Osc.</string></property>
           <property name="checkable"><bool>true</bool></property>
@@ -59,13 +56,8 @@ QPushButton:hover { background: #EAEFF4; color: #24292F; }
 QPushButton:checked { background: #DDF4FF; border: 1px solid #0969DA; color: #0969DA; font-weight: 600; }</string>
           </property>
          </widget>
-        </item>
-       </layout>
       </item>
-      <item>
-       <layout class="QHBoxLayout" name="pipelineButtonsRow2">
-        <property name="spacing"><number>6</number></property>
-        <item>
+      <item row="1" column="1">
          <widget class="QPushButton" name="capillaryBtn">
           <property name="text"><string>Capillary</string></property>
           <property name="checkable"><bool>true</bool></property>
@@ -76,8 +68,8 @@ QPushButton:hover { background: #EAEFF4; color: #24292F; }
 QPushButton:checked { background: #DDF4FF; border: 1px solid #0969DA; color: #0969DA; font-weight: 600; }</string>
           </property>
          </widget>
-        </item>
-        <item>
+      </item>
+      <item row="2" column="0" colspan="2">
          <widget class="QPushButton" name="captiveBtn">
           <property name="text"><string>Captive</string></property>
           <property name="checkable"><bool>true</bool></property>
@@ -88,8 +80,6 @@ QPushButton:hover { background: #EAEFF4; color: #24292F; }
 QPushButton:checked { background: #DDF4FF; border: 1px solid #0969DA; color: #0969DA; font-weight: 600; }</string>
           </property>
          </widget>
-        </item>
-       </layout>
       </item>
      </layout>
     </widget>
@@ -240,16 +230,132 @@ QRadioButton::indicator { width: 0px; height: 0px; }</string>
        </widget>
       </item>
       <item row="3" column="0">
+       <widget class="QLabel" name="gravityLabel">
+        <property name="text"><string>Gravity</string></property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QDoubleSpinBox" name="gravitySpin">
+        <property name="minimum"><double>0.000000000000000</double></property>
+        <property name="maximum"><double>30.000000000000000</double></property>
+        <property name="value"><double>9.806650000000000</double></property>
+        <property name="decimals"><number>5</number></property>
+        <property name="suffix"><string> m/s²</string></property>
+       </widget>
+      </item>
+      <item row="4" column="0">
        <widget class="QLabel" name="substrateAngleLabel">
         <property name="text"><string>Substrate angle</string></property>
        </widget>
       </item>
-      <item row="3" column="1">
+      <item row="4" column="1">
        <widget class="QDoubleSpinBox" name="substrateAngleSpin">
         <property name="minimum"><double>0.000000000000000</double></property>
         <property name="maximum"><double>180.000000000000000</double></property>
         <property name="value"><double>0.000000000000000</double></property>
         <property name="decimals"><number>1</number></property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="pipelineSettingsGroup">
+     <property name="title"><string>Pendant Settings</string></property>
+     <layout class="QFormLayout" name="pipelineSettingsForm">
+      <property name="labelAlignment"><set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set></property>
+      <item row="0" column="0">
+       <widget class="QLabel" name="pendantNeedleIdLabel">
+        <property name="text"><string>Needle ID</string></property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QDoubleSpinBox" name="pendantNeedleIdSpin">
+        <property name="minimum"><double>0.000000000000000</double></property>
+        <property name="maximum"><double>100.000000000000000</double></property>
+        <property name="value"><double>0.300000000000000</double></property>
+        <property name="decimals"><number>3</number></property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="sessileBaselineModeLabel">
+        <property name="text"><string>Baseline Mode</string></property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QComboBox" name="sessileBaselineModeCombo">
+        <item>
+         <property name="text"><string>Auto</string></property>
+        </item>
+        <item>
+         <property name="text"><string>Manual</string></property>
+        </item>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="oscillatingFrequencyLabel">
+        <property name="text"><string>Frequency</string></property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QDoubleSpinBox" name="oscillatingFrequencySpin">
+        <property name="minimum"><double>0.000000000000000</double></property>
+        <property name="maximum"><double>10000.000000000000000</double></property>
+        <property name="value"><double>0.000000000000000</double></property>
+        <property name="decimals"><number>3</number></property>
+        <property name="suffix"><string> Hz</string></property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="oscillatingAmplitudeLabel">
+        <property name="text"><string>Amplitude</string></property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QDoubleSpinBox" name="oscillatingAmplitudeSpin">
+        <property name="minimum"><double>0.000000000000000</double></property>
+        <property name="maximum"><double>1000.000000000000000</double></property>
+        <property name="value"><double>0.000000000000000</double></property>
+        <property name="decimals"><number>3</number></property>
+        <property name="suffix"><string> mm</string></property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="capillaryTubeDiameterLabel">
+        <property name="text"><string>Tube Diameter</string></property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QDoubleSpinBox" name="capillaryTubeDiameterSpin">
+        <property name="minimum"><double>0.001000000000000</double></property>
+        <property name="maximum"><double>100.000000000000000</double></property>
+        <property name="value"><double>1.000000000000000</double></property>
+        <property name="decimals"><number>3</number></property>
+        <property name="suffix"><string> mm</string></property>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QLabel" name="capillaryContactAngleLabel">
+        <property name="text"><string>Contact Angle</string></property>
+       </widget>
+      </item>
+      <item row="5" column="1">
+       <widget class="QDoubleSpinBox" name="capillaryContactAngleSpin">
+        <property name="minimum"><double>0.000000000000000</double></property>
+        <property name="maximum"><double>180.000000000000000</double></property>
+        <property name="value"><double>0.000000000000000</double></property>
+        <property name="decimals"><number>1</number></property>
+        <property name="suffix"><string> °</string></property>
+       </widget>
+      </item>
+      <item row="6" column="0">
+       <widget class="QLabel" name="captiveDetectionLabel">
+        <property name="text"><string>Detection</string></property>
+       </widget>
+      </item>
+      <item row="6" column="1">
+       <widget class="QLabel" name="captiveDetectionValue">
+        <property name="text"><string>Ceiling + bubble</string></property>
        </widget>
       </item>
      </layout>

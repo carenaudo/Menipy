@@ -172,6 +172,7 @@ class SetupPanelController(QObject):
         self.substrateAngleLabel: Optional[QLabel] = panel.findChild(
             QLabel, "substrateAngleLabel"
         )
+        self.gravityLabel: Optional[QLabel] = panel.findChild(QLabel, "gravityLabel")
 
         self.needleLengthSpin: Optional[QDoubleSpinBox] = panel.findChild(
             QDoubleSpinBox, "needleLengthSpin"
@@ -184,6 +185,54 @@ class SetupPanelController(QObject):
         )
         self.substrateAngleSpin: Optional[QDoubleSpinBox] = panel.findChild(
             QDoubleSpinBox, "substrateAngleSpin"
+        )
+        self.gravitySpin: Optional[QDoubleSpinBox] = panel.findChild(
+            QDoubleSpinBox, "gravitySpin"
+        )
+        self.pipelineSettingsGroup: Optional[QGroupBox] = panel.findChild(
+            QGroupBox, "pipelineSettingsGroup"
+        )
+        self.pendantNeedleIdLabel: Optional[QLabel] = panel.findChild(
+            QLabel, "pendantNeedleIdLabel"
+        )
+        self.pendantNeedleIdSpin: Optional[QDoubleSpinBox] = panel.findChild(
+            QDoubleSpinBox, "pendantNeedleIdSpin"
+        )
+        self.sessileBaselineModeLabel: Optional[QLabel] = panel.findChild(
+            QLabel, "sessileBaselineModeLabel"
+        )
+        self.sessileBaselineModeCombo: Optional[QComboBox] = panel.findChild(
+            QComboBox, "sessileBaselineModeCombo"
+        )
+        self.oscillatingFrequencyLabel: Optional[QLabel] = panel.findChild(
+            QLabel, "oscillatingFrequencyLabel"
+        )
+        self.oscillatingFrequencySpin: Optional[QDoubleSpinBox] = panel.findChild(
+            QDoubleSpinBox, "oscillatingFrequencySpin"
+        )
+        self.oscillatingAmplitudeLabel: Optional[QLabel] = panel.findChild(
+            QLabel, "oscillatingAmplitudeLabel"
+        )
+        self.oscillatingAmplitudeSpin: Optional[QDoubleSpinBox] = panel.findChild(
+            QDoubleSpinBox, "oscillatingAmplitudeSpin"
+        )
+        self.capillaryTubeDiameterLabel: Optional[QLabel] = panel.findChild(
+            QLabel, "capillaryTubeDiameterLabel"
+        )
+        self.capillaryTubeDiameterSpin: Optional[QDoubleSpinBox] = panel.findChild(
+            QDoubleSpinBox, "capillaryTubeDiameterSpin"
+        )
+        self.capillaryContactAngleLabel: Optional[QLabel] = panel.findChild(
+            QLabel, "capillaryContactAngleLabel"
+        )
+        self.capillaryContactAngleSpin: Optional[QDoubleSpinBox] = panel.findChild(
+            QDoubleSpinBox, "capillaryContactAngleSpin"
+        )
+        self.captiveDetectionLabel: Optional[QLabel] = panel.findChild(
+            QLabel, "captiveDetectionLabel"
+        )
+        self.captiveDetectionValue: Optional[QLabel] = panel.findChild(
+            QLabel, "captiveDetectionValue"
         )
         self.sopGroup: Optional[QGroupBox] = panel.findChild(QGroupBox, "sopGroup")
         self.stepsGroup: Optional[QGroupBox] = panel.findChild(QGroupBox, "stepsGroup")
@@ -308,6 +357,7 @@ class SetupPanelController(QObject):
             "batch_folder": batch_folder,
             "cam_id": cam_id,
             "calibration_params": self.get_calibration_params(),
+            "analysis_params": self.get_analysis_params(),
         }
 
     def get_calibration_params(self) -> dict[str, Any]:
@@ -330,12 +380,37 @@ class SetupPanelController(QObject):
         if self.fluidDensitySpin:
             fluid_val = self.fluidDensitySpin.value()
             fluid_rho = convert_to_si(fluid_val, "density", system)
+        gravity = self.gravitySpin.value() if self.gravitySpin else 9.80665
 
         return {
             "needle_diameter_mm": needle_diameter,
             "drop_density_kg_m3": drop_rho,
             "fluid_density_kg_m3": fluid_rho,
+            "gravity_m_s2": gravity,
+            "g": gravity,
         }
+
+    def get_analysis_params(self) -> dict[str, Any]:
+        """Return pipeline-specific setup values without changing public contracts."""
+        pipeline = self.current_pipeline_name()
+        params: dict[str, Any] = {"pipeline": pipeline}
+        if self.substrateAngleSpin:
+            params["substrate_contact_angle_deg"] = self.substrateAngleSpin.value()
+        if self.pendantNeedleIdSpin:
+            params["needle_inner_diameter_mm"] = self.pendantNeedleIdSpin.value()
+        if self.sessileBaselineModeCombo:
+            params["baseline_mode"] = self.sessileBaselineModeCombo.currentText().lower()
+        if self.oscillatingFrequencySpin:
+            params["oscillation_frequency_hz"] = self.oscillatingFrequencySpin.value()
+        if self.oscillatingAmplitudeSpin:
+            params["oscillation_amplitude_mm"] = self.oscillatingAmplitudeSpin.value()
+        if self.capillaryTubeDiameterSpin:
+            params["tube_diameter_mm"] = self.capillaryTubeDiameterSpin.value()
+        if self.capillaryContactAngleSpin:
+            params["capillary_contact_angle_deg"] = (
+                self.capillaryContactAngleSpin.value()
+            )
+        return params
 
     def refresh_ui_labels(self) -> None:
         """Updates setup panel labels based on the current unit system."""
@@ -663,10 +738,59 @@ class SetupPanelController(QObject):
     def _update_pipeline_specific_visibility(
         self, pipeline_name: Optional[str] = None
     ) -> None:
-        is_sessile = (pipeline_name or self.current_pipeline_name()) == "sessile"
+        pipeline = pipeline_name or self.current_pipeline_name()
+        is_sessile = pipeline == "sessile"
         for widget in (self.substrateAngleLabel, self.substrateAngleSpin):
             if widget:
                 widget.setVisible(is_sessile)
+
+        group_titles = {
+            "pendant": "Pendant Settings",
+            "sessile": "Sessile Settings",
+            "oscillating": "Oscillating Settings",
+            "capillary_rise": "Capillary Settings",
+            "captive_bubble": "Captive Bubble Settings",
+        }
+        if self.pipelineSettingsGroup:
+            self.pipelineSettingsGroup.setTitle(
+                group_titles.get(str(pipeline), "Pipeline Settings")
+            )
+
+        visibility_sets = {
+            "pendant": (self.pendantNeedleIdLabel, self.pendantNeedleIdSpin),
+            "sessile": (
+                self.sessileBaselineModeLabel,
+                self.sessileBaselineModeCombo,
+            ),
+            "oscillating": (
+                self.oscillatingFrequencyLabel,
+                self.oscillatingFrequencySpin,
+                self.oscillatingAmplitudeLabel,
+                self.oscillatingAmplitudeSpin,
+            ),
+            "capillary_rise": (
+                self.capillaryTubeDiameterLabel,
+                self.capillaryTubeDiameterSpin,
+                self.capillaryContactAngleLabel,
+                self.capillaryContactAngleSpin,
+            ),
+            "captive_bubble": (
+                self.captiveDetectionLabel,
+                self.captiveDetectionValue,
+            ),
+        }
+        all_pipeline_widgets: list[QWidget] = []
+        for widgets in visibility_sets.values():
+            all_pipeline_widgets.extend(
+                widget for widget in widgets if isinstance(widget, QWidget)
+            )
+        active_widgets = {
+            widget
+            for widget in visibility_sets.get(str(pipeline), ())
+            if isinstance(widget, QWidget)
+        }
+        for widget in all_pipeline_widgets:
+            widget.setVisible(widget in active_widgets)
 
     def _refresh_source_items(self) -> None:
         """_refresh_source_items."""

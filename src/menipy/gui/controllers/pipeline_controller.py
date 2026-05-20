@@ -372,7 +372,7 @@ class PipelineController:
                 "rho2": calibration_params.get(
                     "fluid_density_kg_m3", 1.2
                 ),  # Fluid density
-                "g": 9.80665,  # Gravity
+                "g": calibration_params.get("g", 9.80665),  # Gravity
             }
 
             # Run staged pipeline
@@ -452,8 +452,10 @@ class PipelineController:
         run_kwargs["physics"] = {
             "rho1": calibration_params.get("drop_density_kg_m3", 1000.0),
             "rho2": calibration_params.get("fluid_density_kg_m3", 1.2),
-            "g": 9.80665,
+            "g": calibration_params.get("g", 9.80665),
         }
+        if params.get("analysis_params"):
+            run_kwargs["analysis_params"] = params.get("analysis_params")
 
         if image is not None:
             run_kwargs["image"] = image
@@ -523,6 +525,8 @@ class PipelineController:
             run_kwargs["frames"] = frames
         if params.get("calibration_params"):
             run_kwargs["calibration_params"] = params.get("calibration_params")
+        if params.get("analysis_params"):
+            run_kwargs["analysis_params"] = params.get("analysis_params")
 
         run_kwargs["only"] = [stage for stage in stages]
 
@@ -583,6 +587,7 @@ class PipelineController:
                     "needle_rect": overlays.get("needle_rect"),
                     "contact_line": overlays.get("contact_line"),
                     "calibration_params": params.get("calibration_params"),
+                    "analysis_params": params.get("analysis_params"),
                 }
                 if self.preprocessing_ctrl:
                     run_kwargs_vm["preprocessing_settings"] = (
@@ -624,6 +629,7 @@ class PipelineController:
                 "needle_rect": overlays.get("needle_rect"),
                 "contact_line": overlays.get("contact_line"),
                 "calibration_params": params.get("calibration_params"),
+                "analysis_params": params.get("analysis_params"),
             }
             if self.preprocessing_ctrl:
                 run_kwargs_pipe["preprocessing_settings"] = (

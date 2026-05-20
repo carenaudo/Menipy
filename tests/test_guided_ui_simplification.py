@@ -115,6 +115,62 @@ def test_guided_setup_hides_substrate_angle_outside_sessile(qtbot):
     assert controller.substrateAngleSpin.isHidden()
 
 
+def test_guided_setup_keeps_all_supported_analysis_buttons(qtbot):
+    controller = _controller(qtbot)
+
+    buttons = {
+        controller.sessileBtn.text(): "sessile",
+        controller.pendantBtn.text(): "pendant",
+        controller.oscillatingBtn.text(): "oscillating",
+        controller.capillaryBtn.text(): "capillary_rise",
+        controller.captiveBtn.text(): "captive_bubble",
+    }
+
+    assert buttons == {
+        "Sessile": "sessile",
+        "Pendant": "pendant",
+        "Osc.": "oscillating",
+        "Capillary": "capillary_rise",
+        "Captive": "captive_bubble",
+    }
+
+
+def test_guided_setup_pipeline_specific_fields_follow_selection(qtbot):
+    controller = _controller(qtbot)
+
+    controller.pendantBtn.click()
+    assert controller.pipelineSettingsGroup.title() == "Pendant Settings"
+    assert not controller.pendantNeedleIdSpin.isHidden()
+    assert controller.sessileBaselineModeCombo.isHidden()
+
+    controller.oscillatingBtn.click()
+    assert controller.pipelineSettingsGroup.title() == "Oscillating Settings"
+    assert not controller.oscillatingFrequencySpin.isHidden()
+    assert not controller.oscillatingAmplitudeSpin.isHidden()
+    assert controller.pendantNeedleIdSpin.isHidden()
+
+    controller.capillaryBtn.click()
+    assert controller.pipelineSettingsGroup.title() == "Capillary Settings"
+    assert not controller.capillaryTubeDiameterSpin.isHidden()
+    assert not controller.capillaryContactAngleSpin.isHidden()
+
+    controller.captiveBtn.click()
+    assert controller.pipelineSettingsGroup.title() == "Captive Bubble Settings"
+    assert not controller.captiveDetectionValue.isHidden()
+
+
+def test_guided_setup_collects_analysis_params(qtbot):
+    controller = _controller(qtbot)
+
+    controller.capillaryBtn.click()
+    controller.capillaryTubeDiameterSpin.setValue(1.5)
+    params = controller.gather_run_params()
+
+    assert params["calibration_params"]["g"] == controller.gravitySpin.value()
+    assert params["analysis_params"]["pipeline"] == "capillary_rise"
+    assert params["analysis_params"]["tube_diameter_mm"] == 1.5
+
+
 def test_workbench_root_sizes_migrates_legacy_result_heavy_layout():
     sizes = _workbench_root_sizes(1500, [240, 500, 760])
 
@@ -178,4 +234,20 @@ def test_menu_xml_order_and_config_actions():
         "actionConfigGeometry",
         "actionConfigPhysics",
         "actionConfigAcquisition",
+    ]
+
+    view = root.find(".//widget[@name='menuView']")
+    assert view is not None
+    view_actions = [
+        action.attrib["name"]
+        for action in view.findall("addaction")
+        if action.attrib["name"] != "separator"
+    ]
+    assert view_actions == [
+        "actionOverlay",
+        "actionToggleSetup",
+        "actionToggleResultsTable",
+        "actionToggleKeyResults",
+        "actionResetLayout",
+        "actionFitPreview",
     ]

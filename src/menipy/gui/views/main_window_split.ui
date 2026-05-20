@@ -29,9 +29,16 @@
     <addaction name="actionConfigAcquisition"/>
    </widget>
    <widget class="QMenu" name="menuView">
-    <property name="title"><string>&amp;View</string></property>
+   <property name="title"><string>&amp;View</string></property>
     <!-- You can add pane toggles or dock toggles here in code -->
     <addaction name="actionOverlay"/>
+    <addaction name="separator"/>
+    <addaction name="actionToggleSetup"/>
+    <addaction name="actionToggleResultsTable"/>
+    <addaction name="actionToggleKeyResults"/>
+    <addaction name="separator"/>
+    <addaction name="actionResetLayout"/>
+    <addaction name="actionFitPreview"/>
    </widget>
    <widget class="QMenu" name="menuRun">
    <property name="title"><string>&amp;Run</string></property>
@@ -79,6 +86,33 @@
        <property name="rightMargin"><number>12</number></property>
        <property name="bottomMargin"><number>8</number></property>
        <property name="spacing"><number>8</number></property>
+       <item>
+        <widget class="QToolButton" name="toggleSetupBtn">
+         <property name="toolTip"><string>Toggle setup rail</string></property>
+         <property name="text"><string>Setup</string></property>
+         <property name="checkable"><bool>true</bool></property>
+         <property name="checked"><bool>true</bool></property>
+         <property name="autoRaise"><bool>true</bool></property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="toggleInspectBtn">
+         <property name="toolTip"><string>Toggle results table</string></property>
+         <property name="text"><string>Table</string></property>
+         <property name="checkable"><bool>true</bool></property>
+         <property name="checked"><bool>true</bool></property>
+         <property name="autoRaise"><bool>true</bool></property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="toggleKeyResultsBtn">
+         <property name="toolTip"><string>Toggle key results panel</string></property>
+         <property name="text"><string>Results</string></property>
+         <property name="checkable"><bool>true</bool></property>
+         <property name="checked"><bool>true</bool></property>
+         <property name="autoRaise"><bool>true</bool></property>
+        </widget>
+       </item>
        <item>
         <widget class="QToolButton" name="actionOpenImageBtn">
          <property name="text"><string>Open Image</string></property>
@@ -273,6 +307,27 @@
   </action>
   <action name="actionConfigAcquisition">
    <property name="text"><string>Acquisition…</string></property>
+  </action>
+  <action name="actionToggleSetup">
+   <property name="text"><string>Show Setup Rail</string></property>
+   <property name="checkable"><bool>true</bool></property>
+   <property name="checked"><bool>true</bool></property>
+  </action>
+  <action name="actionToggleResultsTable">
+   <property name="text"><string>Show Results Table</string></property>
+   <property name="checkable"><bool>true</bool></property>
+   <property name="checked"><bool>true</bool></property>
+  </action>
+  <action name="actionToggleKeyResults">
+   <property name="text"><string>Show Key Results Panel</string></property>
+   <property name="checkable"><bool>true</bool></property>
+   <property name="checked"><bool>true</bool></property>
+  </action>
+  <action name="actionResetLayout">
+   <property name="text"><string>Reset Workbench Layout</string></property>
+  </action>
+  <action name="actionFitPreview">
+   <property name="text"><string>Fit Preview to Window</string></property>
   </action>
  </widget>
  <resources/>

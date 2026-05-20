@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from PySide6.QtWidgets import QLabel, QTableWidget, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QLabel, QListWidget, QTableWidget, QVBoxLayout, QWidget
 
 from menipy.gui.panels import results_panel as results_panel_module
 from menipy.gui.panels.results_panel import (
@@ -207,9 +207,33 @@ def test_results_panel_can_render_metric_cards_in_lateral_host(monkeypatch, qtbo
     ResultsPanel(panel, metric_host=metric_host)
 
     assert metric_host.findChild(QLabel, "keyResultsHeader").text() == "Key Results"
+    assert metric_host.findChild(QLabel, "keyResultsCountLabel").text() == (
+        "1 measurements"
+    )
     assert metric_host.findChild(QLabel, "metricValue_ift").text() == "29 mN/m"
+    assert metric_host.findChild(QListWidget, "recentResultsList").count() == 1
     assert panel.findChild(QLabel, "metricValue_ift") is None
     assert table.rowCount() == 1
+
+
+def test_lateral_recent_history_selection_syncs_table(monkeypatch, qtbot):
+    history = FakeHistory(
+        [_rich_measurement("pendant"), _measurement("sessile", value=3.0)]
+    )
+    monkeypatch.setattr(results_panel_module, "get_results_history", lambda: history)
+    panel, table = _panel_widget()
+    metric_host = QWidget()
+    metric_host.setLayout(QVBoxLayout())
+    qtbot.addWidget(panel)
+    qtbot.addWidget(metric_host)
+
+    ResultsPanel(panel, metric_host=metric_host)
+    recent = metric_host.findChild(QListWidget, "recentResultsList")
+
+    recent.setCurrentRow(1)
+
+    assert table.currentRow() == 1
+    assert metric_host.findChild(QLabel, "metricValue_diameter").text() == "3 mm"
 
 
 def test_results_panel_compare_and_diagnostics_helpers(monkeypatch, qtbot, tmp_path):

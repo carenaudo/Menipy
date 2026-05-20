@@ -13,6 +13,8 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
     QLabel,
+    QListWidget,
+    QListWidgetItem,
     QMenu,
     QPushButton,
     QTableWidget,
@@ -135,6 +137,9 @@ class ResultsPanel:
         self.pipeline_ui_manager = PipelineUIManager()
         self._raw_headers: list[str] = []
         self.metric_value_labels: dict[str, QLabel] = {}
+        self.recent_results_list: QListWidget | None = None
+        self.key_results_count_label: QLabel | None = None
+        self._syncing_selection = False
 
         # Add controls for history management
         self._setup_controls()
@@ -144,6 +149,7 @@ class ResultsPanel:
             # Start with empty table - will be populated by update_history()
             self.table.setColumnCount(0)
             self.table.setRowCount(0)
+            self.table.itemSelectionChanged.connect(self._on_table_selection_changed)
 
         # Load and display existing history
         self.update_history()
@@ -295,9 +301,60 @@ class ResultsPanel:
                     padding: 4px 2px;
                 }
             """)
+            self.key_results_count_label = QLabel("0 measurements", host)
+            self.key_results_count_label.setObjectName("keyResultsCountLabel")
+            self.key_results_count_label.setStyleSheet("""
+                QLabel#keyResultsCountLabel {
+                    color: #57606A;
+                    font-size: 12px;
+                    font-weight: 600;
+                    padding: 0 2px 8px 2px;
+                }
+            """)
+            recent_header = QLabel("Recent History", host)
+            recent_header.setObjectName("recentHistoryHeader")
+            recent_header.setStyleSheet("""
+                QLabel#recentHistoryHeader {
+                    color: #57606A;
+                    font-size: 10px;
+                    font-weight: 700;
+                    letter-spacing: 1px;
+                    text-transform: uppercase;
+                    padding: 10px 2px 4px 2px;
+                    border-top: 1px solid #D0D7DE;
+                }
+            """)
+            self.recent_results_list = QListWidget(host)
+            self.recent_results_list.setObjectName("recentResultsList")
+            self.recent_results_list.setAlternatingRowColors(False)
+            self.recent_results_list.setStyleSheet("""
+                QListWidget#recentResultsList {
+                    background: transparent;
+                    border: none;
+                    outline: none;
+                }
+                QListWidget#recentResultsList::item {
+                    background: #FFFFFF;
+                    border: 1px solid #D0D7DE;
+                    border-radius: 6px;
+                    padding: 8px;
+                    margin: 3px 0;
+                    color: #24292F;
+                }
+                QListWidget#recentResultsList::item:selected {
+                    background: #DDF4FF;
+                    border-color: #0969DA;
+                    color: #0969DA;
+                }
+            """)
+            self.recent_results_list.currentRowChanged.connect(
+                self._on_recent_result_selected
+            )
             layout.addWidget(header)
+            layout.addWidget(self.key_results_count_label)
             layout.addWidget(frame)
-            layout.addStretch()
+            layout.addWidget(recent_header)
+            layout.addWidget(self.recent_results_list, 1)
             return
 
         insert_index = 0
@@ -437,11 +494,99 @@ class ResultsPanel:
             else ""
         )
         self.count_label.setText(f"{measurement_count} measurements{filter_text}")
+        if self.key_results_count_label:
+            self.key_results_count_label.setText(
+                f"{measurement_count} measurements{filter_text}"
+            )
 
+        self._rebuild_recent_results(measurements=self._filtered_measurements())
         self._update_summary()
         self._rebuild_columns_menu()
         self._apply_column_visibility()
         self.table.resizeColumnsToContents()
+        if rows and self.table.currentRow() < 0:
+            self.table.selectRow(0)
+
+    def _rebuild_recent_results(
+        self, measurements: list[MeasurementResult] | None = None
+    ) -> None:
+        if not self.recent_results_list:
+            return
+        measurements = measurements if measurements is not None else self._filtered_measurements()
+        self.recent_results_list.blockSignals(True)
+        self.recent_results_list.clear()
+        for measurement in measurements[:20]:
+            item = QListWidgetItem(self._recent_result_text(measurement))
+            item.setData(Qt.UserRole, measurement.id)
+            self.recent_results_list.addItem(item)
+        if self.recent_results_list.count() > 0:
+            row = self.table.currentRow() if self.table else 0
+            if row < 0:
+                row = 0
+            self.recent_results_list.setCurrentRow(min(row, self.recent_results_list.count() - 1))
+        self.recent_results_list.blockSignals(False)
+
+    def _recent_result_text(self, measurement: MeasurementResult) -> str:
+        name = (
+            measurement.file_name
+            or measurement.file_path
+            or f"Measurement {measurement.id.split('_')[-1]}"
+        )
+        time_text = measurement.timestamp.strftime("%H:%M:%S")
+        results = measurement.results or {}
+        metrics: list[str] = []
+        for key, label, unit in (
+            ("surface_tension_mN_m", "IFT", ""),
+            ("diameter_mm", "Diameter", " mm"),
+            ("volume_uL", "Volume", " µL"),
+            ("contact_angle_deg", "Angle", "°"),
+        ):
+            value = results.get(key)
+            if value in (None, ""):
+                continue
+            try:
+                value_text = f"{float(value):.3g}{unit}"
+            except (TypeError, ValueError):
+                value_text = str(value)
+            metrics.append(f"{label} {value_text}")
+        metric_line = " · ".join(metrics) if metrics else measurement.pipeline.title()
+        return f"{name}    {time_text}\n{metric_line}"
+
+    def _on_recent_result_selected(self, row: int) -> None:
+        if self._syncing_selection or row < 0 or not self.table:
+            return
+        if row >= self.table.rowCount():
+            return
+        self._syncing_selection = True
+        try:
+            self.table.selectRow(row)
+            measurement = self._measurement_for_row(row)
+            if measurement:
+                self._update_metric_cards(measurement.results or {})
+        finally:
+            self._syncing_selection = False
+
+    def _on_table_selection_changed(self) -> None:
+        if self._syncing_selection or not self.table:
+            return
+        row = self.table.currentRow()
+        if row < 0:
+            return
+        self._syncing_selection = True
+        try:
+            if self.recent_results_list and row < self.recent_results_list.count():
+                self.recent_results_list.setCurrentRow(row)
+            measurement = self._measurement_for_row(row)
+            if measurement:
+                self._update_metric_cards(measurement.results or {})
+        finally:
+            self._syncing_selection = False
+
+    def _measurement_for_row(self, row: int) -> MeasurementResult | None:
+        measurements = self._filtered_measurements()
+        if 0 <= row < len(measurements):
+            return measurements[row]
+        return None
 
     def _column_settings_key(self) -> str:
         return str(self.current_pipeline_filter or VALID_PIPELINES_FILTER)
