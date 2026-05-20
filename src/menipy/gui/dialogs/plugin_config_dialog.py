@@ -1,16 +1,29 @@
 """Dialog for configuring plugin settings based on Pydantic models."""
+
 from typing import Type, Any, Dict, get_origin, get_args
 from enum import Enum
 from pydantic import BaseModel
 from PySide6.QtWidgets import (
-    QDialog, QFormLayout, QDialogButtonBox, QVBoxLayout,
-    QSpinBox, QDoubleSpinBox, QCheckBox, QLineEdit, QComboBox,
-    QLabel, QWidget, QScrollArea
+    QDialog,
+    QFormLayout,
+    QDialogButtonBox,
+    QVBoxLayout,
+    QSpinBox,
+    QDoubleSpinBox,
+    QCheckBox,
+    QLineEdit,
+    QComboBox,
+    QLabel,
+    QWidget,
+    QScrollArea,
 )
 from PySide6.QtCore import Qt
 
+
 class PluginConfigDialog(QDialog):
-    def __init__(self, model_class: Type[BaseModel], current_values: Dict[str, Any], parent=None):
+    def __init__(
+        self, model_class: Type[BaseModel], current_values: Dict[str, Any], parent=None
+    ):
         super().__init__(parent)
         self.setWindowTitle(f"Configure {model_class.__name__}")
         self.model_class = model_class
@@ -37,11 +50,11 @@ class PluginConfigDialog(QDialog):
             value = current_values.get(name, field.default)
             # Handle PydanticUndefined or factory
             if value is None and field.default_factory:
-                 try:
+                try:
                     value = field.default_factory()
-                 except Exception:
+                except Exception:
                     pass
-            
+
             # If still PydanticUndefined (required field missing), set sensible default for type
             # (Though passed current_values should ideally have it or we rely on type defaults)
 
@@ -58,7 +71,7 @@ class PluginConfigDialog(QDialog):
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         main_layout.addWidget(buttons)
-        
+
         self.resize(500, 400)
 
     def _create_widget(self, type_annotation, value) -> QWidget | None:
@@ -79,7 +92,7 @@ class PluginConfigDialog(QDialog):
             # Populate with Enum members
             for member in type_annotation:
                 w.addItem(member.name, member.value)
-            
+
             # Set current
             if isinstance(value, Enum):
                 w.setCurrentText(value.name)
@@ -115,7 +128,7 @@ class PluginConfigDialog(QDialog):
             w = QLineEdit()
             w.setText(str(value) if value is not None else "")
             return w
-        
+
         # Fallback for complex types (e.g. lists/tuples) -> Text Edit?
         # For now, simplistic approach: use QLineEdit and try to eval/repr?
         # Or just skip

@@ -2,7 +2,6 @@
 
 Module implementation."""
 
-
 from __future__ import annotations
 from typing import Optional
 import numpy as np
@@ -15,6 +14,7 @@ from menipy.pipelines.captive_bubble.physics import compute_physics
 
 # Get solver from registry (loaded at startup)
 from menipy.math.young_laplace import young_laplace_ode as yl_ode
+
 young_laplace_ode = get_solver("young_laplace_ode", fallback=yl_ode)
 
 
@@ -36,7 +36,12 @@ class CaptiveBubblePipeline(PipelineBase):
         "display_name": "Captive Bubble",
         "icon": "captive_bubble.svg",
         "color": "#50E3C2",
-        "stages": ["acquisition", "contour_extraction", "geometric_features", "physics"],
+        "stages": [
+            "acquisition",
+            "contour_extraction",
+            "geometric_features",
+            "physics",
+        ],
         "calibration_params": [
             "needle_diameter_mm",
             "drop_density_kg_m3",
@@ -88,7 +93,7 @@ class CaptiveBubblePipeline(PipelineBase):
         """Fit spherical Young-Laplace profile."""
         integrator = get_solver(self.solver_name, fallback=young_laplace_ode)
         assert integrator is not None, f"Solver {self.solver_name} not found."
-        
+
         cfg = FitConfig(
             x0=[5.0, 0.5],
             bounds=([0.1, 0.0], [50.0, 50.0]),
@@ -113,19 +118,19 @@ class CaptiveBubblePipeline(PipelineBase):
             geometry.cap_depth_px if geometry.cap_depth_px is not None else None
         )
         res["residuals"] = fit.get("residuals", {})
-        
+
         physics_config = ctx.physics or {"rho1": 1000.0, "rho2": 1.2, "g": 9.80665}
         r0_mm = res.get("r0_mm")
         beta = res.get("beta")
-        
+
         gamma, cl_mm = compute_physics(physics_config, r0_mm, beta)
-        
+
         res["surface_tension_mN_m"] = gamma
         res["capillary_length_mm"] = cl_mm
-        
+
         # Geometry defaults (diameter, volume placeholder)
         res.setdefault("volume_uL", None)
-        
+
         ctx.results = res
         return ctx
 
@@ -212,5 +217,3 @@ class CaptiveBubblePipeline(PipelineBase):
             },
         ]
         return ovl.run(ctx, commands=cmds, alpha=0.6)
-
-

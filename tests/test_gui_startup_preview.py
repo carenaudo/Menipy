@@ -69,11 +69,15 @@ def test_startup_missing_remembered_file_is_silent(monkeypatch, qtbot, tmp_path)
     missing_path = tmp_path / "missing.png"
     _patch_startup(monkeypatch, str(missing_path))
     warnings = []
-    monkeypatch.setattr(QMessageBox, "warning", lambda *args, **kwargs: warnings.append(args))
+    monkeypatch.setattr(
+        QMessageBox, "warning", lambda *args, **kwargs: warnings.append(args)
+    )
 
     window = main_window_module.MainWindow()
     qtbot.addWidget(window)
 
     assert warnings == []
     assert not window.preview_panel.image_view.scene().items()
-    assert all(not button.isEnabled() for button in window.preview_panel._overlay_buttons)
+    assert all(
+        not button.isEnabled() for button in window.preview_panel._overlay_buttons
+    )

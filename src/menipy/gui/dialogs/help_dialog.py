@@ -3,6 +3,7 @@ Help Dialog
 
 Loads Markdown help files and renders them as HTML inside a QTextBrowser.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -53,7 +54,9 @@ class HelpDialog(QDialog):
         layout.setSpacing(10)
 
         header = QLabel("Select a topic:")
-        header.setStyleSheet(f"font-size: {theme.FONT_SIZE_LARGE}px; font-weight: bold;")
+        header.setStyleSheet(
+            f"font-size: {theme.FONT_SIZE_LARGE}px; font-weight: bold;"
+        )
         layout.addWidget(header)
 
         body = QHBoxLayout()
@@ -83,6 +86,7 @@ class HelpDialog(QDialog):
             self.list_widget.setCurrentRow(0)
 
         # ------------------------------------------------------------------ helpers
+
     def _find_markdown_files(self, root: Path) -> List[Path]:
         if not root.exists():
             return []

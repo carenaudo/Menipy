@@ -7,6 +7,7 @@ redesigned UI based on the experiment-selector workflow.
 Usage:
     python -m menipy.gui.adsa_app
 """
+
 import sys
 import logging
 from PySide6.QtCore import qInstallMessageHandler, QtMsgType
@@ -20,7 +21,7 @@ def main():
     # Set up logging
     logging.basicConfig(
         level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
     logger = logging.getLogger(__name__)
 
@@ -34,12 +35,12 @@ def main():
         )
 
     qInstallMessageHandler(_qt_msg_filter)
-    
+
     # Enable high DPI scaling
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
     )
-    
+
     # Create application
     app = QApplication(sys.argv)
     app.setApplicationName("ADSA")
@@ -47,20 +48,21 @@ def main():
     app.setOrganizationName("Menipy")
     # Ensure a valid point size to avoid QFont warnings on some platforms
     from menipy.gui import theme
+
     f = app.font()
     if f.pointSize() <= 0:
         f.setPointSize(theme.FONT_SIZE_NORMAL)
         app.setFont(f)
-    
+
     # Import here to ensure QApplication exists first
     from menipy.gui.views.adsa_main_window import ADSAMainWindow
-    
+
     # Create and show main window
     window = ADSAMainWindow()
     window.show()
-    
+
     logger.info("ADSA application started")
-    
+
     # Run event loop
     sys.exit(app.exec())
 

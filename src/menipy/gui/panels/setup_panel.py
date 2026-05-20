@@ -129,7 +129,9 @@ class SetupPanelController(QObject):
         self.previewBtn: Optional[QToolButton] = panel.findChild(
             QToolButton, "previewBtn"
         )
-        self.autoCalibrateBtn: Optional[QPushButton] = panel.findChild(QPushButton, "autoCalibrateBtn")
+        self.autoCalibrateBtn: Optional[QPushButton] = panel.findChild(
+            QPushButton, "autoCalibrateBtn"
+        )
 
         # Calibration input widgets
         self.needleLengthSpin: Optional[QDoubleSpinBox] = panel.findChild(

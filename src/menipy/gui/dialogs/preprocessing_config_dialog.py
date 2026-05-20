@@ -112,8 +112,7 @@ class PreprocessingConfigDialog(QDialog):
         content_layout.addLayout(right_panel_layout, 1)
         # --- End of changes ---
 
-        self.setStyleSheet(
-            """
+        self.setStyleSheet("""
             QFrame#navFrame, QFrame#pagesFrame {
                 background-color: palette(base);
                 border: 1px solid palette(mid);
@@ -133,8 +132,7 @@ class PreprocessingConfigDialog(QDialog):
             QPushButton {
                 min-width: 110px;
             }
-            """
-        )
+            """)
 
         self._build_auto_detect_page()
         self._build_crop_page()
@@ -171,28 +169,30 @@ class PreprocessingConfigDialog(QDialog):
     def _build_auto_detect_page(self) -> None:
         widget = QWidget(self)
         layout = QVBoxLayout(widget)
-        
+
         self.auto_enable = QCheckBox("Enable Automatic Feature Detection", widget)
         layout.addWidget(self.auto_enable)
-        
+
         group = QFrame(widget)
         group.setFrameShape(QFrame.StyledPanel)
         group_layout = QVBoxLayout(group)
-        
+
         self.auto_detect_roi = QCheckBox("Detect Region of Interest (ROI)", group)
         self.auto_detect_needle = QCheckBox("Detect Needle/Nozzle", group)
         self.auto_detect_substrate = QCheckBox("Detect Substrate/Baseline", group)
-        
+
         group_layout.addWidget(self.auto_detect_roi)
         group_layout.addWidget(self.auto_detect_needle)
         group_layout.addWidget(self.auto_detect_substrate)
-        
+
         layout.addWidget(group)
-        
+
         self.btn_run_auto = QPushButton("Run Auto Detect", widget)
-        self.btn_run_auto.clicked.connect(self._on_preview) # Reuse preview logic which runs pipeline
+        self.btn_run_auto.clicked.connect(
+            self._on_preview
+        )  # Reuse preview logic which runs pipeline
         layout.addWidget(self.btn_run_auto)
-        
+
         layout.addStretch(1)
         self.pages.addWidget(widget)
 
@@ -399,7 +399,9 @@ class PreprocessingConfigDialog(QDialog):
         self._preview_btn.clicked.connect(self._on_preview)
         self._reset_btn.clicked.connect(self._on_reset)
 
-        self.auto_enable.toggled.connect(self._update_auto_detect_controls) # Wire signal
+        self.auto_enable.toggled.connect(
+            self._update_auto_detect_controls
+        )  # Wire signal
 
         self.filter_method.currentTextChanged.connect(self._update_filter_controls)
         self.norm_method.currentTextChanged.connect(self._update_norm_controls)
@@ -413,14 +415,14 @@ class PreprocessingConfigDialog(QDialog):
 
     def _load_settings(self) -> None:
         s = self._settings
-        
+
         if hasattr(s, "auto_detect"):
             ad = s.auto_detect
             self.auto_enable.setChecked(ad.enabled)
             self.auto_detect_roi.setChecked(ad.detect_roi)
             self.auto_detect_needle.setChecked(ad.detect_needle)
             self.auto_detect_substrate.setChecked(ad.detect_substrate)
-            
+
         self.crop_checkbox.setChecked(s.crop_to_roi)
         self.grayscale_checkbox.setChecked(s.convert_to_grayscale)
         self.mask_checkbox.setChecked(s.work_on_roi_mask)
@@ -482,15 +484,17 @@ class PreprocessingConfigDialog(QDialog):
     def _collect_settings(self) -> PreprocessingSettings:
         """_collect_settings."""
         s = self._settings.model_copy(deep=True)
-        
+
         if hasattr(s, "auto_detect"):
             ad = s.auto_detect
-            ad.enabled = self.auto_enable.setChecked(self.auto_enable.isChecked()) # Fix side effect
+            ad.enabled = self.auto_enable.setChecked(
+                self.auto_enable.isChecked()
+            )  # Fix side effect
             ad.enabled = self.auto_enable.isChecked()
             ad.detect_roi = self.auto_detect_roi.isChecked()
             ad.detect_needle = self.auto_detect_needle.isChecked()
             ad.detect_substrate = self.auto_detect_substrate.isChecked()
-            
+
         s.crop_to_roi = self.crop_checkbox.isChecked()
         s.convert_to_grayscale = self.grayscale_checkbox.isChecked()
         s.work_on_roi_mask = self.mask_checkbox.isChecked()
@@ -545,6 +549,7 @@ class PreprocessingConfigDialog(QDialog):
         # ------------------------------------------------------------------
         # Slots
         # ------------------------------------------------------------------
+
     def _on_preview(self) -> None:
         """_on_preview."""
         settings = self._collect_settings()
@@ -562,6 +567,7 @@ class PreprocessingConfigDialog(QDialog):
 
         # Control enablement helpers
         # ------------------------------------------------------------------
+
     def _update_auto_detect_controls(self) -> None:
         """_update_auto_detect_controls."""
         enabled = self.auto_enable.isChecked()
@@ -656,10 +662,14 @@ class PreprocessingConfigDialog(QDialog):
         pixmap = QPixmap.fromImage(q_image)
 
         # Draw overlays if metadata present
-        if metadata and (metadata.get("roi") or metadata.get("needle_rect") or metadata.get("substrate_line")):
+        if metadata and (
+            metadata.get("roi")
+            or metadata.get("needle_rect")
+            or metadata.get("substrate_line")
+        ):
             painter = QPainter(pixmap)
             painter.setRenderHint(QPainter.Antialiasing)
-            
+
             # Determine offset if cropped
             offset_x, offset_y = 0, 0
             # If cropped, the image represents the ROI, so valid coordinates are shifted
@@ -671,9 +681,10 @@ class PreprocessingConfigDialog(QDialog):
 
             def to_local_rect(r):
                 """To_local_rect."""
-                if not r: return None
+                if not r:
+                    return None
                 return (r[0] - offset_x, r[1] - offset_y, r[2], r[3])
-                
+
             def to_local_line(l):
                 """to local line.
 
@@ -687,14 +698,18 @@ class PreprocessingConfigDialog(QDialog):
                 type
                 Description.
                 """
-                if not l: return None
+                if not l:
+                    return None
                 p1, p2 = l
-                return ((p1[0] - offset_x, p1[1] - offset_y), (p2[0] - offset_x, p2[1] - offset_y))
+                return (
+                    (p1[0] - offset_x, p1[1] - offset_y),
+                    (p2[0] - offset_x, p2[1] - offset_y),
+                )
 
                 # Draw ROI (if not cropped, or if we want to show it anyway - if cropped it's the border)
                 if roi:
                     rx, ry, rw, rh = to_local_rect(roi)
-                pen = QPen(QColor(255, 255, 0)) # Yellow
+                pen = QPen(QColor(255, 255, 0))  # Yellow
                 pen.setWidth(2)
                 pen.setStyle(Qt.DashLine)
                 painter.setPen(pen)
@@ -704,7 +719,7 @@ class PreprocessingConfigDialog(QDialog):
                 needle = metadata.get("needle_rect")
                 if needle:
                     nx, ny, nw, nh = to_local_rect(needle)
-                pen = QPen(QColor(0, 255, 255)) # Cyan
+                pen = QPen(QColor(0, 255, 255))  # Cyan
                 pen.setWidth(2)
                 painter.setPen(pen)
                 painter.drawRect(nx, ny, nw, nh)
@@ -713,7 +728,7 @@ class PreprocessingConfigDialog(QDialog):
                 sub = metadata.get("substrate_line")
                 if sub:
                     (x1, y1), (x2, y2) = to_local_line(sub)
-                pen = QPen(QColor(255, 0, 255)) # Magenta
+                pen = QPen(QColor(255, 0, 255))  # Magenta
                 pen.setWidth(2)
                 painter.setPen(pen)
                 painter.drawLine(x1, y1, x2, y2)
@@ -721,7 +736,9 @@ class PreprocessingConfigDialog(QDialog):
                 painter.end()
 
                 self.preview_label.setPixmap(
-                pixmap.scaled(
-                self.preview_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation
-                )
+                    pixmap.scaled(
+                        self.preview_label.size(),
+                        Qt.KeepAspectRatio,
+                        Qt.SmoothTransformation,
+                    )
                 )

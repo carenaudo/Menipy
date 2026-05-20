@@ -2,7 +2,6 @@
 
 Module implementation."""
 
-
 from __future__ import annotations
 
 from typing import Optional
@@ -32,7 +31,12 @@ class CapillaryRisePipeline(PipelineBase):
         "display_name": "Capillary Rise",
         "icon": "capillary_rise.svg",
         "color": "#9B59B6",
-        "stages": ["acquisition", "contour_extraction", "calibration", "profile_fitting"],
+        "stages": [
+            "acquisition",
+            "contour_extraction",
+            "calibration",
+            "profile_fitting",
+        ],
         "calibration_params": [
             "tube_diameter_mm",
             "fluid_density_kg_m3",
@@ -106,13 +110,25 @@ class CapillaryRisePipeline(PipelineBase):
 
     def do_overlay(self, ctx: Context) -> Optional[Context]:
         xy = ensure_contour(ctx)
-        
-        baseline_y = int(round(ctx.geometry.baseline_y)) if ctx.geometry and ctx.geometry.baseline_y is not None else 0
-        axis_x = int(round(ctx.geometry.axis_x)) if ctx.geometry and ctx.geometry.axis_x is not None else 0
-        apex_xy = ctx.geometry.apex_xy if ctx.geometry and ctx.geometry.apex_xy is not None else (0, 0)
+
+        baseline_y = (
+            int(round(ctx.geometry.baseline_y))
+            if ctx.geometry and ctx.geometry.baseline_y is not None
+            else 0
+        )
+        axis_x = (
+            int(round(ctx.geometry.axis_x))
+            if ctx.geometry and ctx.geometry.axis_x is not None
+            else 0
+        )
+        apex_xy = (
+            ctx.geometry.apex_xy
+            if ctx.geometry and ctx.geometry.apex_xy is not None
+            else (0, 0)
+        )
         apex_x, apex_y = apex_xy
         h_px = float(getattr(ctx, "h_px", 0))
-        
+
         text = f"R0≈{ctx.results.get('R0_mm','?')} mm | h≈{h_px:.0f}px"
         x0 = int(axis_x)
         cmds = [
@@ -153,5 +169,3 @@ class CapillaryRisePipeline(PipelineBase):
             },
         ]
         return ovl.run(ctx, commands=cmds, alpha=0.6)
-
-

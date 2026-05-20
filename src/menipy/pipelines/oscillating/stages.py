@@ -2,7 +2,6 @@
 
 Module implementation."""
 
-
 # pipeline/pendant/stages.py (test-specific overrides)
 from __future__ import annotations
 
@@ -31,6 +30,7 @@ def _contour_from_frame(ctx: Context, frame) -> np.ndarray:
     original = ctx.frames
     ctx.frames = [frame]
     from menipy.models.config import EdgeDetectionSettings
+
     edged.run(ctx, settings=EdgeDetectionSettings(method="canny"))
     if ctx.contour is not None and ctx.contour.xy is not None:
         xy = np.asarray(ctx.contour.xy, dtype=float)
@@ -121,15 +121,16 @@ class OscillatingPipeline(PipelineBase):
                 r, (cx, cy) = _area_equiv_radius(np.asarray(C.xy))
                 series.append(r)
                 centers.append((cx, cy))
-                
+
             ctx.r_eq_series_px = series
             ctx.centers_px = centers
-            
+
             # Assign a few handy refs from frame 0
             xy0 = np.asarray(ctx.contours_by_frame[0].xy)
         else:
             # Single contour fallback
             from menipy.models.config import EdgeDetectionSettings
+
             edged.run(ctx, settings=EdgeDetectionSettings(method="canny"))
             if ctx.contour is not None and ctx.contour.xy is not None:
                 xy0 = np.asarray(ctx.contour.xy, dtype=float)
@@ -143,14 +144,14 @@ class OscillatingPipeline(PipelineBase):
 
         # Store frame-0 equivalent radius/center for overlay
         r0, (c0x, c0y) = _area_equiv_radius(xy0)
-        
+
         ctx.geometry = Geometry(
             axis_x=axis_x,
             apex_xy=apex_xy,
         )
         ctx.r0_eq_px = float(r0)
         ctx.c0_xy = (float(c0x), float(c0y))
-        
+
         return ctx
 
     def do_calibration(self, ctx: Context) -> Optional[Context]:
@@ -197,17 +198,17 @@ class OscillatingPipeline(PipelineBase):
                 mag[0] = 0.0
                 k = int(np.argmax(mag))
                 f0 = float(freqs[k])
-        
+
         # Collect fit results
         fit = ctx.fit or {}
         names = list(fit.get("param_names") or [])
         params = list(fit.get("params", []))
-        
+
         # Add frequency if found
         if f0 is not None:
             names.append("f0_Hz")
             params.append(f0)
-        
+
         results = {n: p for n, p in zip(names, params)}
         results["residuals"] = fit.get("residuals", {})
         # Export a couple of geometry refs
@@ -220,16 +221,18 @@ class OscillatingPipeline(PipelineBase):
             xy = np.asarray(ctx.contour.xy, dtype=float)
         else:
             xy = np.empty((0, 2), dtype=float)
-        
+
         if xy.size > 0:
-            cx, cy = getattr(ctx, "c0_xy", (float(np.mean(xy[:, 0])), float(np.mean(xy[:, 1]))))
+            cx, cy = getattr(
+                ctx, "c0_xy", (float(np.mean(xy[:, 0])), float(np.mean(xy[:, 1])))
+            )
         else:
             cx, cy = getattr(ctx, "c0_xy", (0.0, 0.0))
         r = float(getattr(ctx, "r0_eq_px", 10.0))
-        
+
         geom_axis_x = getattr(ctx.geometry, "axis_x", cx) if ctx.geometry else cx
         axis_x = int(round(geom_axis_x))
-        
+
         text = f"R0≈{ctx.results.get('R0_mm','?')} mm"
         f0 = ctx.results.get("f0_Hz", None)
         if f0 is not None:
@@ -272,5 +275,3 @@ class OscillatingPipeline(PipelineBase):
             },
         ]
         return ovl.run(ctx, commands=cmds, alpha=0.6)
-
-

@@ -72,7 +72,7 @@ class MainController(QObject):
             setup_ctrl=self.setup_ctrl,
             preview_panel=self.preview_panel,
             preprocessing_ctrl=self.preprocessing_ctrl,
-            parent=self
+            parent=self,
         )
 
         self.layout_manager = LayoutManager(window=self.window, settings=self.settings)
@@ -87,8 +87,8 @@ class MainController(QObject):
         )
 
         self.overlay_manager = OverlayManager(
-            image_view=getattr(self.preview_panel, 'image_view', None),
-            settings=self.settings
+            image_view=getattr(self.preview_panel, "image_view", None),
+            settings=self.settings,
         )
 
         self._wire_signals()
@@ -117,7 +117,9 @@ class MainController(QObject):
         """Connect signals from child controllers to main controller slots."""
         # Setup Panel
         self.setup_ctrl.browse_requested.connect(self.image_manager.browse_image)
-        self.setup_ctrl.browse_batch_requested.connect(self.image_manager.browse_batch_folder)
+        self.setup_ctrl.browse_batch_requested.connect(
+            self.image_manager.browse_batch_folder
+        )
         self.setup_ctrl.preview_requested.connect(self.on_preview_requested)
         self.setup_ctrl.run_all_requested.connect(self.run_full_pipeline)
         self.setup_ctrl.play_stage_requested.connect(self.pipeline_ctrl.run_stage)
@@ -126,7 +128,9 @@ class MainController(QObject):
             self.dialog_coordinator.show_dialog_for_stage
         )
         self.setup_ctrl.pipeline_changed.connect(self.on_pipeline_changed)
-        self.setup_ctrl.auto_calibrate_requested.connect(self.on_auto_calibrate_requested)
+        self.setup_ctrl.auto_calibrate_requested.connect(
+            self.on_auto_calibrate_requested
+        )
 
         # Preview Panel
         self.setup_ctrl.draw_mode_requested.connect(self.preview_panel.set_draw_mode)
@@ -244,35 +248,38 @@ class MainController(QObject):
         """Launch auto-calibration wizard."""
         image = self.image_manager.load_preprocessing_image()
         if image is None:
-            self.window.statusBar().showMessage('No image loaded for calibration', 2000)
+            self.window.statusBar().showMessage("No image loaded for calibration", 2000)
             QMessageBox.warning(
                 self.window,
-                'Auto-Calibrate',
-                'Please load an image before running auto-calibration.'
+                "Auto-Calibrate",
+                "Please load an image before running auto-calibration.",
             )
             return
-        
-        pipeline_name = self.setup_ctrl.current_pipeline_name() or 'sessile'
-        
+
+        pipeline_name = self.setup_ctrl.current_pipeline_name() or "sessile"
+
         try:
-            from menipy.gui.dialogs.calibration_wizard_dialog import CalibrationWizardDialog
-            
+            from menipy.gui.dialogs.calibration_wizard_dialog import (
+                CalibrationWizardDialog,
+            )
+
             wizard = CalibrationWizardDialog(image, pipeline_name, self.window)
             wizard.calibration_complete.connect(self._on_calibration_complete)
             wizard.exec()
         except Exception as exc:
-            logger.exception('Failed to open calibration wizard')
+            logger.exception("Failed to open calibration wizard")
             QMessageBox.critical(
                 self.window,
-                'Auto-Calibrate Error',
-                f'Failed to open calibration wizard:\n{exc}'
+                "Auto-Calibrate Error",
+                f"Failed to open calibration wizard:\n{exc}",
             )
-    
+
     @Slot(object)
     def _on_calibration_complete(self, result) -> None:
         """Apply calibration results to preview and settings."""
         try:
             from menipy.common.auto_calibrator import CalibrationResult
+
             if not isinstance(result, CalibrationResult):
                 return
             self._last_calibration_result = result
@@ -285,29 +292,35 @@ class MainController(QObject):
                 if result.substrate_line or result.contact_points:
                     self.preview_panel.set_layer_visible("baseline", True)
             except Exception:
-                logger.debug("Could not reveal calibration overlay layers", exc_info=True)
-            
+                logger.debug(
+                    "Could not reveal calibration overlay layers", exc_info=True
+                )
+
             # Delegate drawing to OverlayManager
             self.overlay_manager.draw_calibration_result(result)
-            
+
             # Update controllers with calibration data
             if result.roi_rect and self.preprocessing_ctrl:
                 self.preprocessing_ctrl.update_geometry(roi=result.roi_rect)
-                logger.info(f'Calibration: ROI set to {result.roi_rect}')
-            
+                logger.info(f"Calibration: ROI set to {result.roi_rect}")
+
             if result.substrate_line and self.preprocessing_ctrl:
-                self.preprocessing_ctrl.update_geometry(contact_line=result.substrate_line)
-            
+                self.preprocessing_ctrl.update_geometry(
+                    contact_line=result.substrate_line
+                )
+
             # Report success
-            conf = result.confidence_scores.get('overall', 0.0)
+            conf = result.confidence_scores.get("overall", 0.0)
             self.window.statusBar().showMessage(
-                f'Calibration complete (confidence: {conf*100:.0f}%)', 3000
+                f"Calibration complete (confidence: {conf*100:.0f}%)", 3000
             )
-            logger.info(f'Calibration applied: ROI={result.roi_rect}, needle={result.needle_rect}, substrate={result.substrate_line is not None}')
-            
+            logger.info(
+                f"Calibration applied: ROI={result.roi_rect}, needle={result.needle_rect}, substrate={result.substrate_line is not None}"
+            )
+
         except Exception as exc:
-            logger.exception('Failed to apply calibration results')
-            self.window.statusBar().showMessage('Failed to apply calibration', 2000)
+            logger.exception("Failed to apply calibration results")
+            self.window.statusBar().showMessage("Failed to apply calibration", 2000)
 
     @Slot()
     def stop_pipeline(self):
@@ -359,7 +372,9 @@ class MainController(QObject):
                     self.settings.marker_config
                 )
         except Exception:
-            logger.debug("Failed to apply marker config to overlay manager", exc_info=True)
+            logger.debug(
+                "Failed to apply marker config to overlay manager", exc_info=True
+            )
         self.window.statusBar().showMessage("Marker configuration saved", 1500)
 
     @Slot()
@@ -439,20 +454,24 @@ class MainController(QObject):
     def export_results_csv(self) -> None:
         """Opens a file dialog and exports the results history to CSV."""
         from menipy.models.results import get_results_history
-        
+
         file_path, _ = QFileDialog.getSaveFileName(
             self.window, "Export Results to CSV", "", "CSV Files (*.csv)"
         )
         if not file_path:
             return
-            
+
         history = get_results_history()
         success = history.export_csv(file_path)
-        
+
         if success:
-            self.window.statusBar().showMessage(f"Results exported to {Path(file_path).name}", 3000)
+            self.window.statusBar().showMessage(
+                f"Results exported to {Path(file_path).name}", 3000
+            )
         else:
-            QMessageBox.critical(self.window, "Export Error", "Failed to export results to CSV.")
+            QMessageBox.critical(
+                self.window, "Export Error", "Failed to export results to CSV."
+            )
 
     @Slot(str)
     def change_unit_system(self, system: str) -> None:
@@ -477,6 +496,7 @@ class MainController(QObject):
         if self.results_panel:
             try:
                 from menipy.models.results import get_results_history
+
                 history = get_results_history()
                 self.results_panel.update_history_table(
                     history,
@@ -484,14 +504,13 @@ class MainController(QObject):
                 )
             except Exception as e:
                 logger.error(f"Failed to refresh results panel: {e}")
-        
+
         # 2. Update setup panel labels
         if self.setup_ctrl:
             try:
                 self.setup_ctrl.refresh_ui_labels()
             except Exception as e:
                 logger.error(f"Failed to refresh setup panel labels: {e}")
-
 
     @Slot(object)
     def _on_roi_selected(self, rect) -> None:
@@ -569,7 +588,7 @@ class MainController(QObject):
             ):
                 # Delegate overlay drawing to OverlayManager
                 self.overlay_manager.draw_edge_detection_preview(metadata)
-            
+
         except Exception:
             logger.debug(
                 "Error while handling edge detection preview image", exc_info=True

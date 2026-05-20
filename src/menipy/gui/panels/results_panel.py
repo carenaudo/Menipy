@@ -69,6 +69,7 @@ def get_label_with_unit(key: str, system: str) -> str:
 
     return key.replace("_", " ").title()
 
+
 VALID_PIPELINES = {
     "sessile",
     "pendant",
@@ -714,7 +715,9 @@ class ResultsPanel:
             self.history.add_measurement(measurement)
             self.update_history()
 
-    def update_history_table(self, history=None, unit_system: str | None = None) -> None:
+    def update_history_table(
+        self, history=None, unit_system: str | None = None
+    ) -> None:
         """Refresh the history table using the current global unit setting."""
         if unit_system in ("SI", "CGS"):
             self.unit_system = unit_system

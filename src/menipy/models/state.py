@@ -68,8 +68,9 @@ class PreprocessingState(BaseModel):
         """
         return self.model_copy(deep=True)
 
-
         # Convenience constructors (migrated)
+
+
 def make_frame(
     image: np.ndarray,
     timestamp: Optional[datetime] = None,

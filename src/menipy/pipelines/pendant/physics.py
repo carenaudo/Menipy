@@ -2,6 +2,7 @@
 Minimal physics stage for the pendant pipeline.
 Populates default densities and gravity if missing.
 """
+
 from __future__ import annotations
 
 from typing import Optional

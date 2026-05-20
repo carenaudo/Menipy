@@ -2,6 +2,7 @@ import sys
 import importlib.util
 from pathlib import Path
 
+
 def load_module_from_path(path: Path, module_name: str):
     """Load a Python module from a file path."""
     spec = importlib.util.spec_from_file_location(module_name, str(path))

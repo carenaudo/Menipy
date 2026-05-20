@@ -1,7 +1,15 @@
 """Pipeline-specific settings panel for captive bubble pipeline (basic stub)."""
+
 from __future__ import annotations
 
-from PySide6.QtWidgets import QWidget, QFormLayout, QDoubleSpinBox, QVBoxLayout, QComboBox, QTextEdit
+from PySide6.QtWidgets import (
+    QWidget,
+    QFormLayout,
+    QDoubleSpinBox,
+    QVBoxLayout,
+    QComboBox,
+    QTextEdit,
+)
 
 
 class PipelineSettingsWidget(QWidget):

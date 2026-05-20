@@ -5,10 +5,10 @@ def test_core_package_imports():
     import importlib
 
     modules = [
-        'menipy',
-        'menipy.common',
-        'menipy.pipelines',
-        'menipy.models',
+        "menipy",
+        "menipy.common",
+        "menipy.pipelines",
+        "menipy.models",
     ]
 
     for mod in modules:

@@ -96,7 +96,7 @@ class ContactLineSettings(BaseModel):
 
 class ContourSmoothingSettings(BaseModel):
     """Configuration for optional Savitzky-Golay contour smoothing.
-    
+
     When enabled, applies smoothing to the extracted contour to reduce noise
     and computes tangent-based contact angles from the smoothed curve.
     """
@@ -182,12 +182,20 @@ class PreprocessingSettings(BaseModel):
 
     class AutoDetectSettings(BaseModel):
         """Configuration for automatic feature detection (ROI, Needle, etc.)."""
-        
-        enabled: bool = Field(default=True, description="Enable automatic feature detection")
-        detect_roi: bool = Field(default=True, description="Automatically detect Region of Interest")
-        detect_needle: bool = Field(default=True, description="Automatically detect Needle/Nozzle")
-        detect_substrate: bool = Field(default=True, description="Automatically detect Substrate/Baseline")
-        
+
+        enabled: bool = Field(
+            default=True, description="Enable automatic feature detection"
+        )
+        detect_roi: bool = Field(
+            default=True, description="Automatically detect Region of Interest"
+        )
+        detect_needle: bool = Field(
+            default=True, description="Automatically detect Needle/Nozzle"
+        )
+        detect_substrate: bool = Field(
+            default=True, description="Automatically detect Substrate/Baseline"
+        )
+
     auto_detect: AutoDetectSettings = Field(default_factory=AutoDetectSettings)
     preset_id: Optional[str] = Field(default=None)
 
@@ -197,8 +205,16 @@ class EdgeDetectionSettings(BaseModel):
 
     enabled: bool = Field(default=True)
     method: Literal[
-        "canny", "sobel", "scharr", "laplacian", "threshold", "active_contour",
-        "otsu", "adaptive", "log", "improved_snake"
+        "canny",
+        "sobel",
+        "scharr",
+        "laplacian",
+        "threshold",
+        "active_contour",
+        "otsu",
+        "adaptive",
+        "log",
+        "improved_snake",
     ] = Field(default="otsu", description="Edge detection algorithm to use")
     # Common preprocessing for edge detection
     gaussian_blur_before: bool = Field(
@@ -273,9 +289,7 @@ class EdgeDetectionSettings(BaseModel):
     snake_beta: float = Field(
         default=10.0, ge=0.0, description="Snake smoothness energy weight"
     )
-    snake_gamma: float = Field(
-        default=0.001, ge=0.0, description="Snake time step"
-    )
+    snake_gamma: float = Field(default=0.001, ge=0.0, description="Snake time step")
 
     plugin_settings: Dict[str, Any] = Field(
         default_factory=dict,

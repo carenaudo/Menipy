@@ -62,17 +62,17 @@ class _Job(QRunnable):
 
             # patch acquisition - DISABLED to allow pipeline class method to run (and use logging)
             # if self.image:
-                #     p.do_acquisition = (lambda ctx: setattr(ctx, "frames", acq.from_file([self.image])) or ctx)  # type: ignore
+            #     p.do_acquisition = (lambda ctx: setattr(ctx, "frames", acq.from_file([self.image])) or ctx)  # type: ignore
             # else:
-                #     p.do_acquisition = (lambda ctx: setattr(ctx, "frames", acq.from_camera(device=self.camera or 0, n_frames=self.frames)) or ctx)  # type: ignore
+            #     p.do_acquisition = (lambda ctx: setattr(ctx, "frames", acq.from_camera(device=self.camera or 0, n_frames=self.frames)) or ctx)  # type: ignore
             run_kwargs = {
                 "roi": self.roi,
                 "needle_rect": self.needle_rect,
                 "contact_line": self.contact_line,
                 "preprocessing_markers": self.preprocessing_markers,
-                'calibration_params': self.calibration_params,
-                'scale': self.scale,
-                'physics': self.physics,
+                "calibration_params": self.calibration_params,
+                "scale": self.scale,
+                "physics": self.physics,
                 "image": self.image,
                 "camera": self.camera,
                 "frames": self.frames,
