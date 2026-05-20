@@ -8,32 +8,32 @@ for the ADSA application UI based on the design mockup.
 # =============================================================================
 # Background Colors
 # =============================================================================
-BG_PRIMARY = "#2B2B2B"  # Main window background
-BG_SECONDARY = "#353535"  # Panel backgrounds
-BG_TERTIARY = "#1A1A1A"  # Image viewer, darker areas
-BG_HOVER = "#404040"  # Hover state for interactive elements
+BG_PRIMARY = "#FFFFFF"  # Main window background
+BG_SECONDARY = "#F6F8FA"  # Panel backgrounds
+BG_TERTIARY = "#EBF0F4"  # Image viewer, tables, recessed areas
+BG_HOVER = "#EAEFF4"  # Hover state for interactive elements
 
 # =============================================================================
 # Accent Colors
 # =============================================================================
-ACCENT_BLUE = "#4A90E2"  # Primary actions, highlights, focus
-ACCENT_BLUE_HOVER = "#5BA3F5"  # Hover state for accent
-SUCCESS_GREEN = "#5CB85C"  # Calibrated, valid, success states
-WARNING_ORANGE = "#F0AD4E"  # Needs attention, warnings
-ERROR_RED = "#D9534F"  # Invalid, errors
+ACCENT_BLUE = "#0969DA"  # Primary actions, highlights, focus
+ACCENT_BLUE_HOVER = "#035CC5"  # Hover state for accent
+SUCCESS_GREEN = "#1A7F37"  # Calibrated, valid, success states
+WARNING_ORANGE = "#BF8700"  # Needs attention, warnings
+ERROR_RED = "#CF222E"  # Invalid, errors
 
 # =============================================================================
 # Text Colors
 # =============================================================================
-TEXT_PRIMARY = "#E8E8E8"  # Main text
-TEXT_SECONDARY = "#A0A0A0"  # Labels, hints, disabled text
-TEXT_DISABLED = "#666666"  # Disabled state
+TEXT_PRIMARY = "#24292F"  # Main text
+TEXT_SECONDARY = "#57606A"  # Labels, hints, disabled text
+TEXT_DISABLED = "#8C959F"  # Disabled state
 
 # =============================================================================
 # Border Colors
 # =============================================================================
-BORDER_DEFAULT = "#4A4A4A"  # Default borders
-BORDER_FOCUS = "#4A90E2"  # Focused element borders
+BORDER_DEFAULT = "#D0D7DE"  # Default borders
+BORDER_FOCUS = "#0969DA"  # Focused element borders
 
 # =============================================================================
 # Overlay Colors (for image annotations)
@@ -143,21 +143,21 @@ def get_stylesheet() -> str:
     /* Buttons                                                             */
     /* =================================================================== */
     QPushButton {{
-        background-color: {ACCENT_BLUE};
+        background-color: {BG_PRIMARY};
         color: {TEXT_PRIMARY};
-        border: none;
-        border-radius: 6px;
-        padding: 10px 20px;
+        border: 1px solid {BORDER_DEFAULT};
+        border-radius: 5px;
+        padding: 7px 12px;
         font-weight: bold;
         min-height: 20px;
     }}
 
     QPushButton:hover {{
-        background-color: {ACCENT_BLUE_HOVER};
+        background-color: {BG_HOVER};
     }}
 
     QPushButton:pressed {{
-        background-color: {ACCENT_BLUE};
+        background-color: {BG_TERTIARY};
     }}
 
     QPushButton:disabled {{
@@ -166,7 +166,7 @@ def get_stylesheet() -> str:
     }}
 
     QPushButton[secondary="true"] {{
-        background-color: {BG_SECONDARY};
+        background-color: {BG_PRIMARY};
         border: 1px solid {BORDER_DEFAULT};
     }}
 
@@ -181,9 +181,9 @@ def get_stylesheet() -> str:
     QGroupBox {{
         background-color: {BG_SECONDARY};
         border: 1px solid {BORDER_DEFAULT};
-        border-radius: 8px;
-        margin-top: 16px;
-        padding: 12px;
+        border-radius: 6px;
+        margin-top: 14px;
+        padding: 10px;
         font-weight: bold;
     }}
 
@@ -220,11 +220,11 @@ def get_stylesheet() -> str:
     /* Line Edits and Spin Boxes                                           */
     /* =================================================================== */
     QLineEdit, QSpinBox, QDoubleSpinBox {{
-        background-color: {BG_TERTIARY};
+        background-color: {BG_PRIMARY};
         color: {TEXT_PRIMARY};
         border: 1px solid {BORDER_DEFAULT};
         border-radius: 4px;
-        padding: 8px;
+        padding: 6px;
         selection-background-color: {ACCENT_BLUE};
     }}
 
@@ -241,11 +241,11 @@ def get_stylesheet() -> str:
     /* Combo Boxes                                                         */
     /* =================================================================== */
     QComboBox {{
-        background-color: {BG_TERTIARY};
+        background-color: {BG_PRIMARY};
         color: {TEXT_PRIMARY};
         border: 1px solid {BORDER_DEFAULT};
         border-radius: 4px;
-        padding: 8px;
+        padding: 6px;
         min-width: 120px;
     }}
 
@@ -267,25 +267,25 @@ def get_stylesheet() -> str:
     }}
 
     QComboBox QAbstractItemView {{
-        background-color: {BG_SECONDARY};
+        background-color: {BG_PRIMARY};
         color: {TEXT_PRIMARY};
         border: 1px solid {BORDER_DEFAULT};
         selection-background-color: {ACCENT_BLUE};
         outline: none;
         padding: 4px;
     }}
-    
+
     QComboBox QAbstractItemView::item {{
-        background-color: {BG_SECONDARY};
+        background-color: {BG_PRIMARY};
         color: {TEXT_PRIMARY};
         padding: 8px 12px;
         min-height: 24px;
     }}
-    
+
     QComboBox QAbstractItemView::item:hover {{
         background-color: {BG_HOVER};
     }}
-    
+
     QComboBox QAbstractItemView::item:selected {{
         background-color: {ACCENT_BLUE};
     }}
@@ -299,10 +299,10 @@ def get_stylesheet() -> str:
     }}
 
     QCheckBox::indicator, QRadioButton::indicator {{
-        width: 18px;
-        height: 18px;
+        width: 14px;
+        height: 14px;
         border: 2px solid {BORDER_DEFAULT};
-        background-color: {BG_TERTIARY};
+        background-color: {BG_PRIMARY};
     }}
 
     QCheckBox::indicator {{
@@ -387,9 +387,9 @@ def get_stylesheet() -> str:
     /* Tables                                                              */
     /* =================================================================== */
     QTableWidget, QTableView {{
-        background-color: {BG_TERTIARY};
+        background-color: {BG_PRIMARY};
         color: {TEXT_PRIMARY};
-        gridline-color: {BORDER_DEFAULT};
+        gridline-color: #E1E4E8;
         border: 1px solid {BORDER_DEFAULT};
         border-radius: 4px;
         selection-background-color: {ACCENT_BLUE};
@@ -397,7 +397,7 @@ def get_stylesheet() -> str:
 
     QHeaderView::section {{
         background-color: {BG_SECONDARY};
-        color: {TEXT_PRIMARY};
+        color: {TEXT_SECONDARY};
         padding: 8px;
         border: none;
         border-bottom: 1px solid {BORDER_DEFAULT};
@@ -405,7 +405,7 @@ def get_stylesheet() -> str:
     }}
 
     QTableWidget::item {{
-        padding: 8px;
+        padding: 6px;
     }}
 
     /* =================================================================== */
@@ -431,22 +431,22 @@ def get_stylesheet() -> str:
     /* Tab Widget                                                          */
     /* =================================================================== */
     QTabWidget::pane {{
-        background-color: {BG_SECONDARY};
+        background-color: {BG_PRIMARY};
         border: 1px solid {BORDER_DEFAULT};
         border-radius: 4px;
     }}
 
     QTabBar::tab {{
-        background-color: {BG_PRIMARY};
+        background-color: {BG_SECONDARY};
         color: {TEXT_SECONDARY};
-        padding: 10px 20px;
+        padding: 8px 16px;
         border-top-left-radius: 4px;
         border-top-right-radius: 4px;
         margin-right: 2px;
     }}
 
     QTabBar::tab:selected {{
-        background-color: {BG_SECONDARY};
+        background-color: {BG_PRIMARY};
         color: {TEXT_PRIMARY};
     }}
 

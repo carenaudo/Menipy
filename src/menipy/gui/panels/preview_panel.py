@@ -7,18 +7,19 @@ import logging
 logger = logging.getLogger(__name__)
 
 from pathlib import Path
-from typing import Any, Optional, Callable
+from typing import Any, Callable, Optional
 
-from PySide6.QtCore import QRectF, QLineF, Signal, QPointF
+from PySide6.QtCore import QLineF, QPointF, QRectF, Signal
+from PySide6.QtGui import QAction, QColor
 from PySide6.QtWidgets import (
-    QWidget,
-    QToolButton,
-    QPushButton,
     QCheckBox,
-    QMenu,
     QHBoxLayout,
+    QLabel,
+    QMenu,
+    QPushButton,
+    QToolButton,
+    QWidget,
 )
-from PySide6.QtGui import QColor, QAction
 
 LAYER_DEFAULTS = {
     "contour": True,
@@ -89,6 +90,13 @@ class PreviewPanel:
         self._layer_actions: dict[str, QAction] = {}
         self._layer_checks: dict[str, QCheckBox] = {}
         self._layer_state = self._load_layer_state()
+        self._status_label: QLabel | None = self.panel.findChild(
+            QLabel, "previewStatusLabel"
+        )
+        if self._status_label:
+            self._status_label.setStyleSheet(
+                "color: #57606A; font-weight: 600; padding: 2px 8px;"
+            )
 
         if self.image_view:
             self._configure_image_view()
@@ -119,6 +127,7 @@ class PreviewPanel:
                 self.image_view.set_image(pixmap)
                 logger.info("Preview loaded from %s", target)
                 self._set_overlay_buttons_enabled(True)
+                self._set_status(f"File · {target.name}")
                 return
             except Exception as exc:
                 raise RuntimeError(f"Failed to load image {target}: {exc}") from exc
@@ -126,11 +135,13 @@ class PreviewPanel:
             self.image_view.setImage(str(target))
             logger.info("Preview loaded from %s", target)
             self._set_overlay_buttons_enabled(True)
+            self._set_status(f"File · {target.name}")
             return
         if hasattr(self.image_view, "load"):
             self.image_view.load(str(target))
             logger.info("Preview loaded from %s", target)
             self._set_overlay_buttons_enabled(True)
+            self._set_status(f"File · {target.name}")
             return
         raise RuntimeError("Preview ImageView has no loader method")
 
@@ -164,12 +175,15 @@ class PreviewPanel:
         if base is not None and commands:
             self.display(base)
             self.render_overlay_commands(commands)
+            self._set_status("Analysis preview · overlays")
             return
         if getattr(ctx, "preview", None) is not None:
             self.display(ctx.preview)
+            self._set_status("Analysis preview")
             return
         if base is not None:
             self.display(base)
+            self._set_status("Analysis preview")
 
     def render_overlay_commands(self, commands: list[dict[str, Any]]) -> None:
         if not self.image_view:
@@ -359,7 +373,7 @@ class PreviewPanel:
             return
 
         try:
-            from menipy.gui.views.image_view import DRAW_RECT, DRAW_LINE
+            from menipy.gui.views.image_view import DRAW_LINE, DRAW_RECT
         except ImportError:
             return
 
@@ -390,6 +404,10 @@ class PreviewPanel:
                 except Exception:
                     pass
         self._set_overlay_buttons_enabled(False)
+
+    def _set_status(self, text: str) -> None:
+        if self._status_label:
+            self._status_label.setText(text)
 
     def _install_guided_menus(self) -> None:
         """Replace exposed overlay controls with compact guided menus."""
@@ -436,6 +454,29 @@ class PreviewPanel:
             action.setCheckable(True)
             checked = bool(self._layer_state.get(layer, True))
             checkbox.setText(label)
+            checkbox.setStyleSheet("""
+                QCheckBox {
+                    border: 1px solid #D0D7DE;
+                    border-radius: 4px;
+                    padding: 4px 8px;
+                    background: #FFFFFF;
+                    color: #57606A;
+                    font-weight: 600;
+                }
+                QCheckBox:hover {
+                    background: #EAEFF4;
+                    color: #24292F;
+                }
+                QCheckBox:checked {
+                    background: #DDF4FF;
+                    border-color: #54AEFF;
+                    color: #0969DA;
+                }
+                QCheckBox::indicator {
+                    width: 0px;
+                    height: 0px;
+                }
+            """)
             checkbox.setChecked(checked)
             action.setChecked(checked)
             action.toggled.connect(checkbox.setChecked)

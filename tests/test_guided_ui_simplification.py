@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from unittest.mock import Mock
-import xml.etree.ElementTree as ET
 
 from PySide6.QtCore import QFile
 from PySide6.QtUiTools import QUiLoader
@@ -135,7 +135,16 @@ def test_workbench_layout_xml_places_preview_above_results():
     child_names = [
         child.attrib.get("name") for child in splitter if child.tag == "widget"
     ]
-    assert child_names[:2] == ["previewHost", "inspectTabs"]
+    assert child_names[:2] == ["previewResultsSplitter", "inspectTabs"]
+
+    preview_splitter = root.find(".//widget[@name='previewResultsSplitter']")
+    assert preview_splitter is not None
+    preview_child_names = [
+        child.attrib.get("name")
+        for child in preview_splitter
+        if child.tag == "widget"
+    ]
+    assert preview_child_names[:2] == ["previewHost", "keyResultsHost"]
 
 
 def test_menu_xml_order_and_config_actions():

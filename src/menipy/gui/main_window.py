@@ -4,40 +4,38 @@
 # type: ignore
 from __future__ import annotations
 
-from pathlib import Path
 import logging
+from pathlib import Path
 from typing import List, Optional
 
-from PySide6.QtCore import QFile, QByteArray, Qt, QTimer
+from PySide6.QtCore import QByteArray, QFile, Qt, QTimer
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import (
-    QMainWindow,
-    QWidget,
-    QVBoxLayout,
     QLayout,
+    QMainWindow,
     QPlainTextEdit,
+    QVBoxLayout,
+    QWidget,
 )
 
-from menipy.gui.views.image_view import DRAW_NONE
-
-from menipy.gui.views.ui_main_window import Ui_MainWindow
-
-from menipy.gui.logging_bridge import install_qt_logging
-from menipy.gui.controllers.plugins_controller import PluginsController
-from menipy.gui.controllers.setup_panel_controller import SetupPanelController
-from menipy.gui.panels.preview_panel import PreviewPanel
-from menipy.gui.panels.results_panel import ResultsPanel
-from menipy.gui.services.camera_service import CameraController, CameraConfig
-from menipy.gui.controllers.pipeline_controller import PipelineController
-from menipy.gui.controllers.preprocessing_controller import (
-    PreprocessingPipelineController,
-)
+from menipy.gui import theme
 from menipy.gui.controllers.edge_detection_controller import (
     EdgeDetectionPipelineController,
 )
+from menipy.gui.controllers.pipeline_controller import PipelineController
+from menipy.gui.controllers.plugins_controller import PluginsController
+from menipy.gui.controllers.preprocessing_controller import (
+    PreprocessingPipelineController,
+)
+from menipy.gui.controllers.setup_panel_controller import SetupPanelController
 from menipy.gui.helpers.image_marking import ImageMarkerHelper
-
+from menipy.gui.logging_bridge import install_qt_logging
+from menipy.gui.panels.preview_panel import PreviewPanel
+from menipy.gui.panels.results_panel import ResultsPanel
+from menipy.gui.services.camera_service import CameraConfig, CameraController
+from menipy.gui.views.image_view import DRAW_NONE
+from menipy.gui.views.ui_main_window import Ui_MainWindow
 from menipy.pipelines.discover import PIPELINE_MAP
 
 logger = logging.getLogger(__name__)
@@ -97,10 +95,11 @@ except Exception:
     StepItemWidget = None  # type: ignore
 
 try:
-    from .services.sop_service import SopService
-    from .services.settings_service import AppSettings
-    from menipy.gui.viewmodels.run_vm import RunViewModel
     from menipy.gui.services.pipeline_runner import PipelineRunner
+    from menipy.gui.viewmodels.run_vm import RunViewModel
+
+    from .services.settings_service import AppSettings
+    from .services.sop_service import SopService
 except Exception:
     SopService = None  # type: ignore
 
@@ -151,6 +150,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         super().__init__()
         # ---------- build split main window ----------
         self.setupUi(self)
+        self._apply_workbench_polish()
 
         # settings
         self.settings = AppSettings.load()
@@ -190,7 +190,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._embed(self.results_panel, self.resultsHostLayout)
 
         self.preview_panel = PreviewPanel(self.overlay_panel, ImageView, self.settings)
-        self.results_panel_ctrl = ResultsPanel(self.results_panel)
+        self.results_panel_ctrl = ResultsPanel(
+            self.results_panel, getattr(self, "keyResultsHost", None)
+        )
 
         self.preprocessing_ctrl = PreprocessingPipelineController(self)
         self.edge_detection_ctrl = EdgeDetectionPipelineController(self)
@@ -284,6 +286,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.workbenchSplitter.setSizes(  # type: ignore[attr-defined]
                 _workbench_vertical_sizes(self.height(), guided_vertical_sizes)
             )
+            if hasattr(self, "previewResultsSplitter"):
+                self.previewResultsSplitter.setStretchFactor(0, 1)  # type: ignore[attr-defined]
+                self.previewResultsSplitter.setStretchFactor(1, 0)  # type: ignore[attr-defined]
+                self.previewResultsSplitter.setSizes([900, 300])  # type: ignore[attr-defined]
         except Exception:
             pass
 
@@ -358,6 +364,63 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # Force initial labels refresh
         QTimer.singleShot(0, self.main_controller.refresh_unit_labels)
+
+    def _apply_workbench_polish(self) -> None:
+        """Apply proposal-inspired styling to the current generated workbench."""
+        self.setStyleSheet(
+            theme.get_stylesheet()
+            + f"""
+            QWidget#centralwidget {{
+                background-color: {theme.BG_PRIMARY};
+            }}
+            QWidget#workflowBar {{
+                background-color: {theme.BG_SECONDARY};
+                border-bottom: 1px solid {theme.BORDER_DEFAULT};
+            }}
+            QToolButton {{
+                background-color: {theme.BG_PRIMARY};
+                border: 1px solid {theme.BORDER_DEFAULT};
+                border-radius: 5px;
+                color: {theme.TEXT_PRIMARY};
+                padding: 5px 12px;
+                font-weight: 600;
+            }}
+            QToolButton:hover {{
+                background-color: {theme.BG_HOVER};
+            }}
+            QToolButton:checked {{
+                background-color: #DDF4FF;
+                border-color: {theme.ACCENT_BLUE};
+                color: {theme.ACCENT_BLUE};
+            }}
+            QToolButton#actionRunBtn {{
+                background-color: {theme.ACCENT_BLUE};
+                border-color: {theme.ACCENT_BLUE};
+                color: white;
+            }}
+            QToolButton#actionRunBtn:hover {{
+                background-color: {theme.ACCENT_BLUE_HOVER};
+            }}
+            QToolButton#workflowAdvancedBtn {{
+                color: #8250DF;
+            }}
+            QWidget#setupHost {{
+                background-color: {theme.BG_SECONDARY};
+                border-right: 1px solid {theme.BORDER_DEFAULT};
+            }}
+            QWidget#workbenchHost,
+            QWidget#previewHost {{
+                background-color: {theme.BG_TERTIARY};
+            }}
+            QWidget#keyResultsHost {{
+                background-color: {theme.BG_SECONDARY};
+                border-left: 1px solid {theme.BORDER_DEFAULT};
+            }}
+            QTabWidget#inspectTabs {{
+                background-color: {theme.BG_PRIMARY};
+            }}
+            """
+        )
 
     def _wire_menu_actions(self):
         # Actions declared in main_window_split.ui

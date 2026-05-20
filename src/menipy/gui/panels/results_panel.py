@@ -2,27 +2,29 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping, Optional, List
 import csv
+from typing import Any, List, Mapping, Optional
 
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
-    QWidget,
+    QComboBox,
+    QFrame,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QMenu,
+    QPushButton,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
-    QHBoxLayout,
-    QPushButton,
-    QComboBox,
-    QLabel,
-    QMenu,
+    QWidget,
 )
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QAction
 
-from menipy.models.results import get_results_history, MeasurementResult
+from menipy.common.units import convert_from_si
 from menipy.gui.controllers.pipeline_ui_manager import PipelineUIManager
 from menipy.gui.services.settings_service import AppSettings
-from menipy.common.units import convert_from_si
+from menipy.models.results import MeasurementResult, get_results_history
 
 
 def get_label_with_unit(key: str, system: str) -> str:
@@ -112,7 +114,7 @@ LABEL_MAP = {
 class ResultsPanel:
     """Provides a helper wrapper around the results table widget with measurement history support."""
 
-    def __init__(self, panel: QWidget) -> None:
+    def __init__(self, panel: QWidget, metric_host: QWidget | None = None) -> None:
         """Initialize.
 
         Parameters
@@ -121,6 +123,7 @@ class ResultsPanel:
         Description.
         """
         self.panel = panel
+        self.metric_host = metric_host
         self.table: Optional[QTableWidget] = panel.findChild(
             QTableWidget, "resultsTable"
         )
@@ -131,9 +134,11 @@ class ResultsPanel:
         self.current_pipeline_filter = VALID_PIPELINES_FILTER
         self.pipeline_ui_manager = PipelineUIManager()
         self._raw_headers: list[str] = []
+        self.metric_value_labels: dict[str, QLabel] = {}
 
         # Add controls for history management
         self._setup_controls()
+        self._setup_metric_cards()
 
         if self.table:
             # Start with empty table - will be populated by update_history()
@@ -176,11 +181,11 @@ class ResultsPanel:
         controls_layout.addStretch()
 
         # Action buttons
-        self.key_results_button = QPushButton("Show Key Results")
+        self.key_results_button = QPushButton("Key Results")
         self.key_results_button.clicked.connect(self.show_key_results)
         controls_layout.addWidget(self.key_results_button)
 
-        self.compare_button = QPushButton("Compare Methods")
+        self.compare_button = QPushButton("Compare")
         self.compare_button.setCheckable(True)
         self.compare_button.setChecked(
             bool(getattr(self.settings, "compare_methods_visible", False))
@@ -196,11 +201,11 @@ class ResultsPanel:
         self.diagnostics_button.toggled.connect(self.set_diagnostics_visible)
         controls_layout.addWidget(self.diagnostics_button)
 
-        self.clear_button = QPushButton("Clear History")
+        self.clear_button = QPushButton("Clear")
         self.clear_button.clicked.connect(self._clear_history)
         controls_layout.addWidget(self.clear_button)
 
-        self.export_button = QPushButton("Export CSV")
+        self.export_button = QPushButton("Export")
         self.export_button.clicked.connect(self._export_csv)
         controls_layout.addWidget(self.export_button)
 
@@ -214,6 +219,91 @@ class ResultsPanel:
         if self.summary_label and layout.indexOf(self.summary_label) != -1:
             insert_index = 1
         layout.insertLayout(insert_index, controls_layout)
+
+    def _setup_metric_cards(self) -> None:
+        """Create compact key metric cards above the full results table."""
+        host = self.metric_host or self.panel
+        if hasattr(host, "layout") and host.layout():
+            layout = host.layout()
+        else:
+            layout = QVBoxLayout(host)
+
+        frame = QFrame(host)
+        frame.setObjectName("resultsMetricFrame")
+        frame.setStyleSheet("""
+            QFrame#resultsMetricFrame {
+                background-color: transparent;
+                border: none;
+            }
+            QFrame[resultMetricCard="true"] {
+                background-color: #FFFFFF;
+                border: 1px solid #D0D7DE;
+                border-radius: 6px;
+            }
+            QLabel[resultMetricLabel="true"] {
+                color: #57606A;
+                font-size: 10px;
+                font-weight: 700;
+                text-transform: uppercase;
+            }
+            QLabel[resultMetricValue="true"] {
+                color: #24292F;
+                font-size: 18px;
+                font-weight: 700;
+            }
+        """)
+        grid = QGridLayout(frame)
+        grid.setContentsMargins(0, 0, 0, 0)
+        grid.setHorizontalSpacing(8)
+        grid.setVerticalSpacing(8)
+
+        metric_defs = (
+            ("ift", "IFT"),
+            ("diameter", "Diameter"),
+            ("volume", "Volume"),
+            ("angle", "Angle"),
+        )
+        columns = 2 if self.metric_host else 4
+        for index, (key, label) in enumerate(metric_defs):
+            card = QFrame(frame)
+            card.setProperty("resultMetricCard", True)
+            card_layout = QVBoxLayout(card)
+            card_layout.setContentsMargins(10, 8, 10, 8)
+            card_layout.setSpacing(3)
+
+            label_widget = QLabel(label, card)
+            label_widget.setProperty("resultMetricLabel", True)
+            value_widget = QLabel("--", card)
+            value_widget.setObjectName(f"metricValue_{key}")
+            value_widget.setProperty("resultMetricValue", True)
+
+            card_layout.addWidget(label_widget)
+            card_layout.addWidget(value_widget)
+            grid.addWidget(card, index // columns, index % columns)
+            self.metric_value_labels[key] = value_widget
+
+        if self.metric_host:
+            header = QLabel("Key Results", host)
+            header.setObjectName("keyResultsHeader")
+            header.setStyleSheet("""
+                QLabel#keyResultsHeader {
+                    color: #57606A;
+                    font-size: 10px;
+                    font-weight: 700;
+                    letter-spacing: 1px;
+                    text-transform: uppercase;
+                    padding: 4px 2px;
+                }
+            """)
+            layout.addWidget(header)
+            layout.addWidget(frame)
+            layout.addStretch()
+            return
+
+        insert_index = 0
+        if self.table and layout.indexOf(self.table) != -1:
+            insert_index = layout.indexOf(self.table)
+        layout.insertWidget(insert_index, frame)
 
     def _on_pipeline_filter_changed(self) -> None:
         """Handle pipeline filter change."""
@@ -646,16 +736,14 @@ class ResultsPanel:
         return LABEL_MAP.get(header, header.replace("_", " ").title())
 
     def _update_summary(self) -> None:
-        if not self.summary_label:
-            return
         measurements = self._filtered_measurements()
         count = len(measurements)
         last_run = (
             measurements[0].timestamp.strftime("%H:%M:%S") if measurements else "n/a"
         )
         parts = [f"{count} measurements", f"Last: {last_run}"]
+        latest = measurements[0].results if measurements else {}
         if measurements:
-            latest = measurements[0].results
             for key, label, suffix in (
                 ("surface_tension_mN_m", "IFT", " mN/m"),
                 ("contact_angle_deg", "CA", "°"),
@@ -670,7 +758,44 @@ class ResultsPanel:
                 except (TypeError, ValueError):
                     text = str(value)
                 parts.append(f"{label}: {text}")
-        self.summary_label.setText(" | ".join(parts))
+        if self.summary_label:
+            self.summary_label.setText(" | ".join(parts))
+        self._update_metric_cards(latest)
+
+    def _update_metric_cards(self, results: Mapping[str, Any]) -> None:
+        metrics = {
+            "ift": (("surface_tension_mN_m", "surface_tension"), "mN/m"),
+            "diameter": (("diameter_mm", "diameter"), "mm"),
+            "volume": (("volume_uL", "volume"), "µL"),
+            "angle": (
+                (
+                    "contact_angle_deg",
+                    "theta_left_deg",
+                    "angle_mean",
+                    "angle_left",
+                ),
+                "°",
+            ),
+        }
+        for name, (keys, unit) in metrics.items():
+            label = self.metric_value_labels.get(name)
+            if not label:
+                continue
+            value = None
+            for key in keys:
+                if key in results and results.get(key) not in (None, ""):
+                    value = results.get(key)
+                    break
+            label.setText(self._format_metric_value(value, unit))
+
+    def _format_metric_value(self, value: Any, unit: str) -> str:
+        if value in (None, ""):
+            return "--"
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return str(value)
+        return f"{number:.3g} {unit}"
 
     def set_pipeline_filter(self, pipeline_name: str) -> None:
         """Set the pipeline filter programmatically."""
@@ -702,8 +827,8 @@ class ResultsPanel:
         """Update display for a single measurement (legacy compatibility)."""
         if results:
             # Create a measurement result and add to history
-            from datetime import datetime
             import uuid
+            from datetime import datetime
 
             measurement = MeasurementResult(
                 id=f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}",

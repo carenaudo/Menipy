@@ -30,8 +30,9 @@
           <property name="checkable"><bool>true</bool></property>
           <property name="autoExclusive"><bool>true</bool></property>
           <property name="styleSheet">
-           <string notr="true">QPushButton { text-align: center; padding: 5px 6px; border: 1px solid #5f6773; border-radius: 4px; background: transparent; color: palette(text); }
-QPushButton:checked { border: 2px solid #4A90E2; font-weight: 600; }</string>
+           <string notr="true">QPushButton { text-align: center; padding: 6px 6px; border: 1px solid #D0D7DE; border-radius: 5px; background: #FFFFFF; color: #57606A; }
+QPushButton:hover { background: #EAEFF4; color: #24292F; }
+QPushButton:checked { background: #DDF4FF; border: 1px solid #0969DA; color: #0969DA; font-weight: 600; }</string>
           </property>
          </widget>
         </item>
@@ -41,8 +42,9 @@ QPushButton:checked { border: 2px solid #4A90E2; font-weight: 600; }</string>
           <property name="checkable"><bool>true</bool></property>
           <property name="autoExclusive"><bool>true</bool></property>
           <property name="styleSheet">
-           <string notr="true">QPushButton { text-align: center; padding: 5px 6px; border: 1px solid #5f6773; border-radius: 4px; background: transparent; color: palette(text); }
-QPushButton:checked { border: 2px solid #4A90E2; font-weight: 600; }</string>
+           <string notr="true">QPushButton { text-align: center; padding: 6px 6px; border: 1px solid #D0D7DE; border-radius: 5px; background: #FFFFFF; color: #57606A; }
+QPushButton:hover { background: #EAEFF4; color: #24292F; }
+QPushButton:checked { background: #DDF4FF; border: 1px solid #0969DA; color: #0969DA; font-weight: 600; }</string>
           </property>
          </widget>
         </item>
@@ -52,8 +54,9 @@ QPushButton:checked { border: 2px solid #4A90E2; font-weight: 600; }</string>
           <property name="checkable"><bool>true</bool></property>
           <property name="autoExclusive"><bool>true</bool></property>
           <property name="styleSheet">
-           <string notr="true">QPushButton { text-align: center; padding: 5px 6px; border: 1px solid #5f6773; border-radius: 4px; background: transparent; color: palette(text); }
-QPushButton:checked { border: 2px solid #4A90E2; font-weight: 600; }</string>
+           <string notr="true">QPushButton { text-align: center; padding: 6px 6px; border: 1px solid #D0D7DE; border-radius: 5px; background: #FFFFFF; color: #57606A; }
+QPushButton:hover { background: #EAEFF4; color: #24292F; }
+QPushButton:checked { background: #DDF4FF; border: 1px solid #0969DA; color: #0969DA; font-weight: 600; }</string>
           </property>
          </widget>
         </item>
@@ -68,8 +71,9 @@ QPushButton:checked { border: 2px solid #4A90E2; font-weight: 600; }</string>
           <property name="checkable"><bool>true</bool></property>
           <property name="autoExclusive"><bool>true</bool></property>
           <property name="styleSheet">
-           <string notr="true">QPushButton { text-align: center; padding: 5px 6px; border: 1px solid #5f6773; border-radius: 4px; background: transparent; color: palette(text); }
-QPushButton:checked { border: 2px solid #4A90E2; font-weight: 600; }</string>
+           <string notr="true">QPushButton { text-align: center; padding: 6px 6px; border: 1px solid #D0D7DE; border-radius: 5px; background: #FFFFFF; color: #57606A; }
+QPushButton:hover { background: #EAEFF4; color: #24292F; }
+QPushButton:checked { background: #DDF4FF; border: 1px solid #0969DA; color: #0969DA; font-weight: 600; }</string>
           </property>
          </widget>
         </item>
@@ -79,8 +83,9 @@ QPushButton:checked { border: 2px solid #4A90E2; font-weight: 600; }</string>
           <property name="checkable"><bool>true</bool></property>
           <property name="autoExclusive"><bool>true</bool></property>
           <property name="styleSheet">
-           <string notr="true">QPushButton { text-align: center; padding: 5px 6px; border: 1px solid #5f6773; border-radius: 4px; background: transparent; color: palette(text); }
-QPushButton:checked { border: 2px solid #4A90E2; font-weight: 600; }</string>
+           <string notr="true">QPushButton { text-align: center; padding: 6px 6px; border: 1px solid #D0D7DE; border-radius: 5px; background: #FFFFFF; color: #57606A; }
+QPushButton:hover { background: #EAEFF4; color: #24292F; }
+QPushButton:checked { background: #DDF4FF; border: 1px solid #0969DA; color: #0969DA; font-weight: 600; }</string>
           </property>
          </widget>
         </item>
@@ -92,6 +97,12 @@ QPushButton:checked { border: 2px solid #4A90E2; font-weight: 600; }</string>
    <item>
     <widget class="QGroupBox" name="sourceGroup">
      <property name="title"><string>Source</string></property>
+     <property name="styleSheet">
+      <string notr="true">QRadioButton { border: 1px solid #D0D7DE; border-radius: 4px; padding: 5px 7px; background: #FFFFFF; color: #57606A; }
+QRadioButton:hover { background: #EAEFF4; color: #24292F; }
+QRadioButton:checked { background: #DAFBE1; border-color: #4AC26B; color: #1A7F37; font-weight: 600; }
+QRadioButton::indicator { width: 0px; height: 0px; }</string>
+     </property>
      <layout class="QFormLayout" name="sourceForm">
       <property name="labelAlignment"><set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set></property>
       <item row="0" column="0">
@@ -186,12 +197,12 @@ QPushButton:checked { border: 2px solid #4A90E2; font-weight: 600; }</string>
    </item>
    <item>
     <widget class="QGroupBox" name="calibrationGroup">
-     <property name="title"><string>Calibration</string></property>
+     <property name="title"><string>Phase Properties</string></property>
      <layout class="QFormLayout" name="calibrationForm">
       <property name="labelAlignment"><set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set></property>
       <item row="0" column="0">
        <widget class="QLabel" name="needleLengthLabel">
-        <property name="text"><string>Needle (mm)</string></property>
+        <property name="text"><string>Needle OD</string></property>
        </widget>
       </item>
       <item row="0" column="1">
@@ -204,7 +215,7 @@ QPushButton:checked { border: 2px solid #4A90E2; font-weight: 600; }</string>
       </item>
       <item row="1" column="0">
        <widget class="QLabel" name="dropDensityLabel">
-        <property name="text"><string>Drop rho</string></property>
+        <property name="text"><string>Heavy Phase rho</string></property>
        </widget>
       </item>
       <item row="1" column="1">
@@ -217,7 +228,7 @@ QPushButton:checked { border: 2px solid #4A90E2; font-weight: 600; }</string>
       </item>
       <item row="2" column="0">
        <widget class="QLabel" name="fluidDensityLabel">
-        <property name="text"><string>Fluid rho</string></property>
+        <property name="text"><string>Light Phase rho</string></property>
        </widget>
       </item>
       <item row="2" column="1">
@@ -230,7 +241,7 @@ QPushButton:checked { border: 2px solid #4A90E2; font-weight: 600; }</string>
       </item>
       <item row="3" column="0">
        <widget class="QLabel" name="substrateAngleLabel">
-        <property name="text"><string>Substrate</string></property>
+        <property name="text"><string>Substrate angle</string></property>
        </widget>
       </item>
       <item row="3" column="1">
@@ -253,7 +264,7 @@ QPushButton:checked { border: 2px solid #4A90E2; font-weight: 600; }</string>
    </item>
    <item>
     <widget class="QGroupBox" name="sopGroup">
-     <property name="title"><string>Advanced</string></property>
+     <property name="title"><string>Advanced Settings</string></property>
      <layout class="QVBoxLayout" name="advancedLayout">
       <item>
        <layout class="QHBoxLayout" name="previewRow">
@@ -302,7 +313,7 @@ QPushButton:checked { border: 2px solid #4A90E2; font-weight: 600; }</string>
    </item>
    <item>
     <widget class="QGroupBox" name="stepsGroup">
-     <property name="title"><string>Stages</string></property>
+     <property name="title"><string>Pipeline Stages</string></property>
      <layout class="QVBoxLayout" name="stepsBox">
       <item>
        <widget class="QListWidget" name="stepsList">

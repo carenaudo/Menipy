@@ -8,215 +8,189 @@
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PySide6.QtCore import (
-    QCoreApplication,
-    QDate,
-    QDateTime,
-    QLocale,
-    QMetaObject,
-    QObject,
-    QPoint,
-    QRect,
-    QSize,
-    QTime,
-    QUrl,
-    Qt,
-)
-from PySide6.QtGui import (
-    QAction,
-    QBrush,
-    QColor,
-    QConicalGradient,
-    QCursor,
-    QFont,
-    QFontDatabase,
-    QGradient,
-    QIcon,
-    QImage,
-    QKeySequence,
-    QLinearGradient,
-    QPainter,
-    QPalette,
-    QPixmap,
-    QRadialGradient,
-    QTransform,
-)
-from PySide6.QtWidgets import (
-    QApplication,
-    QHBoxLayout,
-    QMainWindow,
-    QMenu,
-    QMenuBar,
-    QSizePolicy,
-    QSpacerItem,
-    QSplitter,
-    QStatusBar,
-    QTabWidget,
-    QToolButton,
-    QVBoxLayout,
-    QWidget,
-)
-
+from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+    QMetaObject, QObject, QPoint, QRect,
+    QSize, QTime, QUrl, Qt)
+from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
+    QCursor, QFont, QFontDatabase, QGradient,
+    QIcon, QImage, QKeySequence, QLinearGradient,
+    QPainter, QPalette, QPixmap, QRadialGradient,
+    QTransform)
+from PySide6.QtWidgets import (QApplication, QHBoxLayout, QMainWindow, QMenu,
+    QMenuBar, QSizePolicy, QSpacerItem, QSplitter,
+    QStatusBar, QTabWidget, QToolButton, QVBoxLayout,
+    QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
-            MainWindow.setObjectName("MainWindow")
+            MainWindow.setObjectName(u"MainWindow")
         self.actionOpenImage = QAction(MainWindow)
-        self.actionOpenImage.setObjectName("actionOpenImage")
+        self.actionOpenImage.setObjectName(u"actionOpenImage")
         self.actionPreview = QAction(MainWindow)
-        self.actionPreview.setObjectName("actionPreview")
+        self.actionPreview.setObjectName(u"actionPreview")
         self.actionExportCsv = QAction(MainWindow)
-        self.actionExportCsv.setObjectName("actionExportCsv")
+        self.actionExportCsv.setObjectName(u"actionExportCsv")
         self.actionOpenCamera = QAction(MainWindow)
-        self.actionOpenCamera.setObjectName("actionOpenCamera")
+        self.actionOpenCamera.setObjectName(u"actionOpenCamera")
         self.actionRunFull = QAction(MainWindow)
-        self.actionRunFull.setObjectName("actionRunFull")
+        self.actionRunFull.setObjectName(u"actionRunFull")
         self.actionRunSelected = QAction(MainWindow)
-        self.actionRunSelected.setObjectName("actionRunSelected")
+        self.actionRunSelected.setObjectName(u"actionRunSelected")
         self.actionStop = QAction(MainWindow)
-        self.actionStop.setObjectName("actionStop")
+        self.actionStop.setObjectName(u"actionStop")
         self.actionQuit = QAction(MainWindow)
-        self.actionQuit.setObjectName("actionQuit")
+        self.actionQuit.setObjectName(u"actionQuit")
         self.actionAbout = QAction(MainWindow)
-        self.actionAbout.setObjectName("actionAbout")
+        self.actionAbout.setObjectName(u"actionAbout")
         self.actionOverlay = QAction(MainWindow)
-        self.actionOverlay.setObjectName("actionOverlay")
+        self.actionOverlay.setObjectName(u"actionOverlay")
         icon = QIcon()
-        icon.addFile(":/icons/overlay.svg", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        icon.addFile(u":/icons/overlay.svg", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
         self.actionOverlay.setIcon(icon)
         self.actionConfigOverlay = QAction(MainWindow)
-        self.actionConfigOverlay.setObjectName("actionConfigOverlay")
+        self.actionConfigOverlay.setObjectName(u"actionConfigOverlay")
         self.actionConfigMarkers = QAction(MainWindow)
-        self.actionConfigMarkers.setObjectName("actionConfigMarkers")
+        self.actionConfigMarkers.setObjectName(u"actionConfigMarkers")
         self.actionConfigPipeline = QAction(MainWindow)
-        self.actionConfigPipeline.setObjectName("actionConfigPipeline")
+        self.actionConfigPipeline.setObjectName(u"actionConfigPipeline")
         self.actionConfigPreprocessing = QAction(MainWindow)
-        self.actionConfigPreprocessing.setObjectName("actionConfigPreprocessing")
+        self.actionConfigPreprocessing.setObjectName(u"actionConfigPreprocessing")
         self.actionConfigEdgeDetection = QAction(MainWindow)
-        self.actionConfigEdgeDetection.setObjectName("actionConfigEdgeDetection")
+        self.actionConfigEdgeDetection.setObjectName(u"actionConfigEdgeDetection")
         self.actionConfigGeometry = QAction(MainWindow)
-        self.actionConfigGeometry.setObjectName("actionConfigGeometry")
+        self.actionConfigGeometry.setObjectName(u"actionConfigGeometry")
         self.actionConfigPhysics = QAction(MainWindow)
-        self.actionConfigPhysics.setObjectName("actionConfigPhysics")
+        self.actionConfigPhysics.setObjectName(u"actionConfigPhysics")
         self.actionConfigAcquisition = QAction(MainWindow)
-        self.actionConfigAcquisition.setObjectName("actionConfigAcquisition")
+        self.actionConfigAcquisition.setObjectName(u"actionConfigAcquisition")
         self.menubar = QMenuBar(MainWindow)
-        self.menubar.setObjectName("menubar")
+        self.menubar.setObjectName(u"menubar")
         self.menubar.setNativeMenuBar(False)
         self.menuFile = QMenu(self.menubar)
-        self.menuFile.setObjectName("menuFile")
+        self.menuFile.setObjectName(u"menuFile")
         self.menuConfig = QMenu(self.menubar)
-        self.menuConfig.setObjectName("menuConfig")
+        self.menuConfig.setObjectName(u"menuConfig")
         self.menuView = QMenu(self.menubar)
-        self.menuView.setObjectName("menuView")
+        self.menuView.setObjectName(u"menuView")
         self.menuRun = QMenu(self.menubar)
-        self.menuRun.setObjectName("menuRun")
+        self.menuRun.setObjectName(u"menuRun")
         self.menuPlugins = QMenu(self.menubar)
-        self.menuPlugins.setObjectName("menuPlugins")
+        self.menuPlugins.setObjectName(u"menuPlugins")
         self.menuHelp = QMenu(self.menubar)
-        self.menuHelp.setObjectName("menuHelp")
+        self.menuHelp.setObjectName(u"menuHelp")
         MainWindow.setMenuBar(self.menubar)
         self.centralwidget = QWidget(MainWindow)
-        self.centralwidget.setObjectName("centralwidget")
+        self.centralwidget.setObjectName(u"centralwidget")
         self.centralLayout = QVBoxLayout(self.centralwidget)
-        self.centralLayout.setObjectName("centralLayout")
+        self.centralLayout.setObjectName(u"centralLayout")
         self.workflowBar = QWidget(self.centralwidget)
-        self.workflowBar.setObjectName("workflowBar")
+        self.workflowBar.setObjectName(u"workflowBar")
         sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.workflowBar.sizePolicy().hasHeightForWidth())
         self.workflowBar.setSizePolicy(sizePolicy)
-        self.workflowBar.setMaximumSize(QSize(16777215, 44))
+        self.workflowBar.setMaximumSize(QSize(16777215, 48))
         self.workflowBarLayout = QHBoxLayout(self.workflowBar)
         self.workflowBarLayout.setSpacing(8)
-        self.workflowBarLayout.setObjectName("workflowBarLayout")
-        self.workflowBarLayout.setContentsMargins(8, 8, 8, 6)
+        self.workflowBarLayout.setObjectName(u"workflowBarLayout")
+        self.workflowBarLayout.setContentsMargins(12, 8, 12, 8)
         self.actionOpenImageBtn = QToolButton(self.workflowBar)
-        self.actionOpenImageBtn.setObjectName("actionOpenImageBtn")
+        self.actionOpenImageBtn.setObjectName(u"actionOpenImageBtn")
         self.actionOpenImageBtn.setAutoRaise(True)
 
         self.workflowBarLayout.addWidget(self.actionOpenImageBtn)
 
         self.workflowAutoCalibrateBtn = QToolButton(self.workflowBar)
-        self.workflowAutoCalibrateBtn.setObjectName("workflowAutoCalibrateBtn")
+        self.workflowAutoCalibrateBtn.setObjectName(u"workflowAutoCalibrateBtn")
         self.workflowAutoCalibrateBtn.setAutoRaise(True)
 
         self.workflowBarLayout.addWidget(self.workflowAutoCalibrateBtn)
 
         self.actionRunBtn = QToolButton(self.workflowBar)
-        self.actionRunBtn.setObjectName("actionRunBtn")
+        self.actionRunBtn.setObjectName(u"actionRunBtn")
         self.actionRunBtn.setAutoRaise(True)
 
         self.workflowBarLayout.addWidget(self.actionRunBtn)
 
         self.actionExportCsvBtn = QToolButton(self.workflowBar)
-        self.actionExportCsvBtn.setObjectName("actionExportCsvBtn")
+        self.actionExportCsvBtn.setObjectName(u"actionExportCsvBtn")
         self.actionExportCsvBtn.setAutoRaise(True)
 
         self.workflowBarLayout.addWidget(self.actionExportCsvBtn)
 
         self.workflowAdvancedBtn = QToolButton(self.workflowBar)
-        self.workflowAdvancedBtn.setObjectName("workflowAdvancedBtn")
+        self.workflowAdvancedBtn.setObjectName(u"workflowAdvancedBtn")
         self.workflowAdvancedBtn.setCheckable(True)
         self.workflowAdvancedBtn.setAutoRaise(True)
 
         self.workflowBarLayout.addWidget(self.workflowAdvancedBtn)
 
-        self.workflowSpacer = QSpacerItem(
-            40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
-        )
+        self.workflowSpacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         self.workflowBarLayout.addItem(self.workflowSpacer)
+
 
         self.centralLayout.addWidget(self.workflowBar)
 
         self.rootSplitter = QSplitter(self.centralwidget)
-        self.rootSplitter.setObjectName("rootSplitter")
+        self.rootSplitter.setObjectName(u"rootSplitter")
         self.rootSplitter.setOrientation(Qt.Horizontal)
         self.setupHost = QWidget(self.rootSplitter)
-        self.setupHost.setObjectName("setupHost")
+        self.setupHost.setObjectName(u"setupHost")
         self.setupHostLayout = QVBoxLayout(self.setupHost)
-        self.setupHostLayout.setObjectName("setupHostLayout")
+        self.setupHostLayout.setObjectName(u"setupHostLayout")
         self.setupHostLayout.setContentsMargins(0, 0, 0, 0)
         self.rootSplitter.addWidget(self.setupHost)
         self.workbenchHost = QWidget(self.rootSplitter)
-        self.workbenchHost.setObjectName("workbenchHost")
+        self.workbenchHost.setObjectName(u"workbenchHost")
         self.workbenchHostLayout = QVBoxLayout(self.workbenchHost)
-        self.workbenchHostLayout.setObjectName("workbenchHostLayout")
+        self.workbenchHostLayout.setObjectName(u"workbenchHostLayout")
         self.workbenchHostLayout.setContentsMargins(0, 0, 0, 0)
         self.workbenchSplitter = QSplitter(self.workbenchHost)
-        self.workbenchSplitter.setObjectName("workbenchSplitter")
+        self.workbenchSplitter.setObjectName(u"workbenchSplitter")
         self.workbenchSplitter.setOrientation(Qt.Vertical)
-        self.previewHost = QWidget(self.workbenchSplitter)
-        self.previewHost.setObjectName("previewHost")
+        self.previewResultsSplitter = QSplitter(self.workbenchSplitter)
+        self.previewResultsSplitter.setObjectName(u"previewResultsSplitter")
+        self.previewResultsSplitter.setOrientation(Qt.Horizontal)
+        self.previewHost = QWidget(self.previewResultsSplitter)
+        self.previewHost.setObjectName(u"previewHost")
         self.previewHostLayout = QVBoxLayout(self.previewHost)
-        self.previewHostLayout.setObjectName("previewHostLayout")
+        self.previewHostLayout.setObjectName(u"previewHostLayout")
         self.previewHostLayout.setContentsMargins(0, 0, 0, 0)
-        self.workbenchSplitter.addWidget(self.previewHost)
+        self.previewResultsSplitter.addWidget(self.previewHost)
+        self.keyResultsHost = QWidget(self.previewResultsSplitter)
+        self.keyResultsHost.setObjectName(u"keyResultsHost")
+        self.keyResultsHost.setMinimumSize(QSize(260, 0))
+        self.keyResultsHost.setMaximumSize(QSize(340, 16777215))
+        self.keyResultsHostLayout = QVBoxLayout(self.keyResultsHost)
+        self.keyResultsHostLayout.setObjectName(u"keyResultsHostLayout")
+        self.keyResultsHostLayout.setContentsMargins(8, 8, 8, 8)
+        self.previewResultsSplitter.addWidget(self.keyResultsHost)
+        self.workbenchSplitter.addWidget(self.previewResultsSplitter)
         self.inspectTabs = QTabWidget(self.workbenchSplitter)
-        self.inspectTabs.setObjectName("inspectTabs")
+        self.inspectTabs.setObjectName(u"inspectTabs")
         self.inspectTabs.setTabPosition(QTabWidget.North)
         self.resultsTab = QWidget()
-        self.resultsTab.setObjectName("resultsTab")
+        self.resultsTab.setObjectName(u"resultsTab")
         self.resultsHostLayout = QVBoxLayout(self.resultsTab)
-        self.resultsHostLayout.setObjectName("resultsHostLayout")
+        self.resultsHostLayout.setObjectName(u"resultsHostLayout")
         self.inspectTabs.addTab(self.resultsTab, "")
         self.residualsTab = QWidget()
-        self.residualsTab.setObjectName("residualsTab")
+        self.residualsTab.setObjectName(u"residualsTab")
         self.residualsHostLayout = QVBoxLayout(self.residualsTab)
-        self.residualsHostLayout.setObjectName("residualsHostLayout")
+        self.residualsHostLayout.setObjectName(u"residualsHostLayout")
         self.inspectTabs.addTab(self.residualsTab, "")
         self.timingsTab = QWidget()
-        self.timingsTab.setObjectName("timingsTab")
+        self.timingsTab.setObjectName(u"timingsTab")
         self.timingsHostLayout = QVBoxLayout(self.timingsTab)
-        self.timingsHostLayout.setObjectName("timingsHostLayout")
+        self.timingsHostLayout.setObjectName(u"timingsHostLayout")
         self.inspectTabs.addTab(self.timingsTab, "")
         self.logTab = QWidget()
-        self.logTab.setObjectName("logTab")
+        self.logTab.setObjectName(u"logTab")
         self.logHostLayout = QVBoxLayout(self.logTab)
-        self.logHostLayout.setObjectName("logHostLayout")
+        self.logHostLayout.setObjectName(u"logHostLayout")
         self.inspectTabs.addTab(self.logTab, "")
         self.workbenchSplitter.addWidget(self.inspectTabs)
 
@@ -228,7 +202,7 @@ class Ui_MainWindow(object):
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.statusbar = QStatusBar(MainWindow)
-        self.statusbar.setObjectName("statusbar")
+        self.statusbar.setObjectName(u"statusbar")
         MainWindow.setStatusBar(self.statusbar)
 
         self.menubar.addAction(self.menuFile.menuAction())
@@ -263,154 +237,84 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
 
         QMetaObject.connectSlotsByName(MainWindow)
-
     # setupUi
 
     def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(
-            QCoreApplication.translate("MainWindow", "Menipy ADSA", None)
-        )
-        self.actionOpenImage.setText(
-            QCoreApplication.translate("MainWindow", "Open &Image\u2026", None)
-        )
-        # if QT_CONFIG(shortcut)
-        self.actionOpenImage.setShortcut(
-            QCoreApplication.translate("MainWindow", "Ctrl+O", None)
-        )
-        # endif // QT_CONFIG(shortcut)
-        self.actionPreview.setText(
-            QCoreApplication.translate("MainWindow", "&Preview", None)
-        )
-        # if QT_CONFIG(shortcut)
-        self.actionPreview.setShortcut(
-            QCoreApplication.translate("MainWindow", "Ctrl+P", None)
-        )
-        # endif // QT_CONFIG(shortcut)
-        self.actionExportCsv.setText(
-            QCoreApplication.translate("MainWindow", "Export &CSV\u2026", None)
-        )
-        self.actionOpenCamera.setText(
-            QCoreApplication.translate("MainWindow", "Open &Camera", None)
-        )
-        self.actionRunFull.setText(
-            QCoreApplication.translate("MainWindow", "Run &Full", None)
-        )
-        # if QT_CONFIG(shortcut)
-        self.actionRunFull.setShortcut(
-            QCoreApplication.translate("MainWindow", "Ctrl+R", None)
-        )
-        # endif // QT_CONFIG(shortcut)
-        self.actionRunSelected.setText(
-            QCoreApplication.translate("MainWindow", "Run &Selected", None)
-        )
-        # if QT_CONFIG(shortcut)
-        self.actionRunSelected.setShortcut(
-            QCoreApplication.translate("MainWindow", "Ctrl+Shift+R", None)
-        )
-        # endif // QT_CONFIG(shortcut)
-        self.actionStop.setText(QCoreApplication.translate("MainWindow", "&Stop", None))
-        self.actionQuit.setText(QCoreApplication.translate("MainWindow", "&Quit", None))
-        # if QT_CONFIG(shortcut)
-        self.actionQuit.setShortcut(
-            QCoreApplication.translate("MainWindow", "Ctrl+Q", None)
-        )
-        # endif // QT_CONFIG(shortcut)
-        self.actionAbout.setText(
-            QCoreApplication.translate("MainWindow", "&About", None)
-        )
-        self.actionOverlay.setText(
-            QCoreApplication.translate("MainWindow", "&Overlay\u2026", None)
-        )
-        # if QT_CONFIG(shortcut)
-        self.actionOverlay.setShortcut(
-            QCoreApplication.translate("MainWindow", "Ctrl+Shift+O", None)
-        )
-        # endif // QT_CONFIG(shortcut)
-        # if QT_CONFIG(tooltip)
-        self.actionOverlay.setToolTip(
-            QCoreApplication.translate(
-                "MainWindow",
-                "Open overlay configuration and preview overlay styling",
-                None,
-            )
-        )
-        # endif // QT_CONFIG(tooltip)
-        # if QT_CONFIG(statustip)
-        self.actionOverlay.setStatusTip(
-            QCoreApplication.translate(
-                "MainWindow", "Configure overlay appearance", None
-            )
-        )
-        # endif // QT_CONFIG(statustip)
-        self.actionConfigOverlay.setText(
-            QCoreApplication.translate("MainWindow", "Overlay Appearance\u2026", None)
-        )
-        # if QT_CONFIG(shortcut)
-        self.actionConfigOverlay.setShortcut(
-            QCoreApplication.translate("MainWindow", "Ctrl+Shift+O", None)
-        )
-        # endif // QT_CONFIG(shortcut)
-        self.actionConfigMarkers.setText(
-            QCoreApplication.translate("MainWindow", "Marker Display\u2026", None)
-        )
-        self.actionConfigPipeline.setText(
-            QCoreApplication.translate("MainWindow", "Pipeline Settings\u2026", None)
-        )
-        self.actionConfigPreprocessing.setText(
-            QCoreApplication.translate("MainWindow", "Preprocessing\u2026", None)
-        )
-        self.actionConfigEdgeDetection.setText(
-            QCoreApplication.translate("MainWindow", "Edge Detection\u2026", None)
-        )
-        self.actionConfigGeometry.setText(
-            QCoreApplication.translate("MainWindow", "Geometry\u2026", None)
-        )
-        self.actionConfigPhysics.setText(
-            QCoreApplication.translate("MainWindow", "Physics\u2026", None)
-        )
-        self.actionConfigAcquisition.setText(
-            QCoreApplication.translate("MainWindow", "Acquisition\u2026", None)
-        )
-        self.menuFile.setTitle(QCoreApplication.translate("MainWindow", "&File", None))
-        self.menuConfig.setTitle(
-            QCoreApplication.translate("MainWindow", "&Config", None)
-        )
-        self.menuView.setTitle(QCoreApplication.translate("MainWindow", "&View", None))
-        self.menuRun.setTitle(QCoreApplication.translate("MainWindow", "&Run", None))
-        self.menuPlugins.setTitle(
-            QCoreApplication.translate("MainWindow", "&Plugins", None)
-        )
-        self.menuHelp.setTitle(QCoreApplication.translate("MainWindow", "&Help", None))
-        self.actionOpenImageBtn.setText(
-            QCoreApplication.translate("MainWindow", "Open Image", None)
-        )
-        self.workflowAutoCalibrateBtn.setText(
-            QCoreApplication.translate("MainWindow", "Auto-Calibrate", None)
-        )
-        self.actionRunBtn.setText(
-            QCoreApplication.translate("MainWindow", "Run Analysis", None)
-        )
-        self.actionExportCsvBtn.setText(
-            QCoreApplication.translate("MainWindow", "Export CSV", None)
-        )
-        self.workflowAdvancedBtn.setText(
-            QCoreApplication.translate("MainWindow", "Advanced +", None)
-        )
-        self.inspectTabs.setTabText(
-            self.inspectTabs.indexOf(self.resultsTab),
-            QCoreApplication.translate("MainWindow", "Results", None),
-        )
-        self.inspectTabs.setTabText(
-            self.inspectTabs.indexOf(self.residualsTab),
-            QCoreApplication.translate("MainWindow", "Residuals", None),
-        )
-        self.inspectTabs.setTabText(
-            self.inspectTabs.indexOf(self.timingsTab),
-            QCoreApplication.translate("MainWindow", "Timings", None),
-        )
-        self.inspectTabs.setTabText(
-            self.inspectTabs.indexOf(self.logTab),
-            QCoreApplication.translate("MainWindow", "Log", None),
-        )
-
+        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"Menipy ADSA", None))
+        self.actionOpenImage.setText(QCoreApplication.translate("MainWindow", u"Open &Image\u2026", None))
+#if QT_CONFIG(shortcut)
+        self.actionOpenImage.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+O", None))
+#endif // QT_CONFIG(shortcut)
+        self.actionPreview.setText(QCoreApplication.translate("MainWindow", u"&Preview", None))
+#if QT_CONFIG(shortcut)
+        self.actionPreview.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+P", None))
+#endif // QT_CONFIG(shortcut)
+        self.actionExportCsv.setText(QCoreApplication.translate("MainWindow", u"Export &CSV\u2026", None))
+        self.actionOpenCamera.setText(QCoreApplication.translate("MainWindow", u"Open &Camera", None))
+        self.actionRunFull.setText(QCoreApplication.translate("MainWindow", u"Run &Full", None))
+#if QT_CONFIG(shortcut)
+        self.actionRunFull.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+R", None))
+#endif // QT_CONFIG(shortcut)
+        self.actionRunSelected.setText(QCoreApplication.translate("MainWindow", u"Run &Selected", None))
+#if QT_CONFIG(shortcut)
+        self.actionRunSelected.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+Shift+R", None))
+#endif // QT_CONFIG(shortcut)
+        self.actionStop.setText(QCoreApplication.translate("MainWindow", u"&Stop", None))
+        self.actionQuit.setText(QCoreApplication.translate("MainWindow", u"&Quit", None))
+#if QT_CONFIG(shortcut)
+        self.actionQuit.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+Q", None))
+#endif // QT_CONFIG(shortcut)
+        self.actionAbout.setText(QCoreApplication.translate("MainWindow", u"&About", None))
+        self.actionOverlay.setText(QCoreApplication.translate("MainWindow", u"&Overlay\u2026", None))
+#if QT_CONFIG(shortcut)
+        self.actionOverlay.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+Shift+O", None))
+#endif // QT_CONFIG(shortcut)
+#if QT_CONFIG(tooltip)
+        self.actionOverlay.setToolTip(QCoreApplication.translate("MainWindow", u"Open overlay configuration and preview overlay styling", None))
+#endif // QT_CONFIG(tooltip)
+#if QT_CONFIG(statustip)
+        self.actionOverlay.setStatusTip(QCoreApplication.translate("MainWindow", u"Configure overlay appearance", None))
+#endif // QT_CONFIG(statustip)
+        self.actionConfigOverlay.setText(QCoreApplication.translate("MainWindow", u"Overlay Appearance\u2026", None))
+#if QT_CONFIG(shortcut)
+        self.actionConfigOverlay.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+Shift+O", None))
+#endif // QT_CONFIG(shortcut)
+        self.actionConfigMarkers.setText(QCoreApplication.translate("MainWindow", u"Marker Display\u2026", None))
+        self.actionConfigPipeline.setText(QCoreApplication.translate("MainWindow", u"Pipeline Settings\u2026", None))
+        self.actionConfigPreprocessing.setText(QCoreApplication.translate("MainWindow", u"Preprocessing\u2026", None))
+        self.actionConfigEdgeDetection.setText(QCoreApplication.translate("MainWindow", u"Edge Detection\u2026", None))
+        self.actionConfigGeometry.setText(QCoreApplication.translate("MainWindow", u"Geometry\u2026", None))
+        self.actionConfigPhysics.setText(QCoreApplication.translate("MainWindow", u"Physics\u2026", None))
+        self.actionConfigAcquisition.setText(QCoreApplication.translate("MainWindow", u"Acquisition\u2026", None))
+        self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"&File", None))
+        self.menuConfig.setTitle(QCoreApplication.translate("MainWindow", u"&Config", None))
+        self.menuView.setTitle(QCoreApplication.translate("MainWindow", u"&View", None))
+        self.menuRun.setTitle(QCoreApplication.translate("MainWindow", u"&Run", None))
+        self.menuPlugins.setTitle(QCoreApplication.translate("MainWindow", u"&Plugins", None))
+        self.menuHelp.setTitle(QCoreApplication.translate("MainWindow", u"&Help", None))
+        self.actionOpenImageBtn.setText(QCoreApplication.translate("MainWindow", u"Open Image", None))
+#if QT_CONFIG(tooltip)
+        self.actionOpenImageBtn.setToolTip(QCoreApplication.translate("MainWindow", u"Load a single image into the active analysis", None))
+#endif // QT_CONFIG(tooltip)
+        self.workflowAutoCalibrateBtn.setText(QCoreApplication.translate("MainWindow", u"Auto-Calibrate", None))
+#if QT_CONFIG(tooltip)
+        self.workflowAutoCalibrateBtn.setToolTip(QCoreApplication.translate("MainWindow", u"Detect calibration regions from the current image", None))
+#endif // QT_CONFIG(tooltip)
+        self.actionRunBtn.setText(QCoreApplication.translate("MainWindow", u"Run Analysis", None))
+#if QT_CONFIG(tooltip)
+        self.actionRunBtn.setToolTip(QCoreApplication.translate("MainWindow", u"Run the configured analysis pipeline", None))
+#endif // QT_CONFIG(tooltip)
+        self.actionExportCsvBtn.setText(QCoreApplication.translate("MainWindow", u"Export CSV", None))
+#if QT_CONFIG(tooltip)
+        self.actionExportCsvBtn.setToolTip(QCoreApplication.translate("MainWindow", u"Export the visible results table to CSV", None))
+#endif // QT_CONFIG(tooltip)
+        self.workflowAdvancedBtn.setText(QCoreApplication.translate("MainWindow", u"Advanced +", None))
+#if QT_CONFIG(tooltip)
+        self.workflowAdvancedBtn.setToolTip(QCoreApplication.translate("MainWindow", u"Show SOP, stages, diagnostics, and logs", None))
+#endif // QT_CONFIG(tooltip)
+        self.inspectTabs.setTabText(self.inspectTabs.indexOf(self.resultsTab), QCoreApplication.translate("MainWindow", u"Results", None))
+        self.inspectTabs.setTabText(self.inspectTabs.indexOf(self.residualsTab), QCoreApplication.translate("MainWindow", u"Residuals", None))
+        self.inspectTabs.setTabText(self.inspectTabs.indexOf(self.timingsTab), QCoreApplication.translate("MainWindow", u"Timings", None))
+        self.inspectTabs.setTabText(self.inspectTabs.indexOf(self.logTab), QCoreApplication.translate("MainWindow", u"Log", None))
     # retranslateUi
+

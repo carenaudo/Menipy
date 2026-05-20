@@ -7,8 +7,8 @@ from PySide6.QtWidgets import QLabel, QTableWidget, QVBoxLayout, QWidget
 from menipy.gui.panels import results_panel as results_panel_module
 from menipy.gui.panels.results_panel import (
     LEGACY_PIPELINES_FILTER,
-    ResultsPanel,
     VALID_PIPELINES_FILTER,
+    ResultsPanel,
 )
 from menipy.gui.services.settings_service import AppSettings
 from menipy.models.results import MeasurementResult
@@ -181,6 +181,35 @@ def test_results_panel_guided_defaults_hide_comparison_and_diagnostics(
     )
     assert table.isColumnHidden(strict_col)
     assert table.isColumnHidden(approx_col)
+
+
+def test_results_panel_metric_cards_show_latest_key_values(monkeypatch, qtbot):
+    history = FakeHistory([_rich_measurement()])
+    monkeypatch.setattr(results_panel_module, "get_results_history", lambda: history)
+    panel, _table = _panel_widget()
+    qtbot.addWidget(panel)
+
+    ResultsPanel(panel)
+
+    assert panel.findChild(QLabel, "metricValue_ift").text() == "29 mN/m"
+    assert panel.findChild(QLabel, "metricValue_diameter").text() == "2 mm"
+
+
+def test_results_panel_can_render_metric_cards_in_lateral_host(monkeypatch, qtbot):
+    history = FakeHistory([_rich_measurement()])
+    monkeypatch.setattr(results_panel_module, "get_results_history", lambda: history)
+    panel, table = _panel_widget()
+    metric_host = QWidget()
+    metric_host.setLayout(QVBoxLayout())
+    qtbot.addWidget(panel)
+    qtbot.addWidget(metric_host)
+
+    ResultsPanel(panel, metric_host=metric_host)
+
+    assert metric_host.findChild(QLabel, "keyResultsHeader").text() == "Key Results"
+    assert metric_host.findChild(QLabel, "metricValue_ift").text() == "29 mN/m"
+    assert panel.findChild(QLabel, "metricValue_ift") is None
+    assert table.rowCount() == 1
 
 
 def test_results_panel_compare_and_diagnostics_helpers(monkeypatch, qtbot, tmp_path):

@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Optional, Sequence
 
-from PySide6.QtCore import QObject, Signal, QTimer, Qt
+from PySide6.QtCore import QObject, Qt, QTimer, Signal
 from PySide6.QtWidgets import (
     QButtonGroup,
     QComboBox,
@@ -14,16 +14,16 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QListWidget,
+    QMainWindow,
     QPushButton,
     QRadioButton,
     QSpinBox,
     QToolButton,
-    QMainWindow,
     QWidget,
 )
 
-from menipy.gui.views.image_view import DRAW_POINT, DRAW_LINE, DRAW_RECT
 from menipy.gui.controllers.sop_controller import SopController
+from menipy.gui.views.image_view import DRAW_LINE, DRAW_POINT, DRAW_RECT
 
 try:
     from menipy.pipelines.discover import PIPELINE_MAP
@@ -343,18 +343,18 @@ class SetupPanelController(QObject):
 
         if system == "SI":
             if self.needleLengthLabel:
-                self.needleLengthLabel.setText("Needle (mm)")
+                self.needleLengthLabel.setText("Needle OD (mm)")
             if self.dropDensityLabel:
-                self.dropDensityLabel.setText("Drop rho")
+                self.dropDensityLabel.setText("Heavy phase rho")
             if self.fluidDensityLabel:
-                self.fluidDensityLabel.setText("Fluid rho")
+                self.fluidDensityLabel.setText("Light phase rho")
         else:
             if self.needleLengthLabel:
-                self.needleLengthLabel.setText("Needle (cm)")
+                self.needleLengthLabel.setText("Needle OD (cm)")
             if self.dropDensityLabel:
-                self.dropDensityLabel.setText("Drop rho")
+                self.dropDensityLabel.setText("Heavy phase rho")
             if self.fluidDensityLabel:
-                self.fluidDensityLabel.setText("Fluid rho")
+                self.fluidDensityLabel.setText("Light phase rho")
 
         # Optional: convert current spinbox values to stay consistent when units toggle
         # (This is tricky if done multiple times without precision loss, but helpful for UX)

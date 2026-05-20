@@ -70,42 +70,47 @@
       <property name="maximumSize">
        <size>
         <width>16777215</width>
-        <height>44</height>
+        <height>48</height>
        </size>
       </property>
       <layout class="QHBoxLayout" name="workflowBarLayout">
-       <property name="leftMargin"><number>8</number></property>
+       <property name="leftMargin"><number>12</number></property>
        <property name="topMargin"><number>8</number></property>
-       <property name="rightMargin"><number>8</number></property>
-       <property name="bottomMargin"><number>6</number></property>
+       <property name="rightMargin"><number>12</number></property>
+       <property name="bottomMargin"><number>8</number></property>
        <property name="spacing"><number>8</number></property>
        <item>
         <widget class="QToolButton" name="actionOpenImageBtn">
          <property name="text"><string>Open Image</string></property>
+         <property name="toolTip"><string>Load a single image into the active analysis</string></property>
          <property name="autoRaise"><bool>true</bool></property>
         </widget>
        </item>
        <item>
         <widget class="QToolButton" name="workflowAutoCalibrateBtn">
          <property name="text"><string>Auto-Calibrate</string></property>
+         <property name="toolTip"><string>Detect calibration regions from the current image</string></property>
          <property name="autoRaise"><bool>true</bool></property>
         </widget>
        </item>
        <item>
         <widget class="QToolButton" name="actionRunBtn">
          <property name="text"><string>Run Analysis</string></property>
+         <property name="toolTip"><string>Run the configured analysis pipeline</string></property>
          <property name="autoRaise"><bool>true</bool></property>
         </widget>
        </item>
        <item>
         <widget class="QToolButton" name="actionExportCsvBtn">
          <property name="text"><string>Export CSV</string></property>
+         <property name="toolTip"><string>Export the visible results table to CSV</string></property>
          <property name="autoRaise"><bool>true</bool></property>
         </widget>
        </item>
        <item>
         <widget class="QToolButton" name="workflowAdvancedBtn">
          <property name="text"><string>Advanced +</string></property>
+         <property name="toolTip"><string>Show SOP, stages, diagnostics, and logs</string></property>
          <property name="checkable"><bool>true</bool></property>
          <property name="autoRaise"><bool>true</bool></property>
         </widget>
@@ -133,7 +138,7 @@
        <layout class="QVBoxLayout" name="setupHostLayout"/>
       </widget>
 
-      <!-- Right workbench: Preview above results/diagnostics -->
+      <!-- Right workbench: preview plus key results above full results/diagnostics -->
       <widget class="QWidget" name="workbenchHost">
        <layout class="QVBoxLayout" name="workbenchHostLayout">
         <property name="leftMargin"><number>0</number></property>
@@ -143,8 +148,31 @@
         <item>
          <widget class="QSplitter" name="workbenchSplitter">
           <property name="orientation"><enum>Qt::Vertical</enum></property>
-          <widget class="QWidget" name="previewHost">
-           <layout class="QVBoxLayout" name="previewHostLayout"/>
+          <widget class="QSplitter" name="previewResultsSplitter">
+           <property name="orientation"><enum>Qt::Horizontal</enum></property>
+           <widget class="QWidget" name="previewHost">
+            <layout class="QVBoxLayout" name="previewHostLayout"/>
+           </widget>
+           <widget class="QWidget" name="keyResultsHost">
+            <property name="minimumSize">
+             <size>
+              <width>260</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>340</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <layout class="QVBoxLayout" name="keyResultsHostLayout">
+             <property name="leftMargin"><number>8</number></property>
+             <property name="topMargin"><number>8</number></property>
+             <property name="rightMargin"><number>8</number></property>
+             <property name="bottomMargin"><number>8</number></property>
+            </layout>
+           </widget>
           </widget>
           <widget class="QTabWidget" name="inspectTabs">
            <property name="tabPosition"><enum>QTabWidget::North</enum></property>
