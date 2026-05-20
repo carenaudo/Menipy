@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Menipy ADSA - Light Theme</title>
+<title>Menipy ADSA - Pro Fluid Theme</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   
@@ -32,34 +32,37 @@
     
     --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     --font-mono: "JetBrains Mono", "Fira Code", "Courier New", monospace;
+
+    /* Workspace Variables */
+    --sidebar-width: 280px;
+    --results-width: 320px;
+    --table-height: 250px;
   }
 
   body {
-    background: #e1e4e8;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    padding: 20px;
+    background: var(--bg-main);
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden; /* Full viewport fluid layout */
   }
 
   .app {
     font-family: var(--font-mono);
-    background: var(--bg-main);
     color: var(--text-primary);
     display: grid;
-    grid-template-columns: 240px 1fr 300px;
-    grid-template-rows: 48px 1fr 200px;
+    grid-template-columns: var(--sidebar-width) 1fr var(--results-width);
+    grid-template-rows: 48px 1fr var(--table-height);
     width: 100%;
-    max-width: 1200px;
-    height: 680px;
-    border-radius: 8px;
-    overflow: hidden;
+    height: 100%;
     font-size: 12px;
-    position: relative;
-    box-shadow: 0 12px 24px rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.05);
-    border: 1px solid var(--border);
+    transition: grid-template-columns 0.3s ease, grid-template-rows 0.3s ease;
   }
+
+  /* Collapsed states */
+  .app.sidebar-closed { grid-template-columns: 0px 1fr var(--results-width); }
+  .app.results-closed { grid-template-columns: var(--sidebar-width) 1fr 0px; }
+  .app.table-closed { grid-template-rows: 48px 1fr 0px; }
+  .app.sidebar-closed.results-closed { grid-template-columns: 0px 1fr 0px; }
 
   /* ── Titlebar ── */
   .titlebar {
@@ -68,253 +71,332 @@
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
-    padding: 0 14px;
+    padding: 0 16px;
     gap: 16px;
+    z-index: 50;
   }
-  .app-name { font-size: 13px; font-weight: 700; color: var(--accent-blue); letter-spacing: .06em; }
-  .menu-items { display: flex; gap: 2px; margin-left: 8px; }
-  .menu-item { padding: 4px 10px; border-radius: 4px; color: var(--text-secondary); cursor: pointer; font-size: 12px; font-family: var(--font-ui); }
+  .app-name { font-size: 14px; font-weight: 700; color: var(--accent-blue); letter-spacing: .05em; display: flex; align-items: center; gap: 8px;}
+  .menu-items { display: flex; gap: 4px; margin-left: 8px; }
+  .menu-item { padding: 6px 12px; border-radius: 4px; color: var(--text-secondary); cursor: pointer; font-size: 13px; font-family: var(--font-ui); font-weight: 500;}
   .menu-item:hover { background: var(--border-light); color: var(--text-primary); }
   
-  .toolbar { display: flex; gap: 6px; margin-left: auto; align-items: center; }
+  .toolbar { display: flex; gap: 8px; margin-left: auto; align-items: center; }
   .tbtn {
-    background: var(--bg-main); border: 1px solid var(--border); border-radius: 5px;
-    color: var(--text-primary); padding: 5px 12px; font-size: 11px;
-    font-family: var(--font-ui); cursor: pointer; display: flex; align-items: center; gap: 5px;
-    font-weight: 500;
+    background: var(--bg-main); border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text-primary); padding: 6px 12px; font-size: 12px;
+    font-family: var(--font-ui); cursor: pointer; display: flex; align-items: center; gap: 6px;
+    font-weight: 500; transition: all 0.15s;
   }
+  .tbtn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   .tbtn:hover { background: var(--bg-hover); }
+  .tbtn.icon-only { padding: 6px 8px; color: var(--text-secondary); }
+  .tbtn.icon-only.active { background: var(--accent-blue-bg); color: var(--accent-blue); border-color: var(--accent-blue-border); }
   .tbtn.primary { background: var(--accent-blue); border-color: var(--accent-blue); color: #fff; font-weight: 600; }
   .tbtn.primary:hover { background: #035cc5; }
-  .tbtn.adv { border-color: #d1d5db; color: var(--accent-purple); }
+  .tbtn.adv { border-color: var(--border); color: var(--accent-purple); }
   .tbtn.adv:hover { border-color: var(--accent-purple); background: #f3f0ff; }
   
   .dot { width: 8px; height: 8px; border-radius: 50%; }
-  .dot.active { background: var(--accent-green); }
+  .dot.active { background: var(--accent-green); box-shadow: 0 0 0 2px var(--accent-green-bg); }
 
   /* ── Sidebar ── */
   .sidebar {
     background: var(--bg-panel);
     border-right: 1px solid var(--border);
-    overflow-y: auto;
-    padding: 14px;
+    overflow-y: auto; overflow-x: hidden;
+    padding: 16px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 20px;
+    transition: opacity 0.2s;
   }
+  .app.sidebar-closed .sidebar { opacity: 0; pointer-events: none; }
+  
   .section-label {
-    font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
-    color: var(--text-secondary); font-family: var(--font-ui); font-weight: 600; margin-bottom: 8px;
+    font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--text-secondary); font-family: var(--font-ui); font-weight: 700; margin-bottom: 8px;
     display: flex; justify-content: space-between; align-items: center;
   }
-  .analysis-tabs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
+  .analysis-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .tab {
-    background: var(--bg-main); border: 1px solid var(--border); border-radius: 5px;
-    padding: 6px 4px; text-align: center; cursor: pointer; color: var(--text-secondary);
-    font-size: 11px; font-family: var(--font-ui); font-weight: 500;
+    background: var(--bg-main); border: 1px solid var(--border); border-radius: 6px;
+    padding: 8px 6px; text-align: center; cursor: pointer; color: var(--text-secondary);
+    font-size: 12px; font-family: var(--font-ui); font-weight: 500;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
   }
+  .tab svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   .tab:hover { background: var(--bg-hover); }
-  .tab.active { background: var(--accent-blue-bg); border-color: var(--accent-blue); color: var(--accent-blue); font-weight: 600; }
+  .tab.active { background: var(--accent-blue-bg); border-color: var(--accent-blue); color: var(--accent-blue); font-weight: 600; box-shadow: 0 1px 2px rgba(9,105,218,0.1); }
   
-  .source-modes { display: flex; gap: 4px; margin-bottom: 8px; }
+  .source-modes { display: flex; gap: 4px; margin-bottom: 12px; }
   .mode-btn {
-    flex: 1; padding: 5px 4px; background: var(--bg-main); border: 1px solid var(--border);
-    border-radius: 4px; color: var(--text-secondary); font-size: 10px;
-    font-family: var(--font-ui); cursor: pointer; text-align: center; font-weight: 500;
+    flex: 1; padding: 6px 4px; background: var(--bg-main); border: 1px solid var(--border);
+    border-radius: 5px; color: var(--text-secondary); font-size: 11px;
+    font-family: var(--font-ui); cursor: pointer; text-align: center; font-weight: 600;
+    display: flex; justify-content: center; align-items: center; gap: 4px;
   }
+  .mode-btn svg { width: 12px; height: 12px; }
   .mode-btn:hover { background: var(--bg-hover); }
-  .mode-btn.active { background: var(--accent-green-bg); border-color: var(--accent-green-border); color: var(--accent-green); font-weight: 600;}
+  .mode-btn.active { background: var(--accent-green-bg); border-color: var(--accent-green-border); color: var(--accent-green); }
   
-  .field-row { margin-bottom: 7px; }
-  .field-label { color: var(--text-secondary); font-size: 11px; font-family: var(--font-ui); margin-bottom: 4px; }
+  .field-row { margin-bottom: 8px; }
+  .field-label { color: var(--text-secondary); font-size: 12px; font-family: var(--font-ui); margin-bottom: 6px; font-weight: 500;}
   .field-input {
-    width: 100%; background: var(--bg-main); border: 1px solid var(--border); border-radius: 4px;
-    color: var(--text-primary); padding: 6px 8px; font-size: 10px;
-    font-family: var(--font-mono); outline: none;
+    width: 100%; background: var(--bg-main); border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text-primary); padding: 8px 10px; font-size: 11px;
+    font-family: var(--font-mono); outline: none; transition: border-color 0.2s;
   }
   .field-input:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 2px var(--accent-blue-bg); }
 
   /* Calibration & Settings */
-  .settings-group { display: none; }
+  .settings-group { display: none; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
   .settings-group.active { display: block; }
+  
   .calib-row {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 4px 0;
+    padding: 6px 0; border-bottom: 1px solid transparent;
   }
-  .calib-key { color: var(--text-primary); font-family: var(--font-ui); font-size: 11px; }
-  .calib-input-group { display: flex; align-items: center; gap: 4px; }
+  .calib-row:hover { border-bottom-color: var(--border-light); }
+  .calib-key { 
+    color: var(--text-primary); font-family: var(--font-ui); font-size: 12px; font-weight: 500;
+    cursor: help; text-decoration: underline dotted var(--border); text-underline-offset: 3px;
+  }
+  .calib-input-group { display: flex; align-items: center; gap: 6px; }
   .calib-input {
-    width: 54px; text-align: right; border: 1px solid var(--border);
-    border-radius: 4px; padding: 3px 6px; font-size: 10px;
+    width: 65px; text-align: right; border: 1px solid var(--border);
+    border-radius: 4px; padding: 4px 8px; font-size: 11px;
     font-family: var(--font-mono); color: var(--accent-blue);
-    background: var(--bg-main); outline: none;
+    background: var(--bg-main); outline: none; font-weight: 600;
   }
-  .calib-input:focus { border-color: var(--accent-blue); }
-  .calib-unit { color: var(--text-secondary); font-size: 10px; width: 32px; font-family: var(--font-ui); }
+  .calib-input:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 2px var(--accent-blue-bg); }
+  .calib-unit { color: var(--text-secondary); font-size: 11px; width: 36px; font-family: var(--font-ui); }
+  
+  /* DB Button styles */
+  .db-btn {
+    background: var(--bg-main); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text-secondary); padding: 4px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.15s; margin-left: 2px;
+  }
+  .db-btn:hover { background: var(--accent-blue-bg); color: var(--accent-blue); border-color: var(--accent-blue-border); }
+  .db-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   
   .run-btn {
-    background: var(--accent-blue); border: none; border-radius: 6px; color: #fff;
-    padding: 10px; font-size: 12px; font-weight: 600; font-family: var(--font-ui);
+    background: var(--accent-blue); border: none; border-radius: 8px; color: #fff;
+    padding: 12px; font-size: 13px; font-weight: 600; font-family: var(--font-ui);
     cursor: pointer; width: 100%; letter-spacing: .02em; margin-top: auto;
-    box-shadow: 0 2px 4px rgba(9, 105, 218, 0.2);
+    box-shadow: 0 4px 12px rgba(9, 105, 218, 0.2); transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    position: relative; overflow: hidden;
   }
-  .run-btn:hover { background: #035cc5; }
-  hr.div { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
+  .run-btn:hover { background: #035cc5; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(9, 105, 218, 0.3); }
+  .run-btn svg { width: 16px; height: 16px; fill: currentColor; }
+  
+  /* Progress state for Run Button */
+  .run-btn.processing { background: var(--bg-main); border: 1px solid var(--accent-blue); color: var(--accent-blue); box-shadow: none; transform: none; }
+  .run-btn .progress-bar { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent-blue-bg); width: 0%; z-index: 0; transition: width 0.3s; }
+  .run-btn .btn-content { position: relative; z-index: 1; display: flex; align-items: center; gap: 8px; }
+
+  hr.div { border: none; border-top: 1px solid var(--border); margin: 6px 0; }
 
   /* ── Viewer ── */
   .viewer {
     background: #ebf0f4; position: relative; overflow: hidden;
     display: flex; align-items: center; justify-content: center;
     background-image: 
-      linear-gradient(#d0d7de 1px, transparent 1px),
-      linear-gradient(90deg, #d0d7de 1px, transparent 1px);
-    background-size: 20px 20px;
+      linear-gradient(rgba(208, 215, 222, 0.5) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(208, 215, 222, 0.5) 1px, transparent 1px);
+    background-size: 30px 30px;
     background-position: center center;
   }
+  
   .overlay-badge {
     position: absolute; background: rgba(255,255,255,0.9); border: 1px solid var(--border);
-    border-radius: 4px; padding: 4px 8px; font-size: 11px; color: var(--text-secondary);
-    font-family: var(--font-ui); box-shadow: 0 2px 6px rgba(0,0,0,0.05); font-weight: 500;
+    border-radius: 6px; padding: 6px 12px; font-size: 12px; color: var(--text-secondary);
+    font-family: var(--font-ui); box-shadow: 0 4px 12px rgba(0,0,0,0.08); font-weight: 600;
   }
-  .overlay-badge.tl { top: 12px; left: 12px; }
-  .overlay-badge.tr { top: 12px; right: 12px; color: var(--accent-green); border-color: var(--accent-green-border); background: var(--accent-green-bg); }
+  .overlay-badge.tl { top: 16px; left: 16px; display: flex; gap: 6px; align-items: center; }
+  .overlay-badge.tr { top: 16px; right: 16px; color: var(--accent-green); border-color: var(--accent-green-border); background: var(--accent-green-bg); }
   
+  .floating-tools {
+    position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 6px;
+    background: rgba(255,255,255,0.85); padding: 6px; border-radius: 8px;
+    border: 1px solid var(--border); backdrop-filter: blur(8px); box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  .tool-btn {
+    width: 32px; height: 32px; border-radius: 6px; border: none; background: transparent;
+    color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .tool-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .tool-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .tool-btn.active { background: var(--accent-blue-bg); color: var(--accent-blue); }
+
+  .viewer-bottom-bar {
+    position: absolute; bottom: 16px; left: 16px; right: 16px;
+    display: flex; justify-content: space-between; align-items: flex-end;
+    pointer-events: none; /* Let clicks pass through empty areas */
+  }
+
+  .transport-controls {
+    display: flex; gap: 4px; background: rgba(255,255,255,0.85); padding: 6px;
+    border-radius: 8px; border: 1px solid var(--border); backdrop-filter: blur(8px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08); pointer-events: auto; align-items: center;
+  }
+  .scrubber-wrap { display: flex; align-items: center; padding: 0 10px; gap: 10px; border-left: 1px solid var(--border); margin-left: 4px; }
+  .scrubber { width: 120px; accent-color: var(--accent-blue); cursor: pointer;}
+  .scrubber-text { font-family: var(--font-mono); font-size: 11px; color: var(--text-secondary); font-weight: 600;}
+
   .overlay-controls {
-    position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
-    display: flex; gap: 4px; background: rgba(255,255,255,0.8);
-    padding: 4px; border-radius: 6px; border: 1px solid var(--border);
-    backdrop-filter: blur(4px);
+    display: flex; gap: 6px; background: rgba(255,255,255,0.85);
+    padding: 6px; border-radius: 8px; border: 1px solid var(--border);
+    backdrop-filter: blur(8px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); pointer-events: auto;
   }
   .octl {
     background: transparent; border: 1px solid transparent; border-radius: 4px;
-    padding: 4px 8px; color: var(--text-secondary); font-size: 11px;
-    font-family: var(--font-ui); cursor: pointer; font-weight: 500;
+    padding: 6px 10px; color: var(--text-secondary); font-size: 12px;
+    font-family: var(--font-ui); cursor: pointer; font-weight: 600; transition: all 0.15s;
   }
-  .octl:hover { background: var(--bg-hover); }
+  .octl:hover { background: var(--bg-hover); color: var(--text-primary); }
   .octl.active { color: var(--accent-blue); background: var(--accent-blue-bg); border-color: var(--accent-blue-border); }
 
   /* ── Results Panel ── */
   .results-panel {
     background: var(--bg-panel); border-left: 1px solid var(--border);
     display: flex; flex-direction: column; overflow: hidden;
+    transition: opacity 0.2s;
   }
+  .app.results-closed .results-panel { opacity: 0; pointer-events: none; }
+
   .results-header {
-    padding: 12px 14px; border-bottom: 1px solid var(--border);
-    font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
-    color: var(--text-secondary); font-family: var(--font-ui); font-weight: 600;
+    padding: 14px 18px; border-bottom: 1px solid var(--border);
+    font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--text-secondary); font-family: var(--font-ui); font-weight: 700;
     display: flex; align-items: center; justify-content: space-between;
   }
-  .badge-count { background: var(--accent-blue-bg); color: var(--accent-blue); border-radius: 10px; padding: 2px 8px; font-size: 10px; font-family: var(--font-ui); font-weight: 600;}
+  .badge-count { background: var(--border); color: var(--text-primary); border-radius: 12px; padding: 2px 8px; font-size: 11px; font-family: var(--font-ui); font-weight: 600;}
   
-  .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--border); }
-  .metric-card { background: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
-  .metric-label { font-size: 10px; color: var(--text-secondary); font-family: var(--font-ui); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; font-weight: 600;}
-  .metric-val { font-size: 18px; font-weight: 700; line-height: 1; }
+  .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 16px 18px; border-bottom: 1px solid var(--border); background: var(--bg-main); }
+  .metric-card { border: 1px solid var(--border-light); border-radius: 8px; padding: 12px 14px; background: var(--bg-panel); transition: transform 0.2s; }
+  .metric-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
+  .metric-label { font-size: 11px; color: var(--text-secondary); font-family: var(--font-ui); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; font-weight: 700;}
+  .metric-val { font-size: 22px; font-weight: 700; line-height: 1; font-family: var(--font-ui); }
   .metric-val.cyan { color: var(--accent-blue); }
   .metric-val.green { color: var(--accent-green); }
   .metric-val.amber { color: var(--accent-amber); }
   .metric-val.plain { color: var(--text-primary); }
-  .metric-unit { font-size: 10px; color: var(--text-muted); margin-top: 4px; font-family: var(--font-ui); font-weight: 500;}
+  .metric-unit { font-size: 11px; color: var(--text-muted); margin-top: 6px; font-family: var(--font-ui); font-weight: 600;}
   
-  .results-list { flex: 1; overflow-y: auto; padding: 8px 14px; display: flex; flex-direction: column; gap: 6px; }
-  .result-row { background: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; cursor: pointer; transition: all 0.1s; }
+  .results-list { flex: 1; overflow-y: auto; padding: 12px 18px; display: flex; flex-direction: column; gap: 8px; }
+  .result-row { background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; cursor: pointer; transition: all 0.15s; }
   .result-row:hover { border-color: var(--accent-blue-border); }
-  .result-row.active { border-color: var(--accent-blue); background: var(--accent-blue-bg); box-shadow: 0 2px 4px rgba(9,105,218,0.1); }
-  .rr-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-  .rr-file { font-size: 11px; color: var(--text-primary); font-family: var(--font-ui); font-weight: 500;}
-  .rr-time { font-size: 10px; color: var(--text-muted); font-family: var(--font-ui); }
-  .rr-metrics { display: flex; gap: 10px; }
-  .rr-mk { color: var(--text-secondary); font-family: var(--font-ui); font-size: 10px; }
-  .rr-mv { color: var(--accent-blue); font-size: 10px; font-weight: 600;}
+  .result-row.active { border-color: var(--accent-blue); background: var(--accent-blue-bg); box-shadow: 0 2px 6px rgba(9,105,218,0.15); }
+  .rr-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .rr-file { font-size: 12px; color: var(--text-primary); font-family: var(--font-ui); font-weight: 600;}
+  .rr-time { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
+  .rr-metrics { display: flex; gap: 12px; }
+  .rr-mk { color: var(--text-secondary); font-family: var(--font-ui); font-size: 11px; font-weight: 500;}
+  .rr-mv { color: var(--accent-blue); font-size: 11px; font-weight: 700; font-family: var(--font-mono);}
 
   /* ── Bottom Table ── */
   .table-area {
     grid-column: 1 / -1;
     background: var(--bg-main); border-top: 1px solid var(--border); overflow: auto;
+    transition: opacity 0.2s;
   }
-  .data-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .app.table-closed .table-area { opacity: 0; pointer-events: none; }
+  
+  .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
   .data-table th {
     background: var(--bg-panel); color: var(--text-secondary); text-align: left;
-    padding: 8px 14px; font-family: var(--font-ui); font-size: 10px; font-weight: 600;
+    padding: 10px 16px; font-family: var(--font-ui); font-size: 11px; font-weight: 700;
     text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--border);
     position: sticky; top: 0; white-space: nowrap; z-index: 10;
   }
-  .data-table td { padding: 8px 14px; border-bottom: 1px solid var(--border-light); color: var(--text-primary); white-space: nowrap; }
-  .data-table tr:hover td { background: var(--bg-hover); }
+  .data-table td { padding: 10px 16px; border-bottom: 1px solid var(--border-light); color: var(--text-primary); white-space: nowrap; }
+  .data-table tr:hover td { background: var(--bg-hover); cursor: pointer; }
   .data-table tr.active td { background: var(--accent-blue-bg); }
-  .mono { font-family: var(--font-mono); color: var(--accent-blue); }
+  
+  .mono { font-family: var(--font-mono); color: var(--accent-blue); font-weight: 500; }
   .muted { color: var(--text-secondary); font-family: var(--font-ui); }
-  .tag { display: inline-block; background: var(--bg-panel); color: var(--text-primary); border: 1px solid var(--border); border-radius: 12px; padding: 2px 8px; font-size: 10px; font-family: var(--font-ui); font-weight: 500; }
+  .tag { display: inline-flex; align-items: center; gap: 4px; background: var(--bg-panel); color: var(--text-primary); border: 1px solid var(--border); border-radius: 12px; padding: 2px 10px; font-size: 11px; font-family: var(--font-ui); font-weight: 600; }
+  .tag svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .tag-viewing { display: inline-flex; align-items: center; gap: 4px; background: var(--accent-blue); color: #fff; border-radius: 4px; padding: 2px 6px; font-size: 10px; font-family: var(--font-ui); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-left: 8px;}
 
-  /* ── Dialog Overlay ── */
+  /* ── Advanced Dialog ── */
   .dialog-overlay {
     display: none; position: absolute; inset: 0;
     background: rgba(36, 41, 47, 0.4); z-index: 100;
     align-items: flex-start; justify-content: flex-end;
-    padding-top: 52px; padding-right: 14px;
+    padding-top: 52px; padding-right: 16px;
     backdrop-filter: blur(2px);
   }
   .dialog-overlay.open { display: flex; }
   .dialog {
-    background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px;
-    width: 380px; box-shadow: 0 12px 32px rgba(0,0,0,0.15); overflow: hidden;
+    background: var(--bg-main); border: 1px solid var(--border); border-radius: 10px;
+    width: 400px; box-shadow: 0 16px 40px rgba(0,0,0,0.15); overflow: hidden;
   }
   .dialog-header {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 16px; border-bottom: 1px solid var(--border); background: var(--bg-panel);
+    padding: 16px 20px; border-bottom: 1px solid var(--border); background: var(--bg-panel);
   }
-  .dialog-title { font-size: 13px; font-weight: 600; color: var(--text-primary); font-family: var(--font-ui); display: flex; align-items: center; gap: 8px; }
-  .dialog-title .icon { font-size: 14px; color: var(--accent-purple); }
-  .close-btn { background: none; border: none; color: var(--text-secondary); font-size: 16px; cursor: pointer; padding: 0 4px; line-height: 1; }
-  .close-btn:hover { color: var(--text-primary); }
+  .dialog-title { font-size: 14px; font-weight: 700; color: var(--text-primary); font-family: var(--font-ui); display: flex; align-items: center; gap: 8px; }
+  .dialog-title svg { width: 16px; height: 16px; stroke: var(--accent-purple); fill: none; stroke-width: 2; }
+  .close-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 4px; display: flex; border-radius: 4px; }
+  .close-btn:hover { background: var(--border-light); color: var(--text-primary); }
+  .close-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; }
   
-  .dialog-body { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
-  .adv-section { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .dialog-body { padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+  .adv-section { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
   .adv-section-header {
-    background: var(--bg-panel); padding: 10px 14px; border-bottom: 1px solid var(--border);
-    font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
-    color: var(--text-secondary); font-family: var(--font-ui); font-weight: 600;
+    background: var(--bg-panel); padding: 12px 16px; border-bottom: 1px solid var(--border);
+    font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--text-secondary); font-family: var(--font-ui); font-weight: 700;
   }
-  .adv-section-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
-  .adv-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-  .adv-label { font-size: 12px; color: var(--text-primary); font-family: var(--font-ui); flex: 1; font-weight: 500;}
+  .adv-section-body { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .adv-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .adv-label { font-size: 13px; color: var(--text-primary); font-family: var(--font-ui); flex: 1; font-weight: 500;}
   .adv-input {
     background: var(--bg-main); border: 1px solid var(--border); border-radius: 4px;
-    color: var(--accent-blue); padding: 6px 8px; font-size: 11px;
-    font-family: var(--font-mono); width: 100px; text-align: right; outline: none;
+    color: var(--accent-blue); padding: 6px 10px; font-size: 12px;
+    font-family: var(--font-mono); width: 110px; text-align: right; outline: none; font-weight: 600;
   }
   .adv-select {
     background: var(--bg-main); border: 1px solid var(--border); border-radius: 4px;
-    color: var(--text-primary); padding: 6px 8px; font-size: 11px;
-    font-family: var(--font-ui); width: 140px; outline: none;
+    color: var(--text-primary); padding: 6px 10px; font-size: 12px;
+    font-family: var(--font-ui); width: 150px; outline: none; font-weight: 500;
   }
-  .adv-toggle { display: flex; gap: 2px; background: var(--bg-panel); padding: 2px; border-radius: 5px; border: 1px solid var(--border); }
+  .adv-toggle { display: flex; gap: 2px; background: var(--bg-panel); padding: 3px; border-radius: 6px; border: 1px solid var(--border); }
   .toggle-opt {
-    padding: 4px 10px; border-radius: 3px;
-    font-size: 11px; font-family: var(--font-ui); font-weight: 500;
+    padding: 6px 12px; border-radius: 4px;
+    font-size: 12px; font-family: var(--font-ui); font-weight: 600;
     color: var(--text-secondary); cursor: pointer; background: transparent; border: none;
   }
-  .toggle-opt.on { background: var(--bg-main); color: var(--accent-blue); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+  .toggle-opt.on { background: var(--bg-main); color: var(--accent-blue); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
   
-  .stages-list { display: flex; flex-direction: column; gap: 6px; }
+  .stages-list { display: flex; flex-direction: column; gap: 8px; }
   .stage-row {
-    display: flex; align-items: center; gap: 8px;
-    background: var(--bg-main); border: 1px solid var(--border); border-radius: 4px;
-    padding: 8px 10px; cursor: grab;
+    display: flex; align-items: center; gap: 10px;
+    background: var(--bg-main); border: 1px solid var(--border); border-radius: 6px;
+    padding: 10px 12px; cursor: grab; transition: border-color 0.15s;
   }
-  .stage-handle { color: var(--text-muted); font-size: 12px; cursor: grab; }
-  .stage-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .stage-row:hover { border-color: var(--border-light); background: var(--bg-panel); }
+  .stage-handle { color: var(--text-muted); cursor: grab; display: flex; }
+  .stage-handle svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
+  .stage-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
   .stage-dot.done { background: var(--accent-green); }
-  .stage-dot.act { background: var(--accent-blue); box-shadow: 0 0 0 2px var(--accent-blue-bg); }
+  .stage-dot.act { background: var(--accent-blue); box-shadow: 0 0 0 3px var(--accent-blue-bg); }
   .stage-dot.idle { background: var(--border); }
-  .stage-name-d { font-size: 11px; color: var(--text-primary); font-family: var(--font-ui); flex: 1; font-weight: 500;}
-  .stage-cfg { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 4px; color: var(--text-secondary); padding: 3px 8px; font-size: 10px; font-family: var(--font-ui); cursor: pointer; font-weight: 500;}
+  .stage-name-d { font-size: 13px; color: var(--text-primary); font-family: var(--font-ui); flex: 1; font-weight: 600;}
+  .stage-cfg { background: var(--bg-main); border: 1px solid var(--border); border-radius: 4px; color: var(--text-secondary); padding: 4px 10px; font-size: 11px; font-family: var(--font-ui); cursor: pointer; font-weight: 600;}
   .stage-cfg:hover { background: var(--bg-hover); color: var(--text-primary); }
   
-  .dialog-footer { padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg-panel); display: flex; justify-content: flex-end; gap: 8px; }
-  .df-btn { padding: 6px 16px; border-radius: 5px; font-size: 12px; font-family: var(--font-ui); font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--bg-main); color: var(--text-primary); }
+  .dialog-footer { padding: 16px 20px; border-top: 1px solid var(--border); background: var(--bg-panel); display: flex; justify-content: flex-end; gap: 10px; }
+  .df-btn { padding: 8px 18px; border-radius: 6px; font-size: 13px; font-family: var(--font-ui); font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--bg-main); color: var(--text-primary); }
   .df-btn.ok { background: var(--accent-blue); border-color: var(--accent-blue); color: #fff; }
   .df-btn:hover { filter: brightness(0.95); }
+
 </style>
 </head>
 <body>
@@ -323,22 +405,45 @@
 
   <!-- Titlebar -->
   <div class="titlebar">
-    <span class="app-name">MENIPY ADSA</span>
+    <span class="app-name">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      MENIPY ADSA
+    </span>
     <div class="menu-items">
       <span class="menu-item">File</span>
       <span class="menu-item">Config</span>
-      <span class="menu-item">View</span>
-      <span class="menu-item">Run</span>
       <span class="menu-item">Plugins</span>
     </div>
+    
+    <!-- Workspace Layout Toggles -->
+    <div style="display:flex; gap: 4px; margin-left: 20px; border-left: 1px solid var(--border); padding-left: 20px;">
+      <button class="tbtn icon-only active" onclick="toggleLayout('sidebar')" title="Toggle Sidebar">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+      </button>
+      <button class="tbtn icon-only active" onclick="toggleLayout('table')" title="Toggle Data Table">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="15" x2="21" y2="15"></line></svg>
+      </button>
+      <button class="tbtn icon-only active" onclick="toggleLayout('results')" title="Toggle Results Panel">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="15" y1="3" x2="15" y2="21"></line></svg>
+      </button>
+    </div>
+
     <div class="toolbar">
-      <span style="display:flex;align-items:center;gap:5px;color:var(--text-secondary);font-family:var(--font-ui);font-size:11px;font-weight:500;">
+      <span style="display:flex;align-items:center;gap:6px;color:var(--text-secondary);font-family:var(--font-ui);font-size:12px;font-weight:600;margin-right:10px;">
         <span class="dot active"></span>3 measurements
       </span>
-      <button class="tbtn">Export CSV</button>
-      <button class="tbtn" onclick="void 0">Auto-Calibrate</button>
-      <button class="tbtn adv" id="advBtn" onclick="toggleDialog()">⚙ Advanced Settings</button>
-      <button class="tbtn primary">▶ Run Analysis</button>
+      <button class="tbtn">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        Export CSV
+      </button>
+      <button class="tbtn">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+        Auto-Calibrate
+      </button>
+      <button class="tbtn adv" id="advBtn" onclick="toggleDialog()">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        Advanced
+      </button>
     </div>
   </div>
 
@@ -347,23 +452,43 @@
     <div>
       <div class="section-label">Analysis Type</div>
       <div class="analysis-tabs" id="analysisTabs">
-        <div class="tab active" data-target="settings-pendant">Pendant</div>
-        <div class="tab" data-target="settings-sessile">Sessile</div>
-        <div class="tab" data-target="settings-osc">Osc.</div>
-        <div class="tab" data-target="settings-capillary">Capillary</div>
-        <div class="tab" data-target="settings-captive">Captive</div>
+        <div class="tab active" data-target="settings-pendant">
+          <svg viewBox="0 0 24 24"><path d="M12 2v6M12 8c-3.3 0-6 2.7-6 6s2.7 8 6 8 6-4.7 6-8-2.7-6-6-6z"></path></svg>
+          Pendant
+        </div>
+        <div class="tab" data-target="settings-sessile">
+          <svg viewBox="0 0 24 24"><path d="M4 18h16M12 6c-4.4 0-8 3.6-8 8h16c0-4.4-3.6-8-8-8z"></path></svg>
+          Sessile
+        </div>
+        <div class="tab" data-target="settings-osc">
+          <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+          Osc.
+        </div>
+        <div class="tab" data-target="settings-capillary">
+          <svg viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="20" rx="2"></rect><line x1="8" y1="10" x2="16" y2="10"></line></svg>
+          Capillary
+        </div>
       </div>
     </div>
     
     <div>
-      <div class="section-label">Source</div>
+      <div class="section-label">Source Data</div>
       <div class="source-modes">
-        <div class="mode-btn active">File</div>
-        <div class="mode-btn">Batch</div>
-        <div class="mode-btn">Camera</div>
+        <div class="mode-btn active">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
+          File
+        </div>
+        <div class="mode-btn">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><rect x="7" y="7" width="3" height="9"></rect><rect x="14" y="7" width="3" height="5"></rect></svg>
+          Batch
+        </div>
+        <div class="mode-btn">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+          Camera
+        </div>
       </div>
       <div class="field-row">
-        <div class="field-label">Image path</div>
+        <div class="field-label">Current Image</div>
         <input class="field-input" value="gota_pendiente_1.png" readonly style="color:var(--text-muted)">
       </div>
     </div>
@@ -372,26 +497,36 @@
     
     <!-- Shared Phase Properties -->
     <div>
-      <div class="section-label">Phase Properties</div>
+      <div class="section-label" style="margin-bottom:12px;">
+        Phase Properties
+      </div>
+      
       <div class="calib-row">
-        <span class="calib-key">Heavy Phase ρ</span>
+        <span class="calib-key" title="Density of the heavier phase, usually the drop fluid.">Heavy Phase ρ</span>
         <div class="calib-input-group">
-          <input type="number" class="calib-input" value="1000.0" step="0.1">
+          <input type="number" class="calib-input" value="1000.0" step="0.1" style="width: 56px;">
           <span class="calib-unit">kg/m³</span>
+          <button class="db-btn" title="Select fluid from Database">
+            <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+          </button>
         </div>
       </div>
       <div class="calib-row">
-        <span class="calib-key">Light Phase ρ</span>
+        <span class="calib-key" title="Density of the lighter phase, usually the surrounding gas/fluid.">Light Phase ρ</span>
         <div class="calib-input-group">
-          <input type="number" class="calib-input" value="1.2" step="0.1">
+          <input type="number" class="calib-input" value="1.2" step="0.1" style="width: 56px;">
           <span class="calib-unit">kg/m³</span>
+          <button class="db-btn" title="Select fluid from Database">
+            <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+          </button>
         </div>
       </div>
       <div class="calib-row">
-        <span class="calib-key">Gravity</span>
+        <span class="calib-key" title="Local gravity acceleration constant.">Gravity</span>
         <div class="calib-input-group">
-          <input type="number" class="calib-input" value="9.806" step="0.001">
+          <input type="number" class="calib-input" value="9.806" step="0.001" style="width: 56px;">
           <span class="calib-unit">m/s²</span>
+          <div style="width: 24px;"></div> <!-- Spacer to align with DB buttons -->
         </div>
       </div>
     </div>
@@ -400,24 +535,28 @@
 
     <!-- Dynamic Settings Area -->
     <div>
-      <div class="section-label">
+      <div class="section-label" style="color:var(--accent-blue);">
         <span id="dynamic-settings-title">Pendant Settings</span>
       </div>
 
       <!-- Pendant -->
       <div id="settings-pendant" class="settings-group active">
         <div class="calib-row">
-          <span class="calib-key">Needle OD</span>
+          <span class="calib-key" title="Outer diameter of the dispensing needle. Used for scale calibration.">Needle OD</span>
           <div class="calib-input-group">
-            <input type="number" class="calib-input" value="1.83" step="0.01">
+            <input type="number" class="calib-input" value="1.83" step="0.01" style="width: 56px;">
             <span class="calib-unit">mm</span>
+            <button class="db-btn" title="Select needle from Database">
+              <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+            </button>
           </div>
         </div>
         <div class="calib-row">
-          <span class="calib-key">Needle ID</span>
+          <span class="calib-key" title="Inner diameter of the dispensing needle.">Needle ID</span>
           <div class="calib-input-group">
-            <input type="number" class="calib-input" value="1.30" step="0.01">
+            <input type="number" class="calib-input" value="1.30" step="0.01" style="width: 56px;">
             <span class="calib-unit">mm</span>
+            <div style="width: 24px;"></div> <!-- Spacer -->
           </div>
         </div>
       </div>
@@ -425,16 +564,16 @@
       <!-- Sessile -->
       <div id="settings-sessile" class="settings-group">
         <div class="calib-row">
-          <span class="calib-key">Tilted angle</span>
+          <span class="calib-key" title="Angle of the substrate tilt (for roll-off measurements).">Tilted angle</span>
           <div class="calib-input-group">
             <input type="number" class="calib-input" value="0.0" step="1.0">
             <span class="calib-unit">°</span>
           </div>
         </div>
         <div class="calib-row">
-          <span class="calib-key">Baseline</span>
-          <div class="calib-input-group" style="width: 90px;">
-            <select class="field-input" style="padding: 2px 4px;">
+          <span class="calib-key" title="Method to determine the contact baseline.">Baseline Mode</span>
+          <div class="calib-input-group" style="width: 107px;">
+            <select class="field-input" style="padding: 4px 6px;">
               <option>Auto</option>
               <option>Manual</option>
             </select>
@@ -445,14 +584,14 @@
       <!-- Oscillating -->
       <div id="settings-osc" class="settings-group">
         <div class="calib-row">
-          <span class="calib-key">Frequency</span>
+          <span class="calib-key" title="Target oscillation frequency of the piezo element.">Frequency</span>
           <div class="calib-input-group">
             <input type="number" class="calib-input" value="1.0" step="0.1">
             <span class="calib-unit">Hz</span>
           </div>
         </div>
         <div class="calib-row">
-          <span class="calib-key">Amplitude</span>
+          <span class="calib-key" title="Volume amplitude variation.">Amplitude</span>
           <div class="calib-input-group">
             <input type="number" class="calib-input" value="2.0" step="0.1">
             <span class="calib-unit">µL</span>
@@ -463,50 +602,38 @@
       <!-- Capillary -->
       <div id="settings-capillary" class="settings-group">
         <div class="calib-row">
-          <span class="calib-key">Capillary Rad.</span>
+          <span class="calib-key" title="Inner radius of the capillary tube.">Capillary Rad.</span>
           <div class="calib-input-group">
             <input type="number" class="calib-input" value="0.50" step="0.01">
             <span class="calib-unit">mm</span>
           </div>
         </div>
       </div>
-
-      <!-- Captive Bubble -->
-      <div id="settings-captive" class="settings-group">
-        <div class="calib-row">
-          <span class="calib-key">Holder OD</span>
-          <div class="calib-input-group">
-            <input type="number" class="calib-input" value="2.0" step="0.1">
-            <span class="calib-unit">mm</span>
-          </div>
-        </div>
-        <div class="calib-row">
-          <span class="calib-key">Bubble Vol.</span>
-          <div class="calib-input-group">
-            <input type="number" class="calib-input" value="10.0" step="1.0">
-            <span class="calib-unit">µL</span>
-          </div>
-        </div>
-      </div>
       
     </div>
 
-    <button class="run-btn">▶ Run Analysis</button>
+    <!-- Progress State Button -->
+    <button class="run-btn" id="runBtn" onclick="simulateRun()">
+      <div class="progress-bar" id="runProgress"></div>
+      <div class="btn-content" id="runText">
+        <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+        Run Analysis
+      </div>
+    </button>
   </div>
 
   <!-- Image Viewer -->
   <div class="viewer">
-    <div style="width:240px;height:300px;position:relative">
-      <svg viewBox="0 0 240 310" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
-        <!-- Base image area mock -->
-        <rect width="240" height="310" fill="#f8fafc"/>
+    <!-- Main SVG Drawing -->
+    <div style="width:340px;height:420px;position:relative">
+      <svg viewBox="0 0 240 310" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.1));">
+        <rect width="240" height="310" fill="#f8fafc" rx="8"/>
         <!-- Needle -->
-        <rect x="90" y="0" width="60" height="65" rx="4" fill="#cbd5e1" stroke="#94a3b8" stroke-width="2"/>
+        <rect x="90" y="0" width="60" height="65" fill="#cbd5e1" stroke="#94a3b8" stroke-width="2"/>
         <!-- Drop Contour -->
         <path d="M58,148 Q58,58 120,58 Q182,58 182,148 Q182,234 120,234 Q58,234 58,148Z" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
         <!-- Theoretical fit overlay -->
         <path d="M63,148 Q63,63 120,63 Q177,63 177,148 Q177,228 120,228 Q63,228 63,148Z" stroke="#16a34a" stroke-width="1.5" fill="none" opacity=".8" stroke-dasharray="4,4"/>
-        
         <!-- Axis -->
         <line x1="120" y1="0" x2="120" y2="310" stroke="#3b82f6" stroke-width="1" opacity=".5" stroke-dasharray="4,4"/>
         <!-- Apex/Base Markers -->
@@ -519,57 +646,88 @@
         <ellipse cx="104" cy="122" rx="14" ry="18" fill="#ffffff" opacity=".4"/>
       </svg>
     </div>
-    <div class="overlay-badge tl">Pendant · young_laplace_strict</div>
+
+    <div class="overlay-badge tl">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6M12 8c-3.3 0-6 2.7-6 6s2.7 8 6 8 6-4.7 6-8-2.7-6-6-6z"></path></svg>
+      Pendant · young_laplace_strict
+    </div>
     <div class="overlay-badge tr">● Live</div>
-    <div class="overlay-controls">
-      <span class="octl active">Contour</span>
-      <span class="octl active">Fit</span>
-      <span class="octl">Axis</span>
-      <span class="octl active">Baseline</span>
-      <span class="octl active">Markers</span>
+
+    <!-- Floating Toolbox (Left) -->
+    <div class="floating-tools">
+      <button class="tool-btn active" title="Pan (Hand Tool)"><svg viewBox="0 0 24 24"><path d="M18 11V6a2 2 0 0 0-4 0v4M14 11V4a2 2 0 0 0-4 0v6M10 11V3a2 2 0 0 0-4 0v11M6 14v-2a2 2 0 0 0-4 0v7c0 4 3 6 7 6h3c4 0 7-3 7-7v-8a2 2 0 0 0-4 0v4"></path></svg></button>
+      <button class="tool-btn" title="Zoom In"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg></button>
+      <button class="tool-btn" title="Zoom Out"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg></button>
+      <div style="height:1px; background:var(--border); margin: 4px 2px;"></div>
+      <button class="tool-btn" title="Select ROI (Region of Interest)"><svg viewBox="0 0 24 24"><path d="M6 2v4M2 6h4M18 2v4M22 6h-4M6 22v-4M2 18h4M18 22v-4M22 18h-4M6 6h12v12H6z" stroke-dasharray="2 2"></path></svg></button>
+    </div>
+
+    <!-- Viewer Bottom Area -->
+    <div class="viewer-bottom-bar">
+      <!-- Transport Controls for Batch/Camera -->
+      <div class="transport-controls">
+        <button class="tool-btn" title="Step Back"><svg viewBox="0 0 24 24"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></svg></button>
+        <button class="tool-btn active" title="Play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></button>
+        <button class="tool-btn" title="Pause"><svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg></button>
+        <button class="tool-btn" title="Step Forward"><svg viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg></button>
+        <div class="scrubber-wrap">
+          <input type="range" class="scrubber" min="1" max="150" value="138" title="Timeline Scrubber">
+          <span class="scrubber-text">138 / 150</span>
+        </div>
+      </div>
+
+      <!-- Overlay Toggles -->
+      <div class="overlay-controls">
+        <span class="octl active">Contour</span>
+        <span class="octl active">Fit</span>
+        <span class="octl">Axis</span>
+        <span class="octl active">Baseline</span>
+      </div>
     </div>
   </div>
 
   <!-- Results Panel -->
   <div class="results-panel">
-    <div class="results-header">Last result <span class="badge-count">3</span></div>
+    <div class="results-header">Current Measurement <span class="badge-count">3</span></div>
     <div class="metric-grid">
       <div class="metric-card">
-        <div class="metric-label">IFT</div>
+        <div class="metric-label">Interfacial Tension</div>
         <div class="metric-val cyan">19.3</div>
         <div class="metric-unit">mN/m</div>
       </div>
       <div class="metric-card">
-        <div class="metric-label">Diameter</div>
+        <div class="metric-label">Eq. Diameter</div>
         <div class="metric-val plain">2.32</div>
         <div class="metric-unit">mm</div>
       </div>
       <div class="metric-card">
-        <div class="metric-label">Volume</div>
+        <div class="metric-label">Drop Volume</div>
         <div class="metric-val amber">7.75</div>
         <div class="metric-unit">µL</div>
       </div>
       <div class="metric-card">
-        <div class="metric-label">Height</div>
+        <div class="metric-label">Apex Height</div>
         <div class="metric-val green">2.36</div>
         <div class="metric-unit">mm</div>
       </div>
     </div>
+    
+    <div class="results-header" style="border-top:1px solid var(--border); background:var(--bg-main);">Recent History</div>
     <div class="results-list">
       <div class="result-row active">
         <div class="rr-top"><span class="rr-file">gota_pendiente_1.png</span><span class="rr-time">13:53:13</span></div>
         <div class="rr-metrics">
           <span class="rr-mk">IFT </span><span class="rr-mv">19.3 </span>
           <span class="rr-mk">Ø </span><span class="rr-mv">2.32 </span>
-          <span class="rr-mk">V </span><span class="rr-mv">7.75µL</span>
+          <span class="rr-mk">V </span><span class="rr-mv">7.75</span>
         </div>
       </div>
       <div class="result-row">
-        <div class="rr-top"><span class="rr-file">gota_pendiente_1.png</span><span class="rr-time">13:53:05</span></div>
+        <div class="rr-top"><span class="rr-file">gota_pendiente_2.png</span><span class="rr-time">13:53:05</span></div>
         <div class="rr-metrics">
-          <span class="rr-mk">IFT </span><span class="rr-mv">— </span>
-          <span class="rr-mk" style="color:var(--text-muted)">Ø </span><span class="rr-mv" style="color:var(--text-primary)">12.7 </span>
-          <span class="rr-mk" style="color:var(--text-muted)">V </span><span class="rr-mv" style="color:var(--text-primary)">1.2e3</span>
+          <span class="rr-mk">IFT </span><span class="rr-mv" style="color:var(--text-primary)">19.1 </span>
+          <span class="rr-mk" style="color:var(--text-muted)">Ø </span><span class="rr-mv" style="color:var(--text-primary)">2.30 </span>
+          <span class="rr-mk" style="color:var(--text-muted)">V </span><span class="rr-mv" style="color:var(--text-primary)">7.60</span>
         </div>
       </div>
     </div>
@@ -582,31 +740,55 @@
         <tr>
           <th>#</th><th>File</th><th>Timestamp</th><th>Pipeline</th>
           <th>Ø mm</th><th>H mm</th><th>Vol µL</th><th>IFT mN/m</th>
-          <th>Surface Tension Method</th><th>θ °</th><th>θ left °</th><th>θ right °</th><th>Contact Area mm²</th>
+          <th>Surface Tension Method</th><th>θ °</th><th>θ left °</th><th>θ right °</th>
         </tr>
       </thead>
       <tbody>
-        <tr class="active">
-          <td class="muted">1</td>
+        <tr class="active" onclick="selectRow(this)">
+          <td class="muted">1 <span class="tag-viewing">👁 Viewing</span></td>
           <td style="font-family:var(--font-ui)">gota_pendiente_1.png</td>
           <td class="muted">13:53:13</td>
-          <td><span class="tag">Pendant</span></td>
+          <td>
+            <span class="tag">
+              <svg viewBox="0 0 24 24"><path d="M12 2v6M12 8c-3.3 0-6 2.7-6 6s2.7 8 6 8 6-4.7 6-8-2.7-6-6-6z"></path></svg>
+              Pendant
+            </span>
+          </td>
           <td class="mono">2.32</td><td class="mono">2.36</td><td class="mono">7.75</td>
-          <td class="mono" style="color:var(--accent-blue);font-weight:700;font-size:12px;">19.3</td>
+          <td class="mono" style="color:var(--accent-blue);font-weight:700;font-size:13px;">19.30</td>
           <td class="muted">young_laplace_strict</td>
-          <td class="mono" style="color:var(--text-muted)">—</td><td class="mono" style="color:var(--text-muted)">—</td><td class="mono" style="color:var(--text-muted)">—</td><td class="mono" style="color:var(--text-muted)">—</td>
+          <td class="mono" style="color:var(--text-muted)">—</td><td class="mono" style="color:var(--text-muted)">—</td><td class="mono" style="color:var(--text-muted)">—</td>
         </tr>
-        <tr>
+        <tr onclick="selectRow(this)">
           <td class="muted">2</td>
-          <td style="font-family:var(--font-ui);color:var(--text-secondary)">gota_pendiente_1.png</td>
+          <td style="font-family:var(--font-ui);color:var(--text-secondary)">gota_pendiente_2.png</td>
           <td class="muted">13:53:05</td>
-          <td><span class="tag">Pendant</span></td>
+          <td>
+            <span class="tag" style="background:transparent; border-color:transparent;">
+               <svg viewBox="0 0 24 24"><path d="M12 2v6M12 8c-3.3 0-6 2.7-6 6s2.7 8 6 8 6-4.7 6-8-2.7-6-6-6z"></path></svg> Pendant
+            </span>
+          </td>
+          <td class="mono">2.30</td><td class="mono">2.35</td>
+          <td class="mono">7.60</td>
+          <td class="mono" style="color:var(--text-primary);font-weight:600;">19.10</td>
+          <td class="muted">young_laplace_strict</td>
+          <td class="mono" style="color:var(--text-muted)">—</td><td class="mono" style="color:var(--text-muted)">—</td><td class="mono" style="color:var(--text-muted)">—</td>
+        </tr>
+        <tr onclick="selectRow(this)">
+          <td class="muted">3</td>
+          <td style="font-family:var(--font-ui);color:var(--text-secondary)">sessile_calib_1.png</td>
+          <td class="muted">13:50:22</td>
+          <td>
+            <span class="tag" style="background:transparent; border-color:transparent;">
+               <svg viewBox="0 0 24 24"><path d="M4 18h16M12 6c-4.4 0-8 3.6-8 8h16c0-4.4-3.6-8-8-8z"></path></svg> Sessile
+            </span>
+          </td>
           <td class="mono">12.7</td><td class="mono">12.9</td>
           <td class="mono">1.26e+03</td>
           <td class="mono" style="color:var(--text-muted)">—</td>
-          <td class="muted">young_laplace_strict</td>
-          <td class="mono">59.5</td>
-          <td class="mono" style="color:var(--text-muted)">—</td><td class="mono" style="color:var(--text-muted)">—</td><td class="mono" style="color:var(--text-muted)">—</td>
+          <td class="muted">polynom_fit</td>
+          <td class="mono" style="color:var(--text-primary);font-weight:600;">59.5</td>
+          <td class="mono">59.2</td><td class="mono">59.8</td>
         </tr>
       </tbody>
     </table>
@@ -616,13 +798,18 @@
   <div class="dialog-overlay" id="dlgOverlay" onclick="closeIfOutside(event)">
     <div class="dialog">
       <div class="dialog-header">
-        <span class="dialog-title"><span class="icon">⚙</span> Advanced Settings</span>
-        <button class="close-btn" onclick="toggleDialog()">✕</button>
+        <span class="dialog-title">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          Advanced Settings
+        </span>
+        <button class="close-btn" onclick="toggleDialog()">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
       </div>
       <div class="dialog-body">
 
         <div class="adv-section">
-          <div class="adv-section-header">Pipeline / SOP</div>
+          <div class="adv-section-header">Pipeline / Standard Operating Proc.</div>
           <div class="adv-section-body">
             <div class="adv-row">
               <span class="adv-label">Active SOP</span>
@@ -633,11 +820,10 @@
               </select>
             </div>
             <div class="stages-list">
-              <div class="stage-row"><span class="stage-handle">⠿</span><span class="stage-dot done"></span><span class="stage-name-d">Edge detection</span><button class="stage-cfg">Configure</button></div>
-              <div class="stage-row"><span class="stage-handle">⠿</span><span class="stage-dot done"></span><span class="stage-name-d">Contour fit</span><button class="stage-cfg">Configure</button></div>
-              <div class="stage-row"><span class="stage-handle">⠿</span><span class="stage-dot act"></span><span class="stage-name-d">Young-Laplace solve</span><button class="stage-cfg">Configure</button></div>
-              <div class="stage-row"><span class="stage-handle">⠿</span><span class="stage-dot idle"></span><span class="stage-name-d">IFT extraction</span><button class="stage-cfg">Configure</button></div>
-              <div class="stage-row"><span class="stage-handle">⠿</span><span class="stage-dot idle"></span><span class="stage-name-d">Volume calculation</span><button class="stage-cfg">Configure</button></div>
+              <div class="stage-row"><span class="stage-handle"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg></span><span class="stage-dot done"></span><span class="stage-name-d">Edge detection</span><button class="stage-cfg">Configure</button></div>
+              <div class="stage-row"><span class="stage-handle"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg></span><span class="stage-dot done"></span><span class="stage-name-d">Contour fit</span><button class="stage-cfg">Configure</button></div>
+              <div class="stage-row"><span class="stage-handle"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg></span><span class="stage-dot act"></span><span class="stage-name-d">Young-Laplace solve</span><button class="stage-cfg">Configure</button></div>
+              <div class="stage-row"><span class="stage-handle"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg></span><span class="stage-dot idle"></span><span class="stage-name-d">IFT extraction</span><button class="stage-cfg">Configure</button></div>
             </div>
           </div>
         </div>
@@ -650,11 +836,11 @@
               <input class="adv-input" value="500">
             </div>
             <div class="adv-row">
-              <span class="adv-label">Convergence threshold</span>
+              <span class="adv-label">Convergence thresh.</span>
               <input class="adv-input" value="1e-6">
             </div>
             <div class="adv-row">
-              <span class="adv-label">Edge detection method</span>
+              <span class="adv-label">Edge detection</span>
               <select class="adv-select">
                 <option>Canny</option>
                 <option>Sobel</option>
@@ -666,7 +852,6 @@
               <div class="adv-toggle">
                 <span class="toggle-opt on">Linear</span>
                 <span class="toggle-opt">Cubic</span>
-                <span class="toggle-opt">None</span>
               </div>
             </div>
           </div>
@@ -675,7 +860,7 @@
       </div>
       <div class="dialog-footer">
         <button class="df-btn" onclick="toggleDialog()">Cancel</button>
-        <button class="df-btn ok" onclick="toggleDialog()">Apply</button>
+        <button class="df-btn ok" onclick="toggleDialog()">Apply Changes</button>
       </div>
     </div>
   </div>
@@ -695,6 +880,64 @@ function closeIfOutside(e) {
   }
 }
 
+// Workspace Layout Toggles
+function toggleLayout(panel) {
+  const app = document.getElementById('app');
+  app.classList.toggle(`${panel}-closed`);
+  
+  // Optional: visually update the button state
+  const targetBtn = event.currentTarget;
+  targetBtn.classList.toggle('active');
+}
+
+// Simulated Batch Run Progress State
+function simulateRun() {
+  const btn = document.getElementById('runBtn');
+  const prog = document.getElementById('runProgress');
+  const txt = document.getElementById('runText');
+  
+  if (btn.classList.contains('processing')) return; // Already running
+  
+  btn.classList.add('processing');
+  txt.innerHTML = `<svg viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg> Analyzing Batch...`;
+  
+  let w = 0;
+  const interval = setInterval(() => {
+    w += Math.random() * 15;
+    if (w >= 100) {
+      w = 100;
+      clearInterval(interval);
+      setTimeout(() => {
+        btn.classList.remove('processing');
+        prog.style.width = '0%';
+        txt.innerHTML = `<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Run Analysis`;
+      }, 500);
+    }
+    prog.style.width = `${w}%`;
+  }, 300);
+}
+
+// Table Row Selection logic (Workflow Sync)
+function selectRow(rowEl) {
+  // Clear active class and viewing tags from all rows
+  const rows = document.querySelectorAll('.data-table tbody tr');
+  rows.forEach(r => {
+    r.classList.remove('active');
+    const td = r.querySelector('td:first-child');
+    if(td.querySelector('.tag-viewing')) {
+      td.removeChild(td.querySelector('.tag-viewing'));
+    }
+  });
+
+  // Add to clicked row
+  rowEl.classList.add('active');
+  const firstTd = rowEl.querySelector('td:first-child');
+  const tag = document.createElement('span');
+  tag.className = 'tag-viewing';
+  tag.innerHTML = '👁 Viewing';
+  firstTd.appendChild(tag);
+}
+
 // Tab Switching Logic
 document.addEventListener('DOMContentLoaded', () => {
   const tabs = document.querySelectorAll('#analysisTabs .tab');
@@ -703,24 +946,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
-      // 1. Remove active state from all tabs
       tabs.forEach(t => t.classList.remove('active'));
-      
-      // 2. Add active to clicked tab
       tab.classList.add('active');
-      
-      // 3. Hide all setting groups
       groups.forEach(g => g.classList.remove('active'));
       
-      // 4. Show the targeted setting group
       const targetId = tab.getAttribute('data-target');
       const targetGroup = document.getElementById(targetId);
       if (targetGroup) {
         targetGroup.classList.add('active');
       }
 
-      // 5. Update section title
-      titleEl.textContent = tab.textContent + " Settings";
+      // Update section title text without removing icon
+      titleEl.textContent = tab.textContent.trim() + " Settings";
     });
   });
 });
