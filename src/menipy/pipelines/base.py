@@ -334,7 +334,15 @@ class PipelineBase:
             ctx.needle_diameter_mm = kwargs["needle_diameter_mm"]
         if "calibration_params" in kwargs and kwargs["calibration_params"] is not None:
             for key, value in kwargs["calibration_params"].items():
-                setattr(ctx, key, value)
+                # Normalize gravity aliases into physics dict to keep Context schema strict.
+                if key in {"gravity_m_s2", "g"}:
+                    if value is not None:
+                        if not isinstance(ctx.physics, dict):
+                            ctx.physics = {}
+                        ctx.physics["g"] = value
+                    continue
+                if key in type(ctx).model_fields:
+                    setattr(ctx, key, value)
 
         # Prioritize kwargs over instance settings to avoid multiple value errors.
         if "preprocessing_settings" not in kwargs:
@@ -384,7 +392,8 @@ class PipelineBase:
         }
         for k, v in kwargs.items():
             if k not in known_keys:
-                setattr(ctx, k, v)
+                if k in type(ctx).model_fields:
+                    setattr(ctx, k, v)
 
         return ctx
 

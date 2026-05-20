@@ -66,6 +66,35 @@ MIN_WINDOW_HEIGHT = 720  # Minimum window height
 CARD_SPACING = 16  # Spacing between cards
 PANEL_MARGIN = 12  # Panel internal margins
 
+
+def get_dpi_aware_min_window_size() -> tuple[int, int]:
+    """Return a safe main-window minimum size for the active DPI/screen."""
+    base_w, base_h = MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT
+    try:
+        from PySide6.QtWidgets import QApplication
+
+        app = QApplication.instance()
+        screen = app.primaryScreen() if app is not None else None
+        if screen is None:
+            return base_w, base_h
+
+        logical_dpi = float(screen.logicalDotsPerInch() or 96.0)
+        dpi_scale = logical_dpi / 96.0
+        available = screen.availableGeometry()
+
+        if dpi_scale >= 1.5:
+            target_w, target_h = 960, 600
+        elif dpi_scale >= 1.25:
+            target_w, target_h = 1024, 640
+        else:
+            target_w, target_h = base_w, base_h
+
+        safe_w = min(target_w, max(800, int(available.width() * 0.92)))
+        safe_h = min(target_h, max(560, int(available.height() * 0.92)))
+        return safe_w, safe_h
+    except Exception:
+        return base_w, base_h
+
 # =============================================================================
 # Animation Constants
 # =============================================================================

@@ -695,13 +695,38 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     ) -> None:
         if not hasattr(self, "rootSplitter"):
             return
+
         setup_host = getattr(self, "setupHost", None)
         inspect_tabs = getattr(self, "inspectTabs", None)
         key_results_host = getattr(self, "keyResultsHost", None)
+
         if show_key_results is None:
             show_key_results = (
                 bool(key_results_host.isVisible()) if key_results_host else True
             )
+
+        try:
+            sizes = list(self.rootSplitter.sizes())  # type: ignore[attr-defined]
+        except Exception:
+            sizes = [260, 740]
+        try:
+            vertical_sizes = list(self.workbenchSplitter.sizes())  # type: ignore[attr-defined]
+        except Exception:
+            vertical_sizes = [560, 240]
+        try:
+            preview_results_sizes = list(self.previewResultsSplitter.sizes())  # type: ignore[attr-defined]
+        except Exception:
+            preview_results_sizes = [900, 320]
+
+        # Cache non-collapsed sizes before hiding panels, so they can be restored.
+        if show_setup and show_inspector:
+            if len(sizes) >= 2 and sizes[0] > 0 and sizes[1] > 0:
+                self._splitter_sizes_full = sizes
+            if len(vertical_sizes) >= 2 and vertical_sizes[0] > 0 and vertical_sizes[1] > 0:
+                self._workbench_splitter_sizes_full = vertical_sizes
+        if show_key_results and len(preview_results_sizes) >= 2 and preview_results_sizes[1] > 0:
+            self._preview_results_sizes_full = preview_results_sizes
+
         if setup_host is not None:
             setup_host.setVisible(show_setup)
         if inspect_tabs is not None:
@@ -709,32 +734,35 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if key_results_host is not None:
             key_results_host.setVisible(show_key_results)
 
-        try:
-            sizes = self.rootSplitter.sizes()  # type: ignore[attr-defined]
-        except Exception:
-            sizes = [260, 740]
-        try:
-            vertical_sizes = self.workbenchSplitter.sizes()  # type: ignore[attr-defined]
-        except Exception:
-            vertical_sizes = [560, 240]
-        try:
-            preview_results_sizes = self.previewResultsSplitter.sizes()  # type: ignore[attr-defined]
-        except Exception:
-            preview_results_sizes = [900, 320]
-
         if show_setup and show_inspector:
-            target_sizes = self._splitter_sizes_full or sizes
-            target_vertical_sizes = (
-                getattr(self, "_workbench_splitter_sizes_full", None) or vertical_sizes
-            )
+            cached_root = getattr(self, "_splitter_sizes_full", None)
+            if not cached_root or len(cached_root) < 2 or min(cached_root[:2]) <= 0:
+                cached_root = _workbench_root_sizes(self.width(), None)
+            target_sizes = [max(220, int(cached_root[0])), max(1, int(cached_root[1]))]
+
+            cached_vertical = getattr(self, "_workbench_splitter_sizes_full", None)
+            if (
+                not cached_vertical
+                or len(cached_vertical) < 2
+                or min(cached_vertical[:2]) <= 0
+            ):
+                cached_vertical = _workbench_vertical_sizes(self.height(), None)
+            target_vertical_sizes = [
+                max(1, int(cached_vertical[0])),
+                max(160, int(cached_vertical[1])),
+            ]
         elif show_setup and not show_inspector:
             total = max(1, sum(sizes))
-            target_sizes = [max(200, sizes[0]), max(1, total - sizes[0])]
+            setup_width = max(220, sizes[0] if sizes and sizes[0] > 0 else 300)
+            target_sizes = [setup_width, max(1, total - setup_width)]
             target_vertical_sizes = [max(1, sum(vertical_sizes)), 0]
         elif not show_setup and show_inspector:
             total = max(1, sum(sizes))
             target_sizes = [0, total]
-            target_vertical_sizes = vertical_sizes
+            target_vertical_sizes = [
+                max(1, vertical_sizes[0] if vertical_sizes else 560),
+                max(160, vertical_sizes[1] if len(vertical_sizes) > 1 else 240),
+            ]
         else:
             total = max(1, sum(sizes))
             target_sizes = [0, total]
@@ -745,14 +773,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.workbenchSplitter.setSizes(target_vertical_sizes)  # type: ignore[attr-defined]
         except Exception:
             pass
+
         try:
             if show_key_results:
-                target_preview_results = (
-                    self._preview_results_sizes_full or preview_results_sizes
-                )
-                if len(target_preview_results) < 2 or target_preview_results[1] <= 0:
+                cached_preview = getattr(self, "_preview_results_sizes_full", None)
+                if (
+                    not cached_preview
+                    or len(cached_preview) < 2
+                    or cached_preview[1] <= 0
+                ):
                     total = max(1, sum(preview_results_sizes))
-                    target_preview_results = [max(1, total - 320), 320]
+                    cached_preview = [max(1, total - 320), 320]
+                target_preview_results = [
+                    max(1, int(cached_preview[0])),
+                    max(180, int(cached_preview[1])),
+                ]
             else:
                 target_preview_results = [max(1, sum(preview_results_sizes)), 0]
             self.previewResultsSplitter.setSizes(target_preview_results)  # type: ignore[attr-defined]

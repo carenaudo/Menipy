@@ -25,8 +25,16 @@ class _Job(QRunnable):
         callback,
         *,
         roi=None,
+        roi_rect=None,
+        detected_roi=None,
         needle_rect=None,
         contact_line=None,
+        substrate_line=None,
+        drop_contour=None,
+        detected_contour=None,
+        contact_points=None,
+        apex_point=None,
+        auto_detect_features=None,
         preprocessing_settings=None,
         preprocessing_markers=None,
         edge_detection_settings=None,
@@ -42,8 +50,16 @@ class _Job(QRunnable):
         self.frames = frames
         self.callback = callback
         self.roi = roi
+        self.roi_rect = roi_rect
+        self.detected_roi = detected_roi
         self.needle_rect = needle_rect
         self.contact_line = contact_line
+        self.substrate_line = substrate_line
+        self.drop_contour = drop_contour
+        self.detected_contour = detected_contour
+        self.contact_points = contact_points
+        self.apex_point = apex_point
+        self.auto_detect_features = auto_detect_features
         self.preprocessing_settings = preprocessing_settings
         self.preprocessing_markers = preprocessing_markers
         self.edge_detection_settings = edge_detection_settings
@@ -67,8 +83,16 @@ class _Job(QRunnable):
             #     p.do_acquisition = (lambda ctx: setattr(ctx, "frames", acq.from_camera(device=self.camera or 0, n_frames=self.frames)) or ctx)  # type: ignore
             run_kwargs = {
                 "roi": self.roi,
+                "roi_rect": self.roi_rect,
+                "detected_roi": self.detected_roi,
                 "needle_rect": self.needle_rect,
                 "contact_line": self.contact_line,
+                "substrate_line": self.substrate_line,
+                "drop_contour": self.drop_contour,
+                "detected_contour": self.detected_contour,
+                "contact_points": self.contact_points,
+                "apex_point": self.apex_point,
+                "auto_detect_features": self.auto_detect_features,
                 "preprocessing_markers": self.preprocessing_markers,
                 "calibration_params": self.calibration_params,
                 "scale": self.scale,

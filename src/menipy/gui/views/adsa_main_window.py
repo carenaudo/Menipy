@@ -46,7 +46,8 @@ class ADSAMainWindow(QMainWindow):
         """Initialize."""
         super().__init__()
         self.setWindowTitle("ADSA - Automated Drop Shape Analysis")
-        self.setMinimumSize(theme.MIN_WINDOW_WIDTH, theme.MIN_WINDOW_HEIGHT)
+        min_w, min_h = theme.get_dpi_aware_min_window_size()
+        self.setMinimumSize(min_w, min_h)
 
         # Apply theme
         self.setStyleSheet(theme.get_stylesheet())

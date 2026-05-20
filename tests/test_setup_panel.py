@@ -237,3 +237,31 @@ def test_included_step_controls_emit_signals(qtbot, setup_panel_controller):
     qtbot.mouseClick(first.playBtn, Qt.LeftButton)
 
     handler.assert_called_once_with(first.step_name)
+
+
+def test_setup_and_table_toggles_restore_splitter_sizes(main_window, qtbot):
+    setup_toggle = main_window.toggleSetupBtn
+    table_toggle = main_window.toggleInspectBtn
+
+    assert setup_toggle.isChecked()
+    assert table_toggle.isChecked()
+
+    # Hide and restore setup rail.
+    qtbot.mouseClick(setup_toggle, Qt.LeftButton)
+    qtbot.wait(20)
+    assert main_window.setupHost.isHidden()
+
+    qtbot.mouseClick(setup_toggle, Qt.LeftButton)
+    qtbot.wait(20)
+    assert not main_window.setupHost.isHidden()
+    assert main_window.rootSplitter.sizes()[0] > 0
+
+    # Hide and restore table (inspect tabs).
+    qtbot.mouseClick(table_toggle, Qt.LeftButton)
+    qtbot.wait(20)
+    assert main_window.inspectTabs.isHidden()
+
+    qtbot.mouseClick(table_toggle, Qt.LeftButton)
+    qtbot.wait(20)
+    assert not main_window.inspectTabs.isHidden()
+    assert main_window.workbenchSplitter.sizes()[1] > 0
