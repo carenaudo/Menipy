@@ -1,227 +1,327 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Menipy ADSA - Light Theme</title>
 <style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  .app{
-    font-family:'JetBrains Mono','Fira Code','Courier New',monospace;
-    background:#0d1117;color:#e6edf3;
-    display:grid;
-    grid-template-columns:220px 1fr 280px;
-    grid-template-rows:48px 1fr 200px;
-    height:640px;
-    border-radius:10px;overflow:hidden;font-size:12px;
-    position:relative;
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  :root {
+    /* Light Theme Palette */
+    --bg-main: #ffffff;
+    --bg-panel: #f6f8fa;
+    --bg-hover: #eaeef2;
+    --border: #d0d7de;
+    --border-light: #e1e4e8;
+    
+    --text-primary: #24292f;
+    --text-secondary: #57606a;
+    --text-muted: #8c959f;
+    
+    --accent-blue: #0969da;
+    --accent-blue-bg: #ddf4ff;
+    --accent-blue-border: #54aeff;
+    
+    --accent-green: #1a7f37;
+    --accent-green-bg: #dafbe1;
+    --accent-green-border: #4ac26b;
+    
+    --accent-amber: #bf8700;
+    --accent-purple: #8250df;
+    
+    --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    --font-mono: "JetBrains Mono", "Fira Code", "Courier New", monospace;
   }
-  .titlebar{
-    grid-column:1/-1;
-    background:#161b22;border-bottom:1px solid #21262d;
-    display:flex;align-items:center;padding:0 14px;gap:16px;
-  }
-  .app-name{font-size:13px;font-weight:700;color:#58a6ff;letter-spacing:.06em}
-  .menu-items{display:flex;gap:2px;margin-left:8px}
-  .menu-item{padding:4px 10px;border-radius:4px;color:#8b949e;cursor:pointer;font-size:11px;font-family:-apple-system,sans-serif}
-  .menu-item:hover{background:#21262d;color:#e6edf3}
-  .toolbar{display:flex;gap:6px;margin-left:auto;align-items:center}
-  .tbtn{
-    background:#21262d;border:1px solid #30363d;border-radius:5px;
-    color:#c9d1d9;padding:4px 11px;font-size:11px;
-    font-family:-apple-system,sans-serif;cursor:pointer;display:flex;align-items:center;gap:5px;
-  }
-  .tbtn:hover{border-color:#58a6ff}
-  .tbtn.primary{background:#1f6feb;border-color:#388bfd;color:#fff;font-weight:600}
-  .tbtn.primary:hover{background:#2a7fff}
-  .tbtn.adv{border-color:#6e40c966;color:#a78bfa}
-  .tbtn.adv:hover{border-color:#a78bfa;background:#2d1f5e33}
-  .dot{width:8px;height:8px;border-radius:50%}
-  .dot.active{background:#39d353}
 
-  .sidebar{
-    background:#0d1117;border-right:1px solid #21262d;
-    overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:12px;
+  body {
+    background: #e1e4e8;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
   }
-  .section-label{
-    font-size:9px;letter-spacing:.12em;text-transform:uppercase;
-    color:#484f58;font-family:-apple-system,sans-serif;font-weight:600;margin-bottom:6px;
-  }
-  .analysis-tabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px}
-  .tab{
-    background:#161b22;border:1px solid #21262d;border-radius:5px;
-    padding:6px 4px;text-align:center;cursor:pointer;color:#8b949e;
-    font-size:10px;font-family:-apple-system,sans-serif;
-  }
-  .tab.active{background:#1f3a5c;border-color:#388bfd;color:#79c0ff;font-weight:600}
-  .source-modes{display:flex;gap:3px;margin-bottom:8px}
-  .mode-btn{
-    flex:1;padding:5px 4px;background:#161b22;border:1px solid #21262d;
-    border-radius:4px;color:#8b949e;font-size:10px;
-    font-family:-apple-system,sans-serif;cursor:pointer;text-align:center;
-  }
-  .mode-btn.active{background:#1c2d1e;border-color:#3fb950;color:#56d364}
-  .field-row{margin-bottom:7px}
-  .field-label{color:#484f58;font-size:10px;font-family:-apple-system,sans-serif;margin-bottom:3px}
-  .field-input{
-    width:100%;background:#161b22;border:1px solid #21262d;border-radius:4px;
-    color:#e6edf3;padding:5px 8px;font-size:10px;
-    font-family:'JetBrains Mono',monospace;outline:none;
-  }
-  .calib-row{
-    display:flex;align-items:center;justify-content:space-between;
-    padding:5px 0;border-bottom:1px solid #21262d22;
-  }
-  .calib-key{color:#8b949e;font-family:-apple-system,sans-serif;font-size:10px}
-  .calib-val{color:#79c0ff;font-size:11px}
-  .calib-unit{color:#484f58;font-size:9px;margin-left:2px}
-  .run-btn{
-    background:#1f6feb;border:none;border-radius:6px;color:#fff;
-    padding:10px;font-size:12px;font-weight:600;font-family:-apple-system,sans-serif;
-    cursor:pointer;width:100%;letter-spacing:.02em;margin-top:auto;
-  }
-  .run-btn:hover{background:#2a7fff}
-  hr.div{border:none;border-top:1px solid #21262d;margin:2px 0}
 
-  .viewer{
-    background:#010409;position:relative;overflow:hidden;
-    display:flex;align-items:center;justify-content:center;
+  .app {
+    font-family: var(--font-mono);
+    background: var(--bg-main);
+    color: var(--text-primary);
+    display: grid;
+    grid-template-columns: 240px 1fr 300px;
+    grid-template-rows: 48px 1fr 200px;
+    width: 100%;
+    max-width: 1200px;
+    height: 680px;
+    border-radius: 8px;
+    overflow: hidden;
+    font-size: 12px;
+    position: relative;
+    box-shadow: 0 12px 24px rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.05);
+    border: 1px solid var(--border);
   }
-  .overlay-badge{
-    position:absolute;background:#00000099;border:1px solid #21262d;
-    border-radius:4px;padding:3px 7px;font-size:10px;color:#8b949e;
-    font-family:-apple-system,sans-serif;
-  }
-  .overlay-badge.tl{top:10px;left:10px}
-  .overlay-badge.tr{top:10px;right:10px;color:#39d353;border-color:#3fb95044}
-  .overlay-controls{
-    position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
-    display:flex;gap:4px;
-  }
-  .octl{
-    background:#161b2299;border:1px solid #21262d;border-radius:4px;
-    padding:4px 8px;color:#8b949e;font-size:10px;
-    font-family:-apple-system,sans-serif;cursor:pointer;
-  }
-  .octl.active{color:#79c0ff;border-color:#388bfd44}
 
-  .results-panel{
-    background:#0d1117;border-left:1px solid #21262d;
-    display:flex;flex-direction:column;overflow:hidden;
+  /* ── Titlebar ── */
+  .titlebar {
+    grid-column: 1 / -1;
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    gap: 16px;
   }
-  .results-header{
-    padding:9px 12px;border-bottom:1px solid #21262d;
-    font-size:9px;letter-spacing:.1em;text-transform:uppercase;
-    color:#484f58;font-family:-apple-system,sans-serif;font-weight:600;
-    display:flex;align-items:center;justify-content:space-between;
+  .app-name { font-size: 13px; font-weight: 700; color: var(--accent-blue); letter-spacing: .06em; }
+  .menu-items { display: flex; gap: 2px; margin-left: 8px; }
+  .menu-item { padding: 4px 10px; border-radius: 4px; color: var(--text-secondary); cursor: pointer; font-size: 12px; font-family: var(--font-ui); }
+  .menu-item:hover { background: var(--border-light); color: var(--text-primary); }
+  
+  .toolbar { display: flex; gap: 6px; margin-left: auto; align-items: center; }
+  .tbtn {
+    background: var(--bg-main); border: 1px solid var(--border); border-radius: 5px;
+    color: var(--text-primary); padding: 5px 12px; font-size: 11px;
+    font-family: var(--font-ui); cursor: pointer; display: flex; align-items: center; gap: 5px;
+    font-weight: 500;
   }
-  .badge-count{background:#1f3a5c;color:#79c0ff;border-radius:10px;padding:1px 7px;font-size:9px;font-family:-apple-system,sans-serif}
-  .metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 12px;border-bottom:1px solid #21262d}
-  .metric-card{background:#161b22;border:1px solid #21262d;border-radius:6px;padding:8px 10px}
-  .metric-label{font-size:9px;color:#484f58;font-family:-apple-system,sans-serif;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}
-  .metric-val{font-size:18px;font-weight:700;line-height:1}
-  .metric-val.cyan{color:#58a6ff}
-  .metric-val.green{color:#56d364}
-  .metric-val.amber{color:#e3b341}
-  .metric-val.plain{color:#e6edf3}
-  .metric-unit{font-size:9px;color:#484f58;margin-top:2px;font-family:-apple-system,sans-serif}
-  .results-list{flex:1;overflow-y:auto;padding:6px 12px}
-  .result-row{background:#161b22;border:1px solid #21262d;border-radius:5px;padding:7px 10px;margin-bottom:5px;cursor:pointer}
-  .result-row.active{border-color:#388bfd;background:#1f3a5c22}
-  .rr-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
-  .rr-file{font-size:10px;color:#c9d1d9;font-family:-apple-system,sans-serif}
-  .rr-time{font-size:9px;color:#484f58;font-family:-apple-system,sans-serif}
-  .rr-metrics{display:flex;gap:8px}
-  .rr-mk{color:#484f58;font-family:-apple-system,sans-serif;font-size:10px}
-  .rr-mv{color:#79c0ff;font-size:10px}
+  .tbtn:hover { background: var(--bg-hover); }
+  .tbtn.primary { background: var(--accent-blue); border-color: var(--accent-blue); color: #fff; font-weight: 600; }
+  .tbtn.primary:hover { background: #035cc5; }
+  .tbtn.adv { border-color: #d1d5db; color: var(--accent-purple); }
+  .tbtn.adv:hover { border-color: var(--accent-purple); background: #f3f0ff; }
+  
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot.active { background: var(--accent-green); }
 
-  .table-area{
-    grid-column:1/-1;
-    background:#0d1117;border-top:1px solid #21262d;overflow:auto;
+  /* ── Sidebar ── */
+  .sidebar {
+    background: var(--bg-panel);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
   }
-  .data-table{width:100%;border-collapse:collapse;font-size:10px}
-  .data-table th{
-    background:#161b22;color:#484f58;text-align:left;
-    padding:7px 12px;font-family:-apple-system,sans-serif;font-size:9px;
-    text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid #21262d;
-    position:sticky;top:0;white-space:nowrap;
+  .section-label {
+    font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--text-secondary); font-family: var(--font-ui); font-weight: 600; margin-bottom: 8px;
+    display: flex; justify-content: space-between; align-items: center;
   }
-  .data-table td{padding:6px 12px;border-bottom:1px solid #21262d22;color:#c9d1d9;white-space:nowrap}
-  .data-table tr:hover td{background:#161b2266}
-  .data-table tr.active td{background:#1f3a5c22}
-  .mono{font-family:'JetBrains Mono',monospace;color:#79c0ff}
-  .muted{color:#484f58;font-family:-apple-system,sans-serif}
-  .tag{display:inline-block;background:#1f3a5c;color:#79c0ff;border:1px solid #388bfd33;border-radius:10px;padding:1px 7px;font-size:9px;font-family:-apple-system,sans-serif}
+  .analysis-tabs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
+  .tab {
+    background: var(--bg-main); border: 1px solid var(--border); border-radius: 5px;
+    padding: 6px 4px; text-align: center; cursor: pointer; color: var(--text-secondary);
+    font-size: 11px; font-family: var(--font-ui); font-weight: 500;
+  }
+  .tab:hover { background: var(--bg-hover); }
+  .tab.active { background: var(--accent-blue-bg); border-color: var(--accent-blue); color: var(--accent-blue); font-weight: 600; }
+  
+  .source-modes { display: flex; gap: 4px; margin-bottom: 8px; }
+  .mode-btn {
+    flex: 1; padding: 5px 4px; background: var(--bg-main); border: 1px solid var(--border);
+    border-radius: 4px; color: var(--text-secondary); font-size: 10px;
+    font-family: var(--font-ui); cursor: pointer; text-align: center; font-weight: 500;
+  }
+  .mode-btn:hover { background: var(--bg-hover); }
+  .mode-btn.active { background: var(--accent-green-bg); border-color: var(--accent-green-border); color: var(--accent-green); font-weight: 600;}
+  
+  .field-row { margin-bottom: 7px; }
+  .field-label { color: var(--text-secondary); font-size: 11px; font-family: var(--font-ui); margin-bottom: 4px; }
+  .field-input {
+    width: 100%; background: var(--bg-main); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text-primary); padding: 6px 8px; font-size: 10px;
+    font-family: var(--font-mono); outline: none;
+  }
+  .field-input:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 2px var(--accent-blue-bg); }
 
-  /* ── Dialog overlay ── */
-  .dialog-overlay{
-    display:none;position:absolute;inset:0;
-    background:#00000077;z-index:100;
-    align-items:flex-start;justify-content:flex-end;
-    padding-top:52px;padding-right:14px;
+  /* Calibration & Settings */
+  .settings-group { display: none; }
+  .settings-group.active { display: block; }
+  .calib-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 4px 0;
   }
-  .dialog-overlay.open{display:flex}
-  .dialog{
-    background:#161b22;border:1px solid #30363d;border-radius:8px;
-    width:380px;box-shadow:0 8px 32px #00000066;overflow:hidden;
+  .calib-key { color: var(--text-primary); font-family: var(--font-ui); font-size: 11px; }
+  .calib-input-group { display: flex; align-items: center; gap: 4px; }
+  .calib-input {
+    width: 54px; text-align: right; border: 1px solid var(--border);
+    border-radius: 4px; padding: 3px 6px; font-size: 10px;
+    font-family: var(--font-mono); color: var(--accent-blue);
+    background: var(--bg-main); outline: none;
   }
-  .dialog-header{
-    display:flex;align-items:center;justify-content:space-between;
-    padding:12px 14px;border-bottom:1px solid #21262d;
+  .calib-input:focus { border-color: var(--accent-blue); }
+  .calib-unit { color: var(--text-secondary); font-size: 10px; width: 32px; font-family: var(--font-ui); }
+  
+  .run-btn {
+    background: var(--accent-blue); border: none; border-radius: 6px; color: #fff;
+    padding: 10px; font-size: 12px; font-weight: 600; font-family: var(--font-ui);
+    cursor: pointer; width: 100%; letter-spacing: .02em; margin-top: auto;
+    box-shadow: 0 2px 4px rgba(9, 105, 218, 0.2);
   }
-  .dialog-title{font-size:12px;font-weight:600;color:#e6edf3;font-family:-apple-system,sans-serif;display:flex;align-items:center;gap:7px}
-  .dialog-title .icon{font-size:14px;color:#a78bfa}
-  .close-btn{background:none;border:none;color:#484f58;font-size:16px;cursor:pointer;padding:0 4px;line-height:1}
-  .close-btn:hover{color:#e6edf3}
-  .dialog-body{padding:14px;display:flex;flex-direction:column;gap:14px}
-  .adv-section{border:1px solid #21262d;border-radius:6px;overflow:hidden}
-  .adv-section-header{
-    background:#0d1117;padding:8px 12px;
-    font-size:9px;letter-spacing:.1em;text-transform:uppercase;
-    color:#484f58;font-family:-apple-system,sans-serif;font-weight:600;
+  .run-btn:hover { background: #035cc5; }
+  hr.div { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
+
+  /* ── Viewer ── */
+  .viewer {
+    background: #ebf0f4; position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    background-image: 
+      linear-gradient(#d0d7de 1px, transparent 1px),
+      linear-gradient(90deg, #d0d7de 1px, transparent 1px);
+    background-size: 20px 20px;
+    background-position: center center;
   }
-  .adv-section-body{padding:10px 12px;display:flex;flex-direction:column;gap:8px}
-  .adv-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
-  .adv-label{font-size:11px;color:#8b949e;font-family:-apple-system,sans-serif;flex:1}
-  .adv-input{
-    background:#0d1117;border:1px solid #21262d;border-radius:4px;
-    color:#79c0ff;padding:4px 8px;font-size:11px;
-    font-family:'JetBrains Mono',monospace;width:90px;text-align:right;outline:none;
+  .overlay-badge {
+    position: absolute; background: rgba(255,255,255,0.9); border: 1px solid var(--border);
+    border-radius: 4px; padding: 4px 8px; font-size: 11px; color: var(--text-secondary);
+    font-family: var(--font-ui); box-shadow: 0 2px 6px rgba(0,0,0,0.05); font-weight: 500;
   }
-  .adv-select{
-    background:#0d1117;border:1px solid #21262d;border-radius:4px;
-    color:#79c0ff;padding:4px 8px;font-size:10px;
-    font-family:-apple-system,sans-serif;width:140px;outline:none;
+  .overlay-badge.tl { top: 12px; left: 12px; }
+  .overlay-badge.tr { top: 12px; right: 12px; color: var(--accent-green); border-color: var(--accent-green-border); background: var(--accent-green-bg); }
+  
+  .overlay-controls {
+    position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 4px; background: rgba(255,255,255,0.8);
+    padding: 4px; border-radius: 6px; border: 1px solid var(--border);
+    backdrop-filter: blur(4px);
   }
-  .adv-toggle{
-    display:flex;gap:3px;
+  .octl {
+    background: transparent; border: 1px solid transparent; border-radius: 4px;
+    padding: 4px 8px; color: var(--text-secondary); font-size: 11px;
+    font-family: var(--font-ui); cursor: pointer; font-weight: 500;
   }
-  .toggle-opt{
-    padding:3px 9px;border:1px solid #21262d;border-radius:3px;
-    font-size:10px;font-family:-apple-system,sans-serif;
-    color:#8b949e;cursor:pointer;background:#0d1117;
+  .octl:hover { background: var(--bg-hover); }
+  .octl.active { color: var(--accent-blue); background: var(--accent-blue-bg); border-color: var(--accent-blue-border); }
+
+  /* ── Results Panel ── */
+  .results-panel {
+    background: var(--bg-panel); border-left: 1px solid var(--border);
+    display: flex; flex-direction: column; overflow: hidden;
   }
-  .toggle-opt.on{background:#1f3a5c;border-color:#388bfd;color:#79c0ff}
-  .stages-list{display:flex;flex-direction:column;gap:4px}
-  .stage-row{
-    display:flex;align-items:center;gap:8px;
-    background:#0d1117;border:1px solid #21262d;border-radius:4px;
-    padding:6px 10px;cursor:grab;
+  .results-header {
+    padding: 12px 14px; border-bottom: 1px solid var(--border);
+    font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--text-secondary); font-family: var(--font-ui); font-weight: 600;
+    display: flex; align-items: center; justify-content: space-between;
   }
-  .stage-handle{color:#484f58;font-size:12px;cursor:grab}
-  .stage-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-  .stage-dot.done{background:#39d353}
-  .stage-dot.act{background:#388bfd}
-  .stage-dot.idle{background:#484f58}
-  .stage-name-d{font-size:11px;color:#c9d1d9;font-family:-apple-system,sans-serif;flex:1}
-  .stage-cfg{background:#21262d;border:1px solid #30363d;border-radius:3px;color:#8b949e;padding:2px 6px;font-size:9px;font-family:-apple-system,sans-serif;cursor:pointer}
-  .stage-cfg:hover{color:#e6edf3}
-  .dialog-footer{padding:10px 14px;border-top:1px solid #21262d;display:flex;justify-content:flex-end;gap:6px}
-  .df-btn{padding:5px 14px;border-radius:5px;font-size:11px;font-family:-apple-system,sans-serif;cursor:pointer;border:1px solid #30363d;background:#21262d;color:#c9d1d9}
-  .df-btn.ok{background:#1f6feb;border-color:#388bfd;color:#fff}
-  .df-btn:hover{filter:brightness(1.1)}
+  .badge-count { background: var(--accent-blue-bg); color: var(--accent-blue); border-radius: 10px; padding: 2px 8px; font-size: 10px; font-family: var(--font-ui); font-weight: 600;}
+  
+  .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+  .metric-card { background: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+  .metric-label { font-size: 10px; color: var(--text-secondary); font-family: var(--font-ui); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; font-weight: 600;}
+  .metric-val { font-size: 18px; font-weight: 700; line-height: 1; }
+  .metric-val.cyan { color: var(--accent-blue); }
+  .metric-val.green { color: var(--accent-green); }
+  .metric-val.amber { color: var(--accent-amber); }
+  .metric-val.plain { color: var(--text-primary); }
+  .metric-unit { font-size: 10px; color: var(--text-muted); margin-top: 4px; font-family: var(--font-ui); font-weight: 500;}
+  
+  .results-list { flex: 1; overflow-y: auto; padding: 8px 14px; display: flex; flex-direction: column; gap: 6px; }
+  .result-row { background: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; cursor: pointer; transition: all 0.1s; }
+  .result-row:hover { border-color: var(--accent-blue-border); }
+  .result-row.active { border-color: var(--accent-blue); background: var(--accent-blue-bg); box-shadow: 0 2px 4px rgba(9,105,218,0.1); }
+  .rr-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .rr-file { font-size: 11px; color: var(--text-primary); font-family: var(--font-ui); font-weight: 500;}
+  .rr-time { font-size: 10px; color: var(--text-muted); font-family: var(--font-ui); }
+  .rr-metrics { display: flex; gap: 10px; }
+  .rr-mk { color: var(--text-secondary); font-family: var(--font-ui); font-size: 10px; }
+  .rr-mv { color: var(--accent-blue); font-size: 10px; font-weight: 600;}
+
+  /* ── Bottom Table ── */
+  .table-area {
+    grid-column: 1 / -1;
+    background: var(--bg-main); border-top: 1px solid var(--border); overflow: auto;
+  }
+  .data-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .data-table th {
+    background: var(--bg-panel); color: var(--text-secondary); text-align: left;
+    padding: 8px 14px; font-family: var(--font-ui); font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; white-space: nowrap; z-index: 10;
+  }
+  .data-table td { padding: 8px 14px; border-bottom: 1px solid var(--border-light); color: var(--text-primary); white-space: nowrap; }
+  .data-table tr:hover td { background: var(--bg-hover); }
+  .data-table tr.active td { background: var(--accent-blue-bg); }
+  .mono { font-family: var(--font-mono); color: var(--accent-blue); }
+  .muted { color: var(--text-secondary); font-family: var(--font-ui); }
+  .tag { display: inline-block; background: var(--bg-panel); color: var(--text-primary); border: 1px solid var(--border); border-radius: 12px; padding: 2px 8px; font-size: 10px; font-family: var(--font-ui); font-weight: 500; }
+
+  /* ── Dialog Overlay ── */
+  .dialog-overlay {
+    display: none; position: absolute; inset: 0;
+    background: rgba(36, 41, 47, 0.4); z-index: 100;
+    align-items: flex-start; justify-content: flex-end;
+    padding-top: 52px; padding-right: 14px;
+    backdrop-filter: blur(2px);
+  }
+  .dialog-overlay.open { display: flex; }
+  .dialog {
+    background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px;
+    width: 380px; box-shadow: 0 12px 32px rgba(0,0,0,0.15); overflow: hidden;
+  }
+  .dialog-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; border-bottom: 1px solid var(--border); background: var(--bg-panel);
+  }
+  .dialog-title { font-size: 13px; font-weight: 600; color: var(--text-primary); font-family: var(--font-ui); display: flex; align-items: center; gap: 8px; }
+  .dialog-title .icon { font-size: 14px; color: var(--accent-purple); }
+  .close-btn { background: none; border: none; color: var(--text-secondary); font-size: 16px; cursor: pointer; padding: 0 4px; line-height: 1; }
+  .close-btn:hover { color: var(--text-primary); }
+  
+  .dialog-body { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+  .adv-section { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .adv-section-header {
+    background: var(--bg-panel); padding: 10px 14px; border-bottom: 1px solid var(--border);
+    font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--text-secondary); font-family: var(--font-ui); font-weight: 600;
+  }
+  .adv-section-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+  .adv-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .adv-label { font-size: 12px; color: var(--text-primary); font-family: var(--font-ui); flex: 1; font-weight: 500;}
+  .adv-input {
+    background: var(--bg-main); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--accent-blue); padding: 6px 8px; font-size: 11px;
+    font-family: var(--font-mono); width: 100px; text-align: right; outline: none;
+  }
+  .adv-select {
+    background: var(--bg-main); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text-primary); padding: 6px 8px; font-size: 11px;
+    font-family: var(--font-ui); width: 140px; outline: none;
+  }
+  .adv-toggle { display: flex; gap: 2px; background: var(--bg-panel); padding: 2px; border-radius: 5px; border: 1px solid var(--border); }
+  .toggle-opt {
+    padding: 4px 10px; border-radius: 3px;
+    font-size: 11px; font-family: var(--font-ui); font-weight: 500;
+    color: var(--text-secondary); cursor: pointer; background: transparent; border: none;
+  }
+  .toggle-opt.on { background: var(--bg-main); color: var(--accent-blue); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+  
+  .stages-list { display: flex; flex-direction: column; gap: 6px; }
+  .stage-row {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg-main); border: 1px solid var(--border); border-radius: 4px;
+    padding: 8px 10px; cursor: grab;
+  }
+  .stage-handle { color: var(--text-muted); font-size: 12px; cursor: grab; }
+  .stage-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .stage-dot.done { background: var(--accent-green); }
+  .stage-dot.act { background: var(--accent-blue); box-shadow: 0 0 0 2px var(--accent-blue-bg); }
+  .stage-dot.idle { background: var(--border); }
+  .stage-name-d { font-size: 11px; color: var(--text-primary); font-family: var(--font-ui); flex: 1; font-weight: 500;}
+  .stage-cfg { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 4px; color: var(--text-secondary); padding: 3px 8px; font-size: 10px; font-family: var(--font-ui); cursor: pointer; font-weight: 500;}
+  .stage-cfg:hover { background: var(--bg-hover); color: var(--text-primary); }
+  
+  .dialog-footer { padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg-panel); display: flex; justify-content: flex-end; gap: 8px; }
+  .df-btn { padding: 6px 16px; border-radius: 5px; font-size: 12px; font-family: var(--font-ui); font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--bg-main); color: var(--text-primary); }
+  .df-btn.ok { background: var(--accent-blue); border-color: var(--accent-blue); color: #fff; }
+  .df-btn:hover { filter: brightness(0.95); }
 </style>
-
-<h2 class="sr-only">Menipy ADSA redesigned interface v2</h2>
+</head>
+<body>
 
 <div class="app" id="app">
 
-  <!-- titlebar -->
+  <!-- Titlebar -->
   <div class="titlebar">
     <span class="app-name">MENIPY ADSA</span>
     <div class="menu-items">
@@ -232,7 +332,7 @@
       <span class="menu-item">Plugins</span>
     </div>
     <div class="toolbar">
-      <span style="display:flex;align-items:center;gap:5px;color:#484f58;font-family:-apple-system,sans-serif;font-size:10px;">
+      <span style="display:flex;align-items:center;gap:5px;color:var(--text-secondary);font-family:var(--font-ui);font-size:11px;font-weight:500;">
         <span class="dot active"></span>3 measurements
       </span>
       <button class="tbtn">Export CSV</button>
@@ -242,19 +342,19 @@
     </div>
   </div>
 
-  <!-- sidebar -->
+  <!-- Sidebar -->
   <div class="sidebar">
     <div>
       <div class="section-label">Analysis Type</div>
-      <div class="analysis-tabs">
-        <div class="tab">Sessile</div>
-        <div class="tab active">Pendant</div>
-        <div class="tab">Osc.</div>
-        <div class="tab">Capillary</div>
-        <div class="tab">Captive</div>
-        <div class="tab" style="opacity:.3">+</div>
+      <div class="analysis-tabs" id="analysisTabs">
+        <div class="tab active" data-target="settings-pendant">Pendant</div>
+        <div class="tab" data-target="settings-sessile">Sessile</div>
+        <div class="tab" data-target="settings-osc">Osc.</div>
+        <div class="tab" data-target="settings-capillary">Capillary</div>
+        <div class="tab" data-target="settings-captive">Captive</div>
       </div>
     </div>
+    
     <div>
       <div class="section-label">Source</div>
       <div class="source-modes">
@@ -264,34 +364,159 @@
       </div>
       <div class="field-row">
         <div class="field-label">Image path</div>
-        <input class="field-input" value="gota pendiente 1.png" readonly style="font-size:9px;color:#8b949e">
+        <input class="field-input" value="gota_pendiente_1.png" readonly style="color:var(--text-muted)">
       </div>
     </div>
+    
     <hr class="div">
+    
+    <!-- Shared Phase Properties -->
     <div>
-      <div class="section-label">Calibration</div>
-      <div class="calib-row"><span class="calib-key">Needle diameter</span><span class="calib-val">10.00<span class="calib-unit">mm</span></span></div>
-      <div class="calib-row"><span class="calib-key">Drop ρ</span><span class="calib-val">1000.0<span class="calib-unit">kg/m³</span></span></div>
-      <div class="calib-row"><span class="calib-key">Fluid ρ</span><span class="calib-val">1.2<span class="calib-unit">kg/m³</span></span></div>
+      <div class="section-label">Phase Properties</div>
+      <div class="calib-row">
+        <span class="calib-key">Heavy Phase ρ</span>
+        <div class="calib-input-group">
+          <input type="number" class="calib-input" value="1000.0" step="0.1">
+          <span class="calib-unit">kg/m³</span>
+        </div>
+      </div>
+      <div class="calib-row">
+        <span class="calib-key">Light Phase ρ</span>
+        <div class="calib-input-group">
+          <input type="number" class="calib-input" value="1.2" step="0.1">
+          <span class="calib-unit">kg/m³</span>
+        </div>
+      </div>
+      <div class="calib-row">
+        <span class="calib-key">Gravity</span>
+        <div class="calib-input-group">
+          <input type="number" class="calib-input" value="9.806" step="0.001">
+          <span class="calib-unit">m/s²</span>
+        </div>
+      </div>
     </div>
-    <button class="run-btn">▶  Run Analysis</button>
+    
+    <hr class="div">
+
+    <!-- Dynamic Settings Area -->
+    <div>
+      <div class="section-label">
+        <span id="dynamic-settings-title">Pendant Settings</span>
+      </div>
+
+      <!-- Pendant -->
+      <div id="settings-pendant" class="settings-group active">
+        <div class="calib-row">
+          <span class="calib-key">Needle OD</span>
+          <div class="calib-input-group">
+            <input type="number" class="calib-input" value="1.83" step="0.01">
+            <span class="calib-unit">mm</span>
+          </div>
+        </div>
+        <div class="calib-row">
+          <span class="calib-key">Needle ID</span>
+          <div class="calib-input-group">
+            <input type="number" class="calib-input" value="1.30" step="0.01">
+            <span class="calib-unit">mm</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sessile -->
+      <div id="settings-sessile" class="settings-group">
+        <div class="calib-row">
+          <span class="calib-key">Tilted angle</span>
+          <div class="calib-input-group">
+            <input type="number" class="calib-input" value="0.0" step="1.0">
+            <span class="calib-unit">°</span>
+          </div>
+        </div>
+        <div class="calib-row">
+          <span class="calib-key">Baseline</span>
+          <div class="calib-input-group" style="width: 90px;">
+            <select class="field-input" style="padding: 2px 4px;">
+              <option>Auto</option>
+              <option>Manual</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Oscillating -->
+      <div id="settings-osc" class="settings-group">
+        <div class="calib-row">
+          <span class="calib-key">Frequency</span>
+          <div class="calib-input-group">
+            <input type="number" class="calib-input" value="1.0" step="0.1">
+            <span class="calib-unit">Hz</span>
+          </div>
+        </div>
+        <div class="calib-row">
+          <span class="calib-key">Amplitude</span>
+          <div class="calib-input-group">
+            <input type="number" class="calib-input" value="2.0" step="0.1">
+            <span class="calib-unit">µL</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Capillary -->
+      <div id="settings-capillary" class="settings-group">
+        <div class="calib-row">
+          <span class="calib-key">Capillary Rad.</span>
+          <div class="calib-input-group">
+            <input type="number" class="calib-input" value="0.50" step="0.01">
+            <span class="calib-unit">mm</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Captive Bubble -->
+      <div id="settings-captive" class="settings-group">
+        <div class="calib-row">
+          <span class="calib-key">Holder OD</span>
+          <div class="calib-input-group">
+            <input type="number" class="calib-input" value="2.0" step="0.1">
+            <span class="calib-unit">mm</span>
+          </div>
+        </div>
+        <div class="calib-row">
+          <span class="calib-key">Bubble Vol.</span>
+          <div class="calib-input-group">
+            <input type="number" class="calib-input" value="10.0" step="1.0">
+            <span class="calib-unit">µL</span>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+
+    <button class="run-btn">▶ Run Analysis</button>
   </div>
 
-  <!-- image viewer -->
+  <!-- Image Viewer -->
   <div class="viewer">
     <div style="width:240px;height:300px;position:relative">
       <svg viewBox="0 0 240 310" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
-        <rect width="240" height="310" fill="#010409"/>
-        <rect x="90" y="0" width="60" height="65" rx="4" fill="#111"/>
-        <path d="M58,148 Q58,58 120,58 Q182,58 182,148 Q182,234 120,234 Q58,234 58,148Z" fill="#1c2433" stroke="#388bfd" stroke-width="1.5"/>
-        <path d="M63,148 Q63,63 120,63 Q177,63 177,148 Q177,228 120,228 Q63,228 63,148Z" stroke="#56d364" stroke-width="1" fill="none" opacity=".5" stroke-dasharray="4,3"/>
-        <line x1="120" y1="0" x2="120" y2="310" stroke="#388bfd" stroke-width=".5" opacity=".25" stroke-dasharray="3,4"/>
-        <line x1="58" y1="234" x2="182" y2="234" stroke="#e3b341" stroke-width=".8" opacity=".7"/>
-        <circle cx="58" cy="234" r="3" fill="#e3b341" opacity=".8"/>
-        <circle cx="182" cy="234" r="3" fill="#e3b341" opacity=".8"/>
-        <circle cx="120" cy="148" r="4" fill="#388bfd" opacity=".5"/>
-        <circle cx="120" cy="78" r="4" fill="#388bfd" opacity=".9"/>
-        <ellipse cx="104" cy="122" rx="14" ry="18" fill="#1a2332" opacity=".6"/>
+        <!-- Base image area mock -->
+        <rect width="240" height="310" fill="#f8fafc"/>
+        <!-- Needle -->
+        <rect x="90" y="0" width="60" height="65" rx="4" fill="#cbd5e1" stroke="#94a3b8" stroke-width="2"/>
+        <!-- Drop Contour -->
+        <path d="M58,148 Q58,58 120,58 Q182,58 182,148 Q182,234 120,234 Q58,234 58,148Z" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+        <!-- Theoretical fit overlay -->
+        <path d="M63,148 Q63,63 120,63 Q177,63 177,148 Q177,228 120,228 Q63,228 63,148Z" stroke="#16a34a" stroke-width="1.5" fill="none" opacity=".8" stroke-dasharray="4,4"/>
+        
+        <!-- Axis -->
+        <line x1="120" y1="0" x2="120" y2="310" stroke="#3b82f6" stroke-width="1" opacity=".5" stroke-dasharray="4,4"/>
+        <!-- Apex/Base Markers -->
+        <line x1="58" y1="234" x2="182" y2="234" stroke="#d97706" stroke-width="1" opacity="1"/>
+        <circle cx="58" cy="234" r="4" fill="#d97706" opacity="1"/>
+        <circle cx="182" cy="234" r="4" fill="#d97706" opacity="1"/>
+        <!-- Center of Mass/Volume approx -->
+        <circle cx="120" cy="148" r="4" fill="#2563eb" opacity=".7"/>
+        <circle cx="120" cy="78" r="4" fill="#2563eb" opacity="1"/>
+        <ellipse cx="104" cy="122" rx="14" ry="18" fill="#ffffff" opacity=".4"/>
       </svg>
     </div>
     <div class="overlay-badge tl">Pendant · young_laplace_strict</div>
@@ -305,7 +530,7 @@
     </div>
   </div>
 
-  <!-- right results panel -->
+  <!-- Results Panel -->
   <div class="results-panel">
     <div class="results-header">Last result <span class="badge-count">3</span></div>
     <div class="metric-grid">
@@ -332,62 +557,62 @@
     </div>
     <div class="results-list">
       <div class="result-row active">
-        <div class="rr-top"><span class="rr-file">gota pendiente 1.png</span><span class="rr-time">13:53:13</span></div>
+        <div class="rr-top"><span class="rr-file">gota_pendiente_1.png</span><span class="rr-time">13:53:13</span></div>
         <div class="rr-metrics">
           <span class="rr-mk">IFT </span><span class="rr-mv">19.3 </span>
           <span class="rr-mk">Ø </span><span class="rr-mv">2.32 </span>
           <span class="rr-mk">V </span><span class="rr-mv">7.75µL</span>
         </div>
       </div>
-      <div class="result-row" style="opacity:.5">
-        <div class="rr-top"><span class="rr-file">gota pendiente 1.png</span><span class="rr-time">13:53:05</span></div>
+      <div class="result-row">
+        <div class="rr-top"><span class="rr-file">gota_pendiente_1.png</span><span class="rr-time">13:53:05</span></div>
         <div class="rr-metrics">
           <span class="rr-mk">IFT </span><span class="rr-mv">— </span>
-          <span class="rr-mk">Ø </span><span class="rr-mv">12.7 </span>
-          <span class="rr-mk">V </span><span class="rr-mv">1.26e+03</span>
+          <span class="rr-mk" style="color:var(--text-muted)">Ø </span><span class="rr-mv" style="color:var(--text-primary)">12.7 </span>
+          <span class="rr-mk" style="color:var(--text-muted)">V </span><span class="rr-mv" style="color:var(--text-primary)">1.2e3</span>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- full-width bottom table -->
+  <!-- Bottom Table Area -->
   <div class="table-area">
     <table class="data-table">
       <thead>
         <tr>
           <th>#</th><th>File</th><th>Timestamp</th><th>Pipeline</th>
           <th>Ø mm</th><th>H mm</th><th>Vol µL</th><th>IFT mN/m</th>
-          <th>Surface Tension Method</th><th>θ °</th><th>θ left °</th><th>θ right °</th><th>Contact Surface mm²</th>
+          <th>Surface Tension Method</th><th>θ °</th><th>θ left °</th><th>θ right °</th><th>Contact Area mm²</th>
         </tr>
       </thead>
       <tbody>
         <tr class="active">
           <td class="muted">1</td>
-          <td style="font-family:-apple-system,sans-serif;font-size:10px">gota pendiente 1.png</td>
+          <td style="font-family:var(--font-ui)">gota_pendiente_1.png</td>
           <td class="muted">13:53:13</td>
           <td><span class="tag">Pendant</span></td>
           <td class="mono">2.32</td><td class="mono">2.36</td><td class="mono">7.75</td>
-          <td class="mono" style="color:#58a6ff;font-weight:600">19.3</td>
-          <td class="muted" style="font-size:9px">young_laplace_strict</td>
-          <td class="mono">—</td><td class="mono">—</td><td class="mono">—</td><td class="mono">—</td>
+          <td class="mono" style="color:var(--accent-blue);font-weight:700;font-size:12px;">19.3</td>
+          <td class="muted">young_laplace_strict</td>
+          <td class="mono" style="color:var(--text-muted)">—</td><td class="mono" style="color:var(--text-muted)">—</td><td class="mono" style="color:var(--text-muted)">—</td><td class="mono" style="color:var(--text-muted)">—</td>
         </tr>
         <tr>
           <td class="muted">2</td>
-          <td style="font-family:-apple-system,sans-serif;font-size:10px;color:#484f58">gota pendiente 1.png</td>
+          <td style="font-family:var(--font-ui);color:var(--text-secondary)">gota_pendiente_1.png</td>
           <td class="muted">13:53:05</td>
           <td><span class="tag">Pendant</span></td>
-          <td class="mono" style="color:#8b949e">12.7</td><td class="mono" style="color:#8b949e">12.9</td>
-          <td class="mono" style="color:#8b949e">1.26e+03</td>
-          <td class="mono" style="color:#484f58">—</td>
-          <td class="muted" style="font-size:9px">young_laplace_strict</td>
-          <td class="mono" style="color:#8b949e">595</td>
-          <td class="mono" style="color:#484f58">—</td><td class="mono" style="color:#484f58">—</td><td class="mono" style="color:#484f58">—</td>
+          <td class="mono">12.7</td><td class="mono">12.9</td>
+          <td class="mono">1.26e+03</td>
+          <td class="mono" style="color:var(--text-muted)">—</td>
+          <td class="muted">young_laplace_strict</td>
+          <td class="mono">59.5</td>
+          <td class="mono" style="color:var(--text-muted)">—</td><td class="mono" style="color:var(--text-muted)">—</td><td class="mono" style="color:var(--text-muted)">—</td>
         </tr>
       </tbody>
     </table>
   </div>
 
-  <!-- Advanced Settings dialog -->
+  <!-- Advanced Settings Dialog -->
   <div class="dialog-overlay" id="dlgOverlay" onclick="closeIfOutside(event)">
     <div class="dialog">
       <div class="dialog-header">
@@ -458,11 +683,48 @@
 </div>
 
 <script>
-function toggleDialog(){
-  var o=document.getElementById('dlgOverlay');
-  o.classList.toggle('open');
+// Toggle modal logic
+function toggleDialog() {
+  const overlay = document.getElementById('dlgOverlay');
+  overlay.classList.toggle('open');
 }
-function closeIfOutside(e){
-  if(e.target===document.getElementById('dlgOverlay')) toggleDialog();
+
+function closeIfOutside(e) {
+  if (e.target === document.getElementById('dlgOverlay')) {
+    toggleDialog();
+  }
 }
+
+// Tab Switching Logic
+document.addEventListener('DOMContentLoaded', () => {
+  const tabs = document.querySelectorAll('#analysisTabs .tab');
+  const titleEl = document.getElementById('dynamic-settings-title');
+  const groups = document.querySelectorAll('.settings-group');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      // 1. Remove active state from all tabs
+      tabs.forEach(t => t.classList.remove('active'));
+      
+      // 2. Add active to clicked tab
+      tab.classList.add('active');
+      
+      // 3. Hide all setting groups
+      groups.forEach(g => g.classList.remove('active'));
+      
+      // 4. Show the targeted setting group
+      const targetId = tab.getAttribute('data-target');
+      const targetGroup = document.getElementById(targetId);
+      if (targetGroup) {
+        targetGroup.classList.add('active');
+      }
+
+      // 5. Update section title
+      titleEl.textContent = tab.textContent + " Settings";
+    });
+  });
+});
 </script>
+
+</body>
+</html>
