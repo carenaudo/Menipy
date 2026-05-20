@@ -1,11 +1,34 @@
 <RCC>
  <qresource prefix="/icons">
-  <file>icons/status_pending.svg</file>
-  <file>icons/status_running.svg</file>
-  <file>icons/status_done.svg</file>
-  <file>icons/status_error.svg</file>
-  <file>icons/play.svg</file>
-    <file>icons/settings.svg</file>
-    <file>icons/overlay.svg</file>
+  <file alias="batch.svg">icons/batch.svg</file>
+  <file alias="camera.svg">icons/camera.svg</file>
+  <file alias="capillary_rise.svg">icons/capillary_rise.svg</file>
+  <file alias="captive_bubble.svg">icons/captive_bubble.svg</file>
+  <file alias="database.svg">icons/database.svg</file>
+  <file alias="download.svg">icons/download.svg</file>
+  <file alias="file.svg">icons/file.svg</file>
+  <file alias="hand.svg">icons/hand.svg</file>
+  <file alias="info.svg">icons/info.svg</file>
+  <file alias="layout-results.svg">icons/layout-results.svg</file>
+  <file alias="layout-sidebar.svg">icons/layout-sidebar.svg</file>
+  <file alias="layout-table.svg">icons/layout-table.svg</file>
+  <file alias="list.svg">icons/list.svg</file>
+  <file alias="oscillating.svg">icons/oscillating.svg</file>
+  <file alias="overlay.svg">icons/overlay.svg</file>
+  <file alias="pause.svg">icons/pause.svg</file>
+  <file alias="pendant.svg">icons/pendant.svg</file>
+  <file alias="play.svg">icons/play.svg</file>
+  <file alias="roi.svg">icons/roi.svg</file>
+  <file alias="sessile.svg">icons/sessile.svg</file>
+  <file alias="settings.svg">icons/settings.svg</file>
+  <file alias="skip-back.svg">icons/skip-back.svg</file>
+  <file alias="skip-forward.svg">icons/skip-forward.svg</file>
+  <file alias="status_done.svg">icons/status_done.svg</file>
+  <file alias="status_error.svg">icons/status_error.svg</file>
+  <file alias="status_pending.svg">icons/status_pending.svg</file>
+  <file alias="status_running.svg">icons/status_running.svg</file>
+  <file alias="x.svg">icons/x.svg</file>
+  <file alias="zoom-in.svg">icons/zoom-in.svg</file>
+  <file alias="zoom-out.svg">icons/zoom-out.svg</file>
  </qresource>
 </RCC>

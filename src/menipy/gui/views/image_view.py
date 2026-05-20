@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 from typing import Optional, Union, Any
 import numpy as np
 
-from PySide6.QtCore import Qt, QRectF, QPointF, QSizeF, Signal, QLineF
+from PySide6.QtCore import Qt, QRectF, QPointF, QSizeF, Signal, QLineF, QTimer
 from PySide6.QtGui import QImage, QPixmap, QTransform, QPainter, QPen, QColor
 from PySide6.QtWidgets import (
     QGraphicsView,
@@ -75,6 +75,7 @@ class ImageView(QGraphicsView):
         self._last_pm_size: Optional[QSizeF] = None
         self._auto_policy: str = "auto"  # "auto" | "preserve"
         self._wheel_zoom_requires_ctrl: bool = False
+        self._fit_resize_pending: bool = False
 
         self._draw_mode = DRAW_NONE
         self._overlays = []  # list[QGraphicsItem]
@@ -98,6 +99,8 @@ class ImageView(QGraphicsView):
         self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
         self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
     # --------------------- public API ---------------------
     def set_auto_policy(self, policy: str = "auto") -> None:
@@ -611,8 +614,18 @@ class ImageView(QGraphicsView):
     def resizeEvent(self, event):
         """resize event."""
         super().resizeEvent(event)
-        # Keep fit behavior on resize
         if getattr(self, "_mode", None) == "fit":
+            self._schedule_fit_to_window()
+
+    def _schedule_fit_to_window(self) -> None:
+        if self._fit_resize_pending:
+            return
+        self._fit_resize_pending = True
+        QTimer.singleShot(0, self._run_scheduled_fit)
+
+    def _run_scheduled_fit(self) -> None:
+        self._fit_resize_pending = False
+        if getattr(self, "_mode", None) == "fit" and self._pix_item:
             self.fit_to_window()
 
     def _zoom_by(self, factor: float) -> None:

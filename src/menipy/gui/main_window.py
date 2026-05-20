@@ -29,7 +29,9 @@ from menipy.gui.controllers.preprocessing_controller import (
     PreprocessingPipelineController,
 )
 from menipy.gui.controllers.setup_panel_controller import SetupPanelController
+from menipy.gui.dialogs.advanced_workflow_dialog import AdvancedWorkflowDialog
 from menipy.gui.helpers.image_marking import ImageMarkerHelper
+from menipy.gui.icon_loader import set_button_icon
 from menipy.gui.logging_bridge import install_qt_logging
 from menipy.gui.panels.preview_panel import PreviewPanel
 from menipy.gui.panels.results_panel import ResultsPanel
@@ -55,7 +57,7 @@ def _workbench_root_sizes(
                 return [setup, workbench]
         elif len(values) >= 2 and values[1] > values[0]:
             return values[:2]
-    setup = min(340, max(300, int(total * 0.22)))
+    setup = min(360, max(340, int(total * 0.24)))
     return [setup, max(420, total - setup)]
 
 
@@ -150,6 +152,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         super().__init__()
         # ---------- build split main window ----------
         self.setupUi(self)
+        self._apply_workbench_icons()
         self._apply_workbench_polish()
 
         # settings
@@ -242,6 +245,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             StepItemWidget,
             list(PIPELINE_MAP.keys()) if PIPELINE_MAP else [],
         )
+        self.advanced_workflow_dialog = AdvancedWorkflowDialog(
+            self,
+            self.setup_panel_ctrl.sopGroup,
+            self.setup_panel_ctrl.stepsGroup,
+        )
+        self.setup_panel_ctrl.advanced_requested.connect(self._show_advanced_dialog)
 
         self.pipeline_ctrl = PipelineController(
             window=self,
@@ -306,9 +315,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._wire_menu_actions()
         self._wire_layout_controls()
         self._wire_action_bar()
-        self._set_guided_advanced_visible(
-            bool(getattr(self.settings, "advanced_ui_visible", False)), save=False
-        )
+        self._sync_advanced_buttons()
         self._setup_units_menu()
         try:
             self.main_controller.load_startup_preview()
@@ -367,9 +374,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def _apply_workbench_polish(self) -> None:
         """Apply proposal-inspired styling to the current generated workbench."""
-        self.setStyleSheet(
-            theme.get_stylesheet()
-            + f"""
+        self.setStyleSheet(theme.get_stylesheet() + f"""
             QWidget#centralwidget {{
                 background-color: {theme.BG_PRIMARY};
             }}
@@ -393,14 +398,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 border-color: {theme.ACCENT_BLUE};
                 color: {theme.ACCENT_BLUE};
             }}
-            QToolButton#actionRunBtn {{
-                background-color: {theme.ACCENT_BLUE};
-                border-color: {theme.ACCENT_BLUE};
-                color: white;
-            }}
-            QToolButton#actionRunBtn:hover {{
-                background-color: {theme.ACCENT_BLUE_HOVER};
-            }}
             QToolButton#workflowAdvancedBtn {{
                 color: #8250DF;
             }}
@@ -419,15 +416,40 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             QToolButton#toggleSetupBtn,
             QToolButton#toggleInspectBtn,
             QToolButton#toggleKeyResultsBtn {{
-                min-width: 56px;
+                min-width: 32px;
                 padding-left: 8px;
                 padding-right: 8px;
             }}
             QTabWidget#inspectTabs {{
                 background-color: {theme.BG_PRIMARY};
             }}
-            """
-        )
+            """)
+
+    def _apply_workbench_icons(self) -> None:
+        """Apply resource-backed icons to the top workflow controls."""
+        for button_name, icon_name in (
+            ("toggleSetupBtn", "layout-sidebar"),
+            ("toggleInspectBtn", "layout-table"),
+            ("toggleKeyResultsBtn", "layout-results"),
+        ):
+            button = getattr(self, button_name, None)
+            if button:
+                set_button_icon(button, icon_name, size=16, clear_text=True)
+                button.setToolButtonStyle(Qt.ToolButtonIconOnly)
+
+        for button_name, icon_name in (
+            ("actionOpenImageBtn", "file"),
+            ("actionExportCsvBtn", "download"),
+            ("workflowAdvancedBtn", "settings"),
+        ):
+            button = getattr(self, button_name, None)
+            if button:
+                set_button_icon(button, icon_name, size=16)
+                button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+                if button_name == "workflowAdvancedBtn":
+                    button.setCheckable(False)
+                    button.setText("Advanced")
+                    button.setToolTip("Open SOP and pipeline stage controls")
 
     def _wire_menu_actions(self):
         # Actions declared in main_window_split.ui
@@ -489,7 +511,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         button_action_pairs = [
             ("actionOpenImageBtn", "actionOpenImage"),
-            ("actionRunBtn", "actionRunFull"),
             ("actionExportCsvBtn", "actionExportCsv"),
         ]
         for button_name, action_name in button_action_pairs:
@@ -502,62 +523,46 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             except Exception:
                 pass
 
-        auto_calibrate = getattr(self, "workflowAutoCalibrateBtn", None)
-        if auto_calibrate and getattr(self, "setup_panel_ctrl", None):
+        advanced = getattr(self, "workflowAdvancedBtn", None)
+        if advanced:
             try:
-                auto_calibrate.clicked.connect(
-                    lambda _checked=False: self.setup_panel_ctrl.auto_calibrate_requested.emit()
+                advanced.setCheckable(False)
+                advanced.setText("Advanced")
+                advanced.clicked.connect(
+                    lambda _checked=False: self._show_advanced_dialog()
                 )
             except Exception:
                 pass
 
-        advanced = getattr(self, "workflowAdvancedBtn", None)
-        if advanced:
-            try:
-                advanced.toggled.connect(self._set_guided_advanced_visible)
-            except Exception:
-                pass
-
     def _set_guided_advanced_visible(self, visible: bool, save: bool = True) -> None:
+        if visible:
+            self._show_advanced_dialog()
+        else:
+            self._sync_advanced_buttons()
+
+    def _sync_advanced_buttons(self) -> None:
         advanced = getattr(self, "workflowAdvancedBtn", None)
         if advanced:
             advanced.blockSignals(True)
-            advanced.setChecked(visible)
-            advanced.setText("Advanced -" if visible else "Advanced +")
+            advanced.setCheckable(False)
+            advanced.setChecked(False)
+            advanced.setText("Advanced")
             advanced.blockSignals(False)
 
         setup_ctrl = getattr(self, "setup_panel_ctrl", None)
         if setup_ctrl and hasattr(setup_ctrl, "set_advanced_visible"):
-            setup_ctrl.set_advanced_visible(visible, save=False)
+            setup_ctrl.set_advanced_visible(False, save=False)
 
-        tabs = getattr(self, "inspectTabs", None)
-        if tabs:
-            for tab in (
-                getattr(self, "residualsTab", None),
-                getattr(self, "timingsTab", None),
-                getattr(self, "logTab", None),
-            ):
-                if tab is None:
-                    continue
-                index = tabs.indexOf(tab)
-                if index >= 0:
-                    try:
-                        tabs.setTabVisible(index, visible)
-                    except AttributeError:
-                        tab.setVisible(visible)
-            if not visible and tabs.currentWidget() in {
-                getattr(self, "residualsTab", None),
-                getattr(self, "timingsTab", None),
-                getattr(self, "logTab", None),
-            }:
-                tabs.setCurrentWidget(self.resultsTab)
-
-        if save:
-            self.settings.advanced_ui_visible = visible
-            try:
-                self.settings.save()
-            except OSError:
-                pass
+    def _show_advanced_dialog(self) -> None:
+        self._sync_advanced_buttons()
+        dialog = getattr(self, "advanced_workflow_dialog", None)
+        if dialog is None:
+            return
+        dialog.show()
+        if hasattr(dialog, "show_controls"):
+            dialog.show_controls()
+        dialog.raise_()
+        dialog.activateWindow()
 
     def _wire_layout_controls(self) -> None:
         self._splitter_sizes_full: Optional[list[int]] = None
@@ -722,9 +727,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if show_setup and show_inspector:
             if len(sizes) >= 2 and sizes[0] > 0 and sizes[1] > 0:
                 self._splitter_sizes_full = sizes
-            if len(vertical_sizes) >= 2 and vertical_sizes[0] > 0 and vertical_sizes[1] > 0:
+            if (
+                len(vertical_sizes) >= 2
+                and vertical_sizes[0] > 0
+                and vertical_sizes[1] > 0
+            ):
                 self._workbench_splitter_sizes_full = vertical_sizes
-        if show_key_results and len(preview_results_sizes) >= 2 and preview_results_sizes[1] > 0:
+        if (
+            show_key_results
+            and len(preview_results_sizes) >= 2
+            and preview_results_sizes[1] > 0
+        ):
             self._preview_results_sizes_full = preview_results_sizes
 
         if setup_host is not None:

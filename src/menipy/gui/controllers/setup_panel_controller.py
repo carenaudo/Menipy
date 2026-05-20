@@ -17,12 +17,14 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QPushButton,
     QRadioButton,
+    QSizePolicy,
     QSpinBox,
     QToolButton,
     QWidget,
 )
 
 from menipy.gui.controllers.sop_controller import SopController
+from menipy.gui.icon_loader import set_button_icon
 from menipy.gui.views.image_view import DRAW_LINE, DRAW_POINT, DRAW_RECT
 
 try:
@@ -53,6 +55,7 @@ class SetupPanelController(QObject):
     pipeline_changed = Signal(str)
     source_mode_changed = Signal(str)
     auto_calibrate_requested = Signal()
+    advanced_requested = Signal()
 
     def __init__(
         self,
@@ -189,6 +192,15 @@ class SetupPanelController(QObject):
         self.gravitySpin: Optional[QDoubleSpinBox] = panel.findChild(
             QDoubleSpinBox, "gravitySpin"
         )
+        self.needleDbBtn: Optional[QToolButton] = panel.findChild(
+            QToolButton, "needleDbBtn"
+        )
+        self.dropDensityDbBtn: Optional[QToolButton] = panel.findChild(
+            QToolButton, "dropDensityDbBtn"
+        )
+        self.fluidDensityDbBtn: Optional[QToolButton] = panel.findChild(
+            QToolButton, "fluidDensityDbBtn"
+        )
         self.pipelineSettingsGroup: Optional[QGroupBox] = panel.findChild(
             QGroupBox, "pipelineSettingsGroup"
         )
@@ -243,7 +255,7 @@ class SetupPanelController(QObject):
             self.advancedToggleBtn = QToolButton(panel)
             self.advancedToggleBtn.setObjectName("advancedToggleBtn")
             self.advancedToggleBtn.setText("Advanced")
-            self.advancedToggleBtn.setCheckable(True)
+            self.advancedToggleBtn.setCheckable(False)
             self.advancedToggleBtn.setToolButtonStyle(Qt.ToolButtonTextOnly)
             root_layout = panel.layout()
             if root_layout is not None:
@@ -297,6 +309,7 @@ class SetupPanelController(QObject):
         self._populate_pipeline_combo()
         self._restore_settings()
         self.sop_ctrl.initialize()
+        self._apply_icons()
         self._wire_controls()
         self.set_advanced_visible(
             bool(getattr(self.settings, "advanced_ui_visible", False)), save=False
@@ -399,7 +412,9 @@ class SetupPanelController(QObject):
         if self.pendantNeedleIdSpin:
             params["needle_inner_diameter_mm"] = self.pendantNeedleIdSpin.value()
         if self.sessileBaselineModeCombo:
-            params["baseline_mode"] = self.sessileBaselineModeCombo.currentText().lower()
+            params["baseline_mode"] = (
+                self.sessileBaselineModeCombo.currentText().lower()
+            )
         if self.oscillatingFrequencySpin:
             params["oscillation_frequency_hz"] = self.oscillatingFrequencySpin.value()
         if self.oscillatingAmplitudeSpin:
@@ -480,21 +495,20 @@ class SetupPanelController(QObject):
         return list(self.stage_order)
 
     def set_advanced_visible(self, visible: bool, *, save: bool = True) -> None:
-        """Show or hide advanced SOP/stage controls."""
+        """Keep advanced SOP/stage controls out of the setup rail.
+
+        The SOP widgets are hosted by AdvancedWorkflowDialog in the guided workbench.
+        This compatibility method intentionally does not expand them inline anymore.
+        """
         if self.advancedToggleBtn:
             self.advancedToggleBtn.blockSignals(True)
-            self.advancedToggleBtn.setChecked(visible)
-            self.advancedToggleBtn.setText("Advanced -" if visible else "Advanced +")
+            self.advancedToggleBtn.setCheckable(False)
+            self.advancedToggleBtn.setChecked(False)
+            self.advancedToggleBtn.setText("Advanced")
             self.advancedToggleBtn.blockSignals(False)
         for widget in (self.sopGroup, self.stepsGroup):
             if widget:
-                widget.setVisible(visible)
-        if save:
-            self.settings.advanced_ui_visible = visible
-            try:
-                self.settings.save()
-            except OSError:
-                pass
+                widget.setVisible(False)
 
         # -------------------------- internal helpers --------------------------
 
@@ -508,6 +522,83 @@ class SetupPanelController(QObject):
             display_name = key.replace("_", " ").title()
             combo.addItem(display_name, userData=key)
         combo.blockSignals(False)
+
+    def _apply_icons(self) -> None:
+        """Apply resource-backed icons to setup rail controls."""
+        for button, icon_name in (
+            (self.sessileBtn, "sessile"),
+            (self.pendantBtn, "pendant"),
+            (self.oscillatingBtn, "oscillating"),
+            (self.capillaryBtn, "capillary_rise"),
+            (self.captiveBtn, "captive_bubble"),
+        ):
+            set_button_icon(button, icon_name, size=14)
+
+        for button, icon_name in (
+            (self.singleModeRadio, "file"),
+            (self.batchModeRadio, "batch"),
+            (self.cameraModeRadio, "camera"),
+        ):
+            set_button_icon(button, icon_name, size=15, clear_text=True)
+            if button:
+                button.setMinimumWidth(36)
+                button.setMaximumWidth(44)
+        if self.singleModeRadio:
+            self.singleModeRadio.setToolTip("File")
+        if self.batchModeRadio:
+            self.batchModeRadio.setToolTip("Batch")
+        if self.cameraModeRadio:
+            self.cameraModeRadio.setToolTip("Camera")
+
+        for button, icon_name in (
+            (self.browseBtn, "file"),
+            (self.batchBrowseBtn, "batch"),
+            (self.previewBtn, "zoom-in"),
+            (self.addSopBtn, "list"),
+        ):
+            set_button_icon(button, icon_name, size=15)
+            if isinstance(button, QToolButton):
+                button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+
+        set_button_icon(self.autoCalibrateBtn, "info", size=15)
+        if self.autoCalibrateBtn:
+            self.autoCalibrateBtn.setText("Calibrate")
+            self.autoCalibrateBtn.setMinimumHeight(34)
+            self.autoCalibrateBtn.setSizePolicy(
+                QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+            )
+        if self.runAllBtn:
+            self.runAllBtn.setSizePolicy(
+                QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+            )
+        set_button_icon(self.advancedToggleBtn, "settings", size=15)
+        if isinstance(self.advancedToggleBtn, QToolButton):
+            self.advancedToggleBtn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+            self.advancedToggleBtn.setCheckable(False)
+            self.advancedToggleBtn.setMinimumHeight(34)
+            self.advancedToggleBtn.setSizePolicy(
+                QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+            )
+
+        for button, tooltip in (
+            (self.needleDbBtn, "Select needle from database"),
+            (self.dropDensityDbBtn, "Select heavy phase material from database"),
+            (self.fluidDensityDbBtn, "Select light phase material from database"),
+        ):
+            set_button_icon(button, "database", size=15, clear_text=True)
+            if isinstance(button, QToolButton):
+                button.setToolButtonStyle(Qt.ToolButtonIconOnly)
+                button.setAutoRaise(True)
+                button.setEnabled(True)
+                button.setToolTip(f"{tooltip} (not connected yet)")
+                button.setFixedSize(30, 28)
+                button.setStyleSheet("QToolButton { padding: 3px; }")
+
+        set_button_icon(self.runAllBtn, "play", size=16)
+        set_button_icon(self.drawPointBtn, "info", size=14)
+        set_button_icon(self.drawLineBtn, "list", size=14)
+        set_button_icon(self.drawRectBtn, "roi", size=14)
+        set_button_icon(self.clearOverlayBtn, "x", size=14)
 
     def _restore_settings(self) -> None:
         """_restore_settings."""
@@ -543,9 +634,12 @@ class SetupPanelController(QObject):
                 lambda: self.auto_calibrate_requested.emit()
             )
         if self.advancedToggleBtn:
-            self.advancedToggleBtn.toggled.connect(
-                lambda checked: self.set_advanced_visible(bool(checked))
+            self.advancedToggleBtn.clicked.connect(
+                lambda _checked=False: self.advanced_requested.emit()
             )
+        for button in (self.needleDbBtn, self.dropDensityDbBtn, self.fluidDensityDbBtn):
+            if button:
+                button.clicked.connect(self._show_database_placeholder)
         if self.drawPointBtn:
             self.drawPointBtn.clicked.connect(
                 lambda: self.draw_mode_requested.emit(DRAW_POINT)
@@ -605,6 +699,17 @@ class SetupPanelController(QObject):
         if self.sourceIdCombo:
             self.sourceIdCombo.currentTextChanged.connect(self._on_combo_text_changed)
         self._mode_group.buttonToggled.connect(self._on_mode_toggled)
+
+    def _show_database_placeholder(self) -> None:
+        status_bar = getattr(self.window, "statusBar", None)
+        if callable(status_bar):
+            try:
+                status_bar().showMessage(
+                    "Database selection is not connected yet.", 2500
+                )
+                return
+            except Exception:
+                pass
 
     def _sync_combo_to_pipeline(self, pipeline_name: str) -> bool:
         """Ensure the legacy combo box reflects the segmented button selection."""

@@ -8,7 +8,8 @@ from menipy.gui.controllers.setup_panel_controller import SetupPanelController
 from menipy.gui.views.image_view import DRAW_POINT, DRAW_LINE, DRAW_RECT
 from unittest.mock import Mock
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QListView
+from PySide6.QtGui import QImage
+from PySide6.QtWidgets import QListView, QSizePolicy
 
 
 @pytest.fixture
@@ -145,6 +146,82 @@ def test_run_all_button_emits_signal(
         mock_signal.assert_called_once()
 
 
+def test_setup_action_stack_order_and_labels(setup_panel_controller):
+    layout = setup_panel_controller.panel.layout()
+    assert layout is not None
+
+    action_indices = [
+        layout.indexOf(setup_panel_controller.autoCalibrateBtn),
+        layout.indexOf(setup_panel_controller.runAllBtn),
+        layout.indexOf(setup_panel_controller.advancedToggleBtn),
+    ]
+
+    assert all(index >= 0 for index in action_indices)
+    assert action_indices == sorted(action_indices)
+    assert setup_panel_controller.autoCalibrateBtn.text() == "Calibrate"
+    assert setup_panel_controller.runAllBtn.text() == "Run Analysis"
+    assert setup_panel_controller.advancedToggleBtn.text() == "Advanced"
+    assert "#2563EB" not in setup_panel_controller.advancedToggleBtn.styleSheet()
+    assert (
+        setup_panel_controller.advancedToggleBtn.sizePolicy().horizontalPolicy()
+        == QSizePolicy.Policy.Expanding
+    )
+
+
+def test_top_workflow_calibrate_and_run_buttons_removed(main_window):
+    assert not hasattr(main_window, "workflowAutoCalibrateBtn")
+    assert not hasattr(main_window, "actionRunBtn")
+
+
+def test_database_buttons_are_drawn_and_noop(main_window, qtbot):
+    controller = main_window.setup_panel_ctrl
+    for button in (
+        controller.needleDbBtn,
+        controller.dropDensityDbBtn,
+        controller.fluidDensityDbBtn,
+    ):
+        assert button is not None
+        assert button.isEnabled()
+        assert not button.icon().isNull()
+        qtbot.mouseClick(button, Qt.LeftButton)
+        assert "Database selection is not connected yet" in (
+            main_window.statusBar().currentMessage()
+        )
+
+
+def test_advanced_buttons_open_dialog_without_inline_expansion(main_window, qtbot):
+    controller = main_window.setup_panel_ctrl
+    dialog = main_window.advanced_workflow_dialog
+
+    assert controller.advancedToggleBtn is not None
+    assert not controller.advancedToggleBtn.isCheckable()
+    assert not controller.sopGroup.isVisible()
+    assert not controller.stepsGroup.isVisible()
+
+    qtbot.mouseClick(controller.advancedToggleBtn, Qt.LeftButton)
+    qtbot.wait(20)
+    assert dialog.isVisible()
+    assert controller.sopGroup.parent() is dialog
+    assert controller.stepsGroup.parent() is dialog
+    assert controller.sopGroup.isVisible()
+    assert controller.stepsGroup.isVisible()
+
+    dialog.close()
+    qtbot.wait(20)
+    assert not dialog.isVisible()
+    assert not controller.sopGroup.isVisible()
+    assert not controller.stepsGroup.isVisible()
+
+    qtbot.mouseClick(main_window.workflowAdvancedBtn, Qt.LeftButton)
+    qtbot.wait(20)
+    assert dialog.isVisible()
+
+    qtbot.mouseClick(main_window.workflowAdvancedBtn, Qt.LeftButton)
+    qtbot.wait(20)
+    assert controller.sopGroup.isVisible()
+    assert controller.stepsGroup.isVisible()
+
+
 def test_pipeline_combo_changes_pipeline(
     qtbot, setup_panel_controller: SetupPanelController
 ):
@@ -237,6 +314,23 @@ def test_included_step_controls_emit_signals(qtbot, setup_panel_controller):
     qtbot.mouseClick(first.playBtn, Qt.LeftButton)
 
     handler.assert_called_once_with(first.step_name)
+
+
+def test_image_view_maximize_fit_is_deferred(main_window, qtbot):
+    image_view = main_window.preview_panel.image_view
+    assert image_view is not None
+    img = QImage(1400, 900, QImage.Format_RGB32)
+    img.fill(Qt.black)
+    image_view.set_image(img)
+    image_view.fit_to_window()
+
+    main_window.show()
+    qtbot.wait(20)
+    main_window.showMaximized()
+    qtbot.wait(100)
+
+    assert not getattr(image_view, "_fit_resize_pending", True)
+    assert getattr(image_view, "_mode", None) == "fit"
 
 
 def test_setup_and_table_toggles_restore_splitter_sizes(main_window, qtbot):

@@ -196,11 +196,29 @@ QRadioButton::indicator { width: 0px; height: 0px; }</string>
        </widget>
       </item>
       <item row="0" column="1">
-       <widget class="QDoubleSpinBox" name="needleLengthSpin">
-        <property name="minimum"><double>0.100000000000000</double></property>
-        <property name="maximum"><double>100.000000000000000</double></property>
-        <property name="value"><double>10.000000000000000</double></property>
-        <property name="decimals"><number>2</number></property>
+       <widget class="QWidget" name="needleLengthField" native="true">
+        <layout class="QHBoxLayout" name="needleLengthFieldLayout">
+         <property name="leftMargin"><number>0</number></property>
+         <property name="topMargin"><number>0</number></property>
+         <property name="rightMargin"><number>0</number></property>
+         <property name="bottomMargin"><number>0</number></property>
+         <property name="spacing"><number>4</number></property>
+         <item>
+          <widget class="QDoubleSpinBox" name="needleLengthSpin">
+           <property name="minimum"><double>0.100000000000000</double></property>
+           <property name="maximum"><double>100.000000000000000</double></property>
+           <property name="value"><double>10.000000000000000</double></property>
+           <property name="decimals"><number>2</number></property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QToolButton" name="needleDbBtn">
+           <property name="toolTip"><string>Select needle from database</string></property>
+           <property name="text"><string>DB</string></property>
+           <property name="autoRaise"><bool>true</bool></property>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </item>
       <item row="1" column="0">
@@ -209,11 +227,29 @@ QRadioButton::indicator { width: 0px; height: 0px; }</string>
        </widget>
       </item>
       <item row="1" column="1">
-       <widget class="QDoubleSpinBox" name="dropDensitySpin">
-        <property name="minimum"><double>500.000000000000000</double></property>
-        <property name="maximum"><double>20000.000000000000000</double></property>
-        <property name="value"><double>1000.000000000000000</double></property>
-        <property name="decimals"><number>1</number></property>
+       <widget class="QWidget" name="dropDensityField" native="true">
+        <layout class="QHBoxLayout" name="dropDensityFieldLayout">
+         <property name="leftMargin"><number>0</number></property>
+         <property name="topMargin"><number>0</number></property>
+         <property name="rightMargin"><number>0</number></property>
+         <property name="bottomMargin"><number>0</number></property>
+         <property name="spacing"><number>4</number></property>
+         <item>
+          <widget class="QDoubleSpinBox" name="dropDensitySpin">
+           <property name="minimum"><double>500.000000000000000</double></property>
+           <property name="maximum"><double>20000.000000000000000</double></property>
+           <property name="value"><double>1000.000000000000000</double></property>
+           <property name="decimals"><number>1</number></property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QToolButton" name="dropDensityDbBtn">
+           <property name="toolTip"><string>Select heavy phase material from database</string></property>
+           <property name="text"><string>DB</string></property>
+           <property name="autoRaise"><bool>true</bool></property>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </item>
       <item row="2" column="0">
@@ -222,11 +258,29 @@ QRadioButton::indicator { width: 0px; height: 0px; }</string>
        </widget>
       </item>
       <item row="2" column="1">
-       <widget class="QDoubleSpinBox" name="fluidDensitySpin">
-        <property name="minimum"><double>1.000000000000000</double></property>
-        <property name="maximum"><double>2000.000000000000000</double></property>
-        <property name="value"><double>1.200000000000000</double></property>
-        <property name="decimals"><number>1</number></property>
+       <widget class="QWidget" name="fluidDensityField" native="true">
+        <layout class="QHBoxLayout" name="fluidDensityFieldLayout">
+         <property name="leftMargin"><number>0</number></property>
+         <property name="topMargin"><number>0</number></property>
+         <property name="rightMargin"><number>0</number></property>
+         <property name="bottomMargin"><number>0</number></property>
+         <property name="spacing"><number>4</number></property>
+         <item>
+          <widget class="QDoubleSpinBox" name="fluidDensitySpin">
+           <property name="minimum"><double>1.000000000000000</double></property>
+           <property name="maximum"><double>2000.000000000000000</double></property>
+           <property name="value"><double>1.200000000000000</double></property>
+           <property name="decimals"><number>1</number></property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QToolButton" name="fluidDensityDbBtn">
+           <property name="toolTip"><string>Select light phase material from database</string></property>
+           <property name="text"><string>DB</string></property>
+           <property name="autoRaise"><bool>true</bool></property>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </item>
       <item row="3" column="0">
@@ -362,13 +416,6 @@ QRadioButton::indicator { width: 0px; height: 0px; }</string>
     </widget>
    </item>
    <item>
-    <widget class="QToolButton" name="advancedToggleBtn">
-     <property name="text"><string>Advanced +</string></property>
-     <property name="checkable"><bool>true</bool></property>
-     <property name="toolButtonStyle"><enum>Qt::ToolButtonTextOnly</enum></property>
-    </widget>
-   </item>
-   <item>
     <widget class="QGroupBox" name="sopGroup">
      <property name="title"><string>Advanced Settings</string></property>
      <layout class="QVBoxLayout" name="advancedLayout">
@@ -378,12 +425,6 @@ QRadioButton::indicator { width: 0px; height: 0px; }</string>
          <widget class="QToolButton" name="previewBtn">
           <property name="toolTip"><string>Preview selected image</string></property>
           <property name="text"><string>Preview</string></property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="autoCalibrateBtn">
-          <property name="toolTip"><string>Automatically detect ROI, needle, and substrate regions</string></property>
-          <property name="text"><string>Auto-Calibrate</string></property>
          </widget>
         </item>
        </layout>
@@ -434,6 +475,17 @@ QRadioButton::indicator { width: 0px; height: 0px; }</string>
        </widget>
       </item>
      </layout>
+   </widget>
+  </item>
+  <item>
+    <widget class="QPushButton" name="autoCalibrateBtn">
+     <property name="toolTip"><string>Automatically detect ROI, needle, and substrate regions</string></property>
+     <property name="text"><string>Calibrate</string></property>
+     <property name="styleSheet">
+      <string notr="true">QPushButton { background-color: #F6F8FA; color: #24292F; border: 1px solid #D0D7DE; border-radius: 4px; padding: 7px 10px; font-weight: 600; }
+QPushButton:hover { background-color: #EEF2F6; border-color: #AFB8C1; }
+QPushButton:disabled { color: #8C959F; background-color: #F6F8FA; }</string>
+     </property>
     </widget>
    </item>
    <item>
@@ -443,6 +495,17 @@ QRadioButton::indicator { width: 0px; height: 0px; }</string>
       <string notr="true">QPushButton { background-color: #2563EB; color: white; border-radius: 4px; padding: 7px 10px; font-weight: 600; }
 QPushButton:hover { background-color: #1D4ED8; }
 QPushButton:disabled { background-color: #94A3B8; }</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QToolButton" name="advancedToggleBtn">
+     <property name="text"><string>Advanced</string></property>
+     <property name="checkable"><bool>false</bool></property>
+     <property name="toolButtonStyle"><enum>Qt::ToolButtonTextBesideIcon</enum></property>
+     <property name="styleSheet">
+      <string notr="true">QToolButton { background-color: #F6F8FA; color: #24292F; border: 1px solid #D0D7DE; border-radius: 4px; padding: 7px 10px; font-weight: 600; }
+QToolButton:hover { background-color: #EEF2F6; border-color: #AFB8C1; }</string>
      </property>
     </widget>
    </item>

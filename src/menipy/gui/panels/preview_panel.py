@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 from pathlib import Path
 from typing import Any, Callable, Optional
 
-from PySide6.QtCore import QLineF, QPointF, QRectF, Signal
+from PySide6.QtCore import QLineF, QPointF, QRectF, Qt, Signal
 from PySide6.QtGui import QAction, QColor
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -20,6 +20,8 @@ from PySide6.QtWidgets import (
     QToolButton,
     QWidget,
 )
+
+from menipy.gui.icon_loader import load_icon, set_button_icon
 
 LAYER_DEFAULTS = {
     "contour": True,
@@ -104,6 +106,7 @@ class PreviewPanel:
             self.image_view.line_drawn.connect(self.on_line_drawn)
 
         self._install_guided_menus()
+        self._apply_control_icons()
         self._wire_buttons()
 
     # ------------------------------------------------------------------
@@ -405,6 +408,37 @@ class PreviewPanel:
                     pass
         self._set_overlay_buttons_enabled(False)
 
+    def _apply_control_icons(self) -> None:
+        """Apply resource-backed icons to preview and transport controls."""
+
+        def _find_button(name: str) -> Optional[QToolButton | QPushButton]:
+            button = self.panel.findChild(QToolButton, name)
+            if button:
+                return button
+            return self.panel.findChild(QPushButton, name)
+
+        for button_name, icon_name in (
+            ("overlayMenuBtn", "overlay"),
+            ("markMenuBtn", "roi"),
+            ("actualBtn", "zoom-in"),
+            ("fitBtn", "zoom-out"),
+            ("roiBtn", "roi"),
+            ("needleBtn", "pendant"),
+            ("contactLineBtn", "sessile"),
+            ("clearBtn", "x"),
+        ):
+            set_button_icon(_find_button(button_name), icon_name, size=15)
+
+        for button_name, icon_name in (
+            ("frameBackBtn", "skip-back"),
+            ("framePlayBtn", "play"),
+            ("frameForwardBtn", "skip-forward"),
+        ):
+            button = _find_button(button_name)
+            set_button_icon(button, icon_name, size=16, clear_text=True)
+            if isinstance(button, QToolButton):
+                button.setToolButtonStyle(Qt.ToolButtonIconOnly)
+
     def _set_status(self, text: str) -> None:
         if self._status_label:
             self._status_label.setText(text)
@@ -502,16 +536,19 @@ class PreviewPanel:
                 mark_layout.insertWidget(0, mark_button)
 
         mark_menu = QMenu(mark_button)
-        for button_name, label in (
-            ("roiBtn", "ROI"),
-            ("needleBtn", "Needle"),
-            ("contactLineBtn", "Contact Line"),
-            ("clearBtn", "Clear"),
+        for button_name, label, icon_name in (
+            ("roiBtn", "ROI", "roi"),
+            ("needleBtn", "Needle", "pendant"),
+            ("contactLineBtn", "Contact Line", "sessile"),
+            ("clearBtn", "Clear", "x"),
         ):
             button = _find_button(button_name)
             if not button:
                 continue
             action = QAction(label, mark_menu)
+            icon = load_icon(icon_name)
+            if not icon.isNull():
+                action.setIcon(icon)
             action.triggered.connect(button.click)
             mark_menu.addAction(action)
             button.setVisible(False)

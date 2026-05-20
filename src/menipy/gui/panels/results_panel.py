@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
 
 from menipy.common.units import convert_from_si
 from menipy.gui.controllers.pipeline_ui_manager import PipelineUIManager
+from menipy.gui.icon_loader import load_icon, set_button_icon
 from menipy.gui.services.settings_service import AppSettings
 from menipy.models.results import MeasurementResult, get_results_history
 
@@ -168,11 +169,17 @@ class ResultsPanel:
         # Pipeline filter
         self.pipeline_combo = QComboBox()
         self.pipeline_combo.addItem("All Valid Pipelines", VALID_PIPELINES_FILTER)
-        self.pipeline_combo.addItem("Sessile", "sessile")
-        self.pipeline_combo.addItem("Pendant", "pendant")
-        self.pipeline_combo.addItem("Oscillating", "oscillating")
-        self.pipeline_combo.addItem("Capillary Rise", "capillary_rise")
-        self.pipeline_combo.addItem("Captive Bubble", "captive_bubble")
+        self.pipeline_combo.addItem(load_icon("sessile"), "Sessile", "sessile")
+        self.pipeline_combo.addItem(load_icon("pendant"), "Pendant", "pendant")
+        self.pipeline_combo.addItem(
+            load_icon("oscillating"), "Oscillating", "oscillating"
+        )
+        self.pipeline_combo.addItem(
+            load_icon("capillary_rise"), "Capillary Rise", "capillary_rise"
+        )
+        self.pipeline_combo.addItem(
+            load_icon("captive_bubble"), "Captive Bubble", "captive_bubble"
+        )
         self.pipeline_combo.addItem("Legacy / Unknown", LEGACY_PIPELINES_FILTER)
         self.pipeline_combo.currentIndexChanged.connect(
             self._on_pipeline_filter_changed
@@ -188,10 +195,12 @@ class ResultsPanel:
 
         # Action buttons
         self.key_results_button = QPushButton("Key Results")
+        set_button_icon(self.key_results_button, "info", size=14)
         self.key_results_button.clicked.connect(self.show_key_results)
         controls_layout.addWidget(self.key_results_button)
 
         self.compare_button = QPushButton("Compare")
+        set_button_icon(self.compare_button, "layout-table", size=14)
         self.compare_button.setCheckable(True)
         self.compare_button.setChecked(
             bool(getattr(self.settings, "compare_methods_visible", False))
@@ -200,6 +209,7 @@ class ResultsPanel:
         controls_layout.addWidget(self.compare_button)
 
         self.diagnostics_button = QPushButton("Diagnostics")
+        set_button_icon(self.diagnostics_button, "list", size=14)
         self.diagnostics_button.setCheckable(True)
         self.diagnostics_button.setChecked(
             bool(getattr(self.settings, "diagnostics_visible", False))
@@ -208,14 +218,17 @@ class ResultsPanel:
         controls_layout.addWidget(self.diagnostics_button)
 
         self.clear_button = QPushButton("Clear")
+        set_button_icon(self.clear_button, "x", size=14)
         self.clear_button.clicked.connect(self._clear_history)
         controls_layout.addWidget(self.clear_button)
 
         self.export_button = QPushButton("Export")
+        set_button_icon(self.export_button, "download", size=14)
         self.export_button.clicked.connect(self._export_csv)
         controls_layout.addWidget(self.export_button)
 
         self.columns_button = QPushButton("Columns")
+        set_button_icon(self.columns_button, "layout-table", size=14)
         self.columns_menu = QMenu(self.columns_button)
         self.columns_button.setMenu(self.columns_menu)
         controls_layout.addWidget(self.columns_button)
@@ -477,6 +490,10 @@ class ResultsPanel:
 
                 item = QTableWidgetItem(str(transformed_value))
                 item.setFlags(item.flags() & ~Qt.ItemIsEditable)  # Make read-only
+                if raw_headers[col_idx] == "pipeline":
+                    icon = self._pipeline_icon(str(transformed_value))
+                    if not icon.isNull():
+                        item.setIcon(icon)
 
                 # Add pipeline-specific styling
                 if self.current_pipeline_filter in VALID_PIPELINES:
@@ -512,18 +529,25 @@ class ResultsPanel:
     ) -> None:
         if not self.recent_results_list:
             return
-        measurements = measurements if measurements is not None else self._filtered_measurements()
+        measurements = (
+            measurements if measurements is not None else self._filtered_measurements()
+        )
         self.recent_results_list.blockSignals(True)
         self.recent_results_list.clear()
         for measurement in measurements[:20]:
             item = QListWidgetItem(self._recent_result_text(measurement))
+            icon = self._pipeline_icon(measurement.pipeline)
+            if not icon.isNull():
+                item.setIcon(icon)
             item.setData(Qt.UserRole, measurement.id)
             self.recent_results_list.addItem(item)
         if self.recent_results_list.count() > 0:
             row = self.table.currentRow() if self.table else 0
             if row < 0:
                 row = 0
-            self.recent_results_list.setCurrentRow(min(row, self.recent_results_list.count() - 1))
+            self.recent_results_list.setCurrentRow(
+                min(row, self.recent_results_list.count() - 1)
+            )
         self.recent_results_list.blockSignals(False)
 
     def _recent_result_text(self, measurement: MeasurementResult) -> str:
@@ -870,6 +894,14 @@ class ResultsPanel:
                 font.setBold(True)
                 item.setFont(font)
                 break
+
+    def _pipeline_icon(self, pipeline_name: str):
+        key = pipeline_name.lower().replace(" ", "_")
+        if key == "capillary_rise":
+            return load_icon("capillary_rise")
+        if key in VALID_PIPELINES:
+            return load_icon(key)
+        return load_icon("info")
 
     def _display_header(self, header: str) -> str:
         if header == "file_name":

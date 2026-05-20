@@ -121,20 +121,6 @@
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="workflowAutoCalibrateBtn">
-         <property name="text"><string>Auto-Calibrate</string></property>
-         <property name="toolTip"><string>Detect calibration regions from the current image</string></property>
-         <property name="autoRaise"><bool>true</bool></property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QToolButton" name="actionRunBtn">
-         <property name="text"><string>Run Analysis</string></property>
-         <property name="toolTip"><string>Run the configured analysis pipeline</string></property>
-         <property name="autoRaise"><bool>true</bool></property>
-        </widget>
-       </item>
-       <item>
         <widget class="QToolButton" name="actionExportCsvBtn">
          <property name="text"><string>Export CSV</string></property>
          <property name="toolTip"><string>Export the visible results table to CSV</string></property>
@@ -142,10 +128,10 @@
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="workflowAdvancedBtn">
-         <property name="text"><string>Advanced +</string></property>
-         <property name="toolTip"><string>Show SOP, stages, diagnostics, and logs</string></property>
-         <property name="checkable"><bool>true</bool></property>
+       <widget class="QToolButton" name="workflowAdvancedBtn">
+         <property name="text"><string>Advanced</string></property>
+         <property name="toolTip"><string>Open SOP and pipeline stage controls</string></property>
+         <property name="checkable"><bool>false</bool></property>
          <property name="autoRaise"><bool>true</bool></property>
         </widget>
        </item>

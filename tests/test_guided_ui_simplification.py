@@ -59,10 +59,23 @@ def test_guided_setup_defaults_collapse_advanced_controls(qtbot):
     controller = _controller(qtbot)
 
     assert controller.advancedToggleBtn is not None
+    assert not controller.advancedToggleBtn.isCheckable()
     assert not controller.advancedToggleBtn.isChecked()
     assert controller.sopGroup is not None
     assert not controller.sopGroup.isVisible()
     assert controller.stepsGroup is not None
+    assert not controller.stepsGroup.isVisible()
+
+
+def test_guided_setup_advanced_button_is_dialog_command(qtbot):
+    controller = _controller(qtbot)
+    requested = Mock()
+    controller.advanced_requested.connect(requested)
+
+    controller.advancedToggleBtn.click()
+
+    requested.assert_called_once()
+    assert not controller.sopGroup.isVisible()
     assert not controller.stepsGroup.isVisible()
 
 
@@ -98,6 +111,7 @@ def test_guided_setup_keeps_primary_signals_available(qtbot):
 
     controller.browseBtn.click()
     controller.previewBtn.click()
+    assert controller.autoCalibrateBtn.text() == "Calibrate"
     controller.autoCalibrateBtn.click()
     controller.runAllBtn.click()
 
@@ -196,11 +210,17 @@ def test_workbench_layout_xml_places_preview_above_results():
     preview_splitter = root.find(".//widget[@name='previewResultsSplitter']")
     assert preview_splitter is not None
     preview_child_names = [
-        child.attrib.get("name")
-        for child in preview_splitter
-        if child.tag == "widget"
+        child.attrib.get("name") for child in preview_splitter if child.tag == "widget"
     ]
     assert preview_child_names[:2] == ["previewHost", "keyResultsHost"]
+
+
+def test_workflow_bar_xml_removes_duplicate_calibrate_and_run_buttons():
+    tree = ET.parse("src/menipy/gui/views/main_window_split.ui")
+    root = tree.getroot()
+
+    assert root.find(".//widget[@name='workflowAutoCalibrateBtn']") is None
+    assert root.find(".//widget[@name='actionRunBtn']") is None
 
 
 def test_menu_xml_order_and_config_actions():

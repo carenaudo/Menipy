@@ -38,3 +38,25 @@ def test_register_qrc_with_rcc(monkeypatch, tmp_path):
     app._register_qrc()
 
     assert called["count"] >= 1
+
+
+def test_workbench_svg_icons_load_from_qrc():
+    from PySide6.QtGui import QIcon
+
+    from menipy.gui import app
+
+    app._register_qrc()
+
+    for icon_name in (
+        "layout-sidebar",
+        "layout-table",
+        "download",
+        "database",
+        "file",
+        "camera",
+        "roi",
+        "skip-back",
+        "pendant",
+        "sessile",
+    ):
+        assert not QIcon(f":/icons/{icon_name}.svg").isNull()
