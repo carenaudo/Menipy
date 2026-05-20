@@ -278,7 +278,9 @@ class TestNeedleDropBaselineParity:
         assert baseline.drop_contour is not None and len(baseline.drop_contour) > 0
 
         detector = NEEDLE_DETECTORS["pendant"]
-        drop_contour_cv = np.asarray(baseline.drop_contour, dtype=np.int32).reshape(-1, 1, 2)
+        drop_contour_cv = np.asarray(baseline.drop_contour, dtype=np.int32).reshape(
+            -1, 1, 2
+        )
         result = detector(image, drop_contour=drop_contour_cv)
 
         assert result is not None

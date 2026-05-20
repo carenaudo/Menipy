@@ -85,15 +85,8 @@ def run(
     full_image = _compose_full_image(frame, processed_roi, state)
 
     # --- Finalize context with results ---
-    # --- Finalize context with results ---
-    ctx.preprocessed_state = (
-        state.model_dump() if hasattr(state, "model_dump") else state
-    )
-    ctx.preprocessed_settings = (
-        resolved_settings.model_dump()
-        if hasattr(resolved_settings, "model_dump")
-        else resolved_settings
-    )
+    ctx.preprocessed_state = state
+    ctx.preprocessed_settings = resolved_settings
     ctx.preprocessed_history = [
         record.model_dump() for record in getattr(state, "history", [])
     ]
