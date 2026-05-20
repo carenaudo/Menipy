@@ -1,0 +1,468 @@
+
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  .app{
+    font-family:'JetBrains Mono','Fira Code','Courier New',monospace;
+    background:#0d1117;color:#e6edf3;
+    display:grid;
+    grid-template-columns:220px 1fr 280px;
+    grid-template-rows:48px 1fr 200px;
+    height:640px;
+    border-radius:10px;overflow:hidden;font-size:12px;
+    position:relative;
+  }
+  .titlebar{
+    grid-column:1/-1;
+    background:#161b22;border-bottom:1px solid #21262d;
+    display:flex;align-items:center;padding:0 14px;gap:16px;
+  }
+  .app-name{font-size:13px;font-weight:700;color:#58a6ff;letter-spacing:.06em}
+  .menu-items{display:flex;gap:2px;margin-left:8px}
+  .menu-item{padding:4px 10px;border-radius:4px;color:#8b949e;cursor:pointer;font-size:11px;font-family:-apple-system,sans-serif}
+  .menu-item:hover{background:#21262d;color:#e6edf3}
+  .toolbar{display:flex;gap:6px;margin-left:auto;align-items:center}
+  .tbtn{
+    background:#21262d;border:1px solid #30363d;border-radius:5px;
+    color:#c9d1d9;padding:4px 11px;font-size:11px;
+    font-family:-apple-system,sans-serif;cursor:pointer;display:flex;align-items:center;gap:5px;
+  }
+  .tbtn:hover{border-color:#58a6ff}
+  .tbtn.primary{background:#1f6feb;border-color:#388bfd;color:#fff;font-weight:600}
+  .tbtn.primary:hover{background:#2a7fff}
+  .tbtn.adv{border-color:#6e40c966;color:#a78bfa}
+  .tbtn.adv:hover{border-color:#a78bfa;background:#2d1f5e33}
+  .dot{width:8px;height:8px;border-radius:50%}
+  .dot.active{background:#39d353}
+
+  .sidebar{
+    background:#0d1117;border-right:1px solid #21262d;
+    overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:12px;
+  }
+  .section-label{
+    font-size:9px;letter-spacing:.12em;text-transform:uppercase;
+    color:#484f58;font-family:-apple-system,sans-serif;font-weight:600;margin-bottom:6px;
+  }
+  .analysis-tabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px}
+  .tab{
+    background:#161b22;border:1px solid #21262d;border-radius:5px;
+    padding:6px 4px;text-align:center;cursor:pointer;color:#8b949e;
+    font-size:10px;font-family:-apple-system,sans-serif;
+  }
+  .tab.active{background:#1f3a5c;border-color:#388bfd;color:#79c0ff;font-weight:600}
+  .source-modes{display:flex;gap:3px;margin-bottom:8px}
+  .mode-btn{
+    flex:1;padding:5px 4px;background:#161b22;border:1px solid #21262d;
+    border-radius:4px;color:#8b949e;font-size:10px;
+    font-family:-apple-system,sans-serif;cursor:pointer;text-align:center;
+  }
+  .mode-btn.active{background:#1c2d1e;border-color:#3fb950;color:#56d364}
+  .field-row{margin-bottom:7px}
+  .field-label{color:#484f58;font-size:10px;font-family:-apple-system,sans-serif;margin-bottom:3px}
+  .field-input{
+    width:100%;background:#161b22;border:1px solid #21262d;border-radius:4px;
+    color:#e6edf3;padding:5px 8px;font-size:10px;
+    font-family:'JetBrains Mono',monospace;outline:none;
+  }
+  .calib-row{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:5px 0;border-bottom:1px solid #21262d22;
+  }
+  .calib-key{color:#8b949e;font-family:-apple-system,sans-serif;font-size:10px}
+  .calib-val{color:#79c0ff;font-size:11px}
+  .calib-unit{color:#484f58;font-size:9px;margin-left:2px}
+  .run-btn{
+    background:#1f6feb;border:none;border-radius:6px;color:#fff;
+    padding:10px;font-size:12px;font-weight:600;font-family:-apple-system,sans-serif;
+    cursor:pointer;width:100%;letter-spacing:.02em;margin-top:auto;
+  }
+  .run-btn:hover{background:#2a7fff}
+  hr.div{border:none;border-top:1px solid #21262d;margin:2px 0}
+
+  .viewer{
+    background:#010409;position:relative;overflow:hidden;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .overlay-badge{
+    position:absolute;background:#00000099;border:1px solid #21262d;
+    border-radius:4px;padding:3px 7px;font-size:10px;color:#8b949e;
+    font-family:-apple-system,sans-serif;
+  }
+  .overlay-badge.tl{top:10px;left:10px}
+  .overlay-badge.tr{top:10px;right:10px;color:#39d353;border-color:#3fb95044}
+  .overlay-controls{
+    position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
+    display:flex;gap:4px;
+  }
+  .octl{
+    background:#161b2299;border:1px solid #21262d;border-radius:4px;
+    padding:4px 8px;color:#8b949e;font-size:10px;
+    font-family:-apple-system,sans-serif;cursor:pointer;
+  }
+  .octl.active{color:#79c0ff;border-color:#388bfd44}
+
+  .results-panel{
+    background:#0d1117;border-left:1px solid #21262d;
+    display:flex;flex-direction:column;overflow:hidden;
+  }
+  .results-header{
+    padding:9px 12px;border-bottom:1px solid #21262d;
+    font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+    color:#484f58;font-family:-apple-system,sans-serif;font-weight:600;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .badge-count{background:#1f3a5c;color:#79c0ff;border-radius:10px;padding:1px 7px;font-size:9px;font-family:-apple-system,sans-serif}
+  .metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 12px;border-bottom:1px solid #21262d}
+  .metric-card{background:#161b22;border:1px solid #21262d;border-radius:6px;padding:8px 10px}
+  .metric-label{font-size:9px;color:#484f58;font-family:-apple-system,sans-serif;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}
+  .metric-val{font-size:18px;font-weight:700;line-height:1}
+  .metric-val.cyan{color:#58a6ff}
+  .metric-val.green{color:#56d364}
+  .metric-val.amber{color:#e3b341}
+  .metric-val.plain{color:#e6edf3}
+  .metric-unit{font-size:9px;color:#484f58;margin-top:2px;font-family:-apple-system,sans-serif}
+  .results-list{flex:1;overflow-y:auto;padding:6px 12px}
+  .result-row{background:#161b22;border:1px solid #21262d;border-radius:5px;padding:7px 10px;margin-bottom:5px;cursor:pointer}
+  .result-row.active{border-color:#388bfd;background:#1f3a5c22}
+  .rr-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+  .rr-file{font-size:10px;color:#c9d1d9;font-family:-apple-system,sans-serif}
+  .rr-time{font-size:9px;color:#484f58;font-family:-apple-system,sans-serif}
+  .rr-metrics{display:flex;gap:8px}
+  .rr-mk{color:#484f58;font-family:-apple-system,sans-serif;font-size:10px}
+  .rr-mv{color:#79c0ff;font-size:10px}
+
+  .table-area{
+    grid-column:1/-1;
+    background:#0d1117;border-top:1px solid #21262d;overflow:auto;
+  }
+  .data-table{width:100%;border-collapse:collapse;font-size:10px}
+  .data-table th{
+    background:#161b22;color:#484f58;text-align:left;
+    padding:7px 12px;font-family:-apple-system,sans-serif;font-size:9px;
+    text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid #21262d;
+    position:sticky;top:0;white-space:nowrap;
+  }
+  .data-table td{padding:6px 12px;border-bottom:1px solid #21262d22;color:#c9d1d9;white-space:nowrap}
+  .data-table tr:hover td{background:#161b2266}
+  .data-table tr.active td{background:#1f3a5c22}
+  .mono{font-family:'JetBrains Mono',monospace;color:#79c0ff}
+  .muted{color:#484f58;font-family:-apple-system,sans-serif}
+  .tag{display:inline-block;background:#1f3a5c;color:#79c0ff;border:1px solid #388bfd33;border-radius:10px;padding:1px 7px;font-size:9px;font-family:-apple-system,sans-serif}
+
+  /* ── Dialog overlay ── */
+  .dialog-overlay{
+    display:none;position:absolute;inset:0;
+    background:#00000077;z-index:100;
+    align-items:flex-start;justify-content:flex-end;
+    padding-top:52px;padding-right:14px;
+  }
+  .dialog-overlay.open{display:flex}
+  .dialog{
+    background:#161b22;border:1px solid #30363d;border-radius:8px;
+    width:380px;box-shadow:0 8px 32px #00000066;overflow:hidden;
+  }
+  .dialog-header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 14px;border-bottom:1px solid #21262d;
+  }
+  .dialog-title{font-size:12px;font-weight:600;color:#e6edf3;font-family:-apple-system,sans-serif;display:flex;align-items:center;gap:7px}
+  .dialog-title .icon{font-size:14px;color:#a78bfa}
+  .close-btn{background:none;border:none;color:#484f58;font-size:16px;cursor:pointer;padding:0 4px;line-height:1}
+  .close-btn:hover{color:#e6edf3}
+  .dialog-body{padding:14px;display:flex;flex-direction:column;gap:14px}
+  .adv-section{border:1px solid #21262d;border-radius:6px;overflow:hidden}
+  .adv-section-header{
+    background:#0d1117;padding:8px 12px;
+    font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+    color:#484f58;font-family:-apple-system,sans-serif;font-weight:600;
+  }
+  .adv-section-body{padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+  .adv-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .adv-label{font-size:11px;color:#8b949e;font-family:-apple-system,sans-serif;flex:1}
+  .adv-input{
+    background:#0d1117;border:1px solid #21262d;border-radius:4px;
+    color:#79c0ff;padding:4px 8px;font-size:11px;
+    font-family:'JetBrains Mono',monospace;width:90px;text-align:right;outline:none;
+  }
+  .adv-select{
+    background:#0d1117;border:1px solid #21262d;border-radius:4px;
+    color:#79c0ff;padding:4px 8px;font-size:10px;
+    font-family:-apple-system,sans-serif;width:140px;outline:none;
+  }
+  .adv-toggle{
+    display:flex;gap:3px;
+  }
+  .toggle-opt{
+    padding:3px 9px;border:1px solid #21262d;border-radius:3px;
+    font-size:10px;font-family:-apple-system,sans-serif;
+    color:#8b949e;cursor:pointer;background:#0d1117;
+  }
+  .toggle-opt.on{background:#1f3a5c;border-color:#388bfd;color:#79c0ff}
+  .stages-list{display:flex;flex-direction:column;gap:4px}
+  .stage-row{
+    display:flex;align-items:center;gap:8px;
+    background:#0d1117;border:1px solid #21262d;border-radius:4px;
+    padding:6px 10px;cursor:grab;
+  }
+  .stage-handle{color:#484f58;font-size:12px;cursor:grab}
+  .stage-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+  .stage-dot.done{background:#39d353}
+  .stage-dot.act{background:#388bfd}
+  .stage-dot.idle{background:#484f58}
+  .stage-name-d{font-size:11px;color:#c9d1d9;font-family:-apple-system,sans-serif;flex:1}
+  .stage-cfg{background:#21262d;border:1px solid #30363d;border-radius:3px;color:#8b949e;padding:2px 6px;font-size:9px;font-family:-apple-system,sans-serif;cursor:pointer}
+  .stage-cfg:hover{color:#e6edf3}
+  .dialog-footer{padding:10px 14px;border-top:1px solid #21262d;display:flex;justify-content:flex-end;gap:6px}
+  .df-btn{padding:5px 14px;border-radius:5px;font-size:11px;font-family:-apple-system,sans-serif;cursor:pointer;border:1px solid #30363d;background:#21262d;color:#c9d1d9}
+  .df-btn.ok{background:#1f6feb;border-color:#388bfd;color:#fff}
+  .df-btn:hover{filter:brightness(1.1)}
+</style>
+
+<h2 class="sr-only">Menipy ADSA redesigned interface v2</h2>
+
+<div class="app" id="app">
+
+  <!-- titlebar -->
+  <div class="titlebar">
+    <span class="app-name">MENIPY ADSA</span>
+    <div class="menu-items">
+      <span class="menu-item">File</span>
+      <span class="menu-item">Config</span>
+      <span class="menu-item">View</span>
+      <span class="menu-item">Run</span>
+      <span class="menu-item">Plugins</span>
+    </div>
+    <div class="toolbar">
+      <span style="display:flex;align-items:center;gap:5px;color:#484f58;font-family:-apple-system,sans-serif;font-size:10px;">
+        <span class="dot active"></span>3 measurements
+      </span>
+      <button class="tbtn">Export CSV</button>
+      <button class="tbtn" onclick="void 0">Auto-Calibrate</button>
+      <button class="tbtn adv" id="advBtn" onclick="toggleDialog()">⚙ Advanced Settings</button>
+      <button class="tbtn primary">▶ Run Analysis</button>
+    </div>
+  </div>
+
+  <!-- sidebar -->
+  <div class="sidebar">
+    <div>
+      <div class="section-label">Analysis Type</div>
+      <div class="analysis-tabs">
+        <div class="tab">Sessile</div>
+        <div class="tab active">Pendant</div>
+        <div class="tab">Osc.</div>
+        <div class="tab">Capillary</div>
+        <div class="tab">Captive</div>
+        <div class="tab" style="opacity:.3">+</div>
+      </div>
+    </div>
+    <div>
+      <div class="section-label">Source</div>
+      <div class="source-modes">
+        <div class="mode-btn active">File</div>
+        <div class="mode-btn">Batch</div>
+        <div class="mode-btn">Camera</div>
+      </div>
+      <div class="field-row">
+        <div class="field-label">Image path</div>
+        <input class="field-input" value="gota pendiente 1.png" readonly style="font-size:9px;color:#8b949e">
+      </div>
+    </div>
+    <hr class="div">
+    <div>
+      <div class="section-label">Calibration</div>
+      <div class="calib-row"><span class="calib-key">Needle diameter</span><span class="calib-val">10.00<span class="calib-unit">mm</span></span></div>
+      <div class="calib-row"><span class="calib-key">Drop ρ</span><span class="calib-val">1000.0<span class="calib-unit">kg/m³</span></span></div>
+      <div class="calib-row"><span class="calib-key">Fluid ρ</span><span class="calib-val">1.2<span class="calib-unit">kg/m³</span></span></div>
+    </div>
+    <button class="run-btn">▶  Run Analysis</button>
+  </div>
+
+  <!-- image viewer -->
+  <div class="viewer">
+    <div style="width:240px;height:300px;position:relative">
+      <svg viewBox="0 0 240 310" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+        <rect width="240" height="310" fill="#010409"/>
+        <rect x="90" y="0" width="60" height="65" rx="4" fill="#111"/>
+        <path d="M58,148 Q58,58 120,58 Q182,58 182,148 Q182,234 120,234 Q58,234 58,148Z" fill="#1c2433" stroke="#388bfd" stroke-width="1.5"/>
+        <path d="M63,148 Q63,63 120,63 Q177,63 177,148 Q177,228 120,228 Q63,228 63,148Z" stroke="#56d364" stroke-width="1" fill="none" opacity=".5" stroke-dasharray="4,3"/>
+        <line x1="120" y1="0" x2="120" y2="310" stroke="#388bfd" stroke-width=".5" opacity=".25" stroke-dasharray="3,4"/>
+        <line x1="58" y1="234" x2="182" y2="234" stroke="#e3b341" stroke-width=".8" opacity=".7"/>
+        <circle cx="58" cy="234" r="3" fill="#e3b341" opacity=".8"/>
+        <circle cx="182" cy="234" r="3" fill="#e3b341" opacity=".8"/>
+        <circle cx="120" cy="148" r="4" fill="#388bfd" opacity=".5"/>
+        <circle cx="120" cy="78" r="4" fill="#388bfd" opacity=".9"/>
+        <ellipse cx="104" cy="122" rx="14" ry="18" fill="#1a2332" opacity=".6"/>
+      </svg>
+    </div>
+    <div class="overlay-badge tl">Pendant · young_laplace_strict</div>
+    <div class="overlay-badge tr">● Live</div>
+    <div class="overlay-controls">
+      <span class="octl active">Contour</span>
+      <span class="octl active">Fit</span>
+      <span class="octl">Axis</span>
+      <span class="octl active">Baseline</span>
+      <span class="octl active">Markers</span>
+    </div>
+  </div>
+
+  <!-- right results panel -->
+  <div class="results-panel">
+    <div class="results-header">Last result <span class="badge-count">3</span></div>
+    <div class="metric-grid">
+      <div class="metric-card">
+        <div class="metric-label">IFT</div>
+        <div class="metric-val cyan">19.3</div>
+        <div class="metric-unit">mN/m</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Diameter</div>
+        <div class="metric-val plain">2.32</div>
+        <div class="metric-unit">mm</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Volume</div>
+        <div class="metric-val amber">7.75</div>
+        <div class="metric-unit">µL</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Height</div>
+        <div class="metric-val green">2.36</div>
+        <div class="metric-unit">mm</div>
+      </div>
+    </div>
+    <div class="results-list">
+      <div class="result-row active">
+        <div class="rr-top"><span class="rr-file">gota pendiente 1.png</span><span class="rr-time">13:53:13</span></div>
+        <div class="rr-metrics">
+          <span class="rr-mk">IFT </span><span class="rr-mv">19.3 </span>
+          <span class="rr-mk">Ø </span><span class="rr-mv">2.32 </span>
+          <span class="rr-mk">V </span><span class="rr-mv">7.75µL</span>
+        </div>
+      </div>
+      <div class="result-row" style="opacity:.5">
+        <div class="rr-top"><span class="rr-file">gota pendiente 1.png</span><span class="rr-time">13:53:05</span></div>
+        <div class="rr-metrics">
+          <span class="rr-mk">IFT </span><span class="rr-mv">— </span>
+          <span class="rr-mk">Ø </span><span class="rr-mv">12.7 </span>
+          <span class="rr-mk">V </span><span class="rr-mv">1.26e+03</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- full-width bottom table -->
+  <div class="table-area">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#</th><th>File</th><th>Timestamp</th><th>Pipeline</th>
+          <th>Ø mm</th><th>H mm</th><th>Vol µL</th><th>IFT mN/m</th>
+          <th>Surface Tension Method</th><th>θ °</th><th>θ left °</th><th>θ right °</th><th>Contact Surface mm²</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="active">
+          <td class="muted">1</td>
+          <td style="font-family:-apple-system,sans-serif;font-size:10px">gota pendiente 1.png</td>
+          <td class="muted">13:53:13</td>
+          <td><span class="tag">Pendant</span></td>
+          <td class="mono">2.32</td><td class="mono">2.36</td><td class="mono">7.75</td>
+          <td class="mono" style="color:#58a6ff;font-weight:600">19.3</td>
+          <td class="muted" style="font-size:9px">young_laplace_strict</td>
+          <td class="mono">—</td><td class="mono">—</td><td class="mono">—</td><td class="mono">—</td>
+        </tr>
+        <tr>
+          <td class="muted">2</td>
+          <td style="font-family:-apple-system,sans-serif;font-size:10px;color:#484f58">gota pendiente 1.png</td>
+          <td class="muted">13:53:05</td>
+          <td><span class="tag">Pendant</span></td>
+          <td class="mono" style="color:#8b949e">12.7</td><td class="mono" style="color:#8b949e">12.9</td>
+          <td class="mono" style="color:#8b949e">1.26e+03</td>
+          <td class="mono" style="color:#484f58">—</td>
+          <td class="muted" style="font-size:9px">young_laplace_strict</td>
+          <td class="mono" style="color:#8b949e">595</td>
+          <td class="mono" style="color:#484f58">—</td><td class="mono" style="color:#484f58">—</td><td class="mono" style="color:#484f58">—</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Advanced Settings dialog -->
+  <div class="dialog-overlay" id="dlgOverlay" onclick="closeIfOutside(event)">
+    <div class="dialog">
+      <div class="dialog-header">
+        <span class="dialog-title"><span class="icon">⚙</span> Advanced Settings</span>
+        <button class="close-btn" onclick="toggleDialog()">✕</button>
+      </div>
+      <div class="dialog-body">
+
+        <div class="adv-section">
+          <div class="adv-section-header">Pipeline / SOP</div>
+          <div class="adv-section-body">
+            <div class="adv-row">
+              <span class="adv-label">Active SOP</span>
+              <select class="adv-select">
+                <option>Default (pipeline)</option>
+                <option>Strict Laplace</option>
+                <option>Fast preview</option>
+              </select>
+            </div>
+            <div class="stages-list">
+              <div class="stage-row"><span class="stage-handle">⠿</span><span class="stage-dot done"></span><span class="stage-name-d">Edge detection</span><button class="stage-cfg">Configure</button></div>
+              <div class="stage-row"><span class="stage-handle">⠿</span><span class="stage-dot done"></span><span class="stage-name-d">Contour fit</span><button class="stage-cfg">Configure</button></div>
+              <div class="stage-row"><span class="stage-handle">⠿</span><span class="stage-dot act"></span><span class="stage-name-d">Young-Laplace solve</span><button class="stage-cfg">Configure</button></div>
+              <div class="stage-row"><span class="stage-handle">⠿</span><span class="stage-dot idle"></span><span class="stage-name-d">IFT extraction</span><button class="stage-cfg">Configure</button></div>
+              <div class="stage-row"><span class="stage-handle">⠿</span><span class="stage-dot idle"></span><span class="stage-name-d">Volume calculation</span><button class="stage-cfg">Configure</button></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="adv-section">
+          <div class="adv-section-header">Fitting parameters</div>
+          <div class="adv-section-body">
+            <div class="adv-row">
+              <span class="adv-label">Max iterations</span>
+              <input class="adv-input" value="500">
+            </div>
+            <div class="adv-row">
+              <span class="adv-label">Convergence threshold</span>
+              <input class="adv-input" value="1e-6">
+            </div>
+            <div class="adv-row">
+              <span class="adv-label">Edge detection method</span>
+              <select class="adv-select">
+                <option>Canny</option>
+                <option>Sobel</option>
+                <option>Laplacian</option>
+              </select>
+            </div>
+            <div class="adv-row">
+              <span class="adv-label">Interpolation</span>
+              <div class="adv-toggle">
+                <span class="toggle-opt on">Linear</span>
+                <span class="toggle-opt">Cubic</span>
+                <span class="toggle-opt">None</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="dialog-footer">
+        <button class="df-btn" onclick="toggleDialog()">Cancel</button>
+        <button class="df-btn ok" onclick="toggleDialog()">Apply</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function toggleDialog(){
+  var o=document.getElementById('dlgOverlay');
+  o.classList.toggle('open');
+}
+function closeIfOutside(e){
+  if(e.target===document.getElementById('dlgOverlay')) toggleDialog();
+}
+</script>
