@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Optional, Sequence
 
 from PySide6.QtCore import QObject, Qt, QTimer, Signal
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QButtonGroup,
     QComboBox,
@@ -78,6 +79,11 @@ class SetupPanelController(QObject):
             str(k).lower() for k in (pipeline_keys or PIPELINE_MAP.keys()) if k
         }
 
+        self.pipelineGroup: Optional[QGroupBox] = panel.findChild(
+            QGroupBox, "pipelineGroup"
+        )
+        self.sourceGroup: Optional[QGroupBox] = panel.findChild(QGroupBox, "sourceGroup")
+
         self.testCombo: Optional[QComboBox] = panel.findChild(QComboBox, "testCombo")
         self.pipelineCombo: Optional[QComboBox] = panel.findChild(
             QComboBox, "pipelineCombo"
@@ -108,6 +114,20 @@ class SetupPanelController(QObject):
             self.oscillatingBtn: "oscillating",
             self.capillaryBtn: "capillary_rise",
             self.captiveBtn: "captive_bubble",
+        }
+        self._pipeline_labels = {
+            "sessile": "Sessile",
+            "pendant": "Pendant",
+            "oscillating": "Osc.",
+            "capillary_rise": "Capillary",
+            "captive_bubble": "Captive",
+        }
+        self._pipeline_icon_names = {
+            "sessile": "sessile",
+            "pendant": "pendant",
+            "oscillating": "oscillating",
+            "capillary_rise": "capillary_rise",
+            "captive_bubble": "captive_bubble",
         }
 
         self.singleModeRadio: Optional[QRadioButton] = panel.findChild(
@@ -299,6 +319,7 @@ class SetupPanelController(QObject):
                 self._mode_map[btn] = mode
         self._mode = self.MODE_SINGLE
         self._last_camera_id = "0"
+        self._workflow_source_stack_mode = False
 
         if self.singleModeRadio and not self.singleModeRadio.isChecked():
             self.singleModeRadio.setChecked(True)
@@ -337,6 +358,11 @@ class SetupPanelController(QObject):
 
     def current_mode(self) -> str:
         return self._mode
+
+    def set_workflow_source_stack_mode(self, enabled: bool) -> None:
+        """Let the workbench own source visibility through its stacked host."""
+        self._workflow_source_stack_mode = bool(enabled)
+        self._update_widget_states()
 
     def gather_run_params(self) -> dict[str, Any]:
         mode = self._mode
@@ -525,14 +551,7 @@ class SetupPanelController(QObject):
 
     def _apply_icons(self) -> None:
         """Apply resource-backed icons to setup rail controls."""
-        for button, icon_name in (
-            (self.sessileBtn, "sessile"),
-            (self.pendantBtn, "pendant"),
-            (self.oscillatingBtn, "oscillating"),
-            (self.capillaryBtn, "capillary_rise"),
-            (self.captiveBtn, "captive_bubble"),
-        ):
-            set_button_icon(button, icon_name, size=14)
+        self._sync_pipeline_button_presentation()
 
         for button, icon_name in (
             (self.singleModeRadio, "file"),
@@ -599,6 +618,28 @@ class SetupPanelController(QObject):
         set_button_icon(self.drawLineBtn, "list", size=14)
         set_button_icon(self.drawRectBtn, "roi", size=14)
         set_button_icon(self.clearOverlayBtn, "x", size=14)
+
+    def _sync_pipeline_button_presentation(self) -> None:
+        """Show text only for the selected analysis button, icons otherwise."""
+        for button, pipeline_name in self._pipeline_button_map.items():
+            if button is None:
+                continue
+            label = self._pipeline_labels.get(pipeline_name, pipeline_name)
+            button.setToolTip(label)
+            if button.isChecked():
+                button.setText(label)
+                button.setIcon(QIcon())
+                button.setMinimumWidth(76)
+                button.setMaximumWidth(120)
+            else:
+                button.setText("")
+                set_button_icon(
+                    button,
+                    self._pipeline_icon_names.get(pipeline_name, pipeline_name),
+                    size=15,
+                )
+                button.setMinimumWidth(36)
+                button.setMaximumWidth(42)
 
     def _restore_settings(self) -> None:
         """_restore_settings."""
@@ -738,6 +779,7 @@ class SetupPanelController(QObject):
                 if not button.isChecked():
                     button.setChecked(True)
                 found = True
+        self._sync_pipeline_button_presentation()
         return found
 
     def _on_pipeline_button_clicked(self, pipeline_name: str) -> None:
@@ -745,6 +787,7 @@ class SetupPanelController(QObject):
         self._sync_combo_to_pipeline(pipeline_name)
         self.sop_ctrl.on_pipeline_changed(pipeline_name)
         self._update_pipeline_specific_visibility(pipeline_name)
+        self._sync_pipeline_button_presentation()
 
     def _on_pipeline_combo_changed(self, text: str) -> None:
         """Keep segmented buttons in sync when legacy combo changes."""
@@ -754,6 +797,7 @@ class SetupPanelController(QObject):
         self._select_pipeline_button(pipeline)
         self.sop_ctrl.on_pipeline_changed(text)
         self._update_pipeline_specific_visibility(pipeline)
+        self._sync_pipeline_button_presentation()
 
     def _initial_pipeline_refresh(self) -> None:
         """_initial_pipeline_refresh."""
@@ -767,12 +811,14 @@ class SetupPanelController(QObject):
         if pipeline:
             self.sop_ctrl.on_pipeline_changed(pipeline)
             self._update_pipeline_specific_visibility(pipeline)
+            self._sync_pipeline_button_presentation()
             return
 
         combo = self.testCombo or self.pipelineCombo
         if combo:
             self.sop_ctrl.on_pipeline_changed(combo.currentText())
             self._update_pipeline_specific_visibility(self.current_pipeline_name())
+            self._sync_pipeline_button_presentation()
 
     def _on_mode_toggled(self, button: Optional[QRadioButton], checked: bool) -> None:
         if not checked or not button:
@@ -806,39 +852,41 @@ class SetupPanelController(QObject):
         single = self._mode == self.MODE_SINGLE
         batch = self._mode == self.MODE_BATCH
         camera = self._mode == self.MODE_CAMERA
+        stacked_source = bool(getattr(self, "_workflow_source_stack_mode", False))
+
+        def set_mode_visible(widget: Optional[QWidget], visible: bool) -> None:
+            if widget is not None and not stacked_source:
+                widget.setVisible(visible)
+
         if self.imagePathEdit:
             self.imagePathEdit.setEnabled(single)
-            self.imagePathEdit.setVisible(single)
-        if self.labelImage:
-            self.labelImage.setVisible(single)
+        set_mode_visible(self.imagePathEdit, single)
+        set_mode_visible(self.labelImage, single)
         if self.browseBtn:
             self.browseBtn.setEnabled(single)
-            self.browseBtn.setVisible(single)
+        set_mode_visible(self.browseBtn, single)
         if self.batchPathEdit:
             self.batchPathEdit.setEnabled(batch)
-            self.batchPathEdit.setVisible(batch)
-        if self.labelBatch:
-            self.labelBatch.setVisible(batch)
+        set_mode_visible(self.batchPathEdit, batch)
+        set_mode_visible(self.labelBatch, batch)
         if self.batchBrowseBtn:
             # Keep batch browse enabled so tests and automation can access
             # this action regardless of the currently selected mode.
             try:
                 self.batchBrowseBtn.setEnabled(True)
-                self.batchBrowseBtn.setVisible(batch)
             except Exception:
                 # Best effort - ignore widget errors when running headless tests
                 pass
+        set_mode_visible(self.batchBrowseBtn, batch)
         if self.framesSpin:
             self.framesSpin.setEnabled(camera)
-            self.framesSpin.setVisible(camera)
-        if self.labelFrames:
-            self.labelFrames.setVisible(camera)
+        set_mode_visible(self.framesSpin, camera)
+        set_mode_visible(self.labelFrames, camera)
         if self.sourceIdCombo:
             self.sourceIdCombo.setEditable(camera)
             self.sourceIdCombo.setEnabled(camera or batch)
-            self.sourceIdCombo.setVisible(camera or batch)
-        if self.labelSourceId:
-            self.labelSourceId.setVisible(camera or batch)
+        set_mode_visible(self.sourceIdCombo, camera or batch)
+        set_mode_visible(self.labelSourceId, camera or batch)
 
     def _update_pipeline_specific_visibility(
         self, pipeline_name: Optional[str] = None

@@ -12,9 +12,13 @@ from PySide6.QtCore import QByteArray, QFile, Qt, QTimer
 from PySide6.QtGui import QAction, QCloseEvent
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import (
+    QHBoxLayout,
+    QLabel,
     QLayout,
     QMainWindow,
     QPlainTextEdit,
+    QSizePolicy,
+    QStackedLayout,
     QVBoxLayout,
     QWidget,
 )
@@ -245,6 +249,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             StepItemWidget,
             list(PIPELINE_MAP.keys()) if PIPELINE_MAP else [],
         )
+        self._install_workflow_setup_controls()
         self.advanced_workflow_dialog = AdvancedWorkflowDialog(
             self,
             self.setup_panel_ctrl.sopGroup,
@@ -382,6 +387,23 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 background-color: {theme.BG_SECONDARY};
                 border-bottom: 1px solid {theme.BORDER_DEFAULT};
             }}
+            QWidget#workflowAnalysisHost {{
+                border-right: 1px solid {theme.BORDER_DEFAULT};
+            }}
+            QWidget#workflowSourceHost {{
+                border-right: 1px solid {theme.BORDER_DEFAULT};
+            }}
+            QWidget#workflowSourceStackHost {{
+                background-color: transparent;
+            }}
+            QLabel#workflowAnalysisLabel,
+            QLabel#workflowSourceLabel {{
+                color: {theme.TEXT_SECONDARY};
+                font-size: 11px;
+                font-weight: 700;
+                padding-right: 2px;
+                text-transform: uppercase;
+            }}
             QToolButton {{
                 background-color: {theme.BG_PRIMARY};
                 border: 1px solid {theme.BORDER_DEFAULT};
@@ -400,6 +422,41 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             }}
             QToolButton#workflowAdvancedBtn {{
                 color: #8250DF;
+            }}
+            QWidget#workflowBar QRadioButton {{
+                background-color: {theme.BG_PRIMARY};
+                border: 1px solid {theme.BORDER_DEFAULT};
+                border-radius: 5px;
+                color: {theme.TEXT_SECONDARY};
+                padding: 5px 8px;
+            }}
+            QWidget#workflowBar QRadioButton:hover {{
+                background-color: {theme.BG_HOVER};
+                color: {theme.TEXT_PRIMARY};
+            }}
+            QWidget#workflowBar QRadioButton:checked {{
+                background-color: #DAFBE1;
+                border-color: #4AC26B;
+                color: #1A7F37;
+                font-weight: 700;
+            }}
+            QWidget#workflowBar QRadioButton::indicator {{
+                width: 0px;
+                height: 0px;
+            }}
+            QWidget#workflowBar QLineEdit,
+            QWidget#workflowBar QComboBox,
+            QWidget#workflowBar QSpinBox {{
+                background-color: {theme.BG_PRIMARY};
+                border: 1px solid {theme.BORDER_DEFAULT};
+                border-radius: 5px;
+                color: {theme.TEXT_PRIMARY};
+                padding: 4px 8px;
+            }}
+            QWidget#workflowBar QLineEdit:focus,
+            QWidget#workflowBar QComboBox:focus,
+            QWidget#workflowBar QSpinBox:focus {{
+                border-color: {theme.ACCENT_BLUE};
             }}
             QWidget#setupHost {{
                 background-color: {theme.BG_SECONDARY};
@@ -450,6 +507,210 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     button.setCheckable(False)
                     button.setText("Advanced")
                     button.setToolTip("Open SOP and pipeline stage controls")
+
+    def _install_workflow_setup_controls(self) -> None:
+        """Move controller-owned setup controls into the top workflow bar."""
+        if getattr(self, "_workflow_setup_controls_installed", False):
+            return
+        setup_ctrl = getattr(self, "setup_panel_ctrl", None)
+        analysis_layout = getattr(self, "workflowAnalysisLayout", None)
+        source_layout = getattr(self, "workflowSourceLayout", None)
+        if setup_ctrl is None or analysis_layout is None or source_layout is None:
+            return
+
+        self._add_workflow_label(analysis_layout, "Analysis")
+        for button in (
+            setup_ctrl.sessileBtn,
+            setup_ctrl.pendantBtn,
+            setup_ctrl.oscillatingBtn,
+            setup_ctrl.capillaryBtn,
+            setup_ctrl.captiveBtn,
+        ):
+            if button is None:
+                continue
+            button.setParent(self.workflowBar)
+            button.setMinimumHeight(30)
+            button.setMaximumHeight(32)
+            button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+            analysis_layout.addWidget(button)
+
+        self._add_workflow_label(source_layout, "Source")
+        for button in (
+            setup_ctrl.singleModeRadio,
+            setup_ctrl.batchModeRadio,
+            setup_ctrl.cameraModeRadio,
+        ):
+            if button is None:
+                continue
+            button.setParent(self.workflowBar)
+            button.setMinimumHeight(30)
+            button.setMaximumHeight(32)
+            source_layout.addWidget(button)
+
+        source_stack_host = QWidget(self.workflowBar)
+        source_stack_host.setObjectName("workflowSourceStackHost")
+        source_stack_host.setMinimumHeight(32)
+        source_stack_host.setMaximumHeight(32)
+        source_stack_host.setFixedWidth(430)
+        source_stack_host.setSizePolicy(
+            QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed
+        )
+        source_stack = QStackedLayout(source_stack_host)
+        source_stack.setObjectName("workflowSourceStack")
+        source_stack.setContentsMargins(0, 0, 0, 0)
+
+        source_pages: dict[str, QWidget] = {}
+        source_page_layouts: dict[str, QHBoxLayout] = {}
+        for mode_name in (
+            setup_ctrl.MODE_SINGLE,
+            setup_ctrl.MODE_BATCH,
+            setup_ctrl.MODE_CAMERA,
+        ):
+            page = QWidget(source_stack_host)
+            page.setObjectName(f"workflowSource{mode_name.title()}Page")
+            page_layout = QHBoxLayout(page)
+            page_layout.setContentsMargins(0, 0, 0, 0)
+            page_layout.setSpacing(6)
+            source_stack.addWidget(page)
+            source_pages[mode_name] = page
+            source_page_layouts[mode_name] = page_layout
+
+        for widget, width in (
+            (setup_ctrl.imagePathEdit, 220),
+            (setup_ctrl.browseBtn, 34),
+            (setup_ctrl.batchPathEdit, 220),
+            (setup_ctrl.batchBrowseBtn, 34),
+            (setup_ctrl.sourceIdCombo, 160),
+            (setup_ctrl.framesSpin, 72),
+        ):
+            if widget is None:
+                continue
+            widget.setParent(self.workflowBar)
+            widget.setMinimumHeight(30)
+            widget.setMaximumHeight(32)
+            if width:
+                widget.setMinimumWidth(width)
+                widget.setMaximumWidth(width)
+            widget.show()
+
+        if setup_ctrl.imagePathEdit is not None:
+            source_page_layouts[setup_ctrl.MODE_SINGLE].addWidget(
+                setup_ctrl.imagePathEdit
+            )
+        if setup_ctrl.browseBtn is not None:
+            source_page_layouts[setup_ctrl.MODE_SINGLE].addWidget(setup_ctrl.browseBtn)
+        if setup_ctrl.batchPathEdit is not None:
+            source_page_layouts[setup_ctrl.MODE_BATCH].addWidget(
+                setup_ctrl.batchPathEdit
+            )
+        if setup_ctrl.batchBrowseBtn is not None:
+            source_page_layouts[setup_ctrl.MODE_BATCH].addWidget(
+                setup_ctrl.batchBrowseBtn
+            )
+        if setup_ctrl.framesSpin is not None:
+            source_page_layouts[setup_ctrl.MODE_CAMERA].addWidget(setup_ctrl.framesSpin)
+
+        source_layout.addWidget(source_stack_host)
+        self.workflowSourceStackHost = source_stack_host
+        self.workflowSourceStack = source_stack
+        self._workflow_source_pages = source_pages
+        self._workflow_source_page_layouts = source_page_layouts
+
+        for group_name in ("pipelineGroup", "sourceGroup"):
+            group = setup_ctrl.panel.findChild(QWidget, group_name)
+            if group is not None:
+                group.setVisible(False)
+
+        for label in (
+            setup_ctrl.labelImage,
+            setup_ctrl.labelBatch,
+            setup_ctrl.labelSourceId,
+            setup_ctrl.labelFrames,
+        ):
+            if label is not None:
+                label.setVisible(False)
+
+        setup_ctrl.set_workflow_source_stack_mode(True)
+        setup_ctrl.source_mode_changed.connect(self._sync_workflow_source_mode)
+        self._sync_workflow_source_mode(setup_ctrl.current_mode())
+        setup_ctrl._update_widget_states()
+        self._workflow_setup_controls_installed = True
+
+    def _sync_workflow_source_mode(self, mode: str) -> None:
+        """Switch the stable workflow source stack to match controller state."""
+        setup_ctrl = getattr(self, "setup_panel_ctrl", None)
+        stack = getattr(self, "workflowSourceStack", None)
+        pages = getattr(self, "_workflow_source_pages", {})
+        page_layouts = getattr(self, "_workflow_source_page_layouts", {})
+        if setup_ctrl is None or stack is None:
+            return
+        if mode not in pages:
+            mode = setup_ctrl.MODE_SINGLE
+
+        source_combo = getattr(setup_ctrl, "sourceIdCombo", None)
+        if source_combo is not None:
+            for layout in page_layouts.values():
+                layout.removeWidget(source_combo)
+            if mode == setup_ctrl.MODE_BATCH:
+                page_layouts[mode].insertWidget(2, source_combo)
+                source_combo.show()
+            elif mode == setup_ctrl.MODE_CAMERA:
+                page_layouts[mode].insertWidget(0, source_combo)
+                source_combo.show()
+            else:
+                source_combo.hide()
+                source_combo.setParent(self.workflowSourceStackHost)
+
+        stack.setCurrentWidget(pages[mode])
+        self.workflowSourceStackHost.updateGeometry()
+        self.workflowSourceHost.updateGeometry()
+        self.workflowBar.updateGeometry()
+        self._schedule_workflow_preview_refresh()
+
+    def _schedule_workflow_preview_refresh(self) -> None:
+        """Refresh preview mapping after workflow bar geometry settles."""
+        QTimer.singleShot(0, self._refresh_preview_after_workflow_layout_change)
+        QTimer.singleShot(40, self._refresh_preview_after_workflow_layout_change)
+
+    def _refresh_preview_after_workflow_layout_change(self) -> None:
+        for widget_name in (
+            "workflowBar",
+            "workflowSourceHost",
+            "workflowSourceStackHost",
+        ):
+            widget = getattr(self, widget_name, None)
+            if widget is not None:
+                widget.updateGeometry()
+                layout = widget.layout()
+                if layout is not None:
+                    layout.activate()
+
+        preview = getattr(self, "preview_panel", None)
+        image_view = getattr(preview, "image_view", None)
+        if image_view is None:
+            return
+        viewport = getattr(image_view, "viewport", None)
+        if callable(viewport):
+            viewport().update()
+        if getattr(image_view, "_mode", None) != "fit":
+            return
+        schedule_fit = getattr(image_view, "_schedule_fit_to_window", None)
+        if callable(schedule_fit):
+            schedule_fit()
+            return
+        fit = getattr(image_view, "fit_to_window", None)
+        if callable(fit):
+            fit()
+
+    def _add_workflow_label(self, layout: QLayout, text: str) -> None:
+        label = QLabel(text, self.workflowBar)
+        label.setObjectName(f"workflow{text}Label")
+        label.setStyleSheet(
+            f"color: {theme.TEXT_SECONDARY}; font-size: 11px; "
+            "font-weight: 700; letter-spacing: 0px;"
+        )
+        label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        layout.addWidget(label)
 
     def _wire_menu_actions(self):
         # Actions declared in main_window_split.ui

@@ -7,7 +7,7 @@ from menipy.gui.main_window import MainWindow
 from menipy.gui.controllers.setup_panel_controller import SetupPanelController
 from menipy.gui.views.image_view import DRAW_POINT, DRAW_LINE, DRAW_RECT
 from unittest.mock import Mock
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QPoint, Qt
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QListView, QSizePolicy
 
@@ -171,6 +171,108 @@ def test_setup_action_stack_order_and_labels(setup_panel_controller):
 def test_top_workflow_calibrate_and_run_buttons_removed(main_window):
     assert not hasattr(main_window, "workflowAutoCalibrateBtn")
     assert not hasattr(main_window, "actionRunBtn")
+
+
+def test_workflow_bar_owns_analysis_and_source_controls(main_window):
+    controller = main_window.setup_panel_ctrl
+
+    assert main_window.workflowAnalysisLayout.indexOf(controller.sessileBtn) >= 0
+    assert main_window.workflowAnalysisLayout.indexOf(controller.pendantBtn) >= 0
+    assert main_window.workflowSourceLayout.indexOf(controller.singleModeRadio) >= 0
+    assert (
+        main_window.workflowSourceLayout.indexOf(main_window.workflowSourceStackHost)
+        >= 0
+    )
+    assert main_window.workflowSourceLayout.indexOf(controller.imagePathEdit) == -1
+    assert (
+        main_window._workflow_source_page_layouts[controller.MODE_SINGLE].indexOf(
+            controller.imagePathEdit
+        )
+        >= 0
+    )
+    assert (
+        main_window._workflow_source_page_layouts[controller.MODE_SINGLE].indexOf(
+            controller.browseBtn
+        )
+        >= 0
+    )
+    assert controller.pipelineGroup is not None
+    assert controller.pipelineGroup.isHidden()
+    assert controller.sourceGroup is not None
+    assert controller.sourceGroup.isHidden()
+
+
+def _disconnect_camera_preview(main_window):
+    try:
+        main_window.setup_panel_ctrl.source_mode_changed.disconnect(
+            main_window.main_controller.camera_manager.on_source_mode_changed
+        )
+    except (AttributeError, RuntimeError, TypeError):
+        pass
+
+
+def test_workflow_source_stack_stays_stable_when_maximized(main_window, qtbot):
+    _disconnect_camera_preview(main_window)
+    controller = main_window.setup_panel_ctrl
+
+    main_window.resize(1500, 900)
+    main_window.showMaximized()
+    qtbot.wait(80)
+    initial_height = main_window.workflowBar.height()
+
+    for button, mode in (
+        (controller.singleModeRadio, controller.MODE_SINGLE),
+        (controller.batchModeRadio, controller.MODE_BATCH),
+        (controller.cameraModeRadio, controller.MODE_CAMERA),
+        (controller.singleModeRadio, controller.MODE_SINGLE),
+    ):
+        qtbot.mouseClick(button, Qt.LeftButton)
+        qtbot.wait(80)
+        assert main_window.workflowBar.height() == initial_height
+        assert (
+            main_window.workflowSourceStack.currentWidget()
+            is main_window._workflow_source_pages[mode]
+        )
+        assert main_window.workflowBar.width() <= main_window.width()
+
+    for button in (
+        main_window.actionExportCsvBtn,
+        main_window.workflowAdvancedBtn,
+        main_window.toggleSetupBtn,
+        main_window.toggleInspectBtn,
+        main_window.toggleKeyResultsBtn,
+    ):
+        assert button.isVisible()
+        right_edge = button.mapTo(main_window, button.rect().topRight()).x()
+        assert right_edge <= main_window.width()
+
+
+def test_preview_mapping_stays_inside_scene_after_source_toggles(main_window, qtbot):
+    _disconnect_camera_preview(main_window)
+    controller = main_window.setup_panel_ctrl
+    image_view = main_window.preview_panel.image_view
+    assert image_view is not None
+
+    img = QImage(1400, 900, QImage.Format_RGB32)
+    img.fill(Qt.black)
+    image_view.set_image(img)
+    image_view.fit_to_window()
+
+    main_window.resize(1500, 900)
+    main_window.showMaximized()
+    qtbot.wait(80)
+    for button in (
+        controller.batchModeRadio,
+        controller.cameraModeRadio,
+        controller.singleModeRadio,
+    ):
+        qtbot.mouseClick(button, Qt.LeftButton)
+        qtbot.wait(80)
+
+    viewport_center = image_view.viewport().rect().center()
+    scene_point = image_view.mapToScene(QPoint(viewport_center))
+    assert image_view.scene().sceneRect().contains(scene_point)
+    assert getattr(image_view, "_mode", None) == "fit"
 
 
 def test_database_buttons_are_drawn_and_noop(main_window, qtbot):

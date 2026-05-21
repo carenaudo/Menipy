@@ -104,12 +104,45 @@ NOTIFICATION_DISMISS_MS = 3000  # Auto-dismiss notification time
 # =============================================================================
 # Font Settings
 # =============================================================================
-FONT_FAMILY = "Segoe UI"  # Primary font (Windows)
+FONT_FAMILY_CANDIDATES = (
+    "Segoe UI",
+    "Helvetica Neue",
+    "Arial",
+    "Helvetica",
+    "Verdana",
+)
 FONT_SIZE_SMALL = 10
 FONT_SIZE_NORMAL = 12
 FONT_SIZE_LARGE = 14
 FONT_SIZE_HEADER = 18
 FONT_SIZE_TITLE = 24
+
+
+def resolve_font_family() -> str:
+    """Return the first preferred UI font available to the active Qt runtime."""
+    try:
+        from PySide6.QtWidgets import QApplication
+
+        app = QApplication.instance()
+        if app is None:
+            return "Arial"
+
+        from PySide6.QtGui import QFontDatabase
+
+        families = set(QFontDatabase.families())
+        for family in FONT_FAMILY_CANDIDATES:
+            if family in families:
+                return family
+
+        family = app.font().family()
+        if family:
+            return family
+    except Exception:
+        pass
+    return "Arial"
+
+
+FONT_FAMILY = resolve_font_family()
 
 
 def get_stylesheet() -> str:

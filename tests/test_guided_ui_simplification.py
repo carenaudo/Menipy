@@ -5,6 +5,7 @@ from pathlib import Path
 from unittest.mock import Mock
 
 from PySide6.QtCore import QFile
+from PySide6.QtGui import QFontDatabase
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import QMainWindow
 
@@ -133,11 +134,11 @@ def test_guided_setup_keeps_all_supported_analysis_buttons(qtbot):
     controller = _controller(qtbot)
 
     buttons = {
-        controller.sessileBtn.text(): "sessile",
-        controller.pendantBtn.text(): "pendant",
-        controller.oscillatingBtn.text(): "oscillating",
-        controller.capillaryBtn.text(): "capillary_rise",
-        controller.captiveBtn.text(): "captive_bubble",
+        controller.sessileBtn.toolTip(): "sessile",
+        controller.pendantBtn.toolTip(): "pendant",
+        controller.oscillatingBtn.toolTip(): "oscillating",
+        controller.capillaryBtn.toolTip(): "capillary_rise",
+        controller.captiveBtn.toolTip(): "captive_bubble",
     }
 
     assert buttons == {
@@ -147,6 +148,23 @@ def test_guided_setup_keeps_all_supported_analysis_buttons(qtbot):
         "Capillary": "capillary_rise",
         "Captive": "captive_bubble",
     }
+
+
+def test_guided_setup_analysis_buttons_show_text_only_when_selected(qtbot):
+    controller = _controller(qtbot)
+
+    assert controller.sessileBtn.isChecked()
+    assert controller.sessileBtn.text() == "Sessile"
+    assert controller.sessileBtn.icon().isNull()
+    assert controller.pendantBtn.text() == ""
+    assert not controller.pendantBtn.icon().isNull()
+
+    controller.pendantBtn.click()
+
+    assert controller.sessileBtn.text() == ""
+    assert not controller.sessileBtn.icon().isNull()
+    assert controller.pendantBtn.text() == "Pendant"
+    assert controller.pendantBtn.icon().isNull()
 
 
 def test_guided_setup_pipeline_specific_fields_follow_selection(qtbot):
@@ -196,6 +214,21 @@ def test_workbench_sizes_preserve_preview_dominant_saved_layout():
     assert _workbench_vertical_sizes(900, [640, 260]) == [640, 260]
 
 
+def test_theme_font_resolver_uses_available_candidate(qtbot, monkeypatch):
+    from menipy.gui import theme
+
+    available = QFontDatabase.families()
+    assert available
+    fallback_family = available[0]
+    monkeypatch.setattr(
+        theme,
+        "FONT_FAMILY_CANDIDATES",
+        ("Definitely Missing Menipy Font", fallback_family),
+    )
+
+    assert theme.resolve_font_family() == fallback_family
+
+
 def test_workbench_layout_xml_places_preview_above_results():
     tree = ET.parse("src/menipy/gui/views/main_window_split.ui")
     root = tree.getroot()
@@ -221,6 +254,27 @@ def test_workflow_bar_xml_removes_duplicate_calibrate_and_run_buttons():
 
     assert root.find(".//widget[@name='workflowAutoCalibrateBtn']") is None
     assert root.find(".//widget[@name='actionRunBtn']") is None
+
+
+def test_workflow_bar_xml_hosts_analysis_source_and_right_toggles():
+    tree = ET.parse("src/menipy/gui/views/main_window_split.ui")
+    root = tree.getroot()
+
+    assert root.find(".//widget[@name='workflowAnalysisHost']") is not None
+    assert root.find(".//layout[@name='workflowAnalysisLayout']") is not None
+    assert root.find(".//widget[@name='workflowSourceHost']") is not None
+    assert root.find(".//layout[@name='workflowSourceLayout']") is not None
+    assert root.find(".//widget[@name='workflowPanelToggleHost']") is not None
+
+    bar_layout = root.find(".//layout[@name='workflowBarLayout']")
+    assert bar_layout is not None
+    widget_names = [
+        widget.attrib.get("name")
+        for item in bar_layout.findall("item")
+        for widget in item.findall("widget")
+    ]
+    assert widget_names[:2] == ["workflowAnalysisHost", "workflowSourceHost"]
+    assert widget_names[-1] == "workflowPanelToggleHost"
 
 
 def test_menu_xml_order_and_config_actions():

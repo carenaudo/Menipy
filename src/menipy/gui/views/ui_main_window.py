@@ -149,35 +149,29 @@ class Ui_MainWindow(object):
         self.workflowBarLayout.setSpacing(8)
         self.workflowBarLayout.setObjectName("workflowBarLayout")
         self.workflowBarLayout.setContentsMargins(12, 8, 12, 8)
-        self.toggleSetupBtn = QToolButton(self.workflowBar)
-        self.toggleSetupBtn.setObjectName("toggleSetupBtn")
-        self.toggleSetupBtn.setCheckable(True)
-        self.toggleSetupBtn.setChecked(True)
-        self.toggleSetupBtn.setAutoRaise(True)
+        self.workflowAnalysisHost = QWidget(self.workflowBar)
+        self.workflowAnalysisHost.setObjectName("workflowAnalysisHost")
+        self.workflowAnalysisLayout = QHBoxLayout(self.workflowAnalysisHost)
+        self.workflowAnalysisLayout.setSpacing(6)
+        self.workflowAnalysisLayout.setObjectName("workflowAnalysisLayout")
+        self.workflowAnalysisLayout.setContentsMargins(0, 0, 12, 0)
 
-        self.workflowBarLayout.addWidget(self.toggleSetupBtn)
+        self.workflowBarLayout.addWidget(self.workflowAnalysisHost)
 
-        self.toggleInspectBtn = QToolButton(self.workflowBar)
-        self.toggleInspectBtn.setObjectName("toggleInspectBtn")
-        self.toggleInspectBtn.setCheckable(True)
-        self.toggleInspectBtn.setChecked(True)
-        self.toggleInspectBtn.setAutoRaise(True)
+        self.workflowSourceHost = QWidget(self.workflowBar)
+        self.workflowSourceHost.setObjectName("workflowSourceHost")
+        self.workflowSourceLayout = QHBoxLayout(self.workflowSourceHost)
+        self.workflowSourceLayout.setSpacing(6)
+        self.workflowSourceLayout.setObjectName("workflowSourceLayout")
+        self.workflowSourceLayout.setContentsMargins(12, 0, 12, 0)
 
-        self.workflowBarLayout.addWidget(self.toggleInspectBtn)
+        self.workflowBarLayout.addWidget(self.workflowSourceHost)
 
-        self.toggleKeyResultsBtn = QToolButton(self.workflowBar)
-        self.toggleKeyResultsBtn.setObjectName("toggleKeyResultsBtn")
-        self.toggleKeyResultsBtn.setCheckable(True)
-        self.toggleKeyResultsBtn.setChecked(True)
-        self.toggleKeyResultsBtn.setAutoRaise(True)
+        self.workflowSpacer = QSpacerItem(
+            40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
+        )
 
-        self.workflowBarLayout.addWidget(self.toggleKeyResultsBtn)
-
-        self.actionOpenImageBtn = QToolButton(self.workflowBar)
-        self.actionOpenImageBtn.setObjectName("actionOpenImageBtn")
-        self.actionOpenImageBtn.setAutoRaise(True)
-
-        self.workflowBarLayout.addWidget(self.actionOpenImageBtn)
+        self.workflowBarLayout.addItem(self.workflowSpacer)
 
         self.actionExportCsvBtn = QToolButton(self.workflowBar)
         self.actionExportCsvBtn.setObjectName("actionExportCsvBtn")
@@ -192,11 +186,37 @@ class Ui_MainWindow(object):
 
         self.workflowBarLayout.addWidget(self.workflowAdvancedBtn)
 
-        self.workflowSpacer = QSpacerItem(
-            40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
-        )
+        self.workflowPanelToggleHost = QWidget(self.workflowBar)
+        self.workflowPanelToggleHost.setObjectName("workflowPanelToggleHost")
+        self.workflowPanelToggleLayout = QHBoxLayout(self.workflowPanelToggleHost)
+        self.workflowPanelToggleLayout.setSpacing(4)
+        self.workflowPanelToggleLayout.setObjectName("workflowPanelToggleLayout")
+        self.workflowPanelToggleLayout.setContentsMargins(12, 0, 0, 0)
+        self.toggleSetupBtn = QToolButton(self.workflowPanelToggleHost)
+        self.toggleSetupBtn.setObjectName("toggleSetupBtn")
+        self.toggleSetupBtn.setCheckable(True)
+        self.toggleSetupBtn.setChecked(True)
+        self.toggleSetupBtn.setAutoRaise(True)
 
-        self.workflowBarLayout.addItem(self.workflowSpacer)
+        self.workflowPanelToggleLayout.addWidget(self.toggleSetupBtn)
+
+        self.toggleInspectBtn = QToolButton(self.workflowPanelToggleHost)
+        self.toggleInspectBtn.setObjectName("toggleInspectBtn")
+        self.toggleInspectBtn.setCheckable(True)
+        self.toggleInspectBtn.setChecked(True)
+        self.toggleInspectBtn.setAutoRaise(True)
+
+        self.workflowPanelToggleLayout.addWidget(self.toggleInspectBtn)
+
+        self.toggleKeyResultsBtn = QToolButton(self.workflowPanelToggleHost)
+        self.toggleKeyResultsBtn.setObjectName("toggleKeyResultsBtn")
+        self.toggleKeyResultsBtn.setCheckable(True)
+        self.toggleKeyResultsBtn.setChecked(True)
+        self.toggleKeyResultsBtn.setAutoRaise(True)
+
+        self.workflowPanelToggleLayout.addWidget(self.toggleKeyResultsBtn)
+
+        self.workflowBarLayout.addWidget(self.workflowPanelToggleHost)
 
         self.centralLayout.addWidget(self.workflowBar)
 
@@ -467,16 +487,6 @@ class Ui_MainWindow(object):
         self.toggleKeyResultsBtn.setText(
             QCoreApplication.translate("MainWindow", "Results", None)
         )
-        self.actionOpenImageBtn.setText(
-            QCoreApplication.translate("MainWindow", "Open Image", None)
-        )
-        # if QT_CONFIG(tooltip)
-        self.actionOpenImageBtn.setToolTip(
-            QCoreApplication.translate(
-                "MainWindow", "Load a single image into the active analysis", None
-            )
-        )
-        # endif // QT_CONFIG(tooltip)
         self.actionExportCsvBtn.setText(
             QCoreApplication.translate("MainWindow", "Export CSV", None)
         )

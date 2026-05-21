@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 from PySide6.QtCore import QCoreApplication, Qt, QResource
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QApplication, QMessageBox
 
 # Suppress noisy Qt SVG resource missing warnings for :/icons/* when resources aren't registered
@@ -92,6 +93,9 @@ def _install_exception_hook(app: QApplication):
 def _configure_qt(app: QApplication):
     # Optional: Fusion style for consistency across platforms
     app.setStyle("Fusion")
+    from menipy.gui import theme
+
+    app.setFont(QFont(theme.resolve_font_family(), theme.FONT_SIZE_NORMAL))
     # High-DPI friendly defaults
     QCoreApplication.setOrganizationName("Menipy")
     QCoreApplication.setApplicationName("Menipy GUI")

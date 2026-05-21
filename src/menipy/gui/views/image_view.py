@@ -624,9 +624,14 @@ class ImageView(QGraphicsView):
         QTimer.singleShot(0, self._run_scheduled_fit)
 
     def _run_scheduled_fit(self) -> None:
-        self._fit_resize_pending = False
-        if getattr(self, "_mode", None) == "fit" and self._pix_item:
-            self.fit_to_window()
+        try:
+            self._fit_resize_pending = False
+            if getattr(self, "_mode", None) == "fit" and self._pix_item:
+                self.fit_to_window()
+        except RuntimeError:
+            # Qt may deliver a queued resize/fit callback while the view is
+            # already being torn down in tests or during fast window closes.
+            return
 
     def _zoom_by(self, factor: float) -> None:
         if not self._pix_item:

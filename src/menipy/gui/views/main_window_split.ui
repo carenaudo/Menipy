@@ -87,38 +87,37 @@
        <property name="bottomMargin"><number>8</number></property>
        <property name="spacing"><number>8</number></property>
        <item>
-        <widget class="QToolButton" name="toggleSetupBtn">
-         <property name="toolTip"><string>Toggle setup rail</string></property>
-         <property name="text"><string>Setup</string></property>
-         <property name="checkable"><bool>true</bool></property>
-         <property name="checked"><bool>true</bool></property>
-         <property name="autoRaise"><bool>true</bool></property>
+        <widget class="QWidget" name="workflowAnalysisHost" native="true">
+         <layout class="QHBoxLayout" name="workflowAnalysisLayout">
+          <property name="leftMargin"><number>0</number></property>
+          <property name="topMargin"><number>0</number></property>
+          <property name="rightMargin"><number>12</number></property>
+          <property name="bottomMargin"><number>0</number></property>
+          <property name="spacing"><number>6</number></property>
+         </layout>
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="toggleInspectBtn">
-         <property name="toolTip"><string>Toggle results table</string></property>
-         <property name="text"><string>Table</string></property>
-         <property name="checkable"><bool>true</bool></property>
-         <property name="checked"><bool>true</bool></property>
-         <property name="autoRaise"><bool>true</bool></property>
+        <widget class="QWidget" name="workflowSourceHost" native="true">
+         <layout class="QHBoxLayout" name="workflowSourceLayout">
+          <property name="leftMargin"><number>12</number></property>
+          <property name="topMargin"><number>0</number></property>
+          <property name="rightMargin"><number>12</number></property>
+          <property name="bottomMargin"><number>0</number></property>
+          <property name="spacing"><number>6</number></property>
+         </layout>
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="toggleKeyResultsBtn">
-         <property name="toolTip"><string>Toggle key results panel</string></property>
-         <property name="text"><string>Results</string></property>
-         <property name="checkable"><bool>true</bool></property>
-         <property name="checked"><bool>true</bool></property>
-         <property name="autoRaise"><bool>true</bool></property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QToolButton" name="actionOpenImageBtn">
-         <property name="text"><string>Open Image</string></property>
-         <property name="toolTip"><string>Load a single image into the active analysis</string></property>
-         <property name="autoRaise"><bool>true</bool></property>
-        </widget>
+        <spacer name="workflowSpacer">
+         <property name="orientation"><enum>Qt::Horizontal</enum></property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
        </item>
        <item>
         <widget class="QToolButton" name="actionExportCsvBtn">
@@ -136,15 +135,42 @@
         </widget>
        </item>
        <item>
-        <spacer name="workflowSpacer">
-         <property name="orientation"><enum>Qt::Horizontal</enum></property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
+        <widget class="QWidget" name="workflowPanelToggleHost" native="true">
+         <layout class="QHBoxLayout" name="workflowPanelToggleLayout">
+          <property name="leftMargin"><number>12</number></property>
+          <property name="topMargin"><number>0</number></property>
+          <property name="rightMargin"><number>0</number></property>
+          <property name="bottomMargin"><number>0</number></property>
+          <property name="spacing"><number>4</number></property>
+          <item>
+           <widget class="QToolButton" name="toggleSetupBtn">
+            <property name="toolTip"><string>Toggle setup rail</string></property>
+            <property name="text"><string>Setup</string></property>
+            <property name="checkable"><bool>true</bool></property>
+            <property name="checked"><bool>true</bool></property>
+            <property name="autoRaise"><bool>true</bool></property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QToolButton" name="toggleInspectBtn">
+            <property name="toolTip"><string>Toggle results table</string></property>
+            <property name="text"><string>Table</string></property>
+            <property name="checkable"><bool>true</bool></property>
+            <property name="checked"><bool>true</bool></property>
+            <property name="autoRaise"><bool>true</bool></property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QToolButton" name="toggleKeyResultsBtn">
+            <property name="toolTip"><string>Toggle key results panel</string></property>
+            <property name="text"><string>Results</string></property>
+            <property name="checkable"><bool>true</bool></property>
+            <property name="checked"><bool>true</bool></property>
+            <property name="autoRaise"><bool>true</bool></property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
        </item>
       </layout>
      </widget>
