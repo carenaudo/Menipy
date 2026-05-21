@@ -127,14 +127,6 @@
         </widget>
        </item>
        <item>
-       <widget class="QToolButton" name="workflowAdvancedBtn">
-         <property name="text"><string>Advanced</string></property>
-         <property name="toolTip"><string>Open SOP and pipeline stage controls</string></property>
-         <property name="checkable"><bool>false</bool></property>
-         <property name="autoRaise"><bool>true</bool></property>
-        </widget>
-       </item>
-       <item>
         <widget class="QWidget" name="workflowPanelToggleHost" native="true">
          <layout class="QHBoxLayout" name="workflowPanelToggleLayout">
           <property name="leftMargin"><number>12</number></property>

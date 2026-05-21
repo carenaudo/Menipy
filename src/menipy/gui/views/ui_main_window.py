@@ -179,13 +179,6 @@ class Ui_MainWindow(object):
 
         self.workflowBarLayout.addWidget(self.actionExportCsvBtn)
 
-        self.workflowAdvancedBtn = QToolButton(self.workflowBar)
-        self.workflowAdvancedBtn.setObjectName("workflowAdvancedBtn")
-        self.workflowAdvancedBtn.setCheckable(False)
-        self.workflowAdvancedBtn.setAutoRaise(True)
-
-        self.workflowBarLayout.addWidget(self.workflowAdvancedBtn)
-
         self.workflowPanelToggleHost = QWidget(self.workflowBar)
         self.workflowPanelToggleHost.setObjectName("workflowPanelToggleHost")
         self.workflowPanelToggleLayout = QHBoxLayout(self.workflowPanelToggleHost)
@@ -494,16 +487,6 @@ class Ui_MainWindow(object):
         self.actionExportCsvBtn.setToolTip(
             QCoreApplication.translate(
                 "MainWindow", "Export the visible results table to CSV", None
-            )
-        )
-        # endif // QT_CONFIG(tooltip)
-        self.workflowAdvancedBtn.setText(
-            QCoreApplication.translate("MainWindow", "Advanced", None)
-        )
-        # if QT_CONFIG(tooltip)
-        self.workflowAdvancedBtn.setToolTip(
-            QCoreApplication.translate(
-                "MainWindow", "Open SOP and pipeline stage controls", None
             )
         )
         # endif // QT_CONFIG(tooltip)

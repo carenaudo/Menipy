@@ -171,6 +171,7 @@ def test_setup_action_stack_order_and_labels(setup_panel_controller):
 def test_top_workflow_calibrate_and_run_buttons_removed(main_window):
     assert not hasattr(main_window, "workflowAutoCalibrateBtn")
     assert not hasattr(main_window, "actionRunBtn")
+    assert not hasattr(main_window, "workflowAdvancedBtn")
 
 
 def test_workflow_bar_owns_analysis_and_source_controls(main_window):
@@ -178,15 +179,34 @@ def test_workflow_bar_owns_analysis_and_source_controls(main_window):
 
     assert main_window.workflowAnalysisLayout.indexOf(controller.sessileBtn) >= 0
     assert main_window.workflowAnalysisLayout.indexOf(controller.pendantBtn) >= 0
-    assert main_window.workflowSourceLayout.indexOf(controller.singleModeRadio) >= 0
+    assert main_window.workflowSourceLayout.indexOf(controller.singleModeRadio) == -1
+    assert (
+        main_window.workflowSourceLayout.indexOf(
+            main_window.workflowSourceModeButtons[controller.MODE_SINGLE]
+        )
+        >= 0
+    )
+    assert (
+        main_window.workflowSourceLayout.indexOf(
+            main_window.workflowSourceModeButtons[controller.MODE_BATCH]
+        )
+        >= 0
+    )
+    assert (
+        main_window.workflowSourceLayout.indexOf(
+            main_window.workflowSourceModeButtons[controller.MODE_CAMERA]
+        )
+        >= 0
+    )
     assert (
         main_window.workflowSourceLayout.indexOf(main_window.workflowSourceStackHost)
         >= 0
     )
     assert main_window.workflowSourceLayout.indexOf(controller.imagePathEdit) == -1
+    assert main_window.workflowSourceLayout.indexOf(controller.batchPathEdit) == -1
     assert (
         main_window._workflow_source_page_layouts[controller.MODE_SINGLE].indexOf(
-            controller.imagePathEdit
+            main_window.workflowImageDisplay
         )
         >= 0
     )
@@ -196,10 +216,78 @@ def test_workflow_bar_owns_analysis_and_source_controls(main_window):
         )
         >= 0
     )
+    assert controller.imagePathEdit.isHidden()
+    assert controller.batchPathEdit.isHidden()
     assert controller.pipelineGroup is not None
     assert controller.pipelineGroup.isHidden()
     assert controller.sourceGroup is not None
     assert controller.sourceGroup.isHidden()
+
+
+def test_workflow_source_mode_buttons_do_not_clip_when_narrow(main_window, qtbot):
+    controller = main_window.setup_panel_ctrl
+    main_window.resize(760, 700)
+    main_window.show()
+    qtbot.wait(80)
+
+    host = main_window.workflowSourceHost
+    widths = {button.width() for button in main_window.workflowSourceModeButtons.values()}
+    heights = {
+        button.height() for button in main_window.workflowSourceModeButtons.values()
+    }
+    assert len(widths) == 1
+    assert len(heights) == 1
+    for button in main_window.workflowSourceModeButtons.values():
+        assert 40 <= button.width() <= 42
+        assert button.height() == 32
+        assert button.iconSize().width() == 18
+        assert button.iconSize().height() == 18
+        assert button.iconSize().width() < button.width() - 8
+        assert button.iconSize().height() < button.height() - 8
+        left = button.mapTo(host, button.rect().topLeft()).x()
+        right = button.mapTo(host, button.rect().topRight()).x()
+        assert left >= 0
+        assert right <= host.width()
+
+    assert main_window.workflowSourceModeButtons[controller.MODE_SINGLE].isChecked()
+    qtbot.mouseClick(
+        main_window.workflowSourceModeButtons[controller.MODE_BATCH], Qt.LeftButton
+    )
+    qtbot.wait(20)
+    assert controller.current_mode() == controller.MODE_BATCH
+    assert main_window.workflowSourceModeButtons[controller.MODE_BATCH].isChecked()
+    assert not main_window.workflowSourceModeButtons[controller.MODE_SINGLE].isChecked()
+
+
+def test_workflow_source_displays_compact_names_and_keep_full_paths(
+    main_window, tmp_path
+):
+    controller = main_window.setup_panel_ctrl
+    image_path = tmp_path / "drop.png"
+    batch_dir = tmp_path / "batch images"
+    batch_image = batch_dir / "frame001.png"
+    image_path.write_bytes(b"not a real image")
+    batch_dir.mkdir()
+    batch_image.write_bytes(b"not a real image")
+
+    controller.set_image_path(str(image_path))
+    controller.set_batch_path(str(batch_dir))
+    main_window._sync_workflow_source_displays()
+
+    assert main_window.workflowImageDisplay.text() == "./drop.png"
+    assert main_window.workflowImageDisplay.toolTip() == str(image_path)
+    assert controller.image_path() == str(image_path)
+    assert controller.imagePathEdit.text() == str(image_path)
+
+    assert main_window.workflowBatchDisplay.text() == "./batch images"
+    assert main_window.workflowBatchDisplay.toolTip() == str(batch_dir)
+    assert controller.batch_path() == str(batch_dir)
+    assert controller.batchPathEdit.text() == str(batch_dir)
+
+    controller.batchModeRadio.click()
+    assert controller.sourceIdCombo.itemText(0) == "frame001.png"
+    assert controller.sourceIdCombo.itemData(0) == str(batch_image)
+    assert controller.gather_run_params()["image"] == str(batch_image)
 
 
 def _disconnect_camera_preview(main_window):
@@ -237,7 +325,6 @@ def test_workflow_source_stack_stays_stable_when_maximized(main_window, qtbot):
 
     for button in (
         main_window.actionExportCsvBtn,
-        main_window.workflowAdvancedBtn,
         main_window.toggleSetupBtn,
         main_window.toggleInspectBtn,
         main_window.toggleKeyResultsBtn,
@@ -313,15 +400,6 @@ def test_advanced_buttons_open_dialog_without_inline_expansion(main_window, qtbo
     assert not dialog.isVisible()
     assert not controller.sopGroup.isVisible()
     assert not controller.stepsGroup.isVisible()
-
-    qtbot.mouseClick(main_window.workflowAdvancedBtn, Qt.LeftButton)
-    qtbot.wait(20)
-    assert dialog.isVisible()
-
-    qtbot.mouseClick(main_window.workflowAdvancedBtn, Qt.LeftButton)
-    qtbot.wait(20)
-    assert controller.sopGroup.isVisible()
-    assert controller.stepsGroup.isVisible()
 
 
 def test_pipeline_combo_changes_pipeline(

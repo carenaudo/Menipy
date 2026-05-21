@@ -12,13 +12,16 @@ from PySide6.QtCore import QByteArray, QFile, Qt, QTimer
 from PySide6.QtGui import QAction, QCloseEvent
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import (
+    QAbstractButton,
     QHBoxLayout,
     QLabel,
     QLayout,
+    QLineEdit,
     QMainWindow,
     QPlainTextEdit,
     QSizePolicy,
     QStackedLayout,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -420,8 +423,23 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 border-color: {theme.ACCENT_BLUE};
                 color: {theme.ACCENT_BLUE};
             }}
-            QToolButton#workflowAdvancedBtn {{
-                color: #8250DF;
+            QWidget#workflowBar QToolButton[workflowSourceMode="true"] {{
+                min-width: 40px;
+                max-width: 40px;
+                min-height: 30px;
+                max-height: 30px;
+                padding: 0px;
+                background-color: {theme.BG_PRIMARY};
+                border: 1px solid {theme.BORDER_DEFAULT};
+                border-radius: 7px;
+            }}
+            QWidget#workflowBar QToolButton[workflowSourceMode="true"]:hover {{
+                background-color: {theme.BG_HOVER};
+            }}
+            QWidget#workflowBar QToolButton[workflowSourceMode="true"]:checked {{
+                background-color: #DAFBE1;
+                border-color: #4AC26B;
+                color: #1A7F37;
             }}
             QWidget#workflowBar QRadioButton {{
                 background-color: {theme.BG_PRIMARY};
@@ -497,16 +515,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         for button_name, icon_name in (
             ("actionOpenImageBtn", "file"),
             ("actionExportCsvBtn", "download"),
-            ("workflowAdvancedBtn", "settings"),
         ):
             button = getattr(self, button_name, None)
             if button:
                 set_button_icon(button, icon_name, size=16)
                 button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-                if button_name == "workflowAdvancedBtn":
-                    button.setCheckable(False)
-                    button.setText("Advanced")
-                    button.setToolTip("Open SOP and pipeline stage controls")
 
     def _install_workflow_setup_controls(self) -> None:
         """Move controller-owned setup controls into the top workflow bar."""
@@ -535,17 +548,36 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             analysis_layout.addWidget(button)
 
         self._add_workflow_label(source_layout, "Source")
-        for button in (
-            setup_ctrl.singleModeRadio,
-            setup_ctrl.batchModeRadio,
-            setup_ctrl.cameraModeRadio,
+        source_mode_buttons: dict[str, QToolButton] = {}
+        for mode_name, object_name, tooltip, icon_name, target_radio in (
+            (
+                setup_ctrl.MODE_SINGLE,
+                "workflowSingleSourceBtn",
+                "File",
+                "file",
+                setup_ctrl.singleModeRadio,
+            ),
+            (
+                setup_ctrl.MODE_BATCH,
+                "workflowBatchSourceBtn",
+                "Batch",
+                "batch",
+                setup_ctrl.batchModeRadio,
+            ),
+            (
+                setup_ctrl.MODE_CAMERA,
+                "workflowCameraSourceBtn",
+                "Camera",
+                "camera",
+                setup_ctrl.cameraModeRadio,
+            ),
         ):
-            if button is None:
-                continue
-            button.setParent(self.workflowBar)
-            button.setMinimumHeight(30)
-            button.setMaximumHeight(32)
+            button = self._create_workflow_source_mode_button(
+                object_name, tooltip, icon_name, target_radio
+            )
+            source_mode_buttons[mode_name] = button
             source_layout.addWidget(button)
+        self.workflowSourceModeButtons = source_mode_buttons
 
         source_stack_host = QWidget(self.workflowBar)
         source_stack_host.setObjectName("workflowSourceStackHost")
@@ -558,6 +590,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         source_stack = QStackedLayout(source_stack_host)
         source_stack.setObjectName("workflowSourceStack")
         source_stack.setContentsMargins(0, 0, 0, 0)
+        image_display = self._create_workflow_source_display("workflowImageDisplay")
+        batch_display = self._create_workflow_source_display("workflowBatchDisplay")
+        self.workflowImageDisplay = image_display
+        self.workflowBatchDisplay = batch_display
 
         source_pages: dict[str, QWidget] = {}
         source_page_layouts: dict[str, QHBoxLayout] = {}
@@ -576,9 +612,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             source_page_layouts[mode_name] = page_layout
 
         for widget, width in (
-            (setup_ctrl.imagePathEdit, 220),
             (setup_ctrl.browseBtn, 34),
-            (setup_ctrl.batchPathEdit, 220),
             (setup_ctrl.batchBrowseBtn, 34),
             (setup_ctrl.sourceIdCombo, 160),
             (setup_ctrl.framesSpin, 72),
@@ -594,15 +628,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             widget.show()
 
         if setup_ctrl.imagePathEdit is not None:
-            source_page_layouts[setup_ctrl.MODE_SINGLE].addWidget(
-                setup_ctrl.imagePathEdit
+            setup_ctrl.imagePathEdit.setParent(self.workflowBar)
+            setup_ctrl.imagePathEdit.hide()
+            setup_ctrl.imagePathEdit.textChanged.connect(
+                self._sync_workflow_source_displays
             )
+        source_page_layouts[setup_ctrl.MODE_SINGLE].addWidget(image_display)
         if setup_ctrl.browseBtn is not None:
             source_page_layouts[setup_ctrl.MODE_SINGLE].addWidget(setup_ctrl.browseBtn)
         if setup_ctrl.batchPathEdit is not None:
-            source_page_layouts[setup_ctrl.MODE_BATCH].addWidget(
-                setup_ctrl.batchPathEdit
+            setup_ctrl.batchPathEdit.setParent(self.workflowBar)
+            setup_ctrl.batchPathEdit.hide()
+            setup_ctrl.batchPathEdit.textChanged.connect(
+                self._sync_workflow_source_displays
             )
+        source_page_layouts[setup_ctrl.MODE_BATCH].addWidget(batch_display)
         if setup_ctrl.batchBrowseBtn is not None:
             source_page_layouts[setup_ctrl.MODE_BATCH].addWidget(
                 setup_ctrl.batchBrowseBtn
@@ -632,9 +672,86 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         setup_ctrl.set_workflow_source_stack_mode(True)
         setup_ctrl.source_mode_changed.connect(self._sync_workflow_source_mode)
+        if setup_ctrl.sourceIdCombo is not None:
+            setup_ctrl.sourceIdCombo.currentTextChanged.connect(
+                self._sync_workflow_source_displays
+            )
         self._sync_workflow_source_mode(setup_ctrl.current_mode())
+        self._sync_workflow_source_mode_buttons(setup_ctrl.current_mode())
         setup_ctrl._update_widget_states()
         self._workflow_setup_controls_installed = True
+
+    def _create_workflow_source_mode_button(
+        self,
+        object_name: str,
+        tooltip: str,
+        icon_name: str,
+        target_radio: QAbstractButton | None,
+    ) -> QToolButton:
+        button = QToolButton(self.workflowBar)
+        button.setObjectName(object_name)
+        button.setProperty("workflowSourceMode", True)
+        button.setAutoRaise(True)
+        button.setCheckable(True)
+        button.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        button.setFixedSize(40, 30)
+        button.setToolTip(tooltip)
+        set_button_icon(button, icon_name, size=18, clear_text=True)
+        if target_radio is not None:
+            button.clicked.connect(
+                lambda _checked=False, radio=target_radio: radio.click()
+            )
+        return button
+
+    def _sync_workflow_source_mode_buttons(self, mode: str) -> None:
+        buttons = getattr(self, "workflowSourceModeButtons", {})
+        for mode_name, button in buttons.items():
+            button.blockSignals(True)
+            try:
+                button.setChecked(mode_name == mode)
+            finally:
+                button.blockSignals(False)
+
+    def _create_workflow_source_display(self, object_name: str) -> QLineEdit:
+        display = QLineEdit(self.workflowBar)
+        display.setObjectName(object_name)
+        display.setReadOnly(True)
+        display.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        display.setMinimumHeight(30)
+        display.setMaximumHeight(32)
+        display.setMinimumWidth(220)
+        display.setMaximumWidth(220)
+        display.setPlaceholderText("./select source")
+        display.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        return display
+
+    def _compact_workflow_path(self, path: Optional[str]) -> str:
+        if not path:
+            return ""
+        name = Path(path).name or str(path)
+        return f"./{name}"
+
+    def _sync_workflow_source_displays(self, *_args) -> None:
+        setup_ctrl = getattr(self, "setup_panel_ctrl", None)
+        if setup_ctrl is None:
+            return
+
+        image_path = setup_ctrl.image_path()
+        image_display = getattr(self, "workflowImageDisplay", None)
+        if image_display is not None:
+            image_display.setText(self._compact_workflow_path(image_path))
+            image_display.setToolTip(image_path or "No image selected")
+
+        batch_path = setup_ctrl.batch_path()
+        batch_display = getattr(self, "workflowBatchDisplay", None)
+        if batch_display is not None:
+            batch_display.setText(self._compact_workflow_path(batch_path))
+            batch_display.setToolTip(batch_path or "No batch folder selected")
+
+        source_combo = getattr(setup_ctrl, "sourceIdCombo", None)
+        if source_combo is not None:
+            text = source_combo.currentText().strip()
+            source_combo.setToolTip(text or "No source selected")
 
     def _sync_workflow_source_mode(self, mode: str) -> None:
         """Switch the stable workflow source stack to match controller state."""
@@ -646,6 +763,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return
         if mode not in pages:
             mode = setup_ctrl.MODE_SINGLE
+        self._sync_workflow_source_mode_buttons(mode)
 
         source_combo = getattr(setup_ctrl, "sourceIdCombo", None)
         if source_combo is not None:
@@ -662,6 +780,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 source_combo.setParent(self.workflowSourceStackHost)
 
         stack.setCurrentWidget(pages[mode])
+        self._sync_workflow_source_displays()
         self.workflowSourceStackHost.updateGeometry()
         self.workflowSourceHost.updateGeometry()
         self.workflowBar.updateGeometry()
@@ -784,17 +903,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             except Exception:
                 pass
 
-        advanced = getattr(self, "workflowAdvancedBtn", None)
-        if advanced:
-            try:
-                advanced.setCheckable(False)
-                advanced.setText("Advanced")
-                advanced.clicked.connect(
-                    lambda _checked=False: self._show_advanced_dialog()
-                )
-            except Exception:
-                pass
-
     def _set_guided_advanced_visible(self, visible: bool, save: bool = True) -> None:
         if visible:
             self._show_advanced_dialog()
@@ -802,14 +910,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self._sync_advanced_buttons()
 
     def _sync_advanced_buttons(self) -> None:
-        advanced = getattr(self, "workflowAdvancedBtn", None)
-        if advanced:
-            advanced.blockSignals(True)
-            advanced.setCheckable(False)
-            advanced.setChecked(False)
-            advanced.setText("Advanced")
-            advanced.blockSignals(False)
-
         setup_ctrl = getattr(self, "setup_panel_ctrl", None)
         if setup_ctrl and hasattr(setup_ctrl, "set_advanced_visible"):
             setup_ctrl.set_advanced_visible(False, save=False)

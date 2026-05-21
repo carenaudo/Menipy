@@ -254,6 +254,7 @@ def test_workflow_bar_xml_removes_duplicate_calibrate_and_run_buttons():
 
     assert root.find(".//widget[@name='workflowAutoCalibrateBtn']") is None
     assert root.find(".//widget[@name='actionRunBtn']") is None
+    assert root.find(".//widget[@name='workflowAdvancedBtn']") is None
 
 
 def test_workflow_bar_xml_hosts_analysis_source_and_right_toggles():
