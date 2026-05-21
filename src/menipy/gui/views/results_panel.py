@@ -25,7 +25,7 @@ from PySide6.QtWidgets import (
 
 from menipy.common.units import convert_from_si
 from menipy.gui.controllers.pipeline_ui_manager import PipelineUIManager
-from menipy.gui.icon_loader import load_icon, set_button_icon
+from menipy.gui.helpers.icon_loader import load_icon, set_button_icon
 from menipy.gui.services.settings_service import AppSettings
 from menipy.models.results import MeasurementResult, get_results_history
 

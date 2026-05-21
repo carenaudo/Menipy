@@ -3,7 +3,7 @@
 Unit tests."""
 
 import pytest
-from menipy.gui.main_window import MainWindow
+from menipy.gui.views.main_window import MainWindow
 from menipy.gui.controllers.setup_panel_controller import SetupPanelController
 from menipy.gui.views.image_view import DRAW_POINT, DRAW_LINE, DRAW_RECT
 from unittest.mock import Mock

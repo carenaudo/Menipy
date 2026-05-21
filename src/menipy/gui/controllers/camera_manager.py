@@ -15,7 +15,7 @@ from PySide6.QtCore import QObject, Signal, Slot
 if TYPE_CHECKING:
     from menipy.gui.services.camera_service import CameraController, CameraConfig
     from menipy.gui.controllers.setup_panel_controller import SetupPanelController
-    from menipy.gui.panels.preview_panel import PreviewPanel
+    from menipy.gui.views.preview_panel import PreviewPanel
     from PySide6.QtWidgets import QMainWindow
 
 logger = logging.getLogger(__name__)

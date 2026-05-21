@@ -6,8 +6,8 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QMessageBox
 
-from menipy.gui import main_window as main_window_module
-from menipy.gui.panels import results_panel as results_panel_module
+from menipy.gui.views import main_window as main_window_module
+from menipy.gui.views import results_panel as results_panel_module
 
 
 class FakeHistory:

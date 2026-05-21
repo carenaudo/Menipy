@@ -21,7 +21,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from menipy.gui.icon_loader import load_icon, set_button_icon
+from menipy.gui.helpers.icon_loader import load_icon, set_button_icon
 
 LAYER_DEFAULTS = {
     "contour": True,

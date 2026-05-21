@@ -25,7 +25,7 @@ from PySide6.QtWidgets import (
 )
 
 from menipy.gui.controllers.sop_controller import SopController
-from menipy.gui.icon_loader import set_button_icon
+from menipy.gui.helpers.icon_loader import set_button_icon
 from menipy.gui.views.image_view import DRAW_LINE, DRAW_POINT, DRAW_RECT
 
 try:

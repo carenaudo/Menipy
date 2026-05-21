@@ -8,7 +8,7 @@ from PySide6.QtCore import QFile
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import QCheckBox
 
-from menipy.gui.panels.preview_panel import PreviewPanel
+from menipy.gui.views.preview_panel import PreviewPanel
 from menipy.gui.views.image_view import ImageView
 
 

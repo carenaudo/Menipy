@@ -128,7 +128,7 @@ def main(argv: list[str] | None = None) -> int:
     _configure_qt(app)
 
     # Import here so resources (:/views/...) are registered first
-    from .main_window import MainWindow
+    from .views.main_window import MainWindow
 
     w = MainWindow()
     w.resize(1200, 800)

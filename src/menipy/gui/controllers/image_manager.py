@@ -17,9 +17,9 @@ from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QFileDialog
 
 if TYPE_CHECKING:
-    from menipy.gui.main_window import MainWindow
+    from menipy.gui.views.main_window import MainWindow
     from menipy.gui.controllers.setup_panel_controller import SetupPanelController
-    from menipy.gui.panels.preview_panel import PreviewPanel
+    from menipy.gui.views.preview_panel import PreviewPanel
 
 logger = logging.getLogger(__name__)
 

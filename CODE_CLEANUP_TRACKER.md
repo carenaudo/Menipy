@@ -110,11 +110,22 @@ Progress on baseline alignment:
 
 Important: this section is static-analysis output and may include false positives where dynamic imports are used.
 
-### A) High-confidence candidates (legacy/empty or no direct import hits)
+### A) High-confidence candidates (legacy/empty, no direct import hits, or officially decommissioned)
 
 - src/menipy/common/zold_detection.py (archived and removed from active tree)
 - src/menipy/gui/zold_drawing_alt.py (archived and removed from active tree)
 - src/menipy/gui/mainwindow.py (compatibility shim; no current imports found)
+- **ADSA Experiment-Selector Workflow** (officially decommissioned and marked for removal):
+  - src/menipy/gui/adsa_app.py (selector entry point)
+  - src/menipy/gui/views/adsa_main_window.py (obsolete multi-stage main view)
+  - src/menipy/gui/views/experiment_selector.py (unused grid selector container)
+  - src/menipy/gui/views/sessile_drop_window.py (unused three-pane sessile view)
+  - src/menipy/gui/views/pendant_drop_window.py (unused pendant view)
+  - src/menipy/gui/views/tilted_sessile_window.py (unused tilted sessile view)
+  - src/menipy/gui/views/base_experiment_window.py (obsolete window base class)
+  - src/menipy/gui/widgets/experiment_card.py (unused click cards widget)
+  - src/menipy/gui/widgets/pendant_results_widget.py (unused results panel)
+  - src/menipy/gui/widgets/tilted_sessile_results_widget.py (unused results panel)
 
 Archive location for removed low-risk files:
 - archive/2026-05-cleanup/src/menipy/common/zold_detection.py
@@ -137,7 +148,6 @@ Additional triage completed:
 - src/menipy/common/overlay.py
 - src/menipy/common/physics.py
 - src/menipy/common/scaling.py
-- src/menipy/gui/adsa_app.py
 - src/menipy/gui/dialogs/analysis_settings/__init__.py
 - src/menipy/gui/dialogs/analysis_settings/captive_bubble_settings.py
 - src/menipy/gui/dialogs/analysis_settings/pendant_settings.py
@@ -223,12 +233,12 @@ For each file in "Unreferenced module candidates":
 - [x] Baseline tests captured before first deletion
 - [x] GUI auto-calibration baseline documented for needle/drop
 - [x] Low-risk dead code archived/removed
-- [ ] Unreferenced candidate modules triaged one by one
+- [x] Unreferenced candidate modules triaged one by one
 - [x] First duplicate pair refactored with tests (detect_drop + preproc_detect_drop)
 - [x] Second duplicate pair refactored with tests (detect_needle + preproc_detect_needle)
-- [ ] Full verification complete
-- [ ] Tracker finalized (kept vs removed decisions)
+- [x] Full verification complete
+- [x] Tracker finalized (kept vs removed decisions)
 
 ---
 
-_Last updated: May 19, 2026_
+_Last updated: May 21, 2026_

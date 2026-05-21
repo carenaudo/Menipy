@@ -25,11 +25,11 @@ from menipy.gui.controllers.overlay_manager import OverlayManager
 from menipy.gui.controllers.image_manager import ImageManager
 
 if TYPE_CHECKING:
-    from menipy.gui.main_window import MainWindow
+    from menipy.gui.views.main_window import MainWindow
     from menipy.gui.controllers.pipeline_controller import PipelineController
     from menipy.gui.controllers.setup_panel_controller import SetupPanelController
-    from menipy.gui.panels.preview_panel import PreviewPanel
-    from menipy.gui.panels.results_panel import ResultsPanel
+    from menipy.gui.views.preview_panel import PreviewPanel
+    from menipy.gui.views.results_panel import ResultsPanel
     from menipy.gui.services.camera_service import CameraController
 
 

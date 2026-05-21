@@ -10,7 +10,7 @@ from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import QMainWindow
 
 from menipy.gui.controllers.setup_panel_controller import SetupPanelController
-from menipy.gui.main_window import _workbench_root_sizes, _workbench_vertical_sizes
+from menipy.gui.views.main_window import _workbench_root_sizes, _workbench_vertical_sizes
 
 
 class DummySettings:

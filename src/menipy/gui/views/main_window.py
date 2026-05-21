@@ -38,10 +38,10 @@ from menipy.gui.controllers.preprocessing_controller import (
 from menipy.gui.controllers.setup_panel_controller import SetupPanelController
 from menipy.gui.dialogs.advanced_workflow_dialog import AdvancedWorkflowDialog
 from menipy.gui.helpers.image_marking import ImageMarkerHelper
-from menipy.gui.icon_loader import set_button_icon
-from menipy.gui.logging_bridge import install_qt_logging
-from menipy.gui.panels.preview_panel import PreviewPanel
-from menipy.gui.panels.results_panel import ResultsPanel
+from menipy.gui.helpers.icon_loader import set_button_icon
+from menipy.gui.helpers.logging_bridge import install_qt_logging
+from menipy.gui.views.preview_panel import PreviewPanel
+from menipy.gui.views.results_panel import ResultsPanel
 from menipy.gui.services.camera_service import CameraConfig, CameraController
 from menipy.gui.views.image_view import DRAW_NONE
 from menipy.gui.views.ui_main_window import Ui_MainWindow
@@ -93,13 +93,13 @@ def _preview_dominant_sizes(
 
 # --- promoted preview widget (registered into QUiLoader) ---
 try:
-    from .views.image_view import ImageView
+    from .image_view import ImageView
 except Exception:  # keep app booting even if file missing during refactors
     ImageView = None  # type: ignore
 
 # --- optional step row & SOP service (guarded) ---
 try:
-    from .views.step_item_widget import StepItemWidget
+    from .step_item_widget import StepItemWidget
 except Exception:
     StepItemWidget = None  # type: ignore
 
@@ -136,7 +136,7 @@ except Exception:
     RunViewModel = None  # type: ignore
     PipelineRunner = None  # type: ignore
 
-from menipy.gui.main_controller import MainController
+from menipy.gui.controllers.main_controller import MainController
 
 # default stage order for SOPs / step list
 STAGE_ORDER: List[str] = [
@@ -178,7 +178,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             f = QFile(res_path)
             if not f.exists():
                 f = QFile(
-                    str(Path(__file__).resolve().parent / "views" / fallback_filename)
+                    str(Path(__file__).resolve().parent / fallback_filename)
                 )
             f.open(QFile.ReadOnly)
             w = loader.load(f, self)

@@ -15,7 +15,7 @@ from PySide6.QtGui import QColor
 from menipy.gui.controllers.preprocessing_controller import (
     PreprocessingPipelineController,
 )
-from menipy.gui.panels.preview_panel import PreviewPanel
+from menipy.gui.views.preview_panel import PreviewPanel
 
 logger = logging.getLogger(__name__)
 
