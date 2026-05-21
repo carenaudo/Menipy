@@ -110,6 +110,7 @@ class Context(BaseModel):
     centers_px: Optional[list] = None
     r0_eq_px: Optional[float] = None
     pendant_approximation_methods: Optional[list[str]] = None
+    pendant_approximator_settings: Optional[Dict[str, Dict[str, Any]]] = None
     c0_xy: Optional[Tuple[float, float]] = None
     h_px: Optional[float] = None
     _sessile_metrics: Optional[Dict[str, Any]] = None

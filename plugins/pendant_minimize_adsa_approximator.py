@@ -7,12 +7,20 @@ The droplet-needle bridge is excluded by construction.
 
 from __future__ import annotations
 
+import importlib
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
+from pydantic import BaseModel, ConfigDict, Field
 from scipy.optimize import minimize
 from scipy.spatial import KDTree
+
+_plugin_settings: Any = cast(Any, None)
+try:
+    _plugin_settings = importlib.import_module("menipy.common.plugin_settings")
+except Exception:
+    pass
 
 from menipy.common.registry import register_pendant_approximator
 from menipy.models.surface_tension import surface_tension
@@ -30,6 +38,77 @@ class _ArcData:
     px_per_mm: float
     snap_left_px: float
     snap_right_px: float
+    contact_y_min_px: float
+
+
+class MinimizeADSASettings(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    maxiter: int = Field(300, ge=1)
+    ftol: float = Field(1e-9, ge=0.0)
+    gtol: float = Field(1e-6, ge=0.0)
+    robust_clip_enabled: bool = True
+    robust_clip_mad_factor: float = Field(3.0, ge=0.0)
+    regularization_weight: float = Field(1e-4, ge=0.0)
+
+    resample_points_per_side: int = Field(120, ge=20)
+    min_points_per_side: int = Field(40, ge=3)
+    contact_y_margin_px: float = Field(1.0, ge=0.0)
+    contact_snap_min_px: float = Field(4.0, ge=0.0)
+    contact_snap_diag_fraction: float = Field(0.02, ge=0.0)
+    apex_side_min_dx_px: float = Field(1.0, ge=0.0)
+
+    monotone_window_fraction: float = Field(0.10, ge=0.01, le=0.50)
+    monotone_drop_tolerance_px: float = Field(0.5, ge=0.0)
+
+    bound_min_offset_mm: float = Field(0.5, ge=0.0)
+    bound_offset_fraction: float = Field(0.2, ge=0.0)
+
+
+def _default_settings() -> MinimizeADSASettings:
+    return MinimizeADSASettings(
+        maxiter=300,
+        ftol=1e-9,
+        gtol=1e-6,
+        robust_clip_enabled=True,
+        robust_clip_mad_factor=3.0,
+        regularization_weight=1e-4,
+        resample_points_per_side=120,
+        min_points_per_side=40,
+        contact_y_margin_px=1.0,
+        contact_snap_min_px=4.0,
+        contact_snap_diag_fraction=0.02,
+        apex_side_min_dx_px=1.0,
+        monotone_window_fraction=0.10,
+        monotone_drop_tolerance_px=0.5,
+        bound_min_offset_mm=0.5,
+        bound_offset_fraction=0.2,
+    )
+
+
+if _plugin_settings is not None:
+    _plugin_settings.register_detector_settings("minimize_adsa", MinimizeADSASettings)
+
+
+def _resolve_settings(ctx: Any) -> MinimizeADSASettings:
+    raw_all = getattr(ctx, "pendant_approximator_settings", {}) or {}
+    raw_method: dict[str, Any] = {}
+    if isinstance(raw_all, dict):
+        candidate = raw_all.get("minimize_adsa")
+        if isinstance(candidate, dict):
+            raw_method = dict(candidate)
+
+    if _plugin_settings is not None:
+        try:
+            resolved = _plugin_settings.resolve_plugin_settings("minimize_adsa", raw_method)
+            return MinimizeADSASettings(**resolved)
+        except Exception:
+            pass
+
+    try:
+        return MinimizeADSASettings(**raw_method)
+    except Exception:
+        return _default_settings()
 
 
 def _normalize_contour_xy(contour: object) -> np.ndarray:
@@ -100,17 +179,22 @@ def _backward_path(start: int, end: int, n: int) -> np.ndarray:
     return path[::-1]
 
 
-def _path_quality(path_idx: np.ndarray, xy: np.ndarray, apex_xy: np.ndarray) -> float:
+def _path_quality(
+    path_idx: np.ndarray,
+    xy: np.ndarray,
+    apex_xy: np.ndarray,
+    settings: MinimizeADSASettings,
+) -> float:
     if path_idx.size < 5:
         return -1.0
     pts = xy[path_idx]
     radial = np.abs(pts[:, 0] - float(apex_xy[0]))
-    k = max(5, int(np.ceil(0.1 * radial.size)))
+    k = max(5, int(np.ceil(settings.monotone_window_fraction * radial.size)))
     k = min(k, radial.size)
     dr = np.diff(radial[:k])
     if dr.size == 0:
         return -1.0
-    monotone_ratio = float(np.mean(dr >= -0.5))
+    monotone_ratio = float(np.mean(dr >= -settings.monotone_drop_tolerance_px))
     span = float(np.max(radial[:k]) - np.min(radial[:k]))
     return monotone_ratio + 0.1 * span
 
@@ -120,6 +204,7 @@ def _choose_side_path(
     i_contact: int,
     i_other_contact: int,
     xy: np.ndarray,
+    settings: MinimizeADSASettings,
 ) -> np.ndarray:
     n = xy.shape[0]
     candidates = [
@@ -133,7 +218,7 @@ def _choose_side_path(
             continue
         if int(i_other_contact) in set(p[1:-1].tolist()):
             continue
-        q = _path_quality(p, xy, xy[i_apex])
+        q = _path_quality(p, xy, xy[i_apex], settings)
         valid.append((q, p))
 
     if not valid:
@@ -157,7 +242,7 @@ def _resample_arc(arc_xy: np.ndarray, n_points: int) -> np.ndarray:
     return np.column_stack([x, y])
 
 
-def _extract_side_arcs(ctx: Any) -> _ArcData | None:
+def _extract_side_arcs(ctx: Any, settings: MinimizeADSASettings) -> _ArcData | None:
     contour_obj = getattr(ctx, "contour", None)
     contour_xy = None
     if contour_obj is not None and getattr(contour_obj, "xy", None) is not None:
@@ -193,33 +278,48 @@ def _extract_side_arcs(ctx: Any) -> _ArcData | None:
 
     bbox = np.ptp(xy, axis=0)
     diag = float(np.hypot(float(bbox[0]), float(bbox[1])))
-    snap_max = max(4.0, 0.02 * diag)
+    snap_max = max(settings.contact_snap_min_px, settings.contact_snap_diag_fraction * diag)
 
-    i_left, snap_left = _nearest_index(xy, c_left_raw)
-    i_right, snap_right = _nearest_index(xy, c_right_raw)
+    # Search only in the contour body (skip prepended contact copies at indices 0 and 1).
+    # If we search the full array, the prepended copies land at indices 0 and 1, causing the
+    # backward path from apex→left_contact to pass through the right_contact (index 1) and
+    # be excluded — leaving only the wrong forward path that traverses the opposite side.
+    body_offset = min(2, xy.shape[0] - 1)
+    body_xy = xy[body_offset:]
+    i_left_body, snap_left = _nearest_index(body_xy, c_left_raw)
+    i_right_body, snap_right = _nearest_index(body_xy, c_right_raw)
+    i_left = i_left_body + body_offset
+    i_right = i_right_body + body_offset
     if snap_left > snap_max or snap_right > snap_max:
         return None
 
-    if not (xy[i_left, 0] < apex_xy[0] - 1.0 and xy[i_right, 0] > apex_xy[0] + 1.0):
+    if not (
+        xy[i_left, 0] < apex_xy[0] - settings.apex_side_min_dx_px
+        and xy[i_right, 0] > apex_xy[0] + settings.apex_side_min_dx_px
+    ):
         return None
 
-    left_path_idx = _choose_side_path(i_apex, i_left, i_right, xy)
-    right_path_idx = _choose_side_path(i_apex, i_right, i_left, xy)
+    left_path_idx = _choose_side_path(i_apex, i_left, i_right, xy, settings)
+    right_path_idx = _choose_side_path(i_apex, i_right, i_left, xy, settings)
     if left_path_idx.size < 3 or right_path_idx.size < 3:
         return None
 
     left_arc = xy[left_path_idx]
     right_arc = xy[right_path_idx]
 
-    y_cut = min(float(xy[i_left, 1]), float(xy[i_right, 1])) - 1.0
+    contact_y_min = min(float(xy[i_left, 1]), float(xy[i_right, 1]))
+    y_cut = contact_y_min - settings.contact_y_margin_px
     left_arc = left_arc[left_arc[:, 1] >= y_cut]
     right_arc = right_arc[right_arc[:, 1] >= y_cut]
     if left_arc.shape[0] < 3 or right_arc.shape[0] < 3:
         return None
 
-    left_arc = _resample_arc(left_arc, 120)
-    right_arc = _resample_arc(right_arc, 120)
-    if left_arc.shape[0] < 40 or right_arc.shape[0] < 40:
+    left_arc = _resample_arc(left_arc, settings.resample_points_per_side)
+    right_arc = _resample_arc(right_arc, settings.resample_points_per_side)
+    if (
+        left_arc.shape[0] < settings.min_points_per_side
+        or right_arc.shape[0] < settings.min_points_per_side
+    ):
         return None
 
     geometry = getattr(ctx, "geometry", None)
@@ -241,6 +341,7 @@ def _extract_side_arcs(ctx: Any) -> _ArcData | None:
         px_per_mm=px_per_mm,
         snap_left_px=snap_left,
         snap_right_px=snap_right,
+        contact_y_min_px=contact_y_min,
     )
 
 
@@ -299,6 +400,7 @@ def _objective(
     left_mm: np.ndarray,
     right_mm: np.ndarray,
     target_height_mm: float,
+    settings: MinimizeADSASettings,
 ) -> float:
     r0_mm, beta, x_off, z_off = params
     if r0_mm <= 0.0 or beta <= 0.0:
@@ -332,22 +434,31 @@ def _objective(
         d = np.asarray(d, dtype=float)
         if d.size == 0:
             return 1e6
-        med = float(np.median(d))
-        mad = float(np.median(np.abs(d - med))) + 1e-9
-        clip = med + 3.0 * 1.4826 * mad
-        d = np.minimum(d, clip)
+        if settings.robust_clip_enabled:
+            med = float(np.median(d))
+            mad = float(np.median(np.abs(d - med))) + 1e-9
+            clip = med + settings.robust_clip_mad_factor * 1.4826 * mad
+            d = np.minimum(d, clip)
         return float(np.mean(d**2))
 
-    reg = 1e-4 * (x_off**2 + z_off**2)
+    reg = settings.regularization_weight * (x_off**2 + z_off**2)
     return 0.5 * robust_mse(dl) + 0.5 * robust_mse(dr) + reg
 
 
 def minimize_adsa(ctx: Any, profile_mm: np.ndarray, physics: dict[str, Any]) -> dict[str, Any]:
     """Fit pendant side arcs with a minimize-based ADSA fallback."""
     prefix = "approx_minimize_adsa"
-    arc = _extract_side_arcs(ctx)
+    settings = _resolve_settings(ctx)
+    arc = _extract_side_arcs(ctx, settings)
     if arc is None:
-        return {f"{prefix}_status": "invalid_contact_geometry"}
+        return {
+            f"{prefix}_status": "invalid_contact_geometry",
+            f"{prefix}_config_maxiter": int(settings.maxiter),
+            f"{prefix}_config_robust_clip_enabled": bool(settings.robust_clip_enabled),
+            f"{prefix}_config_robust_clip_mad_factor": float(
+                settings.robust_clip_mad_factor
+            ),
+        }
 
     left_mm = _to_model_mm(arc.left_px, arc)
     right_mm = _to_model_mm(arc.right_px, arc)
@@ -360,17 +471,27 @@ def minimize_adsa(ctx: Any, profile_mm: np.ndarray, physics: dict[str, Any]) -> 
     bounds = [
         (0.02, max(20.0, 3.0 * max(width_mm, height_mm, r0_seed))),
         (1e-3, 5.0),
-        (-max(0.5, 0.2 * width_mm), max(0.5, 0.2 * width_mm)),
-        (-max(0.5, 0.2 * height_mm), max(0.5, 0.2 * height_mm)),
+        (
+            -max(settings.bound_min_offset_mm, settings.bound_offset_fraction * width_mm),
+            max(settings.bound_min_offset_mm, settings.bound_offset_fraction * width_mm),
+        ),
+        (
+            -max(settings.bound_min_offset_mm, settings.bound_offset_fraction * height_mm),
+            max(settings.bound_min_offset_mm, settings.bound_offset_fraction * height_mm),
+        ),
     ]
 
     res = minimize(
         _objective,
         x0=x0,
-        args=(left_mm, right_mm, height_mm),
+        args=(left_mm, right_mm, height_mm, settings),
         method="L-BFGS-B",
         bounds=bounds,
-        options={"maxiter": 300},
+        options={
+            "maxiter": int(settings.maxiter),
+            "ftol": float(settings.ftol),
+            "gtol": float(settings.gtol),
+        },
     )
 
     if (not bool(res.success)) or (not np.all(np.isfinite(res.x))):
@@ -387,7 +508,15 @@ def minimize_adsa(ctx: Any, profile_mm: np.ndarray, physics: dict[str, Any]) -> 
             f"{prefix}_n_right": int(right_mm.shape[0]),
             f"{prefix}_contact_snap_px_left": float(arc.snap_left_px),
             f"{prefix}_contact_snap_px_right": float(arc.snap_right_px),
+            f"{prefix}_arc_min_y_px_left": float(np.min(arc.left_px[:, 1])),
+            f"{prefix}_arc_min_y_px_right": float(np.min(arc.right_px[:, 1])),
+            f"{prefix}_contact_y_min_px": float(arc.contact_y_min_px),
             f"{prefix}_arc_quality_status": "invalid",
+            f"{prefix}_config_maxiter": int(settings.maxiter),
+            f"{prefix}_config_robust_clip_enabled": bool(settings.robust_clip_enabled),
+            f"{prefix}_config_robust_clip_mad_factor": float(
+                settings.robust_clip_mad_factor
+            ),
         }
 
     r0_mm, beta, x_off, z_off = [float(v) for v in res.x]
@@ -416,7 +545,15 @@ def minimize_adsa(ctx: Any, profile_mm: np.ndarray, physics: dict[str, Any]) -> 
         f"{prefix}_n_right": int(right_mm.shape[0]),
         f"{prefix}_contact_snap_px_left": float(arc.snap_left_px),
         f"{prefix}_contact_snap_px_right": float(arc.snap_right_px),
+        f"{prefix}_arc_min_y_px_left": float(np.min(arc.left_px[:, 1])),
+        f"{prefix}_arc_min_y_px_right": float(np.min(arc.right_px[:, 1])),
+        f"{prefix}_contact_y_min_px": float(arc.contact_y_min_px),
         f"{prefix}_arc_quality_status": "ok",
+        f"{prefix}_config_maxiter": int(settings.maxiter),
+        f"{prefix}_config_robust_clip_enabled": bool(settings.robust_clip_enabled),
+        f"{prefix}_config_robust_clip_mad_factor": float(
+            settings.robust_clip_mad_factor
+        ),
     }
 
 

@@ -146,6 +146,134 @@ def test_minimize_adsa_invalid_contact_geometry_without_contacts():
     assert out["approx_minimize_adsa_status"] == "invalid_contact_geometry"
 
 
+def test_minimize_adsa_side_arcs_exclude_top_bridge_segment():
+    fn = registry.PENDANT_APPROXIMATORS.get("minimize_adsa")
+    assert fn is not None
+
+    # Contour ordering includes a top bridge between contacts; side-arc extraction
+    # must still use apex->left and apex->right paths only.
+    contour = np.array(
+        [
+            [100.0, 220.0],
+            [90.0, 205.0],
+            [82.0, 185.0],
+            [75.0, 160.0],
+            [70.0, 120.0],
+            [85.0, 95.0],
+            [100.0, 90.0],
+            [115.0, 95.0],
+            [130.0, 120.0],
+            [125.0, 160.0],
+            [118.0, 185.0],
+            [110.0, 205.0],
+        ],
+        dtype=float,
+    )
+    ctx = Context(
+        contour=Contour(xy=contour),
+        contact_points=((70, 120), (130, 120)),
+        scale={"px_per_mm": 100.0},
+        geometry=Geometry(axis_x=100.0, apex_xy=(100.0, 220.0)),
+        results={"strict_r0_mm": 1.2, "strict_beta": 0.5},
+    )
+
+    out = fn(ctx, np.empty((0, 2), dtype=float), {"rho1": 1000.0, "rho2": 1.2})
+
+    assert out["approx_minimize_adsa_status"] in {"ok", "optimization_failed"}
+    assert out["approx_minimize_adsa_arc_quality_status"] in {"ok", "invalid"}
+    assert out["approx_minimize_adsa_n_left"] > 0
+    assert out["approx_minimize_adsa_n_right"] > 0
+    # Bridge points are around y~=90-95, so extracted side arcs should start near
+    # contact y-level and stay above the cut threshold.
+    assert out["approx_minimize_adsa_arc_min_y_px_left"] >= 117.5
+    assert out["approx_minimize_adsa_arc_min_y_px_right"] >= 117.5
+
+
+def test_minimize_adsa_settings_are_applied_from_context():
+    fn = registry.PENDANT_APPROXIMATORS.get("minimize_adsa")
+    assert fn is not None
+
+    contour = np.array(
+        [
+            [100.0, 220.0],
+            [90.0, 205.0],
+            [82.0, 185.0],
+            [75.0, 160.0],
+            [70.0, 120.0],
+            [130.0, 120.0],
+            [125.0, 160.0],
+            [118.0, 185.0],
+            [110.0, 205.0],
+        ],
+        dtype=float,
+    )
+    ctx = Context(
+        contour=Contour(xy=contour),
+        contact_points=((70, 120), (130, 120)),
+        scale={"px_per_mm": 100.0},
+        geometry=Geometry(axis_x=100.0, apex_xy=(100.0, 220.0)),
+        pendant_approximator_settings={
+            "minimize_adsa": {
+                "maxiter": 7,
+                "robust_clip_enabled": False,
+                "robust_clip_mad_factor": 1.5,
+            }
+        },
+    )
+
+    out = fn(ctx, np.empty((0, 2), dtype=float), {"rho1": 1000.0, "rho2": 1.2})
+
+    assert out["approx_minimize_adsa_config_maxiter"] == 7
+    assert out["approx_minimize_adsa_config_robust_clip_enabled"] is False
+    assert out["approx_minimize_adsa_config_robust_clip_mad_factor"] == pytest.approx(1.5)
+
+
+def test_pendant_fallback_promotes_minimize_adsa_when_strict_rejected():
+    original = registry.PENDANT_APPROXIMATORS.get("minimize_adsa")
+
+    def fake_minimize_adsa(_ctx, _profile_mm, _physics):
+        return {
+            "approx_minimize_adsa_status": "ok",
+            "approx_minimize_adsa_surface_tension_mN_m": 41.25,
+            "approx_minimize_adsa_beta": 0.42,
+        }
+
+    registry.PENDANT_APPROXIMATORS["minimize_adsa"] = fake_minimize_adsa
+    try:
+        theta = np.linspace(0.0, np.pi, 81)
+        contour = np.column_stack(
+            [
+                100.0 + 20.0 * np.cos(theta),
+                160.0 + 20.0 * np.sin(theta),
+            ]
+        )
+        ctx = Context(
+            contour=Contour(xy=contour),
+            contact_points=((80, 100), (120, 100)),
+            scale={"px_per_mm": 20.0},
+            physics={"rho1": 1000.0, "rho2": 1.2, "g": 9.80665},
+            fit={
+                "strict_fit_success": False,
+                "strict_fit_warning": "residual_gate_failed",
+            },
+            pendant_approximation_methods=["minimize_adsa"],
+        )
+        ctx.geometry = Geometry(axis_x=100.0, apex_xy=(100.0, 180.0))
+
+        PendantPipeline().do_compute_metrics(ctx)
+
+        assert ctx.results["strict_fit_success"] is False
+        assert ctx.results["approx_minimize_adsa_status"] == "ok"
+        assert ctx.results["surface_tension_method"] == "minimize_adsa"
+        assert ctx.results["surface_tension_mN_m"] == pytest.approx(41.25)
+        assert ctx.results["beta"] == pytest.approx(0.42)
+    finally:
+        if original is not None:
+            registry.PENDANT_APPROXIMATORS["minimize_adsa"] = original
+        else:
+            registry.PENDANT_APPROXIMATORS.pop("minimize_adsa", None)
+
+
 def test_external_pendant_approximator_plugin_loads(tmp_path):
     plugin_path = tmp_path / "demo_approximation.py"
     plugin_path.write_text(
