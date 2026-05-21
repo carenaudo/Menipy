@@ -118,9 +118,32 @@ def test_pendant_surface_tension_uses_geometric_mn_per_m_units():
 
 
 def test_builtin_pendant_approximators_registered_by_default():
+    assert "minimize_adsa" in registry.PENDANT_APPROXIMATORS
     assert "selected_plane" in registry.PENDANT_APPROXIMATORS
     assert "multi_selected_plane" in registry.PENDANT_APPROXIMATORS
     assert "volume_apex_lookup" in registry.PENDANT_APPROXIMATORS
+
+
+def test_minimize_adsa_invalid_contact_geometry_without_contacts():
+    fn = registry.PENDANT_APPROXIMATORS.get("minimize_adsa")
+    assert fn is not None
+
+    contour = np.array(
+        [
+            [90.0, 100.0],
+            [120.0, 140.0],
+            [100.0, 180.0],
+            [80.0, 140.0],
+        ]
+    )
+    ctx = Context(
+        contour=Contour(xy=contour),
+        scale={"px_per_mm": 100.0},
+        geometry=Geometry(axis_x=100.0, apex_xy=(100.0, 180.0)),
+    )
+
+    out = fn(ctx, np.empty((0, 2), dtype=float), {"rho1": 1000.0, "rho2": 1.2})
+    assert out["approx_minimize_adsa_status"] == "invalid_contact_geometry"
 
 
 def test_external_pendant_approximator_plugin_loads(tmp_path):

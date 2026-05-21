@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menipy ADSA - UX Rework</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Custom scrollbar for desktop app feel */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden bg-slate-50 flex flex-col font-sans text-slate-800 text-sm">
+
+    <!-- Top Menu Bar -->
+    <div class="flex items-center px-3 py-1 bg-white border-b border-slate-200 text-xs text-slate-600 gap-4">
+        <a href="#" class="hover:text-slate-900 cursor-pointer">File</a>
+        <a href="#" class="hover:text-slate-900 cursor-pointer">Config</a>
+        <a href="#" class="hover:text-slate-900 cursor-pointer">View</a>
+        <a href="#" class="hover:text-slate-900 cursor-pointer">Run</a>
+        <a href="#" class="hover:text-slate-900 cursor-pointer">Plugins</a>
+        <a href="#" class="hover:text-slate-900 cursor-pointer">Units</a>
+        <a href="#" class="hover:text-slate-900 cursor-pointer">Help</a>
+    </div>
+
+    <!-- Main Toolbar -->
+    <div class="flex items-center px-3 py-2 bg-white border-b border-slate-200 shadow-sm z-10 gap-4 overflow-x-auto">
+        
+        <!-- Analysis Type -->
+        <div class="flex items-center gap-2 border-r border-slate-200 pr-4 shrink-0">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Analysis</span>
+            <div class="flex bg-slate-100 rounded-md p-0.5 border border-slate-200">
+                <button onclick="setAnalysisType(this)" class="px-3 py-1.5 text-xs font-medium rounded text-slate-600 hover:bg-slate-200 transition-colors">Sessile</button>
+                <button onclick="setAnalysisType(this)" class="px-3 py-1.5 text-xs font-medium rounded bg-white text-blue-600 shadow-sm border border-slate-200 flex items-center gap-1">
+                    <i data-lucide="droplet" class="w-3.5 h-3.5"></i> Pendant
+                </button>
+                <button onclick="setAnalysisType(this)" class="px-3 py-1.5 text-xs font-medium rounded text-slate-600 hover:bg-slate-200 transition-colors">Osc.</button>
+                <button onclick="setAnalysisType(this)" class="px-3 py-1.5 text-xs font-medium rounded text-slate-600 hover:bg-slate-200 transition-colors">Capillary</button>
+                <button onclick="setAnalysisType(this)" class="px-3 py-1.5 text-xs font-medium rounded text-slate-600 hover:bg-slate-200 transition-colors">Captive</button>
+            </div>
+        </div>
+
+        <!-- Source Mode & Options -->
+        <div class="flex items-center gap-2 shrink-0">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Source</span>
+            <div class="flex bg-slate-100 rounded-md p-0.5 border border-slate-200 mr-2">
+                <button onclick="setSourceMode('file')" id="btn-mode-file" class="p-1.5 rounded bg-white text-emerald-600 shadow-sm border border-slate-200" title="Single File">
+                    <i data-lucide="file" class="w-4 h-4"></i>
+                </button>
+                <button onclick="setSourceMode('folder')" id="btn-mode-folder" class="p-1.5 rounded text-slate-500 hover:bg-slate-200 transition-colors" title="Folder / Multiple Files">
+                    <i data-lucide="images" class="w-4 h-4"></i>
+                </button>
+                <button onclick="setSourceMode('camera')" id="btn-mode-camera" class="p-1.5 rounded text-slate-500 hover:bg-slate-200 transition-colors" title="Live Camera">
+                    <i data-lucide="camera" class="w-4 h-4"></i>
+                </button>
+            </div>
+            
+            <!-- Dynamic Source Options Container -->
+            <div id="dynamic-source-options" class="flex items-center gap-2">
+                <div class="relative w-64">
+                    <input type="text" value="/gota pendiente 1.png" class="w-full pl-2 pr-8 py-1.5 bg-slate-50 border border-slate-300 rounded text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" readonly>
+                    <button class="absolute right-1 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 bg-white px-1">
+                        ...
+                    </button>
+                </div>
+                <button class="flex items-center gap-1 px-3 py-1.5 bg-white border border-slate-300 rounded hover:bg-slate-50 text-slate-700 transition-colors">
+                    <i data-lucide="folder-open" class="w-4 h-4"></i> Open Image
+                </button>
+            </div>
+        </div>
+
+        <div class="flex-1"></div>
+
+        <!-- Right Side Tools & Panel Toggles -->
+        <div class="flex items-center gap-3 shrink-0 pl-4 border-l border-slate-200">
+            <button class="flex items-center gap-1 px-3 py-1.5 bg-white border border-slate-300 rounded hover:bg-slate-50 text-slate-700 transition-colors">
+                <i data-lucide="download" class="w-4 h-4"></i> Export CSV
+            </button>
+            <button class="flex items-center gap-1 px-3 py-1.5 bg-white border border-slate-300 rounded hover:bg-slate-50 text-slate-700 transition-colors">
+                <i data-lucide="settings-2" class="w-4 h-4"></i> Advanced
+            </button>
+            
+            <div class="w-px h-6 bg-slate-300 mx-1"></div>
+            
+            <!-- Panel Toggles moved to the right -->
+            <div class="flex bg-slate-100 rounded-md p-0.5 border border-slate-200">
+                <button onclick="togglePanel('panel-left', 'btn-toggle-left')" id="btn-toggle-left" class="p-1.5 rounded bg-blue-100 text-blue-600 shadow-sm border border-slate-200" title="Toggle Left Panel">
+                    <i data-lucide="panel-left" class="w-4 h-4"></i>
+                </button>
+                <button onclick="togglePanel('panel-bottom', 'btn-toggle-bottom')" id="btn-toggle-bottom" class="p-1.5 rounded bg-blue-100 text-blue-600 shadow-sm border border-slate-200" title="Toggle Bottom Panel">
+                    <i data-lucide="panel-bottom" class="w-4 h-4"></i>
+                </button>
+                <button onclick="togglePanel('panel-right', 'btn-toggle-right')" id="btn-toggle-right" class="p-1.5 rounded bg-blue-100 text-blue-600 shadow-sm border border-slate-200" title="Toggle Right Panel">
+                    <i data-lucide="panel-right" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="flex flex-1 overflow-hidden">
+        
+        <!-- Decompressed Left Panel (Full Vertical Height) -->
+        <div id="panel-left" class="w-[300px] flex-shrink-0 bg-white border-r border-slate-200 flex flex-col overflow-y-auto transition-all duration-300">
+            <div class="p-4 space-y-6">
+                
+                <!-- Phase Properties (Fixed structure) -->
+                <div>
+                    <h3 class="text-sm font-semibold text-slate-800 mb-3 flex items-center gap-2">
+                        Phase Properties
+                    </h3>
+                    <div class="space-y-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <div class="flex items-center justify-between gap-2">
+                            <label class="text-slate-600 flex-1">Needle OD (mm)</label>
+                            <div class="flex items-center gap-1 w-32">
+                                <input type="text" value="10.00" class="w-full px-2 py-1 bg-white border border-slate-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-right">
+                                <button class="p-1.5 text-slate-400 hover:text-slate-600 bg-white border border-slate-300 rounded"><i data-lucide="database" class="w-3.5 h-3.5"></i></button>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between gap-2">
+                            <label class="text-slate-600 flex-1">Heavy phase ρ</label>
+                            <div class="flex items-center gap-1 w-32">
+                                <input type="text" value="1000.0" class="w-full px-2 py-1 bg-white border border-slate-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-right">
+                                <button class="p-1.5 text-slate-400 hover:text-slate-600 bg-white border border-slate-300 rounded"><i data-lucide="database" class="w-3.5 h-3.5"></i></button>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between gap-2">
+                            <label class="text-slate-600 flex-1">Light phase ρ</label>
+                            <div class="flex items-center gap-1 w-32">
+                                <input type="text" value="1.2" class="w-full px-2 py-1 bg-white border border-slate-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-right">
+                                <button class="p-1.5 text-slate-400 hover:text-slate-600 bg-white border border-slate-300 rounded"><i data-lucide="database" class="w-3.5 h-3.5"></i></button>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between gap-2">
+                            <label class="text-slate-600 flex-1">Gravity</label>
+                            <div class="flex items-center gap-1 w-32 relative">
+                                <input type="text" value="9.81000" class="w-full pl-2 pr-7 py-1 bg-white border border-slate-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-right">
+                                <span class="absolute right-2 text-slate-400 text-xs pointer-events-none">m/s²</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pendant Settings -->
+                <div>
+                    <h3 class="text-sm font-semibold text-slate-800 mb-3">Pendant Settings</h3>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <div class="flex items-center justify-between gap-2">
+                            <label class="text-slate-600 flex-1">Needle ID</label>
+                            <input type="text" value="0.300" class="w-24 px-2 py-1 bg-white border border-slate-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-right">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Actions -->
+            <div class="mt-auto p-4 border-t border-slate-200 bg-slate-50 space-y-2">
+                <button class="w-full flex justify-center items-center gap-2 px-4 py-2 bg-white border border-slate-300 rounded hover:bg-slate-100 text-slate-700 transition-colors font-medium">
+                    <i data-lucide="info" class="w-4 h-4 text-slate-400"></i> Calibrate
+                </button>
+                <button class="w-full flex justify-center items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors font-semibold shadow-sm">
+                    <i data-lucide="play" class="w-4 h-4"></i> Run Analysis
+                </button>
+                <button class="w-full flex justify-center items-center gap-2 px-4 py-2 text-slate-600 hover:bg-slate-200 rounded transition-colors text-xs font-medium">
+                    <i data-lucide="settings" class="w-3.5 h-3.5"></i> Advanced Configurations
+                </button>
+            </div>
+        </div>
+
+        <!-- Right Side Content Wrapper (Center Area, Right Panel, Bottom Panel) -->
+        <div class="flex-1 flex flex-col min-w-0">
+            
+            <!-- Top Row: Center Area + Right Panel -->
+            <div class="flex flex-1 min-h-0 overflow-hidden">
+                
+                <!-- Center Image & Timeline Area -->
+                <div class="flex-1 flex flex-col min-w-0 bg-slate-200/50">
+                    <!-- Image View Toolbar -->
+                    <div class="flex items-center justify-between px-4 py-2 bg-white border-b border-slate-200 shrink-0">
+                        <div class="text-xs text-slate-500">File: <span class="font-medium text-slate-800">gota pendiente 1.png</span></div>
+                        
+                        <div class="flex items-center gap-2">
+                            <div class="flex bg-slate-100 rounded border border-slate-200">
+                                <button class="px-2.5 py-1 text-xs text-blue-600 bg-blue-50 border-r border-slate-200 font-medium flex items-center gap-1"><div class="w-2 h-2 bg-blue-500 rounded-sm"></div> Contour</button>
+                                <button class="px-2.5 py-1 text-xs text-blue-600 bg-blue-50 border-r border-slate-200 font-medium flex items-center gap-1"><div class="w-2 h-2 bg-blue-400 rounded-sm"></div> Fit</button>
+                                <button class="px-2.5 py-1 text-xs text-slate-600 hover:bg-white border-r border-slate-200 flex items-center gap-1"><div class="w-2 h-2 bg-slate-400 rounded-sm"></div> Axis</button>
+                                <button class="px-2.5 py-1 text-xs text-blue-600 bg-blue-50 border-r border-slate-200 font-medium flex items-center gap-1"><div class="w-2 h-2 bg-blue-300 rounded-sm"></div> Baseline</button>
+                                <button class="px-2.5 py-1 text-xs text-blue-600 bg-blue-50 font-medium flex items-center gap-1"><div class="w-2 h-2 bg-blue-600 rounded-sm"></div> Markers</button>
+                            </div>
+                            <button class="p-1 text-slate-500 hover:bg-slate-100 rounded border border-transparent hover:border-slate-300">
+                                <i data-lucide="maximize" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="flex items-center gap-2">
+                            <button class="px-3 py-1 text-xs bg-white border border-slate-300 rounded hover:bg-slate-50 flex items-center gap-1 text-slate-700">
+                                <i data-lucide="zoom-in" class="w-3.5 h-3.5"></i> Actual
+                            </button>
+                            <button class="px-3 py-1 text-xs bg-white border border-slate-300 rounded hover:bg-slate-50 flex items-center gap-1 text-slate-700">
+                                <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i> Fit
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Image Canvas Area (Mocked with gray box and a shape) -->
+                    <div class="flex-1 overflow-hidden flex items-center justify-center p-4 relative">
+                        <div class="w-full h-full max-w-2xl max-h-[500px] bg-slate-300 relative shadow-inner flex items-center justify-center overflow-hidden">
+                            <!-- Fake Noise Background to simulate image -->
+                            <div class="absolute inset-0 opacity-10" style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E');"></div>
+                            <!-- Mock Drop -->
+                            <div class="relative w-32 h-48 bg-black rounded-b-full rounded-t-[40%] flex items-center justify-center -mt-16 z-10 shadow-xl">
+                                <!-- Drop Reflection -->
+                                <div class="w-8 h-12 bg-white/80 rounded-full blur-[2px] absolute top-16"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Timeline Controls -->
+                    <div class="bg-white border-t border-slate-200 px-4 py-2 flex items-center gap-4 shrink-0">
+                        <div class="flex items-center gap-1">
+                            <button class="p-1.5 text-slate-600 hover:bg-slate-100 rounded transition-colors"><i data-lucide="skip-back" class="w-4 h-4"></i></button>
+                            <button class="p-1.5 text-slate-600 hover:bg-slate-100 rounded transition-colors"><i data-lucide="play" class="w-4 h-4"></i></button>
+                            <button class="p-1.5 text-slate-600 hover:bg-slate-100 rounded transition-colors"><i data-lucide="skip-forward" class="w-4 h-4"></i></button>
+                        </div>
+                        <div class="flex-1 flex items-center gap-3">
+                            <input type="range" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600" value="100">
+                        </div>
+                        <div class="text-xs text-slate-500 w-12 text-right">1 / 1</div>
+                    </div>
+                </div>
+
+                <!-- Right Panel (Results & History) -->
+                <div id="panel-right" class="w-[300px] flex-shrink-0 bg-white border-l border-slate-200 flex flex-col overflow-y-auto transition-all duration-300">
+                    <div class="p-4">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wide">Key Results</h2>
+                        </div>
+                        <div class="text-xs text-slate-500 mb-3">2 measurements</div>
+                        
+                        <!-- Results Grid -->
+                        <div class="grid grid-cols-2 gap-3 mb-6">
+                            <div class="border border-slate-200 rounded-lg p-3 bg-slate-50 shadow-sm relative overflow-hidden">
+                                <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                                <div class="text-xs text-slate-500 uppercase font-semibold mb-1">IFT</div>
+                                <div class="text-xl font-bold text-slate-800">23 <span class="text-sm font-medium text-slate-500">mN/m</span></div>
+                            </div>
+                            <div class="border border-slate-200 rounded-lg p-3 bg-white shadow-sm">
+                                <div class="text-xs text-slate-500 uppercase font-semibold mb-1">Diameter</div>
+                                <div class="text-xl font-bold text-slate-800">2.05 <span class="text-sm font-medium text-slate-500">mm</span></div>
+                            </div>
+                            <div class="border border-slate-200 rounded-lg p-3 bg-white shadow-sm">
+                                <div class="text-xs text-slate-500 uppercase font-semibold mb-1">Volume</div>
+                                <div class="text-xl font-bold text-slate-800">5.33 <span class="text-sm font-medium text-slate-500">μL</span></div>
+                            </div>
+                            <div class="border border-slate-200 rounded-lg p-3 bg-white shadow-sm opacity-50">
+                                <div class="text-xs text-slate-500 uppercase font-semibold mb-1">Angle</div>
+                                <div class="text-xl font-bold text-slate-400">--</div>
+                            </div>
+                        </div>
+
+                        <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wide mb-3">Recent History</h2>
+                        <div class="space-y-2">
+                            <!-- History Item (Active) -->
+                            <div class="p-3 border border-blue-200 bg-blue-50 rounded-lg cursor-pointer">
+                                <div class="flex justify-between items-start mb-1">
+                                    <div class="flex items-center gap-1.5 text-blue-700 font-medium text-sm">
+                                        <i data-lucide="droplet" class="w-4 h-4"></i> gota pendiente 1.png
+                                    </div>
+                                    <span class="text-xs text-slate-500">18:40:21</span>
+                                </div>
+                                <div class="text-xs text-slate-600 pl-5">
+                                    IFT 23 · Diameter 2.05 mm · Volume 5.33
+                                </div>
+                            </div>
+                            
+                            <!-- History Item -->
+                            <div class="p-3 border border-slate-200 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors">
+                                <div class="flex justify-between items-start mb-1">
+                                    <div class="flex items-center gap-1.5 text-slate-700 font-medium text-sm">
+                                        <i data-lucide="droplet" class="w-4 h-4"></i> gota pendiente 1.png
+                                    </div>
+                                    <span class="text-xs text-slate-500">18:40:20</span>
+                                </div>
+                                <div class="text-xs text-slate-500 pl-5">
+                                    IFT 23.1 · Diameter 2.05 mm · Volume 5.33
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Panel (Results Table) -->
+            <div id="panel-bottom" class="h-64 bg-white border-t border-slate-200 flex flex-col shrink-0 transition-all duration-300">
+                <!-- Tabs -->
+                <div class="flex px-2 bg-slate-50 border-b border-slate-200 pt-2">
+                    <button class="px-4 py-1.5 text-sm font-medium border-b-2 border-blue-600 text-blue-600 bg-white rounded-t-sm">Results</button>
+                    <button class="px-4 py-1.5 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700">Residuals</button>
+                    <button class="px-4 py-1.5 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700">Timings</button>
+                    <button class="px-4 py-1.5 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700">Log</button>
+                </div>
+                
+                <!-- Table Toolbar -->
+                <div class="px-4 py-2 flex items-center justify-between text-xs border-b border-slate-200 bg-white">
+                    <div class="flex items-center gap-4 text-slate-600">
+                        <span>2 measurements</span>
+                        <span class="text-slate-300">|</span>
+                        <span>Last: 18:40:21</span>
+                        <span class="text-slate-300">|</span>
+                        <span>IFT: 23 mN/m</span>
+                        <span class="text-slate-300">|</span>
+                        <span>Dia: 2.05 mm</span>
+                        <span class="text-slate-300">|</span>
+                        <span>Vol: 5.33 μL</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 mr-4">
+                            <span class="text-slate-500">Filter:</span>
+                            <select class="border border-slate-300 rounded px-2 py-1 bg-white focus:outline-none">
+                                <option>All Valid Pipelines</option>
+                            </select>
+                        </div>
+                        <button class="px-2 py-1 bg-white border border-slate-300 rounded hover:bg-slate-50 flex items-center gap-1 text-slate-700"><i data-lucide="check-square" class="w-3.5 h-3.5"></i> Key Results</button>
+                        <button class="px-2 py-1 bg-white border border-slate-300 rounded hover:bg-slate-50 flex items-center gap-1 text-slate-700"><i data-lucide="git-compare" class="w-3.5 h-3.5"></i> Compare</button>
+                        <button class="px-2 py-1 bg-white border border-slate-300 rounded hover:bg-slate-50 flex items-center gap-1 text-slate-700"><i data-lucide="activity" class="w-3.5 h-3.5"></i> Diagnostics</button>
+                        <button class="px-2 py-1 bg-white border border-slate-300 rounded hover:bg-slate-50 flex items-center gap-1 text-slate-700 ml-2"><i data-lucide="x" class="w-3.5 h-3.5"></i> Clear</button>
+                        <button class="px-2 py-1 bg-white border border-slate-300 rounded hover:bg-slate-50 flex items-center gap-1 text-slate-700"><i data-lucide="download" class="w-3.5 h-3.5"></i> Export</button>
+                        <button class="px-2 py-1 bg-white border border-slate-300 rounded hover:bg-slate-50 flex items-center gap-1 text-slate-700"><i data-lucide="columns" class="w-3.5 h-3.5"></i> Columns</button>
+                    </div>
+                </div>
+
+                <!-- Table Content -->
+                <div class="flex-1 overflow-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead class="bg-slate-50 sticky top-0 border-b border-slate-200">
+                            <tr>
+                                <th class="px-4 py-2 font-semibold text-slate-600">File Name</th>
+                                <th class="px-4 py-2 font-semibold text-slate-600">Timestamp</th>
+                                <th class="px-4 py-2 font-semibold text-slate-600">Pipeline</th>
+                                <th class="px-4 py-2 font-semibold text-slate-600 text-right">Diameter (mm)</th>
+                                <th class="px-4 py-2 font-semibold text-slate-600 text-right">Height (mm)</th>
+                                <th class="px-4 py-2 font-semibold text-slate-600 text-right">Volume (μL)</th>
+                                <th class="px-4 py-2 font-semibold text-slate-600 text-right">Surface Tension (mN/m)</th>
+                                <th class="px-4 py-2 font-semibold text-slate-600">Surface Tension Method</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Active Row -->
+                            <tr class="border-b border-slate-100 bg-blue-50 relative group hover:bg-blue-100 cursor-pointer">
+                                <td class="px-4 py-2 relative">
+                                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500"></div>
+                                    gota pendiente 1.png
+                                </td>
+                                <td class="px-4 py-2 text-slate-600">18:40:21</td>
+                                <td class="px-4 py-2 text-slate-600">Standard</td>
+                                <td class="px-4 py-2 text-right">2.05</td>
+                                <td class="px-4 py-2 text-right">--</td>
+                                <td class="px-4 py-2 text-right">5.33</td>
+                                <td class="px-4 py-2 text-right font-medium text-slate-800">23.0</td>
+                                <td class="px-4 py-2 text-slate-600">ADSA</td>
+                            </tr>
+                            <tr class="border-b border-slate-100 hover:bg-slate-50 cursor-pointer">
+                                <td class="px-4 py-2">gota pendiente 1.png</td>
+                                <td class="px-4 py-2 text-slate-600">18:40:20</td>
+                                <td class="px-4 py-2 text-slate-600">Standard</td>
+                                <td class="px-4 py-2 text-right">2.05</td>
+                                <td class="px-4 py-2 text-right">--</td>
+                                <td class="px-4 py-2 text-right">5.33</td>
+                                <td class="px-4 py-2 text-right font-medium text-slate-800">23.1</td>
+                                <td class="px-4 py-2 text-slate-600">ADSA</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logic Script -->
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+
+        // Manage Analysis Type Selection
+        function setAnalysisType(btn) {
+            const container = btn.parentElement;
+            const buttons = container.querySelectorAll('button');
+
+            // Reset all buttons to inactive state
+            buttons.forEach(b => {
+                b.className = 'px-3 py-1.5 text-xs font-medium rounded text-slate-600 hover:bg-slate-200 transition-colors';
+                
+                // Remove lucide icons (either the <i> tag or the generated <svg> tag)
+                const icon = b.querySelector('i');
+                const svg = b.querySelector('svg');
+                if (icon) icon.remove();
+                if (svg) svg.remove();
+
+                // Clean up text content to remove extra spaces
+                b.textContent = b.textContent.trim();
+            });
+
+            // Set clicked button to active state
+            btn.className = 'px-3 py-1.5 text-xs font-medium rounded bg-white text-blue-600 shadow-sm border border-slate-200 flex items-center gap-1';
+            
+            // Add the icon back to the selected button
+            const text = btn.textContent;
+            btn.innerHTML = `<i data-lucide="droplet" class="w-3.5 h-3.5"></i> ${text}`;
+
+            // Re-render the newly added icon
+            lucide.createIcons();
+        }
+
+        // Manage Dynamic Source Options in Toolbar
+        function setSourceMode(mode) {
+            // Reset button styles
+            const btnFile = document.getElementById('btn-mode-file');
+            const btnFolder = document.getElementById('btn-mode-folder');
+            const btnCamera = document.getElementById('btn-mode-camera');
+            
+            const inactiveClass = 'p-1.5 rounded text-slate-500 hover:bg-slate-200 transition-colors';
+            
+            btnFile.className = inactiveClass;
+            btnFolder.className = inactiveClass;
+            btnCamera.className = inactiveClass;
+
+            const dynamicOptions = document.getElementById('dynamic-source-options');
+
+            if (mode === 'file') {
+                btnFile.className = 'p-1.5 rounded bg-white text-emerald-600 shadow-sm border border-slate-200';
+                dynamicOptions.innerHTML = `
+                    <div class="relative w-64">
+                        <input type="text" value="/gota pendiente 1.png" class="w-full pl-2 pr-8 py-1.5 bg-slate-50 border border-slate-300 rounded text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" readonly>
+                        <button class="absolute right-1 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 bg-white px-1">...</button>
+                    </div>
+                    <button class="flex items-center gap-1 px-3 py-1.5 bg-white border border-slate-300 rounded hover:bg-slate-50 text-slate-700 transition-colors">
+                        <i data-lucide="folder-open" class="w-4 h-4"></i> Open Image
+                    </button>
+                `;
+            } else if (mode === 'folder') {
+                btnFolder.className = 'p-1.5 rounded bg-white text-blue-600 shadow-sm border border-slate-200';
+                dynamicOptions.innerHTML = `
+                    <div class="relative w-64">
+                        <input type="text" placeholder="Select directory..." class="w-full pl-2 pr-8 py-1.5 bg-slate-50 border border-slate-300 rounded text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" readonly>
+                    </div>
+                    <button class="flex items-center gap-1 px-3 py-1.5 bg-white border border-slate-300 rounded hover:bg-slate-50 text-slate-700 transition-colors">
+                        <i data-lucide="folder" class="w-4 h-4"></i> Browse Dir
+                    </button>
+                `;
+            } else if (mode === 'camera') {
+                btnCamera.className = 'p-1.5 rounded bg-white text-purple-600 shadow-sm border border-slate-200';
+                dynamicOptions.innerHTML = `
+                    <select class="w-40 px-2 py-1.5 bg-white border border-slate-300 rounded text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                        <option>Integrated Webcam</option>
+                        <option>USB Camera HD</option>
+                    </select>
+                    <select class="w-24 px-2 py-1.5 bg-white border border-slate-300 rounded text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                        <option>30 FPS</option>
+                        <option>60 FPS</option>
+                    </select>
+                    <button class="flex items-center gap-1 px-3 py-1.5 bg-white border border-slate-300 rounded hover:bg-slate-50 text-slate-700 transition-colors">
+                        <i data-lucide="video" class="w-4 h-4"></i> Connect
+                    </button>
+                `;
+            }
+            
+            // re-init icons for newly added HTML
+            lucide.createIcons();
+        }
+
+        // Manage Panel Toggles
+        function togglePanel(panelId, btnId) {
+            const panel = document.getElementById(panelId);
+            const btn = document.getElementById(btnId);
+            
+            if (panel.classList.contains('hidden')) {
+                panel.classList.remove('hidden');
+                btn.classList.add('bg-blue-100', 'text-blue-600', 'border-slate-200', 'shadow-sm');
+                btn.classList.remove('text-slate-500', 'hover:bg-slate-200', 'border-transparent');
+            } else {
+                panel.classList.add('hidden');
+                btn.classList.remove('bg-blue-100', 'text-blue-600', 'border-slate-200', 'shadow-sm');
+                btn.classList.add('text-slate-500', 'hover:bg-slate-200', 'border-transparent');
+            }
+        }
+    </script>
+</body>
+</html>

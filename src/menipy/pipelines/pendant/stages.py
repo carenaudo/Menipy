@@ -6,6 +6,7 @@ Module implementation."""
 from __future__ import annotations
 
 from typing import Optional
+from pathlib import Path
 
 import numpy as np
 from scipy.integrate import trapezoid
@@ -13,6 +14,7 @@ from scipy.integrate import trapezoid
 from menipy.pipelines.base import PipelineBase
 from menipy.models.context import Context
 from menipy.common.geometry import fit_circle
+from menipy.common._module_loader import load_module_from_path
 from menipy.common import overlay as ovl
 from menipy.common import registry
 from menipy.models.surface_tension import (
@@ -31,7 +33,17 @@ from menipy.pipelines.pendant import (
     approximations as _pendant_approximations,
 )  # noqa: F401
 
+# Load built-in plugin approximator from the repository plugins folder.
+_repo_root = Path(__file__).resolve().parents[4]
+_minimize_plugin_path = _repo_root / "plugins" / "pendant_minimize_adsa_approximator.py"
+if _minimize_plugin_path.exists():
+    load_module_from_path(
+        _minimize_plugin_path,
+        "menipy_plugins.pendant_minimize_adsa_approximator",
+    )
+
 DEFAULT_PENDANT_APPROXIMATION_METHODS = [
+    "minimize_adsa",
     "selected_plane",
     "multi_selected_plane",
     "volume_apex_lookup",
@@ -233,6 +245,12 @@ def _promote_pendant_fallback(results: dict) -> None:
         return
 
     candidates = (
+        (
+            "minimize_adsa",
+            "approx_minimize_adsa_surface_tension_mN_m",
+            "approx_minimize_adsa_beta",
+            "approx_minimize_adsa_status",
+        ),
         (
             "multi_selected_plane",
             "approx_multi_selected_plane_surface_tension_mN_m",

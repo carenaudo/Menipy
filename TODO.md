@@ -4,7 +4,7 @@ This file tracks specific features and tasks that need to be implemented or addr
 
 ## High Priority
 - [ ] **Implement Full ADSA Optimization**: Integrate the `scipy.optimize.minimize` loop to perform a full contour fit against the Young-Laplace ODE solution. This will replace the current direct estimation method for surface tension.
-- [ ] **Implement GUI Unit Management**: Integrate a units library (e.g., `unum` as described in `docs/UnitPLAN.md`) to allow for flexible unit input and display in the GUI, while keeping the backend calculations in base SI units.
+- [x] **Implement GUI Unit Management**: Integrated a units library using `pint`/`pydantic-pint` to allow flexible unit input and display in the GUI, while keeping backend calculations in base SI units.
 
 ## Medium Priority
 - [ ] **Implement Captive Bubble Pipeline**: Develop the complete analysis pipeline for captive bubble analysis.
