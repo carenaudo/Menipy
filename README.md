@@ -1,16 +1,21 @@
 # Menipy
 
-The current main branch is under current refactorization of file structure. **The main branch is currently NOT WORKINg.**
-To test the original Menipy code made with minimal interaction use the branch: **https://github.com/carenaudo/Menipy/tree/Min-Human-Interaction**
+Menipy is a Python-based toolkit designed for droplet and meniscus shape analysis from images. It provides a modern, unified PySide6 graphical interface alongside a highly robust command-line interface with full feature parity.
 
-
-Menipy is a Python-based toolkit aimed at analyzing droplet shapes from images. The goal is to create the software with minimal human involvement in the coding phase. Development is driven by CODEX with AI-assisted workflows.
+Development of Menipy is AI-driven, utilizing specialized agent workflows with minimal human coding intervention.
 
 ## Objectives and Scope
 
 - Provide a clear, extensible skeleton for droplet and meniscus shape analysis from images.
 - Structure the work as pipelines where each step represents a concrete stage of image analysis (loading, preprocessing, segmentation, contour extraction, geometry fitting, metrics, and reporting).
 - Grow a toolbox of measurements and utilities, expanding beyond the most common metrics typically implemented.
+
+## GUI and CLI Invocation
+
+Menipy provides registered console scripts for standard execution (once installed via `pip install -e .`):
+
+- **Launch the GUI**: Run `menipy` (or fallback: `python -m menipy.gui.app`)
+- **Run the CLI**: Run `adsa` (or fallbacks: `menipy-cli` / `python -m menipy.cli`)
 
 ## Origins: “Vibe Coding” Prototype
 
@@ -93,6 +98,28 @@ Menipy includes a **1-click auto-calibration wizard** for automatic detection of
 - **Pendant Pipeline**: Uses Otsu thresholding (optimal for high-contrast silhouettes) + shaft line analysis for needle detection
 
 The wizard automatically selects the appropriate detection strategy based on the selected pipeline.
+
+## Command-Line Interface (CLI)
+
+Menipy features a robust, consolidated command-line tool `adsa` designed to process droplets in headless or automated environments (e.g., Docker, CI/CD pipelines) with full feature-parity matching the GUI.
+
+### Key Capabilities
+
+1. **Auto-Calibration Fallback**: If coordinates are omitted, the CLI automatically detects the ROI, needle, and substrate on-the-fly.
+2. **Materials SQLite DB Lookup**: Seamlessly queries fluid densities and outer needle gauge/diameters from the `menipy_materials.sqlite` database.
+3. **Standard Operating Procedure (SOP) Loading**: Load SOP parameters from active JSON configuration files.
+4. **Directory Batch Processing**: Scan directories via glob filters, generate collision-free visuals (`_preview.png`, `_overlay.png`), and compile measurements into a unified `results.csv`.
+
+### Example CLI Commands
+
+- **Single Image Analysis (with Auto-Calibration and Material/Needle DB Lookup)**:
+  ```bash
+  adsa --pipeline sessile --image data/samples/prueba_sesil_2.png --auto-calibrate --material "Water (25°C)" --needle-name 22G --out ./single_out
+  ```
+- **Batch Processing of a Directory**:
+  ```bash
+  adsa --pipeline sessile --input-dir data/samples --glob "*.png" --auto-calibrate --out ./batch_out
+  ```
 
 ## Image Processing
 

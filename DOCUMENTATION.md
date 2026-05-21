@@ -246,3 +246,126 @@ See `examples/detection_plugins_example.py` for a complete working example demon
 - Using individual detector plugins
 - Using the `auto_detect_features()` helper
 - Visualizing detection results
+
+---
+
+## GUI Architecture Reorganization
+
+In order to keep the codebase highly maintainable, modern, and modular, Menipy's PySide6 GUI was refactored. The legacy, redundant files under the obsolete `panels/` package and old stacked workflow structures were decommissioned and removed. 
+
+The active panels and views are now consolidated directly under `src/menipy/gui/views/`:
+* **`src/menipy/gui/views/preview_panel.py`**: Houses the live image view, overlays manager, and scene coordinates rendering.
+* **`src/menipy/gui/views/results_panel.py`**: Renders metric tables, history records, and exports.
+* **`src/menipy/gui/views/main_window.py`**: Wireframe container for the visual widgets.
+
+The logical packaging of `src/menipy/gui/` consists of:
+* **`views/`**: Renders widgets, scene overlays, and loaded `.ui` layouts.
+* **`controllers/`**: Coordinates pipeline triggers, SOP states, camera streaming, and user events (e.g. `main_controller.py`, `setup_panel_controller.py`).
+* **`dialogs/`**: Houses modals and multi-step configurations (e.g. `advanced_workflow_dialog.py`, `calibration_wizard_dialog.py`).
+* **`services/` & `helpers/`**: Deals with database connectivity, pipeline invocation wrappers, logging bridges, and color themes.
+
+---
+
+## Consolidated Command-Line Interface (`adsa`)
+
+The Menipy toolkit features a headless-friendly CLI designed with full feature parity to the GUI. The CLI is registered under the console command `adsa` (and `menipy-cli`).
+
+### Command Usage Overview
+
+```bash
+adsa [options]
+```
+
+### Argument & Flag Options
+
+#### 1. Pipeline & Input Control
+* `--pipeline`: Droplet shape analysis pipeline to run. Choices: `sessile`, `oscillating`, `capillary_rise`, `pendant`, `captive_bubble` (default: `sessile`).
+* `--image`: Path to an individual input image file.
+* `--camera`: Camera index (e.g., `0`) to stream frame acquisition in real-time.
+* `--frames`: Number of frames to acquire when capturing from a `--camera` source (default: `1`).
+* `--input-dir`, `-i`: Directory path containing images for batch processing.
+* `--glob`, `-g`: Comma-separated list of glob patterns to filter images inside `--input-dir` (default: `*.png,*.jpg,*.jpeg`).
+
+#### 2. Geometry & Auto-Calibration
+* `--auto-calibrate`, `-a`: Enable automatic calibration. The CLI runs the baseline `AutoCalibrator` engine on-the-fly to detect the ROI, needle, and substrate if coordinates are not provided.
+* `--roi`: Define a manual ROI bounding box as `x,y,w,h` integers.
+* `--needle`: Define a manual needle bounding box as `x,y,w,h` integers.
+* `--contact-line` (or `--baseline`): Define manual baseline endpoints as `x1,y1,x2,y2` integers.
+
+#### 3. Output Management
+* `--out` (or `--output-dir`, `-o`): Target output folder path (default: `./out`).
+* `--no-overlay`: Skip overlay drawing stages.
+* **Outputs Generated**:
+  * **Single Image / Camera Mode**: Generates `preview.png` (preprocessed image), `overlay.png` (with colorized vector annotations), and `results.json` (raw metrics and logs).
+  * **Batch Directory Mode**: Collision-free naming is used (`<basename>_preview.png`, `<basename>_overlay.png`, and `<basename>_results.json`). Additionally compiles all metrics into a consolidated CSV sheet at `<out>/results.csv`.
+
+#### 4. SQLite Materials & Needle Database
+* `--material` (or `--fluid-name`): Queries the materials database (`menipy_materials.sqlite`) to fetch fluid density (`rho1`).
+* `--needle-name`: Queries the needle database to extract outer diameter (in mm) by gauge (e.g. `22G`) or name.
+* `--needle-diameter`: Directly override the outer needle diameter in mm (defaults to `0.72` mm).
+* `--materials-db`: Specify a custom materials SQLite database path.
+
+#### 5. Standard Operating Procedure (SOP) Loading
+* `--sop`, `-s`: Specify a profile name in the local database or a custom JSON SOP file path. It automatically loads prep, edge, and optimizer stages to standard values.
+
+#### 6. Algorithmic Overrides
+* `--preprocessing-method`: Override the preprocessing stage (e.g. `blur`, `clahe`).
+* `--edge-detection-method`: Override the edge detector stage (e.g. `canny`, `sobel`).
+
+#### 7. Extensible SQLite Plugin Management
+* `--plugins`: Plugin search directory path.
+* `--db`: SQLite database plugin state path (default: `adsa_plugins.sqlite`).
+* `--activate`: Activate a plugin dynamically using `<name>:<kind>`.
+* `--deactivate`: Deactivate a plugin dynamically using `<name>:<kind>`.
+* **Subcommands**:
+  * `adsa plugins set-dirs <dirs>`: Update scan paths in the active plugins database.
+
+---
+
+### Batch Mode Output Schema (`results.csv`)
+
+When running in batch mode (`--input-dir`), all metric fields generated dynamically by the active pipeline stages are parsed, collected, and exported into `results.csv`. This sheet includes:
+* `image_path`: Location of the source image.
+* `pipeline`: The analysis pipeline utilized.
+* `qa_ok`: Quality check boolean flag from the pipeline's validation stage.
+* Dynamic pipeline-specific headers (e.g. `contact_angle_left`, `contact_angle_right`, `droplet_volume`, `interfacial_tension`, etc.).
+
+---
+
+### SOP Configuration Schema
+
+A JSON SOP configuration profile consists of the active stages list and specific stage parameter maps:
+
+```json
+{
+  "include_stages": [
+    "acquisition",
+    "preprocessing",
+    "edge_detection",
+    "geometry",
+    "scaling",
+    "physics",
+    "solver",
+    "overlay",
+    "validation"
+  ],
+  "params": {
+    "preprocessing": {
+      "method": "clahe",
+      "clip_limit": 2.0,
+      "tile_grid_size": [8, 8]
+    },
+    "edge_detection": {
+      "method": "canny",
+      "threshold1": 50,
+      "threshold2": 150
+    }
+  }
+}
+```
+
+---
+
+### Headless & CI/CD Portability
+
+The consolidated CLI is completely isolated from GUI dependencies. It uses a custom `NumpyEncoder` to serialize NumPy floating/integer arrays directly to standard JSON without requiring a display thread or crashing on server environments without visual desktops (e.g. Docker, head-free Linux virtual machines).
