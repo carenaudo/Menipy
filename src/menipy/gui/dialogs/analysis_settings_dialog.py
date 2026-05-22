@@ -6,36 +6,36 @@ Generic dialog that wraps waiting for pipeline steps selection and configuration
 
 from __future__ import annotations
 
-from importlib import import_module
-from typing import Optional, Any
 import json
+from importlib import import_module
+from typing import Any, Optional
 
-from PySide6.QtCore import Qt, QSettings
+from PySide6.QtCore import QSettings, Qt
 from PySide6.QtWidgets import (
-    QDialog,
-    QVBoxLayout,
-    QHBoxLayout,
-    QTabWidget,
-    QWidget,
-    QLabel,
-    QPushButton,
+    QCheckBox,
     QComboBox,
+    QDialog,
     QDoubleSpinBox,
     QFormLayout,
-    QCheckBox,
-    QScrollArea,
     QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QScrollArea,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
 )
 
-from menipy.models.config import (
-    PreprocessingSettings,
-    EdgeDetectionSettings,
-    PhysicsParams,
-)
-from menipy.gui.dialogs.preprocessing_config_dialog import PreprocessingConfigDialog
-from menipy.gui.dialogs.physics_config_dialog import PhysicsConfigDialog
 from menipy.gui.dialogs.geometry_config_dialog import GeometryConfigDialog
 from menipy.gui.dialogs.overlay_config_dialog import OverlayConfigDialog
+from menipy.gui.dialogs.physics_config_dialog import PhysicsConfigDialog
+from menipy.gui.dialogs.preprocessing_config_dialog import PreprocessingConfigDialog
+from menipy.models.config import (
+    EdgeDetectionSettings,
+    PhysicsParams,
+    PreprocessingSettings,
+)
 from menipy.pipelines.discover import PIPELINE_MAP
 
 
@@ -46,9 +46,9 @@ class AnalysisSettingsDialog(QDialog):
         self,
         pipeline_name: str,
         *,
-        preprocessing: Optional[PreprocessingSettings] = None,
-        edge: Optional[EdgeDetectionSettings] = None,
-        pipeline_settings: Optional[dict] = None,
+        preprocessing: PreprocessingSettings | None = None,
+        edge: EdgeDetectionSettings | None = None,
+        pipeline_settings: dict | None = None,
         parent=None,
     ):
         super().__init__(parent)
@@ -257,7 +257,7 @@ class AnalysisSettingsDialog(QDialog):
         self._update_tabs_visibility()
 
     def _select_all_steps(self):
-        for stage, chk in self._stage_checkboxes.items():
+        for _stage, chk in self._stage_checkboxes.items():
             if chk.isEnabled():
                 chk.setChecked(True)
 
@@ -526,7 +526,7 @@ class AnalysisSettingsDialog(QDialog):
         lbl = QLabel("Configure result overlay styling.")
         v.addWidget(lbl)
 
-        self._overlay_summary = QLabel(f"Overlay style configured.")
+        self._overlay_summary = QLabel("Overlay style configured.")
         self._overlay_summary.setStyleSheet("color: #7f8c8d;")
         v.addWidget(self._overlay_summary)
 
@@ -536,7 +536,7 @@ class AnalysisSettingsDialog(QDialog):
         v.addStretch(1)
         return w
 
-    def _build_pipeline_custom_tab(self) -> Optional[QWidget]:
+    def _build_pipeline_custom_tab(self) -> QWidget | None:
         """Load pipeline-specific settings widget if available."""
         module_name = (
             f"menipy.gui.dialogs.analysis_settings.{self._pipeline_name}_settings"
@@ -646,7 +646,7 @@ class AnalysisSettingsDialog(QDialog):
         self._edge.method = self._edge_method.currentText()
         return self._edge
 
-    def pipeline_settings(self) -> Optional[dict]:
+    def pipeline_settings(self) -> dict | None:
         """pipeline settings.
 
         Returns

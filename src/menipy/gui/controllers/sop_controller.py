@@ -2,18 +2,19 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Optional, Sequence
+from collections.abc import Callable, Sequence
+from typing import Any, Optional
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QComboBox,
+    QInputDialog,
+    QListView,
     QListWidget,
     QListWidgetItem,
-    QComboBox,
     QMessageBox,
-    QInputDialog,
     QWidget,
-    QListView,
-    QAbstractItemView,
 )
 
 try:
@@ -30,10 +31,10 @@ class SopController:
         window,
         sops: Any,
         stage_order: Sequence[str],
-        step_item_cls: Optional[type],
-        steps_list: Optional[QListWidget],
-        sop_combo: Optional[QComboBox],
-        pipeline_getter: Callable[[], Optional[str]],
+        step_item_cls: type | None,
+        steps_list: QListWidget | None,
+        sop_combo: QComboBox | None,
+        pipeline_getter: Callable[[], str | None],
         pipeline_changed_callback: Callable[[str], None],
         play_callback: Callable[[str], None],
         config_callback: Callable[[str], None],
@@ -163,7 +164,7 @@ class SopController:
                 pass
             self._step_widgets.append(widget)
 
-    def _refresh_sop_combo(self, select: Optional[str] = None) -> None:
+    def _refresh_sop_combo(self, select: str | None = None) -> None:
         if not (self.sops and self.sop_combo):
             return
         combo = self.sop_combo

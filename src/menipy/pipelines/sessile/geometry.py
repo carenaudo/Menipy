@@ -10,6 +10,7 @@ import numpy as np
 
 from menipy.common.edge_detection import extract_external_contour
 from menipy.common.metrics import find_apex_index
+
 from .metrics import compute_sessile_metrics
 
 
@@ -68,7 +69,7 @@ def clip_contour_to_substrate(
         # Apex exactly on the line; default to keeping the current contour.
         return contour, None
 
-    epsilon_base = 1e-9 * float(np.linalg.norm(line_vec)) + 1e-9
+    1e-9 * float(np.linalg.norm(line_vec)) + 1e-9
     # Tolerance scaled with substrate length (helps with pixel-scale geometry)
     epsilon = float(max(1e-9, 1e-6 * float(np.linalg.norm(line_vec))))
 

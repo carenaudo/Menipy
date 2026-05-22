@@ -7,14 +7,15 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import QCoreApplication, Qt, QResource
+from PySide6.QtCore import QCoreApplication, QResource, Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QApplication, QMessageBox
 
 # Suppress noisy Qt SVG resource missing warnings for :/icons/* when resources aren't registered
 try:
-    from PySide6.QtCore import qInstallMessageHandler
     import sys
+
+    from PySide6.QtCore import qInstallMessageHandler
 
     def _qt_msg_handler(msg_type, context, message):
         try:

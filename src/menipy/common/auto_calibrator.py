@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Optional, Tuple, List
 
 import cv2
 import numpy as np
@@ -23,31 +22,31 @@ class CalibrationResult:
     """Results from automatic calibration detection."""
 
     # Substrate line as ((x1, y1), (x2, y2)) - horizontal baseline
-    substrate_line: Optional[Tuple[Tuple[int, int], Tuple[int, int]]] = None
+    substrate_line: tuple[tuple[int, int], tuple[int, int]] | None = None
 
     # Needle region as (x, y, width, height) if detected
-    needle_rect: Optional[Tuple[int, int, int, int]] = None
+    needle_rect: tuple[int, int, int, int] | None = None
 
     # Drop contour as Nx2 array of (x, y) points
-    drop_contour: Optional[np.ndarray] = None
+    drop_contour: np.ndarray | None = None
 
     # ROI as (x, y, width, height) encompassing the region of interest
-    roi_rect: Optional[Tuple[int, int, int, int]] = None
+    roi_rect: tuple[int, int, int, int] | None = None
 
     # Contact points (left and right) where drop meets substrate/needle
-    contact_points: Optional[Tuple[Tuple[int, int], Tuple[int, int]]] = None
+    contact_points: tuple[tuple[int, int], tuple[int, int]] | None = None
 
     # Apex point (bottom for pendant, top for sessile)
-    apex_point: Optional[Tuple[int, int]] = None
+    apex_point: tuple[int, int] | None = None
 
     # Confidence scores for each detection (0.0 - 1.0)
     confidence_scores: dict = field(default_factory=dict)
 
     # Enhanced image used for detection (for preview)
-    enhanced_image: Optional[np.ndarray] = None
+    enhanced_image: np.ndarray | None = None
 
     # Binary mask from segmentation (for preview)
-    binary_mask: Optional[np.ndarray] = None
+    binary_mask: np.ndarray | None = None
 
 
 class AutoCalibrator:
@@ -64,7 +63,7 @@ class AutoCalibrator:
         pipeline_name: str = "sessile",
         *,
         clahe_clip_limit: float = 2.0,
-        clahe_tile_size: Tuple[int, int] = (8, 8),
+        clahe_tile_size: tuple[int, int] = (8, 8),
         adaptive_block_size: int = 21,
         adaptive_c: int = 2,
         margin_fraction: float = 0.05,
@@ -113,11 +112,11 @@ class AutoCalibrator:
         self.enhanced_gray = clahe.apply(self.gray)
 
         # Internal state
-        self._substrate_y: Optional[int] = None
-        self._needle_contour: Optional[np.ndarray] = None
-        self._needle_rect: Optional[Tuple[int, int, int, int]] = None
-        self._drop_contour: Optional[np.ndarray] = None
-        self._binary_clean: Optional[np.ndarray] = None
+        self._substrate_y: int | None = None
+        self._needle_contour: np.ndarray | None = None
+        self._needle_rect: tuple[int, int, int, int] | None = None
+        self._drop_contour: np.ndarray | None = None
+        self._binary_clean: np.ndarray | None = None
 
     def detect_all(self) -> CalibrationResult:
         """
@@ -288,7 +287,7 @@ class AutoCalibrator:
 
     def _detect_substrate(
         self,
-    ) -> Tuple[Optional[Tuple[Tuple[int, int], Tuple[int, int]]], float]:
+    ) -> tuple[tuple[tuple[int, int], tuple[int, int]] | None, float]:
         """Detect substrate baseline using gradient analysis on image margins."""
         margin_px = max(10, min(50, int(self.width * self.margin_fraction)))
 
@@ -317,9 +316,9 @@ class AutoCalibrator:
         substrate_line = ((0, self._substrate_y), (self.width, self._substrate_y))
         return substrate_line, confidence
 
-    def _find_horizon_median(self, strip_gray: np.ndarray) -> Optional[int]:
+    def _find_horizon_median(self, strip_gray: np.ndarray) -> int | None:
         """Find horizon line in a vertical strip using gradient analysis."""
-        detected_ys: List[int] = []
+        detected_ys: list[int] = []
         h, w = strip_gray.shape
         min_limit, max_limit = int(h * 0.05), int(h * 0.95)
 
@@ -342,7 +341,7 @@ class AutoCalibrator:
 
     def _detect_needle_sessile(
         self,
-    ) -> Tuple[Optional[Tuple[int, int, int, int]], float]:
+    ) -> tuple[tuple[int, int, int, int] | None, float]:
         """Detect needle region (contour touching top border) for sessile."""
         if self._binary_clean is None:
             return None, 0.0
@@ -372,8 +371,8 @@ class AutoCalibrator:
 
     def _detect_drop_sessile(
         self,
-    ) -> Tuple[
-        Optional[np.ndarray], Optional[Tuple[Tuple[int, int], Tuple[int, int]]], float
+    ) -> tuple[
+        np.ndarray | None, tuple[tuple[int, int], tuple[int, int]] | None, float
     ]:
         """Detect drop contour and contact points for sessile.
 
@@ -602,7 +601,7 @@ class AutoCalibrator:
 
     # ======================== Pendant Detection Methods ========================
 
-    def _find_pendant_drop_contour(self) -> Tuple[Optional[np.ndarray], float]:
+    def _find_pendant_drop_contour(self) -> tuple[np.ndarray | None, float]:
         """Find the main drop contour for pendant (largest, centered)."""
         if self._binary_clean is None:
             return None, 0.0
@@ -644,9 +643,9 @@ class AutoCalibrator:
 
         return drop_cnt, confidence
 
-    def _detect_needle_pendant(self, drop_cnt: np.ndarray) -> Tuple[
-        Optional[Tuple[int, int, int, int]],
-        Optional[Tuple[Tuple[int, int], Tuple[int, int]]],
+    def _detect_needle_pendant(self, drop_cnt: np.ndarray) -> tuple[
+        tuple[int, int, int, int] | None,
+        tuple[tuple[int, int], tuple[int, int]] | None,
         float,
     ]:
         """
@@ -734,7 +733,7 @@ class AutoCalibrator:
 
     def _detect_apex_pendant(
         self, drop_cnt: np.ndarray
-    ) -> Tuple[Optional[Tuple[int, int]], float]:
+    ) -> tuple[tuple[int, int] | None, float]:
         """Detect apex point (bottom of pendant drop)."""
         pts = drop_cnt.reshape(-1, 2)
 
@@ -749,7 +748,7 @@ class AutoCalibrator:
 
     def _compute_roi_pendant(
         self, result: CalibrationResult
-    ) -> Tuple[Optional[Tuple[int, int, int, int]], float]:
+    ) -> tuple[tuple[int, int, int, int] | None, float]:
         """Compute ROI for pendant drop (from needle to apex)."""
         if result.drop_contour is None:
             return None, 0.0
@@ -783,7 +782,7 @@ class AutoCalibrator:
 
     def _compute_roi(
         self, result: CalibrationResult
-    ) -> Tuple[Optional[Tuple[int, int, int, int]], float]:
+    ) -> tuple[tuple[int, int, int, int] | None, float]:
         """Compute ROI rectangle encompassing detected regions (sessile)."""
         x_min, y_min = self.width, self.height
         x_max, y_max = 0, 0

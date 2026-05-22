@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Optional, Tuple, Any
+from typing import TYPE_CHECKING, Any, Optional, Tuple
 
-from PySide6.QtCore import QRectF, QPointF
-from PySide6.QtGui import QColor
 import numpy as np
+from PySide6.QtCore import QPointF, QRectF
+from PySide6.QtGui import QColor
 
 if TYPE_CHECKING:
     from menipy.gui.views.image_view import ImageView
@@ -203,7 +203,7 @@ class OverlayManager:
             if not p_visible:
                 return
 
-            p_color = QColor(
+            QColor(
                 p_cfg.get("point_color", "#00ff00")
             )  # Default green/red mix in original code
             # But let's stick to config or defaults

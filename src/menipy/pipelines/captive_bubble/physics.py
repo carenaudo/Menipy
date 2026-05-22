@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 
 def compute_physics(
     physics_config: dict, r0_mm: float, beta: float
-) -> tuple[Optional[float], Optional[float]]:
+) -> tuple[float | None, float | None]:
     """
     Computes gamma and capillary length from a captive bubble fit.
     Captive bubble fits are inverted sessile drops mathematically.

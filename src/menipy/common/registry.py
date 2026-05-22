@@ -2,7 +2,9 @@
 """Central registry for pipeline components and plugins."""
 
 from __future__ import annotations
-from typing import Callable, Dict, Any, Optional, Iterator
+
+from collections.abc import Callable, Iterator
+from typing import Any
 
 
 class Registry:
@@ -10,13 +12,13 @@ class Registry:
 
     def __init__(self, name: str):
         self.name = name
-        self._items: Dict[str, Callable[..., Any]] = {}
+        self._items: dict[str, Callable[..., Any]] = {}
 
     def register(self, name: str, fn: Callable[..., Any]) -> None:
         """Register a new item by name."""
         self._items[name] = fn
 
-    def get(self, name: str, default: Any = None) -> Optional[Callable[..., Any]]:
+    def get(self, name: str, default: Any = None) -> Callable[..., Any] | None:
         """Get a registered item by name."""
         return self._items.get(name, default)
 
@@ -176,7 +178,7 @@ def register_apex_detector(name: str, fn: Callable[..., Any]) -> None:
     APEX_DETECTORS.register(name, fn)
 
 
-def get_registry_snapshot() -> Dict[str, Dict[str, Callable[..., Any]]]:
+def get_registry_snapshot() -> dict[str, dict[str, Callable[..., Any]]]:
     """Return a snapshot of all registries (useful for plugin discovery/debug).
 
     Example:

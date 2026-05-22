@@ -2,8 +2,10 @@
 
 # src/adsa/gui/services/plugin_service.py
 from __future__ import annotations
+
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
+
 from menipy.common.plugin_db import PluginDB
 from menipy.common.plugins import discover_into_db, load_active_plugins
 

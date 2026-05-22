@@ -2,31 +2,36 @@
 Tests for detection plugins.
 """
 
-import pytest
-import numpy as np
-import cv2
 import sys
+from importlib import import_module
 from pathlib import Path
+
+import cv2
+import numpy as np
 
 # Add plugins directory to path
 plugins_dir = Path(__file__).parent.parent / "plugins"
 sys.path.insert(0, str(plugins_dir))
 
-# Import plugins to register them
-import detect_needle
-import detect_roi
-import detect_substrate
-import detect_drop
-import detect_apex
 
+# Import plugins to register them
+for plugin_name in (
+    "detect_needle",
+    "detect_roi",
+    "detect_substrate",
+    "detect_drop",
+    "detect_apex",
+):
+    import_module(plugin_name)
+
+from menipy.common.auto_calibrator import AutoCalibrator
 from menipy.common.registry import (
+    APEX_DETECTORS,
+    DROP_DETECTORS,
     NEEDLE_DETECTORS,
     ROI_DETECTORS,
     SUBSTRATE_DETECTORS,
-    DROP_DETECTORS,
-    APEX_DETECTORS,
 )
-from menipy.common.auto_calibrator import AutoCalibrator
 
 
 def create_sessile_test_image(

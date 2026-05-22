@@ -13,7 +13,7 @@ except Exception:
 
 def _fallback_circle(h, w, points=200):
     """Generate a parametric circle contour.
-    
+
     Parameters
     ----------
     h : int
@@ -22,7 +22,7 @@ def _fallback_circle(h, w, points=200):
         Image width.
     points : int, optional
         Number of points to generate on the circle. Default is 200.
-    
+
     Returns
     -------
     ndarray

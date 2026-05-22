@@ -17,8 +17,8 @@ from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QFileDialog
 
 if TYPE_CHECKING:
-    from menipy.gui.views.main_window import MainWindow
     from menipy.gui.controllers.setup_panel_controller import SetupPanelController
+    from menipy.gui.views.main_window import MainWindow
     from menipy.gui.views.preview_panel import PreviewPanel
 
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ class ImageManager(QObject):
         setup_ctrl: SetupPanelController,
         preview_panel: PreviewPanel,
         preprocessing_ctrl=None,
-        parent: Optional[QObject] = None,
+        parent: QObject | None = None,
     ):
         """Initialize.
 
@@ -57,12 +57,12 @@ class ImageManager(QObject):
         self.preview_panel = preview_panel
         self.preprocessing_ctrl = preprocessing_ctrl
 
-        self._cached_image_path: Optional[str] = None
-        self._cached_image_data: Optional[np.ndarray] = None
+        self._cached_image_path: str | None = None
+        self._cached_image_data: np.ndarray | None = None
 
     def load_preprocessing_image(
-        self, path_override: Optional[str] = None
-    ) -> Optional[np.ndarray]:
+        self, path_override: str | None = None
+    ) -> np.ndarray | None:
         """Loads the image for preprocessing (as BGR numpy array)."""
         if self.preprocessing_ctrl is None:
             return None

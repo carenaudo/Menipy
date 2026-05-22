@@ -5,19 +5,20 @@ dynamic auto-calibration fallback, SOP configuration loading, and SQLite databas
 """
 
 from __future__ import annotations
+
 import argparse
 import csv
 import json
 import logging
-from pathlib import Path
 import sys
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from menipy.common import acquisition as acq
+from menipy.models.config import EdgeDetectionSettings, PreprocessingSettings
+from menipy.models.context import Context
 from menipy.pipelines.base import PipelineError
 from menipy.pipelines.runner import PipelineRunner
-from menipy.models.context import Context
-from menipy.models.config import PreprocessingSettings, EdgeDetectionSettings
-from menipy.common import acquisition as acq
 
 # Standard log configuration
 logger = logging.getLogger("menipy.cli")
@@ -35,6 +36,7 @@ except ImportError:
 
 try:
     from PIL import Image
+
     _PIL_OK = True
 except ImportError:
     _PIL_OK = False
@@ -42,22 +44,31 @@ except ImportError:
 # Try loading SQLite database dependencies
 try:
     from menipy.common.material_db import MaterialDB
+
     _MATERIAL_DB_OK = True
 except ImportError:
     _MATERIAL_DB_OK = False
 
 try:
     from menipy.common.plugin_db import PluginDB
-    from menipy.common.plugins import discover_into_db, load_active_plugins, discover_and_load_from_db
+    from menipy.common.plugins import (
+        discover_and_load_from_db,
+        discover_into_db,
+        load_active_plugins,
+    )
+
     _PLUGINS_OK = True
 except ImportError:
     _PLUGINS_OK = False
 
+
 class NumpyEncoder(json.JSONEncoder):
     """Custom JSON encoder to handle numpy data types seamlessly in headless CLI."""
+
     def default(self, obj: Any) -> Any:
         try:
             import numpy as np
+
             if isinstance(obj, (np.integer, np.int64, np.int32, np.int16, np.int8)):
                 return int(obj)
             elif isinstance(obj, (np.floating, np.float64, np.float32, np.float16)):
@@ -89,7 +100,7 @@ def _save_image_bgr(path: Path, img):
     raise RuntimeError("Install opencv-python or Pillow to save images.")
 
 
-def _parse_numbers(value: str, name: str, expected: int) -> Tuple[float, ...]:
+def _parse_numbers(value: str, name: str, expected: int) -> tuple[float, ...]:
     """Parse comma/semicolon separated numbers."""
     cleaned = value
     for sep in (",", ";"):
@@ -103,7 +114,7 @@ def _parse_numbers(value: str, name: str, expected: int) -> Tuple[float, ...]:
         raise ValueError(f"{name} must contain numeric values") from exc
 
 
-def _parse_rect(value: str, name: str) -> Tuple[int, int, int, int]:
+def _parse_rect(value: str, name: str) -> tuple[int, int, int, int]:
     """Parse rectangle coordinates (x,y,w,h)."""
     x, y, w, h = _parse_numbers(value, name, expected=4)
     if w <= 0 or h <= 0:
@@ -111,7 +122,7 @@ def _parse_rect(value: str, name: str) -> Tuple[int, int, int, int]:
     return int(round(x)), int(round(y)), int(round(w)), int(round(h))
 
 
-def _parse_line(value: str, name: str) -> Tuple[Tuple[int, int], Tuple[int, int]]:
+def _parse_line(value: str, name: str) -> tuple[tuple[int, int], tuple[int, int]]:
     """Parse line endpoints (x1,y1,x2,y2)."""
     x1, y1, x2, y2 = _parse_numbers(value, name, expected=4)
     if x1 == x2 and y1 == y2:
@@ -119,7 +130,7 @@ def _parse_line(value: str, name: str) -> Tuple[Tuple[int, int], Tuple[int, int]
     return (int(round(x1)), int(round(y1))), (int(round(x2)), int(round(y2)))
 
 
-def _patch_acquisition(p, *, image: Optional[Path], camera: Optional[int], frames: int):
+def _patch_acquisition(p, *, image: Path | None, camera: int | None, frames: int):
     """Replace pipeline acquisition function for CLI mode."""
     if image:
         img_path = str(image)
@@ -140,7 +151,7 @@ def _patch_acquisition(p, *, image: Optional[Path], camera: Optional[int], frame
     p.do_acquisition = do_acq_from_camera
 
 
-def main(argv: Optional[List[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     """Consolidated main CLI runner."""
     ap = argparse.ArgumentParser(
         prog="adsa",
@@ -150,7 +161,13 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument(
         "--pipeline",
         default="sessile",
-        choices=["sessile", "oscillating", "capillary_rise", "pendant", "captive_bubble"],
+        choices=[
+            "sessile",
+            "oscillating",
+            "capillary_rise",
+            "pendant",
+            "captive_bubble",
+        ],
         help="Droplet shape analysis pipeline to run (default: sessile)",
     )
 
@@ -158,24 +175,36 @@ def main(argv: Optional[List[str]] = None) -> int:
     src = ap.add_mutually_exclusive_group()
     src.add_argument("--image", type=str, help="Path to input image file")
     src.add_argument("--camera", type=int, help="Camera index (e.g., 0)")
-    src.add_argument("--input-dir", "-i", type=str, help="Input directory containing batch images")
+    src.add_argument(
+        "--input-dir", "-i", type=str, help="Input directory containing batch images"
+    )
 
     ap.add_argument(
-        "--glob", "-g",
+        "--glob",
+        "-g",
         type=str,
         default="*.png,*.jpg,*.jpeg",
         help="Glob patterns to filter batch images, comma-separated (default: *.png,*.jpg,*.jpeg)",
     )
     ap.add_argument(
-        "--frames", type=int, default=1, help="Number of frames to acquire when using --camera"
+        "--frames",
+        type=int,
+        default=1,
+        help="Number of frames to acquire when using --camera",
     )
 
     # Output Controls
     ap.add_argument(
-        "--out", type=str, default="./out", help="Output directory path (default: ./out)"
+        "--out",
+        type=str,
+        default="./out",
+        help="Output directory path (default: ./out)",
     )
     ap.add_argument(
-        "--output-dir", "-o", type=str, help="Alias for --out to define output directory path"
+        "--output-dir",
+        "-o",
+        type=str,
+        help="Alias for --out to define output directory path",
     )
     ap.add_argument(
         "--no-overlay", action="store_true", help="Skip overlay drawing stages"
@@ -184,18 +213,25 @@ def main(argv: Optional[List[str]] = None) -> int:
     # Manual Coordinate Coordinates (Optional if using --auto-calibrate)
     ap.add_argument("--roi", type=str, help="ROI bounding box as x,y,w,h")
     ap.add_argument("--needle", type=str, help="Needle bounding box as x,y,w,h")
-    ap.add_argument("--contact-line", "--baseline", type=str, help="Optional baseline as x1,y1,x2,y2")
+    ap.add_argument(
+        "--contact-line",
+        "--baseline",
+        type=str,
+        help="Optional baseline as x1,y1,x2,y2",
+    )
 
     # Parity: Auto-Calibration
     ap.add_argument(
-        "--auto-calibrate", "-a",
+        "--auto-calibrate",
+        "-a",
         action="store_true",
         help="Enable automatic calibration detection (runs baseline AutoCalibrator on input)",
     )
 
     # Parity: SQLite Material/Needle DB Lookup
     ap.add_argument(
-        "--material", "--fluid-name",
+        "--material",
+        "--fluid-name",
         type=str,
         dest="material",
         help="Fluid name to query density (rho1) from SQLite materials DB",
@@ -219,7 +255,8 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     # Parity: SOP Loading
     ap.add_argument(
-        "--sop", "-s",
+        "--sop",
+        "-s",
         type=str,
         help="Standard Operating Procedure profile name or JSON file path",
     )
@@ -263,9 +300,15 @@ def main(argv: Optional[List[str]] = None) -> int:
     sub = ap.add_subparsers(dest="command")
     sp_plugins = sub.add_parser("plugins", help="Plugin DB management")
     sp_plugins_sub = sp_plugins.add_subparsers(dest="plugins_cmd")
-    sp_set_dirs = sp_plugins_sub.add_parser("set-dirs", help="Set SQLite plugin scan directories")
-    sp_set_dirs.add_argument("dirs", type=str, help="Directories string (colon/semicolon separated)")
-    sp_set_dirs.add_argument("--db", type=str, default="adsa_plugins.sqlite", help="SQLite db path")
+    sp_set_dirs = sp_plugins_sub.add_parser(
+        "set-dirs", help="Set SQLite plugin scan directories"
+    )
+    sp_set_dirs.add_argument(
+        "dirs", type=str, help="Directories string (colon/semicolon separated)"
+    )
+    sp_set_dirs.add_argument(
+        "--db", type=str, default="adsa_plugins.sqlite", help="SQLite db path"
+    )
 
     args = ap.parse_args(argv)
 
@@ -281,7 +324,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 0
 
     # Resolve Output Folder (supporting user-specified --output-dir and --out)
-    out_dir = Path(args.output_dir if args.output_dir else args.out).expanduser().resolve()
+    out_dir = (
+        Path(args.output_dir if args.output_dir else args.out).expanduser().resolve()
+    )
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # Initialize SQLite Plugin system if active
@@ -291,7 +336,9 @@ def main(argv: Optional[List[str]] = None) -> int:
             db.init_schema()
             loaded = discover_and_load_from_db(db)
             if not loaded:
-                dirs = [Path(p) for p in str(args.plugins).replace(";", ":").split(":") if p]
+                dirs = [
+                    Path(p) for p in str(args.plugins).replace(";", ":").split(":") if p
+                ]
                 discover_into_db(db, dirs)
                 for spec in args.activate:
                     if ":" in spec:
@@ -311,7 +358,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         sop_path = Path(args.sop)
         if sop_path.is_file():
             try:
-                with open(sop_path, "r", encoding="utf-8") as f:
+                with open(sop_path, encoding="utf-8") as f:
                     sop_data = json.load(f)
                 logger.info(f"Loaded SOP configuration from JSON file: {sop_path}")
             except Exception as e:
@@ -321,6 +368,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             # Attempt to query SopService database (GUI fallback)
             try:
                 from menipy.gui.services.sop_service import SopService
+
                 service = SopService()
                 sop = service.get(args.pipeline, args.sop)
                 if sop:
@@ -330,16 +378,20 @@ def main(argv: Optional[List[str]] = None) -> int:
                     }
                     logger.info(f"Loaded SOP profile '{args.sop}' from SopService")
                 else:
-                    logger.warning(f"Sop profile '{args.sop}' not found in SopService database.")
+                    logger.warning(
+                        f"Sop profile '{args.sop}' not found in SopService database."
+                    )
             except Exception:
-                logger.warning(f"Could not load SOP database in headless context for: '{args.sop}'")
+                logger.warning(
+                    f"Could not load SOP database in headless context for: '{args.sop}'"
+                )
 
     # Map settings from SOP parameters if loaded
     sop_params = sop_data.get("params", {}) if sop_data else {}
-    
+
     # 2. Material and Needle lookups from SQLite DB
     rho1 = 1000.0  # drop density
-    rho2 = 1.2     # continuous phase density
+    rho2 = 1.2  # continuous phase density
     needle_diameter_mm = args.needle_diameter
 
     if _MATERIAL_DB_OK:
@@ -352,23 +404,34 @@ def main(argv: Optional[List[str]] = None) -> int:
                 mat = mdb.get_material(args.material)
                 if mat:
                     rho1 = mat.get("density", 1000.0)
-                    logger.info(f"Retrieved fluid density for '{args.material}': {rho1} kg/m3")
+                    logger.info(
+                        f"Retrieved fluid density for '{args.material}': {rho1} kg/m3"
+                    )
                 else:
-                    logger.warning(f"Fluid '{args.material}' not found in SQLite Materials DB. Falling back to default density.")
+                    logger.warning(
+                        f"Fluid '{args.material}' not found in SQLite Materials DB. Falling back to default density."
+                    )
 
             # Needle size lookup
             if args.needle_name:
                 needles = mdb.list_needles()
                 needle_match = None
                 for n in needles:
-                    if n["name"].lower() == args.needle_name.lower() or (n.get("gauge") and n["gauge"].lower() == args.needle_name.lower()):
+                    if n["name"].lower() == args.needle_name.lower() or (
+                        n.get("gauge")
+                        and n["gauge"].lower() == args.needle_name.lower()
+                    ):
                         needle_match = n
                         break
                 if needle_match:
                     needle_diameter_mm = needle_match.get("outer_diameter")
-                    logger.info(f"Retrieved needle size for '{args.needle_name}': {needle_diameter_mm} mm")
+                    logger.info(
+                        f"Retrieved needle size for '{args.needle_name}': {needle_diameter_mm} mm"
+                    )
                 else:
-                    logger.warning(f"Needle specifications for '{args.needle_name}' not found in SQLite needles DB.")
+                    logger.warning(
+                        f"Needle specifications for '{args.needle_name}' not found in SQLite needles DB."
+                    )
         except Exception as e:
             logger.warning(f"Failed to query materials SQLite DB: {e}")
 
@@ -384,7 +447,9 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     # Edge Detection
     if args.edge_detection_method:
-        edge_detection_settings = EdgeDetectionSettings(method=args.edge_detection_method)
+        edge_detection_settings = EdgeDetectionSettings(
+            method=args.edge_detection_method
+        )
     elif "edge_detection" in sop_params and sop_params["edge_detection"]:
         edge_detection_settings = EdgeDetectionSettings(**sop_params["edge_detection"])
     else:
@@ -406,7 +471,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         runner.pipeline.do_overlay = lambda ctx: ctx
 
     # Build input files queue
-    files_queue: List[Path] = []
+    files_queue: list[Path] = []
     if args.image:
         files_queue.append(Path(args.image).expanduser().resolve())
     elif args.input_dir:
@@ -419,11 +484,15 @@ def main(argv: Optional[List[str]] = None) -> int:
         for pat in patterns:
             files_queue.extend(input_dir_path.glob(pat))
         # Remove duplicates and sort
-        files_queue = sorted(list(set(files_queue)))
+        files_queue = sorted(set(files_queue))
         if not files_queue:
-            logger.error(f"No matching image files found under {input_dir_path} with glob filter: '{args.glob}'")
+            logger.error(
+                f"No matching image files found under {input_dir_path} with glob filter: '{args.glob}'"
+            )
             return 1
-        logger.info(f"Batch mode activated. Found {len(files_queue)} images to analyze.")
+        logger.info(
+            f"Batch mode activated. Found {len(files_queue)} images to analyze."
+        )
 
     # 3. Main execution path
     # Parsing manual geometries early if provided
@@ -442,13 +511,15 @@ def main(argv: Optional[List[str]] = None) -> int:
         ap.error(str(e))
 
     # Core execution block
-    run_records: List[Dict[str, Any]] = []
+    run_records: list[dict[str, Any]] = []
 
     if args.camera is not None:
         # Camera Capture Path
         logger.info(f"Opening camera stream index: {args.camera}")
-        _patch_acquisition(runner.pipeline, image=None, camera=args.camera, frames=args.frames)
-        
+        _patch_acquisition(
+            runner.pipeline, image=None, camera=args.camera, frames=args.frames
+        )
+
         # Calibration Fallback / Auto-Calibration on camera frames
         roi_rect = manual_roi
         needle_rect = manual_needle
@@ -458,20 +529,27 @@ def main(argv: Optional[List[str]] = None) -> int:
             logger.info("Acquiring preview frame to run Auto-Calibration...")
             try:
                 temp_ctx = Context()
-                _patch_acquisition(runner.pipeline, image=None, camera=args.camera, frames=1)
+                _patch_acquisition(
+                    runner.pipeline, image=None, camera=args.camera, frames=1
+                )
                 temp_ctx = runner.pipeline.do_acquisition(temp_ctx)
                 if temp_ctx.frames:
                     first_frame = temp_ctx.frames[0]
                     if hasattr(first_frame, "image"):
                         first_frame = first_frame.image
                     from menipy.common.auto_calibrator import run_auto_calibration
+
                     cal_res = run_auto_calibration(first_frame, args.pipeline)
                     roi_rect = cal_res.roi_rect
                     needle_rect = cal_res.needle_rect
                     substrate_line = cal_res.substrate_line
-                    logger.info(f"Auto-Calibration completed. ROI: {roi_rect}, Needle: {needle_rect}")
+                    logger.info(
+                        f"Auto-Calibration completed. ROI: {roi_rect}, Needle: {needle_rect}"
+                    )
             except Exception as e:
-                logger.warning(f"Auto-calibration failed, relying on default/fallback geometries: {e}")
+                logger.warning(
+                    f"Auto-calibration failed, relying on default/fallback geometries: {e}"
+                )
 
         # Compute calibration metrics
         px_per_mm = 100.0 / max(needle_diameter_mm or 0.72, 0.001)
@@ -489,13 +567,13 @@ def main(argv: Optional[List[str]] = None) -> int:
                 needle_diameter_mm=needle_diameter_mm,
                 physics={"rho1": rho1, "rho2": rho2, "g": 9.80665},
             )
-            
+
             # Export outputs
             if getattr(ctx, "preview", None) is not None:
                 _save_image_bgr(out_dir / "preview.png", ctx.preview)
             if getattr(ctx, "overlay", None) is not None:
                 _save_image_bgr(out_dir / "overlay.png", ctx.overlay)
-            
+
             results_out = {
                 "pipeline": runner.pipeline.name,
                 "results": ctx.results,
@@ -506,7 +584,9 @@ def main(argv: Optional[List[str]] = None) -> int:
             }
             with open(out_dir / "results.json", "w", encoding="utf-8") as f:
                 json.dump(results_out, f, indent=2, cls=NumpyEncoder)
-            logger.info(f"Successfully processed camera capture. Outputs written to {out_dir}")
+            logger.info(
+                f"Successfully processed camera capture. Outputs written to {out_dir}"
+            )
             return 0
         except PipelineError as e:
             logger.error(f"Pipeline execution error: {e}")
@@ -532,8 +612,9 @@ def main(argv: Optional[List[str]] = None) -> int:
                     if hasattr(first_frame, "image"):
                         first_frame = first_frame.image
                     from menipy.common.auto_calibrator import run_auto_calibration
+
                     cal_res = run_auto_calibration(first_frame, args.pipeline)
-                    
+
                     # Update parameters if not explicitly provided by user
                     if not roi_rect:
                         roi_rect = cal_res.roi_rect
@@ -541,8 +622,10 @@ def main(argv: Optional[List[str]] = None) -> int:
                         needle_rect = cal_res.needle_rect
                     if not substrate_line:
                         substrate_line = cal_res.substrate_line
-                    
-                    logger.debug(f"Auto-Calibrated ROI: {roi_rect}, Needle: {needle_rect}, Substrate: {substrate_line}")
+
+                    logger.debug(
+                        f"Auto-Calibrated ROI: {roi_rect}, Needle: {needle_rect}, Substrate: {substrate_line}"
+                    )
             except Exception as e:
                 logger.warning(f"Failed to auto-calibrate image {img_path.name}: {e}")
 
@@ -593,15 +676,21 @@ def main(argv: Optional[List[str]] = None) -> int:
                 json.dump(results_out, f, indent=2, cls=NumpyEncoder)
 
             # Extract metrics for consolidated batch CSV
-            qa_ok = ctx.qa.get("ok", True) if isinstance(ctx.qa, dict) else getattr(ctx.qa, "ok", True)
+            qa_ok = (
+                ctx.qa.get("ok", True)
+                if isinstance(ctx.qa, dict)
+                else getattr(ctx.qa, "ok", True)
+            )
             metrics = ctx.results if isinstance(ctx.results, dict) else {}
-            
-            run_records.append({
-                "image_path": str(img_path),
-                "pipeline": runner.pipeline.name,
-                "qa_ok": qa_ok,
-                "metrics": metrics
-            })
+
+            run_records.append(
+                {
+                    "image_path": str(img_path),
+                    "pipeline": runner.pipeline.name,
+                    "qa_ok": qa_ok,
+                    "metrics": metrics,
+                }
+            )
 
         except PipelineError as e:
             logger.error(f"Failed to process {img_path.name}: {e}")
@@ -612,12 +701,12 @@ def main(argv: Optional[List[str]] = None) -> int:
     if args.input_dir and run_records:
         csv_path = out_dir / "results.csv"
         csv_headers = ["image_path", "pipeline", "qa_ok"]
-        
+
         # Collect dynamic metric headers
         unique_metric_keys = set()
         for rec in run_records:
             unique_metric_keys.update(rec["metrics"].keys())
-        csv_headers.extend(sorted(list(unique_metric_keys)))
+        csv_headers.extend(sorted(unique_metric_keys))
 
         try:
             with open(csv_path, "w", newline="", encoding="utf-8") as f:
@@ -628,10 +717,12 @@ def main(argv: Optional[List[str]] = None) -> int:
                         "image_path": rec["image_path"],
                         "pipeline": rec["pipeline"],
                         "qa_ok": rec["qa_ok"],
-                        **rec["metrics"]
+                        **rec["metrics"],
                     }
                     writer.writerow(row_data)
-            logger.info(f"Consolidated results table exported successfully to: {csv_path}")
+            logger.info(
+                f"Consolidated results table exported successfully to: {csv_path}"
+            )
         except Exception as e:
             logger.error(f"Failed to export batch results.csv: {e}")
 

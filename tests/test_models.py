@@ -6,9 +6,9 @@ import numpy as np
 
 from menipy.common.geometry import fit_circle, horizontal_intersections
 from menipy.models.properties import (
+    contact_angle_from_mask,
     droplet_volume,
     estimate_surface_tension,
-    contact_angle_from_mask,
 )
 
 

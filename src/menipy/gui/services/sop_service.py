@@ -1,9 +1,11 @@
 """Standard Operating Procedure (SOP) management service."""
 
 from __future__ import annotations
-from dataclasses import dataclass, asdict
-from pathlib import Path
+
+import builtins
 import json
+from dataclasses import asdict, dataclass
+from pathlib import Path
 from typing import Dict, List, Optional
 
 
@@ -18,14 +20,14 @@ def _app_data_dir() -> Path:
 @dataclass
 class Sop:
     name: str
-    include_stages: List[str]  # e.g., ["acquisition","preprocessing",..., "validation"]
-    params: Dict[str, dict] | None = None  # per-stage params (optional)
+    include_stages: list[str]  # e.g., ["acquisition","preprocessing",..., "validation"]
+    params: dict[str, dict] | None = None  # per-stage params (optional)
 
 
 class SopService:
     def __init__(self, filename: str = "sops.json") -> None:
         self.path = _app_data_dir() / filename
-        self._data: Dict[str, Dict[str, dict]] = {}  # pipeline -> sop_name -> sop_dict
+        self._data: dict[str, dict[str, dict]] = {}  # pipeline -> sop_name -> sop_dict
         self.load()
 
     # ---------- file I/O ----------
@@ -42,10 +44,10 @@ class SopService:
         self.path.write_text(json.dumps(self._data, indent=2), encoding="utf-8")
 
     # ---------- SOP CRUD ----------
-    def list(self, pipeline: str) -> List[str]:
+    def list(self, pipeline: str) -> builtins.list[str]:
         return sorted((self._data.get(pipeline) or {}).keys())
 
-    def get(self, pipeline: str, name: str) -> Optional[Sop]:
+    def get(self, pipeline: str, name: str) -> Sop | None:
         d = (self._data.get(pipeline) or {}).get(name)
         if not d:
             return None
@@ -69,7 +71,7 @@ class SopService:
                 del self._data[pipeline]
             self.save()
 
-    def ensure_default(self, pipeline: str, default_stages: List[str]) -> None:
+    def ensure_default(self, pipeline: str, default_stages: builtins.list[str]) -> None:
         # Create/refresh a sentinel default if missing
         if not self.get(pipeline, "__default__"):
             self.upsert(

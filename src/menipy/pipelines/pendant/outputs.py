@@ -5,11 +5,10 @@ Collects fit parameters into `ctx.results` and ensures predictable keys.
 
 from __future__ import annotations
 
-from typing import Optional
 from menipy.models.context import Context
 
 
-def run(ctx: Context) -> Optional[Context]:
+def run(ctx: Context) -> Context | None:
     """Run.
 
     Parameters
@@ -25,7 +24,7 @@ def run(ctx: Context) -> Optional[Context]:
     if getattr(ctx, "fit", None):
         names = (ctx.fit or {}).get("param_names", [])
         params = (ctx.fit or {}).get("params", [])
-        fit_map = {n: p for n, p in zip(names, params)}
+        fit_map = dict(zip(names, params))
         ctx.results = ctx.results or {}
         ctx.results.update(fit_map)
     ctx.results = ctx.results or {}

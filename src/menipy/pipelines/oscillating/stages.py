@@ -5,23 +5,23 @@ Module implementation."""
 # pipeline/pendant/stages.py (test-specific overrides)
 from __future__ import annotations
 
-from typing import Optional, List
+from pathlib import Path
+
 import numpy as np
 
-from menipy.pipelines.base import PipelineBase
-from menipy.models.context import Context
-from menipy.models.fit import FitConfig
-from menipy.models.geometry import Contour, Geometry
 from menipy.common import edge_detection as edged
 from menipy.common import overlay as ovl
 from menipy.common import solver as common_solver
-from pathlib import Path
 from menipy.common._module_loader import load_module_from_path
+from menipy.models.context import Context
+from menipy.models.fit import FitConfig
+from menipy.models.geometry import Contour, Geometry
+from menipy.pipelines.base import PipelineBase
 
 _repo_root = Path(__file__).resolve().parents[4]
 _toy_path = _repo_root / "plugins" / "toy_young_laplace.py"
 _toy_mod = load_module_from_path(_toy_path, "menipy_plugins.toy_young_laplace")
-young_laplace_sphere = getattr(_toy_mod, "toy_young_laplace")
+young_laplace_sphere = _toy_mod.toy_young_laplace
 
 
 def _contour_from_frame(ctx: Context, frame) -> np.ndarray:
@@ -86,20 +86,20 @@ class OscillatingPipeline(PipelineBase):
         ],
     }
 
-    def do_acquisition(self, ctx: Context) -> Optional[Context]:
+    def do_acquisition(self, ctx: Context) -> Context | None:
         return ctx
 
-    def do_preprocessing(self, ctx: Context) -> Optional[Context]:
+    def do_preprocessing(self, ctx: Context) -> Context | None:
         return ctx
 
-    def do_contour_extraction(self, ctx: Context) -> Optional[Context]:
+    def do_contour_extraction(self, ctx: Context) -> Context | None:
         """Extract contour from each frame for oscillation analysis."""
         frames = (
             ctx.frames
             if isinstance(ctx.frames, list)
             else ([ctx.frames] if ctx.frames is not None else [])
         )
-        contours: List[object] = []
+        contours: list[object] = []
         for f in frames[:]:  # safe slice
             xy = _contour_from_frame(ctx, f)
             C = Contour(xy=xy)
@@ -111,7 +111,7 @@ class OscillatingPipeline(PipelineBase):
             ctx.contour = contours[0]
         return ctx
 
-    def do_geometric_features(self, ctx: Context) -> Optional[Context]:
+    def do_geometric_features(self, ctx: Context) -> Context | None:
         """Extract axis, apex and radius series from contours."""
         # Use frame 0 for geometry refs; also build r_eq(t)
         if getattr(ctx, "contours_by_frame", None):
@@ -154,12 +154,12 @@ class OscillatingPipeline(PipelineBase):
 
         return ctx
 
-    def do_calibration(self, ctx: Context) -> Optional[Context]:
+    def do_calibration(self, ctx: Context) -> Context | None:
         """Set up pixel-to-mm scaling."""
         ctx.scale = ctx.scale or {"px_per_mm": 1.0}
         return ctx
 
-    def do_physics(self, ctx: Context) -> Optional[Context]:
+    def do_physics(self, ctx: Context) -> Context | None:
         # include fps if known (used to estimate f0)
         ctx.physics = ctx.physics or {}
         ctx.physics.setdefault("fps", 100.0)  # default if unknown
@@ -168,7 +168,7 @@ class OscillatingPipeline(PipelineBase):
         ctx.physics.setdefault("g", 9.80665)
         return ctx
 
-    def do_profile_fitting(self, ctx: Context) -> Optional[Context]:
+    def do_profile_fitting(self, ctx: Context) -> Context | None:
         """Fit R0 from frame 0 contour."""
         # Simple: fit R0_mm on frame-0 only (toy model)
         cfg = FitConfig(
@@ -181,7 +181,7 @@ class OscillatingPipeline(PipelineBase):
         common_solver.run(ctx, integrator=young_laplace_sphere, config=cfg)
         return ctx
 
-    def do_compute_metrics(self, ctx: Context) -> Optional[Context]:
+    def do_compute_metrics(self, ctx: Context) -> Context | None:
         """Aggregate fit results, compute frequency from oscillation data."""
         # First estimate oscillation frequency from r_eq(t)
         series = getattr(ctx, "r_eq_series_px", None)
@@ -209,14 +209,14 @@ class OscillatingPipeline(PipelineBase):
             names.append("f0_Hz")
             params.append(f0)
 
-        results = {n: p for n, p in zip(names, params)}
+        results = dict(zip(names, params))
         results["residuals"] = fit.get("residuals", {})
         # Export a couple of geometry refs
         results["r0_eq_px"] = getattr(ctx, "r0_eq_px", None)
         ctx.results = results
         return ctx
 
-    def do_overlay(self, ctx: Context) -> Optional[Context]:
+    def do_overlay(self, ctx: Context) -> Context | None:
         if ctx.contour is not None and ctx.contour.xy is not None:
             xy = np.asarray(ctx.contour.xy, dtype=float)
         else:

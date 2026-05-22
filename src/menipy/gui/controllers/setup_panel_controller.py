@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Optional, Sequence
+from typing import Any, Optional
 
 from PySide6.QtCore import QObject, Qt, QTimer, Signal
 from PySide6.QtGui import QIcon
@@ -71,7 +72,7 @@ class SetupPanelController(QObject):
         settings: Any,
         sops: Any,
         stage_order: Sequence[str],
-        step_item_cls: Optional[type],
+        step_item_cls: type | None,
         pipeline_keys: Sequence[str],
     ) -> None:
         super().__init__(window)
@@ -85,36 +86,28 @@ class SetupPanelController(QObject):
             str(k).lower() for k in (pipeline_keys or PIPELINE_MAP.keys()) if k
         }
 
-        self.pipelineGroup: Optional[QGroupBox] = panel.findChild(
+        self.pipelineGroup: QGroupBox | None = panel.findChild(
             QGroupBox, "pipelineGroup"
         )
-        self.sourceGroup: Optional[QGroupBox] = panel.findChild(QGroupBox, "sourceGroup")
+        self.sourceGroup: QGroupBox | None = panel.findChild(QGroupBox, "sourceGroup")
 
-        self.testCombo: Optional[QComboBox] = panel.findChild(QComboBox, "testCombo")
-        self.pipelineCombo: Optional[QComboBox] = panel.findChild(
+        self.testCombo: QComboBox | None = panel.findChild(QComboBox, "testCombo")
+        self.pipelineCombo: QComboBox | None = panel.findChild(
             QComboBox, "pipelineCombo"
         )
-        self.sopCombo: Optional[QComboBox] = panel.findChild(QComboBox, "sopCombo")
-        self.addSopBtn: Optional[QToolButton] = panel.findChild(
-            QToolButton, "addSopBtn"
-        )
+        self.sopCombo: QComboBox | None = panel.findChild(QComboBox, "sopCombo")
+        self.addSopBtn: QToolButton | None = panel.findChild(QToolButton, "addSopBtn")
         # Segmented pipeline selection buttons introduced in the revamped UI
-        self.sessileBtn: Optional[QPushButton] = panel.findChild(
-            QPushButton, "sessileBtn"
-        )
-        self.pendantBtn: Optional[QPushButton] = panel.findChild(
-            QPushButton, "pendantBtn"
-        )
-        self.oscillatingBtn: Optional[QPushButton] = panel.findChild(
+        self.sessileBtn: QPushButton | None = panel.findChild(QPushButton, "sessileBtn")
+        self.pendantBtn: QPushButton | None = panel.findChild(QPushButton, "pendantBtn")
+        self.oscillatingBtn: QPushButton | None = panel.findChild(
             QPushButton, "oscillatingBtn"
         )
-        self.capillaryBtn: Optional[QPushButton] = panel.findChild(
+        self.capillaryBtn: QPushButton | None = panel.findChild(
             QPushButton, "capillaryBtn"
         )
-        self.captiveBtn: Optional[QPushButton] = panel.findChild(
-            QPushButton, "captiveBtn"
-        )
-        self._pipeline_button_map: dict[Optional[QPushButton], str] = {
+        self.captiveBtn: QPushButton | None = panel.findChild(QPushButton, "captiveBtn")
+        self._pipeline_button_map: dict[QPushButton | None, str] = {
             self.sessileBtn: "sessile",
             self.pendantBtn: "pendant",
             self.oscillatingBtn: "oscillating",
@@ -136,145 +129,141 @@ class SetupPanelController(QObject):
             "captive_bubble": "captive_bubble",
         }
 
-        self.singleModeRadio: Optional[QRadioButton] = panel.findChild(
+        self.singleModeRadio: QRadioButton | None = panel.findChild(
             QRadioButton, "singleModeRadio"
         )
-        self.batchModeRadio: Optional[QRadioButton] = panel.findChild(
+        self.batchModeRadio: QRadioButton | None = panel.findChild(
             QRadioButton, "batchModeRadio"
         )
-        self.cameraModeRadio: Optional[QRadioButton] = panel.findChild(
+        self.cameraModeRadio: QRadioButton | None = panel.findChild(
             QRadioButton, "cameraModeRadio"
         )
 
-        self.imagePathEdit: Optional[QLineEdit] = panel.findChild(
+        self.imagePathEdit: QLineEdit | None = panel.findChild(
             QLineEdit, "imagePathEdit"
         )
-        self.batchPathEdit: Optional[QLineEdit] = panel.findChild(
+        self.batchPathEdit: QLineEdit | None = panel.findChild(
             QLineEdit, "batchPathEdit"
         )
-        self.sourceIdCombo: Optional[QComboBox] = panel.findChild(
+        self.sourceIdCombo: QComboBox | None = panel.findChild(
             QComboBox, "sourceIdCombo"
         )
-        self.labelImage: Optional[QLabel] = panel.findChild(QLabel, "labelImage")
-        self.labelBatch: Optional[QLabel] = panel.findChild(QLabel, "labelBatch")
-        self.labelSourceId: Optional[QLabel] = panel.findChild(QLabel, "labelSourceId")
-        self.labelFrames: Optional[QLabel] = panel.findChild(QLabel, "labelFrames")
+        self.labelImage: QLabel | None = panel.findChild(QLabel, "labelImage")
+        self.labelBatch: QLabel | None = panel.findChild(QLabel, "labelBatch")
+        self.labelSourceId: QLabel | None = panel.findChild(QLabel, "labelSourceId")
+        self.labelFrames: QLabel | None = panel.findChild(QLabel, "labelFrames")
 
-        self.browseBtn: Optional[QToolButton] = panel.findChild(
-            QToolButton, "browseBtn"
-        )
-        self.batchBrowseBtn: Optional[QToolButton] = panel.findChild(
+        self.browseBtn: QToolButton | None = panel.findChild(QToolButton, "browseBtn")
+        self.batchBrowseBtn: QToolButton | None = panel.findChild(
             QToolButton, "batchBrowseBtn"
         )
-        self.previewBtn: Optional[QToolButton] = panel.findChild(
-            QToolButton, "previewBtn"
-        )
-        self.autoCalibrateBtn: Optional[QPushButton] = panel.findChild(
+        self.previewBtn: QToolButton | None = panel.findChild(QToolButton, "previewBtn")
+        self.autoCalibrateBtn: QPushButton | None = panel.findChild(
             QPushButton, "autoCalibrateBtn"
         )
 
-        self.drawPointBtn: Optional[QPushButton] = panel.findChild(
+        self.drawPointBtn: QPushButton | None = panel.findChild(
             QPushButton, "drawPointBtn"
         )
-        self.drawLineBtn: Optional[QPushButton] = panel.findChild(
+        self.drawLineBtn: QPushButton | None = panel.findChild(
             QPushButton, "drawLineBtn"
         )
-        self.drawRectBtn: Optional[QPushButton] = panel.findChild(
+        self.drawRectBtn: QPushButton | None = panel.findChild(
             QPushButton, "drawRectBtn"
         )
-        self.clearOverlayBtn: Optional[QPushButton] = panel.findChild(
+        self.clearOverlayBtn: QPushButton | None = panel.findChild(
             QPushButton, "clearOverlayBtn"
         )
 
-        self.framesSpin: Optional[QSpinBox] = panel.findChild(QSpinBox, "framesSpin")
+        self.framesSpin: QSpinBox | None = panel.findChild(QSpinBox, "framesSpin")
 
         # Calibration labels for unit dynamic updates
-        self.needleLengthLabel: Optional[QLabel] = panel.findChild(
+        self.needleLengthLabel: QLabel | None = panel.findChild(
             QLabel, "needleLengthLabel"
         )
-        self.dropDensityLabel: Optional[QLabel] = panel.findChild(
+        self.dropDensityLabel: QLabel | None = panel.findChild(
             QLabel, "dropDensityLabel"
         )
-        self.fluidDensityLabel: Optional[QLabel] = panel.findChild(
+        self.fluidDensityLabel: QLabel | None = panel.findChild(
             QLabel, "fluidDensityLabel"
         )
-        self.substrateAngleLabel: Optional[QLabel] = panel.findChild(
+        self.substrateAngleLabel: QLabel | None = panel.findChild(
             QLabel, "substrateAngleLabel"
         )
-        self.gravityLabel: Optional[QLabel] = panel.findChild(QLabel, "gravityLabel")
+        self.gravityLabel: QLabel | None = panel.findChild(QLabel, "gravityLabel")
 
-        self.needleLengthSpin: Optional[QDoubleSpinBox] = panel.findChild(
+        self.needleLengthSpin: QDoubleSpinBox | None = panel.findChild(
             QDoubleSpinBox, "needleLengthSpin"
         )
-        self.dropDensitySpin: Optional[QDoubleSpinBox] = panel.findChild(
+        self.dropDensitySpin: QDoubleSpinBox | None = panel.findChild(
             QDoubleSpinBox, "dropDensitySpin"
         )
-        self.fluidDensitySpin: Optional[QDoubleSpinBox] = panel.findChild(
+        self.fluidDensitySpin: QDoubleSpinBox | None = panel.findChild(
             QDoubleSpinBox, "fluidDensitySpin"
         )
-        self.substrateAngleSpin: Optional[QDoubleSpinBox] = panel.findChild(
+        self.substrateAngleSpin: QDoubleSpinBox | None = panel.findChild(
             QDoubleSpinBox, "substrateAngleSpin"
         )
-        self.gravitySpin: Optional[QDoubleSpinBox] = panel.findChild(
+        self.gravitySpin: QDoubleSpinBox | None = panel.findChild(
             QDoubleSpinBox, "gravitySpin"
         )
-        self.needleDbBtn: Optional[QToolButton] = panel.findChild(
+        self.needleDbBtn: QToolButton | None = panel.findChild(
             QToolButton, "needleDbBtn"
         )
-        self.dropDensityDbBtn: Optional[QToolButton] = panel.findChild(
+        self.dropDensityDbBtn: QToolButton | None = panel.findChild(
             QToolButton, "dropDensityDbBtn"
         )
-        self.fluidDensityDbBtn: Optional[QToolButton] = panel.findChild(
+        self.fluidDensityDbBtn: QToolButton | None = panel.findChild(
             QToolButton, "fluidDensityDbBtn"
         )
-        self.pipelineSettingsGroup: Optional[QGroupBox] = panel.findChild(
+        self.pipelineSettingsGroup: QGroupBox | None = panel.findChild(
             QGroupBox, "pipelineSettingsGroup"
         )
-        self.pendantNeedleIdLabel: Optional[QLabel] = panel.findChild(
+        self.pendantNeedleIdLabel: QLabel | None = panel.findChild(
             QLabel, "pendantNeedleIdLabel"
         )
-        self.pendantNeedleIdSpin: Optional[QDoubleSpinBox] = panel.findChild(
+        self.pendantNeedleIdSpin: QDoubleSpinBox | None = panel.findChild(
             QDoubleSpinBox, "pendantNeedleIdSpin"
         )
-        self.sessileBaselineModeLabel: Optional[QLabel] = panel.findChild(
+        self.sessileBaselineModeLabel: QLabel | None = panel.findChild(
             QLabel, "sessileBaselineModeLabel"
         )
-        self.sessileBaselineModeCombo: Optional[QComboBox] = panel.findChild(
+        self.sessileBaselineModeCombo: QComboBox | None = panel.findChild(
             QComboBox, "sessileBaselineModeCombo"
         )
-        self.oscillatingFrequencyLabel: Optional[QLabel] = panel.findChild(
+        self.oscillatingFrequencyLabel: QLabel | None = panel.findChild(
             QLabel, "oscillatingFrequencyLabel"
         )
-        self.oscillatingFrequencySpin: Optional[QDoubleSpinBox] = panel.findChild(
+        self.oscillatingFrequencySpin: QDoubleSpinBox | None = panel.findChild(
             QDoubleSpinBox, "oscillatingFrequencySpin"
         )
-        self.oscillatingAmplitudeLabel: Optional[QLabel] = panel.findChild(
+        self.oscillatingAmplitudeLabel: QLabel | None = panel.findChild(
             QLabel, "oscillatingAmplitudeLabel"
         )
-        self.oscillatingAmplitudeSpin: Optional[QDoubleSpinBox] = panel.findChild(
+        self.oscillatingAmplitudeSpin: QDoubleSpinBox | None = panel.findChild(
             QDoubleSpinBox, "oscillatingAmplitudeSpin"
         )
-        self.capillaryTubeDiameterLabel: Optional[QLabel] = panel.findChild(
+        self.capillaryTubeDiameterLabel: QLabel | None = panel.findChild(
             QLabel, "capillaryTubeDiameterLabel"
         )
-        self.capillaryTubeDiameterSpin: Optional[QDoubleSpinBox] = panel.findChild(
+        self.capillaryTubeDiameterSpin: QDoubleSpinBox | None = panel.findChild(
             QDoubleSpinBox, "capillaryTubeDiameterSpin"
         )
-        self.capillaryContactAngleLabel: Optional[QLabel] = panel.findChild(
+        self.capillaryContactAngleLabel: QLabel | None = panel.findChild(
             QLabel, "capillaryContactAngleLabel"
         )
-        self.capillaryContactAngleSpin: Optional[QDoubleSpinBox] = panel.findChild(
+        self.capillaryContactAngleSpin: QDoubleSpinBox | None = panel.findChild(
             QDoubleSpinBox, "capillaryContactAngleSpin"
         )
-        self.captiveDetectionLabel: Optional[QLabel] = panel.findChild(
+        self.captiveDetectionLabel: QLabel | None = panel.findChild(
             QLabel, "captiveDetectionLabel"
         )
-        self.captiveDetectionValue: Optional[QLabel] = panel.findChild(
+        self.captiveDetectionValue: QLabel | None = panel.findChild(
             QLabel, "captiveDetectionValue"
         )
-        self.sopGroup: Optional[QGroupBox] = panel.findChild(QGroupBox, "sopGroup")
-        self.stepsGroup: Optional[QGroupBox] = panel.findChild(QGroupBox, "stepsGroup")
-        self.advancedToggleBtn: Optional[QToolButton] = panel.findChild(
+        self.sopGroup: QGroupBox | None = panel.findChild(QGroupBox, "sopGroup")
+        self.stepsGroup: QGroupBox | None = panel.findChild(QGroupBox, "stepsGroup")
+        self.advancedToggleBtn: QToolButton | None = panel.findChild(
             QToolButton, "advancedToggleBtn"
         )
         if self.advancedToggleBtn is None:
@@ -290,13 +279,11 @@ class SetupPanelController(QObject):
                     insert_at = max(0, root_layout.count() - 1)
                 root_layout.insertWidget(insert_at, self.advancedToggleBtn)
 
-        steps_list_widget: Optional[QListWidget] = panel.findChild(
+        steps_list_widget: QListWidget | None = panel.findChild(
             QListWidget, "stepsList"
         )
         self.stepsList = steps_list_widget
-        self.runAllBtn: Optional[QPushButton] = panel.findChild(
-            QPushButton, "runAllBtn"
-        )
+        self.runAllBtn: QPushButton | None = panel.findChild(QPushButton, "runAllBtn")
 
         self.sop_ctrl = SopController(
             window=self.window,
@@ -328,8 +315,8 @@ class SetupPanelController(QObject):
         self._camera_devices: list[CameraDevice] = [CameraDevice(0, "Camera 0")]
         self._camera_frames = int(self.framesSpin.value()) if self.framesSpin else 1
         self._camera_fps = 30
-        self._camera_width: Optional[int] = None
-        self._camera_height: Optional[int] = None
+        self._camera_width: int | None = None
+        self._camera_height: int | None = None
         self._workflow_source_stack_mode = False
 
         if self.singleModeRadio and not self.singleModeRadio.isChecked():
@@ -351,7 +338,7 @@ class SetupPanelController(QObject):
 
     # -------------------------- public API --------------------------
 
-    def current_pipeline_name(self) -> Optional[str]:
+    def current_pipeline_name(self) -> str | None:
         """Gets the canonical pipeline name from the UI selection."""
         # Prefer segmented buttons if present
         for button, pipeline in self._pipeline_button_map.items():
@@ -406,8 +393,8 @@ class SetupPanelController(QObject):
         device: int,
         frames: int,
         fps: int,
-        width: Optional[int],
-        height: Optional[int],
+        width: int | None,
+        height: int | None,
     ) -> None:
         self._last_camera_id = str(int(device))
         self._camera_frames = max(1, int(frames or 1))
@@ -421,12 +408,20 @@ class SetupPanelController(QObject):
 
     def gather_run_params(self) -> dict[str, Any]:
         mode = self._mode
-        frames = int(self._camera_frames if mode == self.MODE_CAMERA else self.framesSpin.value()) if self.framesSpin else int(self._camera_frames or 1)
+        frames = (
+            int(
+                self._camera_frames
+                if mode == self.MODE_CAMERA
+                else self.framesSpin.value()
+            )
+            if self.framesSpin
+            else int(self._camera_frames or 1)
+        )
         selected = self._selected_source_value()
 
-        image: Optional[str] = None
-        batch_folder: Optional[str] = None
-        cam_id: Optional[int] = None
+        image: str | None = None
+        batch_folder: str | None = None
+        cam_id: int | None = None
 
         if mode == self.MODE_CAMERA:
             if selected is not None:
@@ -531,13 +526,13 @@ class SetupPanelController(QObject):
         # (This is tricky if done multiple times without precision loss, but helpful for UX)
         # For now, just refreshing the labels as requested.
 
-    def image_path(self) -> Optional[str]:
+    def image_path(self) -> str | None:
         if self.imagePathEdit and hasattr(self.imagePathEdit, "text"):
             text = self.imagePathEdit.text().strip()
             return text or None
         return None
 
-    def batch_path(self) -> Optional[str]:
+    def batch_path(self) -> str | None:
         if self.batchPathEdit and hasattr(self.batchPathEdit, "text"):
             text = self.batchPathEdit.text().strip()
             return text or None
@@ -599,7 +594,7 @@ class SetupPanelController(QObject):
             return
         combo.blockSignals(True)
         combo.clear()
-        for key in sorted(list(self._pipeline_keys)):
+        for key in sorted(self._pipeline_keys):
             display_name = key.replace("_", " ").title()
             combo.addItem(display_name, userData=key)
         combo.blockSignals(False)
@@ -754,9 +749,7 @@ class SetupPanelController(QObject):
             self.runAllBtn.clicked.connect(self.run_all_requested.emit)
         if self.addSopBtn:
             # Route through a lambda so tests can monkeypatch sop_ctrl.on_add_sop and observe the call
-            self.addSopBtn.clicked.connect(
-                lambda: getattr(self.sop_ctrl, "on_add_sop")()
-            )
+            self.addSopBtn.clicked.connect(lambda: self.sop_ctrl.on_add_sop())
         for button, pipeline_name in self._pipeline_button_map.items():
             if button:
                 button.clicked.connect(
@@ -822,7 +815,7 @@ class SetupPanelController(QObject):
             combo.blockSignals(prev)
         return True
 
-    def _select_pipeline_button(self, pipeline_name: Optional[str]) -> bool:
+    def _select_pipeline_button(self, pipeline_name: str | None) -> bool:
         """Select the matching segmented button without emitting extra signals."""
         if not pipeline_name:
             return False
@@ -875,7 +868,7 @@ class SetupPanelController(QObject):
             self._update_pipeline_specific_visibility(self.current_pipeline_name())
             self._sync_pipeline_button_presentation()
 
-    def _on_mode_toggled(self, button: Optional[QRadioButton], checked: bool) -> None:
+    def _on_mode_toggled(self, button: QRadioButton | None, checked: bool) -> None:
         if not checked or not button:
             return
         mode = self._mode_map.get(button)
@@ -907,7 +900,7 @@ class SetupPanelController(QObject):
         camera = self._mode == self.MODE_CAMERA
         stacked_source = bool(getattr(self, "_workflow_source_stack_mode", False))
 
-        def set_mode_visible(widget: Optional[QWidget], visible: bool) -> None:
+        def set_mode_visible(widget: QWidget | None, visible: bool) -> None:
             if widget is not None and not stacked_source:
                 widget.setVisible(visible)
 
@@ -942,7 +935,7 @@ class SetupPanelController(QObject):
         set_mode_visible(self.labelSourceId, camera or batch)
 
     def _update_pipeline_specific_visibility(
-        self, pipeline_name: Optional[str] = None
+        self, pipeline_name: str | None = None
     ) -> None:
         pipeline = pipeline_name or self.current_pipeline_name()
         is_sessile = pipeline == "sessile"
@@ -1071,7 +1064,7 @@ class SetupPanelController(QObject):
             combo.setCurrentIndex(0)
         combo.blockSignals(False)
 
-    def _selected_source_value(self) -> Optional[str]:
+    def _selected_source_value(self) -> str | None:
         """_selected_source_value."""
         if not self.sourceIdCombo:
             return None
@@ -1097,5 +1090,7 @@ class SetupPanelController(QObject):
     def _on_combo_text_changed(self, text: str) -> None:
         if self._mode == self.MODE_CAMERA:
             data = self.sourceIdCombo.currentData() if self.sourceIdCombo else None
-            self._last_camera_id = str(data if isinstance(data, int) else (text.strip() or "0"))
+            self._last_camera_id = str(
+                data if isinstance(data, int) else (text.strip() or "0")
+            )
             self.camera_config_changed.emit()

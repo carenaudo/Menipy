@@ -3,17 +3,17 @@
 Module implementation."""
 
 from __future__ import annotations
-from typing import Optional
+
 import numpy as np
 
-from menipy.pipelines.base import PipelineBase, Context, FitConfig, ovl, common_solver
-from menipy.models.geometry import CaptiveBubbleGeometry
 from menipy.common.plugin_loader import get_solver
-from menipy.pipelines.utils import ensure_contour
-from menipy.pipelines.captive_bubble.physics import compute_physics
 
 # Get solver from registry (loaded at startup)
 from menipy.math.young_laplace import young_laplace_ode as yl_ode
+from menipy.models.geometry import CaptiveBubbleGeometry
+from menipy.pipelines.base import Context, FitConfig, PipelineBase, common_solver, ovl
+from menipy.pipelines.captive_bubble.physics import compute_physics
+from menipy.pipelines.utils import ensure_contour
 
 young_laplace_ode = get_solver("young_laplace_ode", fallback=yl_ode)
 
@@ -54,13 +54,13 @@ class CaptiveBubblePipeline(PipelineBase):
         ],
     }
 
-    def do_acquisition(self, ctx: Context) -> Optional[Context]:
+    def do_acquisition(self, ctx: Context) -> Context | None:
         return ctx
 
-    def do_preprocessing(self, ctx: Context) -> Optional[Context]:
+    def do_preprocessing(self, ctx: Context) -> Context | None:
         return ctx
 
-    def do_geometric_features(self, ctx: Context) -> Optional[Context]:
+    def do_geometric_features(self, ctx: Context) -> Context | None:
         """Extract ceiling, axis, apex and bubble depth."""
         xy = ensure_contour(ctx)
         x, y = xy[:, 0], xy[:, 1]
@@ -79,17 +79,17 @@ class CaptiveBubblePipeline(PipelineBase):
         )
         return ctx
 
-    def do_calibration(self, ctx: Context) -> Optional[Context]:
+    def do_calibration(self, ctx: Context) -> Context | None:
         """Set up pixel-to-mm scaling."""
         ctx.scale = ctx.scale or {"px_per_mm": 1.0}
         return ctx
 
-    def do_physics(self, ctx: Context) -> Optional[Context]:
+    def do_physics(self, ctx: Context) -> Context | None:
         # densities/gravity placeholders
         ctx.physics = ctx.physics or {"rho1": 1000.0, "rho2": 1.2, "g": 9.80665}
         return ctx
 
-    def do_profile_fitting(self, ctx: Context) -> Optional[Context]:
+    def do_profile_fitting(self, ctx: Context) -> Context | None:
         """Fit spherical Young-Laplace profile."""
         integrator = get_solver(self.solver_name, fallback=young_laplace_ode)
         assert integrator is not None, f"Solver {self.solver_name} not found."
@@ -104,12 +104,12 @@ class CaptiveBubblePipeline(PipelineBase):
         common_solver.run(ctx, integrator=integrator, config=cfg)
         return ctx
 
-    def do_compute_metrics(self, ctx: Context) -> Optional[Context]:
+    def do_compute_metrics(self, ctx: Context) -> Context | None:
         """Aggregate fit results and bubble metrics."""
         fit = ctx.fit or {}
         names = fit.get("param_names") or []
         params = fit.get("params", [])
-        res = {n: p for n, p in zip(names, params)}
+        res = dict(zip(names, params))
         # Type hint to access CaptiveBubbleGeometry specific fields
         geometry = ctx.geometry
         if not isinstance(geometry, CaptiveBubbleGeometry):
@@ -134,7 +134,7 @@ class CaptiveBubblePipeline(PipelineBase):
         ctx.results = res
         return ctx
 
-    def do_overlay(self, ctx: Context) -> Optional[Context]:
+    def do_overlay(self, ctx: Context) -> Context | None:
         # Draw measurement number if available
         if hasattr(ctx, "image") and ctx.image is not None:
             if (

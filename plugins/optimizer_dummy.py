@@ -4,6 +4,5 @@ def noop_optimizer(ctx):
     ctx.optimized = True
     return ctx
 
-OPTIMIZERS = {
-    "noop": noop_optimizer
-}
+
+OPTIMIZERS = {"noop": noop_optimizer}

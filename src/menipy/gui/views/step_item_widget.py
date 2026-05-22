@@ -2,12 +2,13 @@
 
 # type: ignore
 from __future__ import annotations
-from typing import Optional
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QIcon
-from PySide6.QtCore import QSize
+
 from pathlib import Path
-from PySide6.QtWidgets import QWidget, QLabel, QToolButton, QHBoxLayout, QSizePolicy
+from typing import Optional
+
+from PySide6.QtCore import QSize, Qt, Signal
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QToolButton, QWidget
 
 
 def _load_icon(name: str) -> QIcon:
@@ -40,7 +41,7 @@ class StepItemWidget(QWidget):
     playClicked = Signal(str)
     configClicked = Signal(str)
 
-    def __init__(self, step_name: str, parent: Optional[QWidget] = None):
+    def __init__(self, step_name: str, parent: QWidget | None = None):
         super().__init__(parent)
         self._name = step_name
         self._included = True

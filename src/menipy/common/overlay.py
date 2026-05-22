@@ -2,7 +2,10 @@
 """Overlay drawing utilities for visualizing analysis results on images."""
 
 from __future__ import annotations
-from typing import Iterable, Tuple, Union, Dict, Any
+
+from collections.abc import Iterable
+from typing import Any, Union
+
 import numpy as np
 
 try:
@@ -11,7 +14,7 @@ except Exception as e:  # pragma: no cover
     cv2 = None
     _IMPORT_ERROR = e
 
-Color = Union[Tuple[int, int, int], str]  # BGR or name
+Color = Union[tuple[int, int, int], str]  # BGR or name
 
 _COLOR_MAP = {
     "red": (0, 0, 255),
@@ -26,7 +29,7 @@ _COLOR_MAP = {
 }
 
 
-def _bgr(c: Color) -> Tuple[int, int, int]:
+def _bgr(c: Color) -> tuple[int, int, int]:
     if isinstance(c, str):
         return _COLOR_MAP.get(c.lower(), (255, 255, 255))
     return tuple(int(v) for v in c)  # type: ignore
@@ -64,9 +67,9 @@ def _as_ndarray(img_like: Any) -> np.ndarray:
 
 def draw_overlay(
     base_img: np.ndarray,
-    commands: Iterable[Dict[str, Any]],
+    commands: Iterable[dict[str, Any]],
     alpha: float = 0.6,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Returns (overlay_only, composited_image).
     - overlay_only: BGR image with drawings on black
@@ -151,7 +154,7 @@ def draw_overlay(
     return overlay, comp
 
 
-def run(ctx, *, commands: Iterable[Dict[str, Any]], alpha: float = 0.6):
+def run(ctx, *, commands: Iterable[dict[str, Any]], alpha: float = 0.6):
     """
     Stage entrypoint: draw over ctx.frames[0] (or ctx.frames) and attach:
       - ctx.overlay (BGR)

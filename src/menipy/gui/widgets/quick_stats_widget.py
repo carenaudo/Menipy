@@ -7,12 +7,12 @@ Shows contact angles, drop properties, surface tension, and confidence.
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QLabel,
     QFrame,
     QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QVBoxLayout,
+    QWidget,
 )
 
 from menipy.gui import theme

@@ -2,21 +2,27 @@
 Tests for stage-based detection preprocessor plugins.
 """
 
-import numpy as np
-import cv2
 import sys
+from importlib import import_module
 from pathlib import Path
+
+import cv2
+import numpy as np
 
 # Add plugins directory to path
 plugins_dir = Path(__file__).parent.parent / "plugins"
 sys.path.insert(0, str(plugins_dir))
 
+
 # Import plugins to register them
-import preproc_detect_substrate
-import preproc_detect_needle
-import preproc_detect_drop
-import preproc_detect_roi
-import preproc_auto_detect
+for plugin_name in (
+    "preproc_detect_substrate",
+    "preproc_detect_needle",
+    "preproc_detect_drop",
+    "preproc_detect_roi",
+    "preproc_auto_detect",
+):
+    import_module(plugin_name)
 
 from menipy.common.registry import PREPROCESSORS
 

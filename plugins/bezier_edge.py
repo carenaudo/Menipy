@@ -1,29 +1,30 @@
 """Parametric Bezier-like curve generator for testing edge detection integration."""
+
 import numpy as np
 
 
 def bezier_like(img):
     """Placeholder docstring for bezier_like.
-    
+
     TODO: Complete docstring with full description.
-    
+
     Parameters
     ----------
     img : type
         Description of img.
-    
+
     Returns
     -------
     type
         Description of return value.
     """
     """Generate a Bezier-like parametric contour for edge detection testing.
-    
+
     Parameters
     ----------
     img : ndarray
         Input image (shape is used for sizing the contour).
-    
+
     Returns
     -------
     ndarray

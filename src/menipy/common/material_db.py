@@ -5,10 +5,11 @@ SQLite database abstraction for managing materials, needles, and syringes.
 """
 
 from __future__ import annotations
-import sqlite3
+
 import json
+import sqlite3
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Any
 
 # Ensure it's stored in a standard location, but for now we use relative to allow easy setup
 DB_DEFAULT = Path("./menipy_materials.sqlite")
@@ -152,14 +153,14 @@ class MaterialDB:
     # Materials Operations
     # -------------------------------------------------------------------------
 
-    def get_material(self, name: str) -> Optional[Dict[str, Any]]:
+    def get_material(self, name: str) -> dict[str, Any] | None:
         with self.connect() as con:
             row = con.execute(
                 "SELECT * FROM materials WHERE name=?", (name,)
             ).fetchone()
             return dict(row) if row else None
 
-    def list_materials(self, mtype: Optional[str] = None) -> List[Dict[str, Any]]:
+    def list_materials(self, mtype: str | None = None) -> list[dict[str, Any]]:
         query = "SELECT * FROM materials"
         params = []
         if mtype:
@@ -171,7 +172,7 @@ class MaterialDB:
             rows = con.execute(query, params).fetchall()
             return [dict(row) for row in rows]
 
-    def upsert_material(self, name: str, data: Dict[str, Any]) -> int:
+    def upsert_material(self, name: str, data: dict[str, Any]) -> int:
         """Insert or update a material. Returns row ID."""
         keys = [
             "type",
@@ -196,7 +197,7 @@ class MaterialDB:
         values = list(valid_data.values())
 
         sql = f"""
-        INSERT INTO materials (name, {columns}) 
+        INSERT INTO materials (name, {columns})
         VALUES (?, {placeholders})
         ON CONFLICT(name) DO UPDATE SET
             {updates},
@@ -219,7 +220,7 @@ class MaterialDB:
     # Needles Operations
     # -------------------------------------------------------------------------
 
-    def list_needles(self) -> List[Dict[str, Any]]:
+    def list_needles(self) -> list[dict[str, Any]]:
         with self.connect() as con:
             rows = con.execute(
                 "SELECT * FROM needles ORDER BY outer_diameter DESC"
@@ -238,7 +239,7 @@ class MaterialDB:
         values = list(valid_data.values())
 
         sql = f"""
-        INSERT INTO needles (name, {columns}) 
+        INSERT INTO needles (name, {columns})
         VALUES (?, {placeholders})
         ON CONFLICT(name) DO UPDATE SET
             {updates},
@@ -253,7 +254,7 @@ class MaterialDB:
     # Syringes Operations
     # -------------------------------------------------------------------------
 
-    def list_syringes(self) -> List[Dict[str, Any]]:
+    def list_syringes(self) -> list[dict[str, Any]]:
         """list syringes.
 
         Returns

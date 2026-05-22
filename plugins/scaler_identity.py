@@ -2,28 +2,30 @@
 
 Registers a no-op scaler that ensures the context has a scale attribute set to 1.0.
 """
+
+
 def identity_scaler(ctx):
     """Placeholder docstring for identity_scaler.
-    
+
     TODO: Complete docstring with full description.
-    
+
     Parameters
     ----------
     ctx : type
         Description of ctx.
-    
+
     Returns
     -------
     type
         Description of return value.
     """
     """Set the scale attribute to 1.0 (identity scaling).
-    
+
     Parameters
     ----------
     ctx : AnalysisContext
         Context object to scale.
-    
+
     Returns
     -------
     AnalysisContext
@@ -34,6 +36,5 @@ def identity_scaler(ctx):
         ctx.scale = 1.0
     return ctx
 
-SCALERS = {
-    "identity": identity_scaler
-}
+
+SCALERS = {"identity": identity_scaler}

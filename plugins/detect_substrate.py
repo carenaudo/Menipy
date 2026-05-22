@@ -3,10 +3,10 @@ Substrate detection plugin using auto-calibration algorithms.
 
 Provides automatic substrate/baseline detection for sessile drop analysis.
 """
+
 from __future__ import annotations
 
 import logging
-from typing import Optional, Tuple, List
 
 import cv2
 import numpy as np
@@ -20,16 +20,16 @@ def detect_substrate_gradient(
     image: np.ndarray,
     *,
     clahe_clip_limit: float = 2.0,
-    clahe_tile_size: Tuple[int, int] = (8, 8),
+    clahe_tile_size: tuple[int, int] = (8, 8),
     margin_fraction: float = 0.05,
-) -> Optional[Tuple[Tuple[int, int], Tuple[int, int]]]:
+) -> tuple[tuple[int, int], tuple[int, int]] | None:
     """Detect substrate baseline using gradient analysis on image margins.
-    
+
     Finds the strongest negative gradient (dark-to-light transition) in the
     left and right margins of the image. This method is robust to varying
     substrate textures and works well with images where the substrate has
     distinct edge contrast.
-    
+
     Parameters
     ----------
     image : np.ndarray
@@ -42,19 +42,19 @@ def detect_substrate_gradient(
     margin_fraction : float, optional
         Fraction of image width to analyze as left and right margins.
         Default is 0.05 (5% of width).
-    
+
     Returns
     -------
     Optional[Tuple[Tuple[int, int], Tuple[int, int]]]
         Substrate line as ((x1, y1), (x2, y2)) representing the detected
         baseline, or None if detection fails. If detection fails, returns
         a fallback line at 80% image height.
-    
+
     Raises
     ------
     None
         Returns fallback substrate line instead of raising exceptions.
-    
+
     Notes
     -----
     The algorithm:
@@ -62,7 +62,7 @@ def detect_substrate_gradient(
     2. Computes gradient in each column
     3. Finds strongest negative gradient (dark-to-light transition)
     4. Returns median y-coordinate from both strips as substrate position
-    
+
     See Also
     --------
     detect_substrate_hough : Detects substrate using Hough line transform
@@ -72,63 +72,65 @@ def detect_substrate_gradient(
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     else:
         gray = image.copy()
-    
+
     height, width = gray.shape[:2]
-    
+
     # Apply CLAHE
     clahe = cv2.createCLAHE(clipLimit=clahe_clip_limit, tileGridSize=clahe_tile_size)
     enhanced = clahe.apply(gray)
-    
+
     # Calculate margin size
     margin_px = max(10, min(50, int(width * margin_fraction)))
-    
+
     # Extract left and right strips
     left_strip = enhanced[:, 0:margin_px]
-    right_strip = enhanced[:, width - margin_px:width]
-    
+    right_strip = enhanced[:, width - margin_px : width]
+
     # Find horizon in each strip
     y_left = _find_horizon_median(left_strip, height)
     y_right = _find_horizon_median(right_strip, height)
-    
+
     if y_left is None and y_right is None:
         # Fallback: assume substrate at bottom 20%
         substrate_y = int(height * 0.8)
         logger.warning(f"Substrate detection fallback: y={substrate_y}")
         return ((0, substrate_y), (width, substrate_y))
-    
+
     if y_left is None:
         y_left = y_right
     if y_right is None:
         y_right = y_left
-    
+
     substrate_y = int((y_left + y_right) / 2)
-    
-    logger.info(f"Substrate detected at y={substrate_y} (left={y_left}, right={y_right})")
+
+    logger.info(
+        f"Substrate detected at y={substrate_y} (left={y_left}, right={y_right})"
+    )
     return ((0, substrate_y), (width, substrate_y))
 
 
-def _find_horizon_median(strip_gray: np.ndarray, img_height: int) -> Optional[int]:
+def _find_horizon_median(strip_gray: np.ndarray, img_height: int) -> int | None:
     """Find horizon line in a vertical strip using gradient analysis."""
-    detected_ys: List[int] = []
+    detected_ys: list[int] = []
     h, w = strip_gray.shape
     min_limit, max_limit = int(h * 0.05), int(h * 0.95)
-    
+
     for col in range(w):
         col_data = strip_gray[:, col].astype(float)
         grad = np.diff(col_data)
         valid_grad = grad[min_limit:max_limit]
-        
+
         if len(valid_grad) == 0:
             continue
-        
+
         # Find strongest negative gradient (dark-to-light transition)
         best_idx = np.argmin(valid_grad)
         best_y = best_idx + min_limit
         detected_ys.append(best_y)
-    
+
     if not detected_ys:
         return None
-    
+
     return int(np.median(detected_ys))
 
 
@@ -139,15 +141,15 @@ def detect_substrate_hough(
     canny_high: int = 150,
     hough_threshold: int = 100,
     angle_tolerance: float = 5.0,
-) -> Optional[Tuple[Tuple[int, int], Tuple[int, int]]]:
+) -> tuple[tuple[int, int], tuple[int, int]] | None:
     """Detect substrate baseline using Hough line transform.
-    
+
     This function detects the substrate/baseline in sessile drop images
     using the Hough line transform. It focuses on the bottom half of the
     image to identify horizontal lines that represent the substrate surface.
     This method is particularly robust for detecting straight substrate
     surfaces even under challenging illumination conditions.
-    
+
     Parameters
     ----------
     image : np.ndarray
@@ -166,28 +168,28 @@ def detect_substrate_hough(
         Maximum angle deviation from horizontal in degrees. Lines within
         this tolerance are considered candidate substrate lines.
         Default is 5.0 degrees.
-    
+
     Returns
     -------
     Optional[Tuple[Tuple[int, int], Tuple[int, int]]]
         Substrate line as ((x1, y1), (x2, y2)) representing the detected
         horizontal line, or None if no valid horizontal line is detected.
-    
+
     Raises
     ------
     None
         Returns None instead of raising exceptions for invalid input.
-    
+
     Notes
     -----
     The function analyzes only the bottom half of the image to reduce false
     positives from drop features. All detected lines are filtered to enforce
     near-horizontal orientation based on angle_tolerance. If multiple lines
     are detected, the one closest to the image bottom is selected (lowest y).
-    
+
     This method is complementary to detect_substrate_gradient and typically
     provides better results when substrate edge contrast is high.
-    
+
     See Also
     --------
     detect_substrate_gradient : Detects substrate using gradient analysis
@@ -197,27 +199,27 @@ def detect_substrate_hough(
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     else:
         gray = image.copy()
-    
+
     height, width = gray.shape[:2]
-    
+
     # Focus on bottom half of image
-    bottom_half = gray[height // 2:, :]
-    
+    bottom_half = gray[height // 2 :, :]
+
     # Edge detection
     edges = cv2.Canny(bottom_half, canny_low, canny_high)
-    
+
     # Hough line detection
     lines = cv2.HoughLines(edges, 1, np.pi / 180, hough_threshold)
-    
+
     if lines is None:
         return None
-    
+
     # Filter for horizontal lines
     horizontal_lines = []
     for line in lines:
         rho, theta = line[0]
         angle_deg = np.degrees(theta)
-        
+
         # Horizontal lines have theta near 0 or 180
         if abs(angle_deg - 90) < angle_tolerance:
             y = int(rho)
@@ -225,13 +227,13 @@ def detect_substrate_hough(
             actual_y = y + height // 2
             if height * 0.5 < actual_y < height * 0.95:
                 horizontal_lines.append(actual_y)
-    
+
     if not horizontal_lines:
         return None
-    
+
     # Take median of detected lines
     substrate_y = int(np.median(horizontal_lines))
-    
+
     logger.info(f"Substrate detected via Hough at y={substrate_y}")
     return ((0, substrate_y), (width, substrate_y))
 

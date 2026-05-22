@@ -1,12 +1,13 @@
+from typing import Any
+
 import numpy as np
 from scipy.integrate import solve_ivp
-from typing import Tuple, Dict, Any, Optional
 
 
 def young_laplace_ode(
     params: np.ndarray,
-    physics: Dict[str, Any],
-    geometry: Optional[Dict[str, Any]] = None,
+    physics: dict[str, Any],
+    geometry: dict[str, Any] | None = None,
 ) -> np.ndarray:
     """
     Integrate the axisymmetric Young-Laplace ODE using Bashforth-Adams formulation.

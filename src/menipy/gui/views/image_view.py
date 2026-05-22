@@ -6,21 +6,21 @@ from __future__ import annotations
 import logging
 
 logger = logging.getLogger(__name__)
-from typing import Optional, Union, Any
-import numpy as np
+from typing import Any, Optional, Union
 
-from PySide6.QtCore import Qt, QRectF, QPointF, QSizeF, Signal, QLineF, QTimer
-from PySide6.QtGui import QImage, QPixmap, QTransform, QPainter, QPen, QColor
+import numpy as np
+from PySide6.QtCore import QLineF, QPointF, QRectF, QSizeF, Qt, QTimer, Signal
+from PySide6.QtGui import QColor, QImage, QPainter, QPen, QPixmap, QTransform
 from PySide6.QtWidgets import (
-    QGraphicsView,
-    QGraphicsScene,
-    QGraphicsPixmapItem,
     QGraphicsEllipseItem,
     QGraphicsItem,
     QGraphicsLineItem,
-    QGraphicsRectItem,
     QGraphicsPathItem,
+    QGraphicsPixmapItem,
+    QGraphicsRectItem,
+    QGraphicsScene,
     QGraphicsSimpleTextItem,
+    QGraphicsView,
 )
 
 # Drawing modes for overlays
@@ -68,11 +68,11 @@ class ImageView(QGraphicsView):
 
         # ---- state (init first) ----
         self._scene = QGraphicsScene(self)
-        self._pix_item: Optional[QGraphicsPixmapItem] = None
+        self._pix_item: QGraphicsPixmapItem | None = None
         self._mode: str = "auto"  # "fit" | "actual" | "free" | "auto"
         self._min_scale = 0.05
         self._max_scale = 20.0
-        self._last_pm_size: Optional[QSizeF] = None
+        self._last_pm_size: QSizeF | None = None
         self._auto_policy: str = "auto"  # "auto" | "preserve"
         self._wheel_zoom_requires_ctrl: bool = False
         self._fit_resize_pending: bool = False
@@ -512,7 +512,7 @@ class ImageView(QGraphicsView):
 
     def set_image(
         self,
-        img: Union[QPixmap, QImage, np.ndarray, None],
+        img: QPixmap | QImage | np.ndarray | None,
         preserve_overlays: bool = False,
     ) -> None:
         if img is None:

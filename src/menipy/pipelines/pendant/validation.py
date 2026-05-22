@@ -5,11 +5,10 @@ Basic QA: true if solver succeeded or geometry exists.
 
 from __future__ import annotations
 
-from typing import Optional
 from menipy.models.context import Context
 
 
-def run(ctx: Context) -> Optional[Context]:
+def run(ctx: Context) -> Context | None:
     """Run.
 
     Parameters

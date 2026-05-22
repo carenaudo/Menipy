@@ -4,14 +4,14 @@ Notification Widget
 Premium toast-style notifications.
 """
 
-from PySide6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve, QPoint
+from PySide6.QtCore import QEasingCurve, QPoint, QPropertyAnimation, Qt, QTimer
 from PySide6.QtWidgets import (
-    QWidget,
-    QLabel,
-    QHBoxLayout,
-    QVBoxLayout,
     QGraphicsOpacityEffect,
+    QHBoxLayout,
+    QLabel,
     QPushButton,
+    QVBoxLayout,
+    QWidget,
 )
 
 from menipy.gui import theme
@@ -151,7 +151,7 @@ class NotificationManager:
         margin = 20
         start_y = self.parent.height() - margin
 
-        target_y = start_y - toast.sizeHint().height()
+        start_y - toast.sizeHint().height()
 
         # Ideally calculate stack position, for now just simple absolute
         # Just show one at a time or overlay logic needed

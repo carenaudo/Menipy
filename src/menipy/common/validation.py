@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Dict, Optional, Any
+
 from menipy.models.context import Context
 
 
@@ -7,8 +7,8 @@ from menipy.models.context import Context
 class QACheck:
     name: str
     passed: bool
-    value: Optional[float]
-    threshold: Optional[float]
+    value: float | None
+    threshold: float | None
     message: str
 
 
@@ -16,7 +16,7 @@ class QACheck:
 class QAResult:
     ok: bool
     score: float
-    checks: Dict[str, QACheck] = field(default_factory=dict)
+    checks: dict[str, QACheck] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         from dataclasses import asdict
@@ -24,7 +24,7 @@ class QAResult:
         return asdict(self)
 
 
-def validate(ctx: Context, thresholds: Optional[Dict[str, float]] = None) -> QAResult:
+def validate(ctx: Context, thresholds: dict[str, float] | None = None) -> QAResult:
     """
     Run comprehensive QA checks on the analysis context.
 

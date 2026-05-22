@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Literal, Optional, Dict, Any
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from .unit_types import Density, Length, SurfaceTension
 
@@ -17,14 +17,14 @@ class PhysicsParams(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    delta_rho: Optional[Density] = Field(
+    delta_rho: Density | None = Field(
         default=None, description="Density difference Δρ between the two phases."
     )
     g: float = Field(default=9.80665, description="Acceleration due to gravity [m/s^2]")
-    surface_tension_guess: Optional[SurfaceTension] = Field(default=None)
-    needle_radius: Optional[Length] = Field(default=None)
-    tube_radius: Optional[Length] = Field(default=None)
-    temperature_C: Optional[float] = None
+    surface_tension_guess: SurfaceTension | None = Field(default=None)
+    needle_radius: Length | None = Field(default=None)
+    tube_radius: Length | None = Field(default=None)
+    temperature_C: float | None = None
 
 
 # ---- Preprocessing configuration -----------------------------------------
@@ -34,8 +34,8 @@ class ResizeSettings(BaseModel):
     """Parameters controlling optional ROI resizing."""
 
     enabled: bool = Field(default=False)
-    target_width: Optional[int] = Field(default=None, ge=1)
-    target_height: Optional[int] = Field(default=None, ge=1)
+    target_width: int | None = Field(default=None, ge=1)
+    target_height: int | None = Field(default=None, ge=1)
     preserve_aspect: bool = Field(default=True)
     interpolation: Literal["nearest", "linear", "cubic", "area", "lanczos"] = Field(
         default="linear", description="OpenCV interpolation mode"
@@ -197,7 +197,7 @@ class PreprocessingSettings(BaseModel):
         )
 
     auto_detect: AutoDetectSettings = Field(default_factory=AutoDetectSettings)
-    preset_id: Optional[str] = Field(default=None)
+    preset_id: str | None = Field(default=None)
 
 
 class EdgeDetectionSettings(BaseModel):
@@ -291,7 +291,7 @@ class EdgeDetectionSettings(BaseModel):
     )
     snake_gamma: float = Field(default=0.001, ge=0.0, description="Snake time step")
 
-    plugin_settings: Dict[str, Any] = Field(
+    plugin_settings: dict[str, Any] = Field(
         default_factory=dict,
         description="Dictionary of plugin-specific settings.",
     )

@@ -100,7 +100,9 @@ def _resolve_settings(ctx: Any) -> MinimizeADSASettings:
 
     if _plugin_settings is not None:
         try:
-            resolved = _plugin_settings.resolve_plugin_settings("minimize_adsa", raw_method)
+            resolved = _plugin_settings.resolve_plugin_settings(
+                "minimize_adsa", raw_method
+            )
             return MinimizeADSASettings(**resolved)
         except Exception:
             pass
@@ -248,9 +250,9 @@ def _extract_side_arcs(ctx: Any, settings: MinimizeADSASettings) -> _ArcData | N
     if contour_obj is not None and getattr(contour_obj, "xy", None) is not None:
         contour_xy = contour_obj.xy
     elif getattr(ctx, "detected_contour", None) is not None:
-        contour_xy = getattr(ctx, "detected_contour")
+        contour_xy = ctx.detected_contour
     elif getattr(ctx, "drop_contour", None) is not None:
-        contour_xy = getattr(ctx, "drop_contour")
+        contour_xy = ctx.drop_contour
 
     xy = _normalize_contour_xy(contour_xy)
     if xy.shape[0] < 10:
@@ -278,7 +280,9 @@ def _extract_side_arcs(ctx: Any, settings: MinimizeADSASettings) -> _ArcData | N
 
     bbox = np.ptp(xy, axis=0)
     diag = float(np.hypot(float(bbox[0]), float(bbox[1])))
-    snap_max = max(settings.contact_snap_min_px, settings.contact_snap_diag_fraction * diag)
+    snap_max = max(
+        settings.contact_snap_min_px, settings.contact_snap_diag_fraction * diag
+    )
 
     # Search only in the contour body (skip prepended contact copies at indices 0 and 1).
     # If we search the full array, the prepended copies land at indices 0 and 1, causing the
@@ -323,8 +327,10 @@ def _extract_side_arcs(ctx: Any, settings: MinimizeADSASettings) -> _ArcData | N
         return None
 
     geometry = getattr(ctx, "geometry", None)
-    axis_x = float(getattr(geometry, "axis_x", apex_xy[0])) if geometry else float(
-        apex_xy[0]
+    axis_x = (
+        float(getattr(geometry, "axis_x", apex_xy[0]))
+        if geometry
+        else float(apex_xy[0])
     )
     scale = getattr(ctx, "scale", {}) or {}
     px_per_mm = float(scale.get("px_per_mm", 0.0) or 0.0)
@@ -445,7 +451,9 @@ def _objective(
     return 0.5 * robust_mse(dl) + 0.5 * robust_mse(dr) + reg
 
 
-def minimize_adsa(ctx: Any, profile_mm: np.ndarray, physics: dict[str, Any]) -> dict[str, Any]:
+def minimize_adsa(
+    ctx: Any, profile_mm: np.ndarray, physics: dict[str, Any]
+) -> dict[str, Any]:
     """Fit pendant side arcs with a minimize-based ADSA fallback."""
     prefix = "approx_minimize_adsa"
     settings = _resolve_settings(ctx)
@@ -472,12 +480,20 @@ def minimize_adsa(ctx: Any, profile_mm: np.ndarray, physics: dict[str, Any]) -> 
         (0.02, max(20.0, 3.0 * max(width_mm, height_mm, r0_seed))),
         (1e-3, 5.0),
         (
-            -max(settings.bound_min_offset_mm, settings.bound_offset_fraction * width_mm),
-            max(settings.bound_min_offset_mm, settings.bound_offset_fraction * width_mm),
+            -max(
+                settings.bound_min_offset_mm, settings.bound_offset_fraction * width_mm
+            ),
+            max(
+                settings.bound_min_offset_mm, settings.bound_offset_fraction * width_mm
+            ),
         ),
         (
-            -max(settings.bound_min_offset_mm, settings.bound_offset_fraction * height_mm),
-            max(settings.bound_min_offset_mm, settings.bound_offset_fraction * height_mm),
+            -max(
+                settings.bound_min_offset_mm, settings.bound_offset_fraction * height_mm
+            ),
+            max(
+                settings.bound_min_offset_mm, settings.bound_offset_fraction * height_mm
+            ),
         ),
     ]
 

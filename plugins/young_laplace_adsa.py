@@ -5,22 +5,30 @@ ADSA (Axisymmetric Drop Shape Analysis) solver for pendant drops.
 Integrates the Young-Laplace ODE to generate theoretical drop profiles,
 enabling surface tension calculation via least-squares fitting.
 """
+
 from __future__ import annotations
 
-from typing import Optional, Dict, Any
 from enum import Enum
+
 import numpy as np
+from pydantic import BaseModel, ConfigDict, Field
+
+from menipy.common.plugin_settings import (
+    register_detector_settings,
+    resolve_plugin_settings,
+)
+
 # NOTE: Heavy imports (scipy) moved inside for lazy load
 
-from pydantic import BaseModel, Field, ConfigDict
-from menipy.common.plugin_settings import register_detector_settings, resolve_plugin_settings
 
 # -----------------------------------------------------------------------------
 # Configuration
 # -----------------------------------------------------------------------------
 
+
 class SolverMethod(str, Enum):
     """Available ODE solver methods."""
+
     RK45 = "RK45"
     RK23 = "RK23"
     DOP853 = "DOP853"
@@ -28,13 +36,17 @@ class SolverMethod(str, Enum):
     BDF = "BDF"
     LSODA = "LSODA"
 
+
 class YoungLaplaceSettings(BaseModel):
     """Configuration for Young-Laplace drop profile generation."""
-    model_config = ConfigDict(extra='ignore')
+
+    model_config = ConfigDict(extra="ignore")
 
     s_max: float = Field(15.0, ge=1.0, description="Max normalized arc length")
     n_points: int = Field(400, ge=50, description="Number of profile points")
-    solver_method: SolverMethod = Field(SolverMethod.RK45, description="ODE Solver method")
+    solver_method: SolverMethod = Field(
+        SolverMethod.RK45, description="ODE Solver method"
+    )
     rtol: float = Field(1e-8, description="Relative tolerance for ODE solver")
     atol: float = Field(1e-10, description="Absolute tolerance for ODE solver")
 
@@ -42,6 +54,7 @@ class YoungLaplaceSettings(BaseModel):
 # -----------------------------------------------------------------------------
 # Core Implementation
 # -----------------------------------------------------------------------------
+
 
 def _young_laplace_ode(s, y, beta):
     """
@@ -69,14 +82,12 @@ def _young_laplace_ode(s, y, beta):
 
 
 def integrate_profile(
-    R0_mm: float, 
-    beta: float, 
-    settings: YoungLaplaceSettings
+    R0_mm: float, beta: float, settings: YoungLaplaceSettings
 ) -> np.ndarray:
     """Placeholder docstring for integrate_profile.
-    
+
     TODO: Complete docstring with full description.
-    
+
     Returns
     -------
     type
@@ -137,16 +148,11 @@ def integrate_profile(
     return np.column_stack([x_mm, z_mm])
 
 
-def young_laplace_adsa(
-    params, 
-    physics, 
-    geometry,
-    **kwargs
-) -> np.ndarray:
+def young_laplace_adsa(params, physics, geometry, **kwargs) -> np.ndarray:
     """Placeholder docstring for young_laplace_adsa.
-    
+
     TODO: Complete docstring with full description.
-    
+
     Returns
     -------
     type
@@ -171,12 +177,14 @@ def young_laplace_adsa(
     # We look for "plugin_settings" in kwargs (passed by solver usually) or use kwargs directly
     plugin_settings_dict = kwargs.get("plugin_settings", {})
     # also support direct kwargs override
-    
+
     # We must match the key used in registration ("young_laplace_adsa")
     # But since this function IS the plugin entry point, the solver might pass a specific dict key
     # For now, let's assume 'young_laplace_adsa' key in plugin_settings
-    
-    raw_cfg = resolve_plugin_settings("young_laplace_adsa", plugin_settings_dict, **kwargs)
+
+    raw_cfg = resolve_plugin_settings(
+        "young_laplace_adsa", plugin_settings_dict, **kwargs
+    )
     settings = YoungLaplaceSettings(**raw_cfg)
 
     # Generate profile
@@ -196,9 +204,9 @@ def calculate_surface_tension(
     R0_mm: float, beta: float, delta_rho_kg_m3: float, g: float = 9.80665
 ) -> float:
     """Placeholder docstring for calculate_surface_tension.
-    
+
     TODO: Complete docstring with full description.
-    
+
     Returns
     -------
     type
@@ -238,5 +246,6 @@ SOLVERS = {
 register_detector_settings("young_laplace_adsa", YoungLaplaceSettings)
 
 # Explicit Registration
-from menipy.common.registry import SOLVERS
-SOLVERS.register("young_laplace_adsa", young_laplace_adsa)
+from menipy.common.registry import SOLVERS as SOLVER_REGISTRY
+
+SOLVER_REGISTRY.register("young_laplace_adsa", young_laplace_adsa)

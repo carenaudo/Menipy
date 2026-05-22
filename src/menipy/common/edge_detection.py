@@ -1,17 +1,19 @@
 """Edge detection utilities and pipeline stage logic."""
 
 from __future__ import annotations
-from typing import Callable, Optional
-from abc import ABC, abstractmethod
-import numpy as np
+
 import logging
+from collections.abc import Callable
+
+import numpy as np
 
 from menipy.models.config import EdgeDetectionSettings
 from menipy.models.geometry import Contour
 
+from .image_utils import edges_to_xy, ensure_gray
+
 # Keep your registry import
 from .registry import EDGE_DETECTORS
-from .image_utils import ensure_gray, edges_to_xy
 
 # OpenCV is optional; code degrades gracefully if missing
 try:
@@ -23,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 # -------- plugin discovery (unchanged in spirit) --------
-def _load_plugin(name: str) -> Optional[Callable]:
+def _load_plugin(name: str) -> Callable | None:
     """
     Try to load a detector from Python entry points (group='menipy.edge_detection').
     The callable is expected to accept an image (gray or BGR) and return either:
@@ -170,7 +172,7 @@ def run(ctx, settings: EdgeDetectionSettings):
                     msg = f"EdgeDetection fallback: loaded {len(frames)} frame(s) from {ip}."
                     logger.info(msg)
                     try:
-                        setattr(ctx, "status_message", msg)
+                        ctx.status_message = msg
                     except Exception:
                         pass
 
@@ -196,7 +198,7 @@ def run(ctx, settings: EdgeDetectionSettings):
                         msg = f"EdgeDetection fallback: captured {len(frames)} frame(s) from camera {cam}."
                         logger.info(msg)
                         try:
-                            setattr(ctx, "status_message", msg)
+                            ctx.status_message = msg
                         except Exception:
                             pass
         except Exception:

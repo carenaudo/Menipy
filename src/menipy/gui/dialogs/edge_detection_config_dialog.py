@@ -6,8 +6,9 @@ from __future__ import annotations
 
 from typing import Optional
 
-from PySide6.QtCore import Qt, Signal
 import numpy as np
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -26,11 +27,10 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from PySide6.QtGui import QImage, QPixmap
 
-from menipy.models.config import EdgeDetectionSettings
 from menipy.common.registry import EDGE_DETECTORS
 from menipy.gui.components.plugin_settings_widget import PluginSettingsWidget
+from menipy.models.config import EdgeDetectionSettings
 
 
 class EdgeDetectionConfigDialog(QDialog):
@@ -41,7 +41,7 @@ class EdgeDetectionConfigDialog(QDialog):
     def __init__(
         self,
         settings: EdgeDetectionSettings,
-        parent: Optional[QDialog] = None,
+        parent: QDialog | None = None,
         compact_mode: bool = False,
     ) -> None:
         super().__init__(parent)

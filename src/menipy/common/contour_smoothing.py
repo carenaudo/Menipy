@@ -8,7 +8,7 @@ and contact angle estimation from derivative-based tangent calculations.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 import numpy as np
 from scipy.signal import savgol_filter
@@ -49,7 +49,7 @@ def find_contact_intersections(
     x: np.ndarray,
     y: np.ndarray,
     substrate_y: float,
-) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
+) -> tuple[np.ndarray | None, np.ndarray | None]:
     """Find left and right contact points as curve-baseline intersections.
 
     Searches for zero-crossings of (y - substrate_y) from both ends
@@ -121,7 +121,7 @@ def smooth_contour(
     filter_monotonic: bool = False,
     filter_below_substrate: bool = True,
     extrapolate_contact_points: bool = True,
-) -> Optional[Dict[str, Any]]:
+) -> dict[str, Any] | None:
     """Apply Savitzky-Golay smoothing to a droplet contour.
 
     Args:

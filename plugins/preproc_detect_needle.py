@@ -4,6 +4,7 @@ Needle detection preprocessor plugin.
 This plugin detects the needle region and stores it in the context.
 Follows the stage-based pattern: operates on ctx and returns ctx.
 """
+
 from __future__ import annotations
 
 import logging
@@ -18,15 +19,15 @@ logger = logging.getLogger(__name__)
 def detect_needle_preprocessor(ctx):
     """
     Preprocessor plugin that detects needle region.
-    
+
     For sessile: finds contour touching top border.
     For pendant: uses shaft line analysis.
-    
+
     Stores result in ctx.needle_rect as (x, y, width, height).
-    
+
     Args:
         ctx: Pipeline context with image data
-        
+
     Returns:
         Updated context with needle_rect set.
     """
@@ -37,7 +38,7 @@ def detect_needle_preprocessor(ctx):
         if frames and len(frames) > 0:
             frame = frames[0]
             image = frame.image if hasattr(frame, "image") else frame
-    
+
     if image is None or not isinstance(image, np.ndarray):
         return ctx
 
@@ -63,7 +64,9 @@ def detect_needle_preprocessor(ctx):
                 drop_contour = None
 
         if drop_contour is not None:
-            result = detect_needle.detect_needle_pendant(image, drop_contour=drop_contour)
+            result = detect_needle.detect_needle_pendant(
+                image, drop_contour=drop_contour
+            )
             if result is not None:
                 needle_rect, contact_points = result
                 ctx.needle_rect = needle_rect
@@ -74,7 +77,7 @@ def detect_needle_preprocessor(ctx):
         if needle_rect is not None:
             ctx.needle_rect = needle_rect
             logger.info("Sessile needle detected: %s", needle_rect)
-    
+
     return ctx
 
 

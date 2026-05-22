@@ -5,15 +5,15 @@ A widget for displaying images with interactive tool support (zooming, panning,
 drawing lines/ROIs).
 """
 
-from PySide6.QtCore import Qt, Signal, QPointF, QRectF, QSize
-from PySide6.QtGui import QPixmap, QPainter, QPen, QColor, QWheelEvent, QMouseEvent
+from PySide6.QtCore import QPointF, QRectF, QSize, Qt, Signal
+from PySide6.QtGui import QColor, QMouseEvent, QPainter, QPen, QPixmap, QWheelEvent
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QScrollArea,
-    QLabel,
     QFrame,
+    QLabel,
+    QScrollArea,
     QSizePolicy,
+    QVBoxLayout,
+    QWidget,
 )
 
 from menipy.gui import theme

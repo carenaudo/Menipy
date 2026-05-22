@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
-from pydantic import BaseModel, Field
 import json
+import logging
+from datetime import datetime
 from pathlib import Path
+from typing import Any
+
+from pydantic import BaseModel, Field
+
+logger = logging.getLogger(__name__)
 
 
 class MeasurementResult(BaseModel):
@@ -15,9 +19,9 @@ class MeasurementResult(BaseModel):
     id: str  # Unique identifier (timestamp_sequence)
     timestamp: datetime
     pipeline: str  # "sessile", "pendant", "oscillating", "capillary_rise"
-    file_path: Optional[str] = None
-    file_name: Optional[str] = None  # Display name
-    results: Dict[str, Any] = Field(default_factory=dict)  # Raw results from pipeline
+    file_path: str | None = None
+    file_name: str | None = None  # Display name
+    results: dict[str, Any] = Field(default_factory=dict)  # Raw results from pipeline
 
 
 class ResultsHistory:
@@ -31,7 +35,7 @@ class ResultsHistory:
         max_history : type
         Description.
         """
-        self.measurements: List[MeasurementResult] = []
+        self.measurements: list[MeasurementResult] = []
         self.max_history = max_history
         self._data_dir = Path.home() / ".menipy"
         self._history_file = self._data_dir / "measurement_history.json"
@@ -50,8 +54,8 @@ class ResultsHistory:
         self._save_history()
 
     def get_table_data(
-        self, pipeline_filter: Optional[str] = None
-    ) -> Tuple[List[str], List[List[Any]]]:
+        self, pipeline_filter: str | None = None
+    ) -> tuple[list[str], list[list[Any]]]:
         """Return (headers, rows) for table display, optionally filtered by pipeline."""
         # Filter measurements if pipeline specified
         measurements = self.measurements
@@ -106,6 +110,7 @@ class ResultsHistory:
         for measurement in measurements:
             row = []
             for col in all_columns:
+                value: Any
                 if col == "file_name":
                     value = (
                         measurement.file_name
@@ -133,7 +138,7 @@ class ResultsHistory:
         return headers, rows
 
     def export_csv(
-        self, file_path: str | Path, pipeline_filter: Optional[str] = None
+        self, file_path: str | Path, pipeline_filter: str | None = None
     ) -> bool:
         """Export measurement history to a CSV file."""
         import csv
@@ -156,7 +161,7 @@ class ResultsHistory:
         """Load measurement history from disk."""
         try:
             if self._history_file.exists():
-                with open(self._history_file, "r") as f:
+                with open(self._history_file) as f:
                     data = json.load(f)
                     for item in data.get("measurements", []):
                         # Convert timestamp string back to datetime

@@ -2,19 +2,21 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Optional, Sequence
-from PySide6.QtGui import QAction
+from typing import Any, Optional
+
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
+    QDialog,
+    QDockWidget,
     QFileDialog,
     QLabel,
-    QDockWidget,
     QMainWindow,
     QMenu,
     QMenuBar,
     QMessageBox,
-    QDialog,
 )
 
 try:
@@ -43,11 +45,11 @@ class PluginsController:
     def __init__(self, window: QMainWindow, settings: Any) -> None:
         self.window = window
         self.settings = settings
-        self.db: Optional[PluginDB] = None  # type: ignore[assignment]
-        self.dock: Optional[QDockWidget] = None
-        self.action_toggle: Optional[QAction] = None
-        self.action_manager: Optional[QAction] = None
-        self.action_add_folder: Optional[QAction] = None
+        self.db: PluginDB | None = None  # type: ignore[assignment]
+        self.dock: QDockWidget | None = None
+        self.action_toggle: QAction | None = None
+        self.action_manager: QAction | None = None
+        self.action_add_folder: QAction | None = None
 
         self._build_plugin_dock()
         self._add_toggle_to_view_menu()
@@ -88,7 +90,7 @@ class PluginsController:
         """_add_toggle_to_view_menu."""
         if not self.dock:
             return
-        menu_view: Optional[QMenu] = self.window.findChild(QMenu, "menuPanels")
+        menu_view: QMenu | None = self.window.findChild(QMenu, "menuPanels")
         if not menu_view:
             menu_view = self.window.findChild(QMenu, "menuView")
         if not menu_view:
@@ -106,7 +108,7 @@ class PluginsController:
         menubar = getattr(self.window, "menuBar", lambda: None)()
         if not isinstance(menubar, QMenuBar) or not PluginManagerDialog:
             return
-        menu: Optional[QMenu] = None
+        menu: QMenu | None = None
         for action in menubar.actions():
             if action.menu() and action.text().replace("&", "").lower() == "plugins":
                 menu = action.menu()

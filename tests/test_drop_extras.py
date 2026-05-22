@@ -6,10 +6,10 @@ import numpy as np
 import pytest
 
 from menipy.models.drop_extras import (
-    vmax_uL,
-    worthington_number,
     apex_curvature_m_inv,
     surface_area_mm2,
+    vmax_uL,
+    worthington_number,
 )
 
 

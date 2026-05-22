@@ -9,11 +9,12 @@ features from images.
 from __future__ import annotations
 
 import logging
-from typing import Optional, Tuple, Dict, Any
+from importlib import import_module
+from typing import Any
 
 import numpy as np
 
-from menipy.common.image_utils import ensure_gray, edges_to_xy
+from menipy.common.image_utils import edges_to_xy, ensure_gray
 
 logger = logging.getLogger(__name__)
 
@@ -26,11 +27,14 @@ try:
     if plugins_dir.exists() and str(plugins_dir) not in sys.path:
         sys.path.insert(0, str(plugins_dir))
 
-    import detect_needle
-    import detect_roi
-    import detect_substrate
-    import detect_drop
-    import detect_apex
+    for plugin_name in (
+        "detect_apex",
+        "detect_drop",
+        "detect_needle",
+        "detect_roi",
+        "detect_substrate",
+    ):
+        import_module(plugin_name)
 
     _PLUGINS_LOADED = True
 except ImportError as e:
@@ -38,11 +42,11 @@ except ImportError as e:
     _PLUGINS_LOADED = False
 
 from menipy.common.registry import (
+    APEX_DETECTORS,
+    DROP_DETECTORS,
     NEEDLE_DETECTORS,
     ROI_DETECTORS,
     SUBSTRATE_DETECTORS,
-    DROP_DETECTORS,
-    APEX_DETECTORS,
 )
 
 
@@ -60,7 +64,7 @@ def auto_detect_features(
     detect_drop: bool = True,
     detect_apex: bool = True,
     detect_roi: bool = True,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Run automatic feature detection for a pipeline.
 
@@ -82,7 +86,7 @@ def auto_detect_features(
         logger.warning("Detection plugins not loaded")
         return {}
 
-    results: Dict[str, Any] = {}
+    results: dict[str, Any] = {}
     pipeline = pipeline.lower()
 
     # 1. Detect substrate (sessile only)
@@ -176,7 +180,7 @@ def auto_detect_features(
 
 def apply_roi_crop(
     image: np.ndarray,
-    roi_rect: Tuple[int, int, int, int],
+    roi_rect: tuple[int, int, int, int],
 ) -> np.ndarray:
     """
     Crop image to ROI region.
@@ -194,7 +198,7 @@ def apply_roi_crop(
 
 def adjust_coordinates_for_roi(
     points: np.ndarray,
-    roi_rect: Tuple[int, int, int, int],
+    roi_rect: tuple[int, int, int, int],
 ) -> np.ndarray:
     """
     Adjust point coordinates for ROI offset.

@@ -6,14 +6,14 @@ from __future__ import annotations
 
 """Helper utilities for Menipy preprocessing pipeline."""
 
-from dataclasses import dataclass, field
-from typing import Any, Dict, Optional, Tuple
 import logging
+from dataclasses import dataclass, field
+from typing import Any
 
 import numpy as np
 
 from menipy.models.config import PreprocessingSettings
-from menipy.models.state import PreprocessingState, PreprocessingStageRecord, MarkerSet
+from menipy.models.state import MarkerSet, PreprocessingStageRecord, PreprocessingState
 
 logger = logging.getLogger(__name__)
 
@@ -39,10 +39,10 @@ class PreprocessingContext:
 
     source_image: np.ndarray
     settings: PreprocessingSettings = field(default_factory=PreprocessingSettings)
-    roi_bounds: Optional[Tuple[int, int, int, int]] = None
-    roi_mask_full: Optional[np.ndarray] = None
-    contact_line_segment: Optional[Tuple[Tuple[int, int], Tuple[int, int]]] = None
-    markers: Optional[MarkerSet] = None
+    roi_bounds: tuple[int, int, int, int] | None = None
+    roi_mask_full: np.ndarray | None = None
+    contact_line_segment: tuple[tuple[int, int], tuple[int, int]] | None = None
+    markers: MarkerSet | None = None
 
     state: PreprocessingState = field(default_factory=PreprocessingState)
 
@@ -61,12 +61,12 @@ class PreprocessingContext:
             self.state.metadata["contact_line_segment"] = self.contact_line_segment
 
     @property
-    def mask(self) -> Optional[np.ndarray]:
+    def mask(self) -> np.ndarray | None:
         """mask."""
         return self.state.roi_mask
 
     @property
-    def active_mask(self) -> Optional[np.ndarray]:
+    def active_mask(self) -> np.ndarray | None:
         """active_mask."""
         return self.state.roi_mask if self.settings.work_on_roi_mask else None
 
@@ -79,7 +79,7 @@ class PreprocessingContext:
                 return img
         raise PreprocessingError("PreprocessingContext has no image buffers populated")
 
-    def push_history(self, stage: str, params: Dict[str, Any] | None = None) -> None:
+    def push_history(self, stage: str, params: dict[str, Any] | None = None) -> None:
         record = PreprocessingStageRecord(name=stage, params=params or {})
         self.state.history.append(record)
 
@@ -440,8 +440,8 @@ def fill_holes(context: PreprocessingContext) -> None:
 
 
 def _clamp_roi(
-    roi: Tuple[int, int, int, int], width: int, height: int
-) -> Tuple[int, int, int, int]:
+    roi: tuple[int, int, int, int], width: int, height: int
+) -> tuple[int, int, int, int]:
     x, y, w, h = roi
     x = max(0, min(x, width - 1))
     y = max(0, min(y, height - 1))
@@ -482,8 +482,8 @@ def _cv2_interpolation(name: str) -> int:
 
 
 def _resize_array(
-    array: np.ndarray, shape: Tuple[int, int], interpolation: int
-) -> Optional[np.ndarray]:
+    array: np.ndarray, shape: tuple[int, int], interpolation: int
+) -> np.ndarray | None:
     new_w, new_h = shape
     if array.shape[1] == new_w and array.shape[0] == new_h:
         return array.copy()
@@ -511,7 +511,7 @@ def _resize_array(
         return resized[:new_h, :new_w]
 
 
-def _resize_mask(mask: np.ndarray, shape: Tuple[int, int]) -> np.ndarray:
+def _resize_mask(mask: np.ndarray, shape: tuple[int, int]) -> np.ndarray:
     new_w, new_h = shape
     if mask.shape[1] == new_w and mask.shape[0] == new_h:
         return mask.copy()
@@ -522,7 +522,7 @@ def _resize_mask(mask: np.ndarray, shape: Tuple[int, int]) -> np.ndarray:
 
 
 def _apply_mask(
-    original: np.ndarray, candidate: np.ndarray, mask: Optional[np.ndarray]
+    original: np.ndarray, candidate: np.ndarray, mask: np.ndarray | None
 ) -> np.ndarray:
     if mask is None:
         return candidate
@@ -534,9 +534,7 @@ def _apply_mask(
     return out
 
 
-def _gaussian_blur(
-    array: np.ndarray, kernel: int, sigma: float
-) -> Optional[np.ndarray]:
+def _gaussian_blur(array: np.ndarray, kernel: int, sigma: float) -> np.ndarray | None:
     if kernel % 2 == 0:
         kernel += 1
     if cv2 is not None:
@@ -551,7 +549,7 @@ def _gaussian_blur(
         return None
 
 
-def _median_blur(array: np.ndarray, kernel: int) -> Optional[np.ndarray]:
+def _median_blur(array: np.ndarray, kernel: int) -> np.ndarray | None:
     if kernel % 2 == 0:
         kernel += 1
     if cv2 is not None:
@@ -573,14 +571,14 @@ def _median_blur(array: np.ndarray, kernel: int) -> Optional[np.ndarray]:
 
 def _bilateral_filter(
     array: np.ndarray, kernel: int, sigma_color: float, sigma_space: float
-) -> Optional[np.ndarray]:
+) -> np.ndarray | None:
     if cv2 is not None:
         return cv2.bilateralFilter(array, kernel, sigma_color, sigma_space)
     return None
 
 
 def _estimate_flat_background(
-    array: np.ndarray, mask: Optional[np.ndarray], strength: float
+    array: np.ndarray, mask: np.ndarray | None, strength: float
 ) -> np.ndarray:
     if mask is not None and mask.any():
         mask_bool = mask.astype(bool)
@@ -601,8 +599,8 @@ def _estimate_flat_background(
 
 
 def _rolling_background(
-    array: np.ndarray, mask: Optional[np.ndarray], radius: int
-) -> Optional[np.ndarray]:
+    array: np.ndarray, mask: np.ndarray | None, radius: int
+) -> np.ndarray | None:
     if cv2 is not None:
         kernel = cv2.getStructuringElement(
             cv2.MORPH_ELLIPSE, (2 * radius + 1, 2 * radius + 1)
@@ -635,7 +633,7 @@ def _rolling_background(
 
 def _apply_clahe(
     array: np.ndarray, clip_limit: float, grid_size: int
-) -> Optional[np.ndarray]:
+) -> np.ndarray | None:
     if array.ndim == 2:
         return _clahe_single(array, clip_limit, grid_size)
     channels = []
@@ -649,7 +647,7 @@ def _apply_clahe(
 
 def _clahe_single(
     channel: np.ndarray, clip_limit: float, grid_size: int
-) -> Optional[np.ndarray]:
+) -> np.ndarray | None:
     if cv2 is not None:
         clahe = cv2.createCLAHE(
             clipLimit=float(max(clip_limit, 0.0)), tileGridSize=(grid_size, grid_size)
@@ -663,7 +661,7 @@ def _clahe_single(
     return None
 
 
-def _apply_otsu_threshold(array: np.ndarray) -> Optional[np.ndarray]:
+def _apply_otsu_threshold(array: np.ndarray) -> np.ndarray | None:
     """Apply Otsu's binarization."""
     if cv2 is None:
         return None
@@ -676,7 +674,7 @@ def _apply_otsu_threshold(array: np.ndarray) -> Optional[np.ndarray]:
     return thresholded
 
 
-def _histogram_stretch(array: np.ndarray) -> Optional[np.ndarray]:
+def _histogram_stretch(array: np.ndarray) -> np.ndarray | None:
     arr = array.astype(np.float32)
     max_val = float(arr.max())
     min_val = float(arr.min())

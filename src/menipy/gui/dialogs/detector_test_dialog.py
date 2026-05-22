@@ -1,32 +1,33 @@
 """Dialog for testing and visualizing detector plugins."""
 
 from pathlib import Path
+
 import cv2
 import numpy as np
+from PySide6.QtCore import QLineF, QRect, Qt
+from PySide6.QtGui import QColor, QFont, QImage, QPainter, QPen
 from PySide6.QtWidgets import (
-    QDialog,
-    QVBoxLayout,
-    QHBoxLayout,
-    QComboBox,
-    QPushButton,
-    QLabel,
-    QFileDialog,
     QCheckBox,
+    QComboBox,
+    QDialog,
+    QFileDialog,
     QFrame,
-    QSizePolicy,
+    QHBoxLayout,
+    QLabel,
     QMessageBox,
+    QPushButton,
+    QSizePolicy,
+    QVBoxLayout,
     QWidget,
 )
-from PySide6.QtGui import QImage, QPainter, QPen, QColor, QFont
-from PySide6.QtCore import Qt, QRect, QLineF
 
 from menipy.common.registry import (
+    APEX_DETECTORS,
+    DROP_DETECTORS,
     EDGE_DETECTORS,
     NEEDLE_DETECTORS,
     ROI_DETECTORS,
     SUBSTRATE_DETECTORS,
-    DROP_DETECTORS,
-    APEX_DETECTORS,
 )
 from menipy.models.config import EdgeDetectionSettings
 
@@ -70,7 +71,7 @@ class DetectorTestCanvas(QWidget):
         if self.image is not None:
             # Draw Image
             h, w, ch = self.image.shape
-            bytes_per_line = ch * w
+            ch * w
             img_data = self.image.copy()
             # Handle grayscale vs BGR
             if len(img_data.shape) == 2:
@@ -278,7 +279,7 @@ class DetectorTestDialog(QDialog):
             # We can use registry.keys() or iterate
             # The registry object in menipy behaves like a dict but we should check
             # Based on registry.py it implements methods like keys()
-            items = sorted(list(registry.keys()))
+            items = sorted(registry.keys())
             self.combo_algo.addItems(items)
 
     def _on_load_image(self):

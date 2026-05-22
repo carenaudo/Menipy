@@ -2,28 +2,30 @@
 
 Registers a placeholder physics handler that provides a mock physics dictionary.
 """
+
+
 def dummy_physics(ctx):
     """Placeholder docstring for dummy_physics.
-    
+
     TODO: Complete docstring with full description.
-    
+
     Parameters
     ----------
     ctx : type
         Description of ctx.
-    
+
     Returns
     -------
     type
         Description of return value.
     """
     """Add placeholder physics metadata to the context.
-    
+
     Parameters
     ----------
     ctx : AnalysisContext
         Context object to attach physics data to.
-    
+
     Returns
     -------
     AnalysisContext
@@ -33,6 +35,5 @@ def dummy_physics(ctx):
     ctx.physics = {"method": "dummy", "params": {}}
     return ctx
 
-PHYSICS = {
-    "dummy": dummy_physics
-}
+
+PHYSICS = {"dummy": dummy_physics}

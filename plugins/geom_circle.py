@@ -1,5 +1,6 @@
-from menipy.common.registry import register_geometry
 import numpy as np
+
+from menipy.common.registry import register_geometry
 
 
 def geom_circle(ctx):

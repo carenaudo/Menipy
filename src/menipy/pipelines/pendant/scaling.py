@@ -6,10 +6,9 @@ Sets a conservative default `px_per_mm` if none is present.
 from __future__ import annotations
 
 from menipy.models.context import Context
-from typing import Optional
 
 
-def run(ctx: Context) -> Optional[Context]:
+def run(ctx: Context) -> Context | None:
     """Run.
 
     Parameters

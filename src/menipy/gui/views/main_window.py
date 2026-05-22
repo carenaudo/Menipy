@@ -41,23 +41,21 @@ from menipy.gui.controllers.preprocessing_controller import (
 from menipy.gui.controllers.setup_panel_controller import SetupPanelController
 from menipy.gui.dialogs.advanced_workflow_dialog import AdvancedWorkflowDialog
 from menipy.gui.dialogs.camera_settings_dialog import CameraSettingsDialog
-from menipy.gui.helpers.image_marking import ImageMarkerHelper
 from menipy.gui.helpers.icon_loader import set_button_icon
+from menipy.gui.helpers.image_marking import ImageMarkerHelper
 from menipy.gui.helpers.logging_bridge import install_qt_logging
-from menipy.gui.views.preview_panel import PreviewPanel
-from menipy.gui.views.pipeline_step_test_panel import PipelineStepTestPanel
-from menipy.gui.views.results_panel import ResultsPanel
 from menipy.gui.services.camera_service import CameraConfig, CameraController
 from menipy.gui.views.image_view import DRAW_NONE
+from menipy.gui.views.pipeline_step_test_panel import PipelineStepTestPanel
+from menipy.gui.views.preview_panel import PreviewPanel
+from menipy.gui.views.results_panel import ResultsPanel
 from menipy.gui.views.ui_main_window import Ui_MainWindow
 from menipy.pipelines.discover import PIPELINE_MAP
 
 logger = logging.getLogger(__name__)
 
 
-def _workbench_root_sizes(
-    available: int, saved: Optional[list[int]] = None
-) -> list[int]:
+def _workbench_root_sizes(available: int, saved: list[int] | None = None) -> list[int]:
     """Return horizontal sizes for setup rail plus workbench area."""
     total = max(900, int(available or 0))
     if saved:
@@ -74,7 +72,7 @@ def _workbench_root_sizes(
 
 
 def _workbench_vertical_sizes(
-    available: int, saved: Optional[list[int]] = None
+    available: int, saved: list[int] | None = None
 ) -> list[int]:
     """Return vertical sizes that keep the image preview above the results."""
     total = max(620, int(available or 0))
@@ -88,7 +86,7 @@ def _workbench_vertical_sizes(
 
 
 def _preview_dominant_sizes(
-    available: int, saved: Optional[list[int]] = None
+    available: int, saved: list[int] | None = None
 ) -> list[int]:
     """Compatibility wrapper for older tests/imports."""
     root = _workbench_root_sizes(available, saved)
@@ -119,15 +117,15 @@ except Exception:
 
     # tiny fallback so file still runs
     class AppSettings:  # type: ignore
-        selected_pipeline: Optional[str] = None
-        last_image_path: Optional[str] = None
+        selected_pipeline: str | None = None
+        last_image_path: str | None = None
         plugin_dirs: list[str] = []
-        main_window_state_b64: Optional[str] = None
-        main_window_geom_b64: Optional[str] = None
-        splitter_sizes: Optional[list[int]] = None
-        guided_splitter_sizes: Optional[list[int]] = None
-        guided_vertical_splitter_sizes: Optional[list[int]] = None
-        overlay_config: Optional[dict] = None
+        main_window_state_b64: str | None = None
+        main_window_geom_b64: str | None = None
+        splitter_sizes: list[int] | None = None
+        guided_splitter_sizes: list[int] | None = None
+        guided_vertical_splitter_sizes: list[int] | None = None
+        overlay_config: dict | None = None
         marker_config: dict = {}
         unit_system: str = "SI"
 
@@ -144,7 +142,7 @@ except Exception:
 from menipy.gui.controllers.main_controller import MainController
 
 # default stage order for SOPs / step list
-STAGE_ORDER: List[str] = [
+STAGE_ORDER: list[str] = [
     "acquisition",
     "preprocessing",
     "edge_detection",
@@ -865,7 +863,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         display.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         return display
 
-    def _compact_workflow_path(self, path: Optional[str]) -> str:
+    def _compact_workflow_path(self, path: str | None) -> str:
         if not path:
             return ""
         name = Path(path).name or str(path)
@@ -1012,7 +1010,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             if method_name == "close":
                 handler = self.close
             elif method_name == "select_camera":
-                handler = lambda: self.main_controller.select_camera(True)  # type: ignore
+
+                def handler():
+                    return self.main_controller.select_camera(True)  # type: ignore
+
             else:
                 handler = getattr(self.main_controller, method_name)
 
@@ -1065,9 +1066,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         dialog.activateWindow()
 
     def _wire_layout_controls(self) -> None:
-        self._splitter_sizes_full: Optional[list[int]] = None
-        self._workbench_splitter_sizes_full: Optional[list[int]] = None
-        self._preview_results_sizes_full: Optional[list[int]] = None
+        self._splitter_sizes_full: list[int] | None = None
+        self._workbench_splitter_sizes_full: list[int] | None = None
+        self._preview_results_sizes_full: list[int] | None = None
         layout_buttons = {
             "layoutAnalysisBtn": "analysis",
             "layoutSetupBtn": "setup",
@@ -1295,7 +1296,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self,
         show_setup: bool,
         show_inspector: bool,
-        show_key_results: Optional[bool] = None,
+        show_key_results: bool | None = None,
     ) -> None:
         if not hasattr(self, "rootSplitter"):
             return

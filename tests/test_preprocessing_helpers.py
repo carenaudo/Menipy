@@ -5,18 +5,18 @@ Unit tests."""
 import numpy as np
 import pytest
 
-from menipy.models.context import Context
-from menipy.models.config import PreprocessingSettings
-from menipy.models.state import PreprocessingState
 from menipy.common import preprocessing
 from menipy.common.preprocessing_helpers import (
     PreprocessingContext,
-    crop_to_roi,
-    rescale_roi,
     apply_filter,
-    subtract_background,
+    crop_to_roi,
     normalize_intensity,
+    rescale_roi,
+    subtract_background,
 )
+from menipy.models.config import PreprocessingSettings
+from menipy.models.context import Context
+from menipy.models.state import PreprocessingState
 
 
 def make_image(width: int = 6, height: int = 4) -> np.ndarray:

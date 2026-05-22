@@ -6,15 +6,15 @@ import cv2
 import numpy as np
 import pytest
 
-from menipy.common.auto_calibrator import AutoCalibrator
 from menipy.common import registry
+from menipy.common.auto_calibrator import AutoCalibrator
 from menipy.common.plugin_db import PluginDB
 from menipy.common.plugins import load_active_plugins
 from menipy.models.context import Context
 from menipy.models.geometry import Contour, Geometry
 from menipy.models.surface_tension import jennings_pallas_beta, surface_tension
-from menipy.pipelines.pendant.stages import PendantPipeline
 from menipy.pipelines.pendant.approximations import volume_apex_lookup
+from menipy.pipelines.pendant.stages import PendantPipeline
 from menipy.pipelines.pendant.strict_young_laplace import (
     integrate_young_laplace_profile_mm,
     model_mm_to_pendant_px,
@@ -225,7 +225,9 @@ def test_minimize_adsa_settings_are_applied_from_context():
 
     assert out["approx_minimize_adsa_config_maxiter"] == 7
     assert out["approx_minimize_adsa_config_robust_clip_enabled"] is False
-    assert out["approx_minimize_adsa_config_robust_clip_mad_factor"] == pytest.approx(1.5)
+    assert out["approx_minimize_adsa_config_robust_clip_mad_factor"] == pytest.approx(
+        1.5
+    )
 
 
 def test_pendant_fallback_promotes_minimize_adsa_when_strict_rejected():

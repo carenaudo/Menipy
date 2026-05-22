@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Optional, Sequence
+from collections.abc import Sequence
+from typing import Optional
 
 from PySide6.QtWidgets import (
     QComboBox,
@@ -30,8 +31,8 @@ class CameraSettingsDialog(QDialog):
         current_device: int,
         frames: int,
         fps: int,
-        width: Optional[int],
-        height: Optional[int],
+        width: int | None,
+        height: int | None,
         parent=None,
     ) -> None:
         super().__init__(parent)

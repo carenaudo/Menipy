@@ -1,15 +1,13 @@
 """Plugin discovery, loading, and management utilities."""
 
 from __future__ import annotations
-import sys
-import importlib.util
-from pathlib import Path
-from typing import Iterable
-import logging
 
-from .registry import register_edge, register_pendant_approximator, register_solver
-from .plugin_db import PluginDB
+import logging
+from collections.abc import Iterable
+from pathlib import Path
+
 from ._module_loader import load_module_from_path
+from .plugin_db import PluginDB
 
 _loaded = False
 

@@ -2,7 +2,6 @@
 Tests for auto_calibrator module.
 """
 
-import pytest
 import numpy as np
 
 from menipy.common.auto_calibrator import (

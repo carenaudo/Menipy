@@ -2,6 +2,7 @@
 
 import numpy as np
 import pytest
+
 from menipy.common.geometry import detect_baseline_ransac, refine_apex_curvature
 from menipy.pipelines.sessile.metrics import compute_sessile_metrics
 

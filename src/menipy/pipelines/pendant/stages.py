@@ -5,33 +5,32 @@ Module implementation."""
 # src/menipy/pipelines/pendant/stages.py
 from __future__ import annotations
 
-from typing import Optional
 from pathlib import Path
 
 import numpy as np
 from scipy.integrate import trapezoid
 
-from menipy.pipelines.base import PipelineBase
-from menipy.models.context import Context
-from menipy.common.geometry import fit_circle
-from menipy.common._module_loader import load_module_from_path
 from menipy.common import overlay as ovl
 from menipy.common import registry
-from menipy.models.surface_tension import (
-    bond_number as bond_number_from_gamma,
-    jennings_pallas_beta,
-    surface_tension as surface_tension_n_per_m,
-)
+from menipy.common._module_loader import load_module_from_path
+from menipy.common.geometry import fit_circle
+from menipy.models.context import Context
 from menipy.models.drop_extras import vmax_uL, worthington_number
+from menipy.models.surface_tension import bond_number as bond_number_from_gamma
+from menipy.models.surface_tension import (
+    jennings_pallas_beta,
+)
+from menipy.models.surface_tension import surface_tension as surface_tension_n_per_m
+from menipy.pipelines.base import PipelineBase
+from menipy.pipelines.pendant import (  # noqa: F401
+    approximations as _pendant_approximations,
+)
 from menipy.pipelines.pendant.strict_young_laplace import (
     PendantStrictFitInput,
     build_pendant_profile_envelope_mm,
     fit_pendant_young_laplace_strict,
 )
 from menipy.pipelines.utils import ensure_contour
-from menipy.pipelines.pendant import (
-    approximations as _pendant_approximations,
-)  # noqa: F401
 
 # Load built-in plugin approximator from the repository plugins folder.
 _repo_root = Path(__file__).resolve().parents[4]
@@ -321,13 +320,13 @@ class PendantPipeline(PipelineBase):
         "primary_metrics": ["surface_tension_mN_m", "volume_uL", "beta"],
     }
 
-    def do_acquisition(self, ctx: Context) -> Optional[Context]:
+    def do_acquisition(self, ctx: Context) -> Context | None:
         """Load frames from disk or wrap existing image in frames."""
         from menipy.common.acquisition_stage import do_acquisition
 
         return do_acquisition(ctx, self.logger)
 
-    def do_preprocessing(self, ctx: Context) -> Optional[Context]:
+    def do_preprocessing(self, ctx: Context) -> Context | None:
         """Run preprocessing with automatic feature detection."""
         if self.preprocessor_name and self.preprocessor_name in registry.PREPROCESSORS:
             fn = registry.PREPROCESSORS[self.preprocessor_name]
@@ -336,7 +335,7 @@ class PendantPipeline(PipelineBase):
 
         return do_preprocessing(ctx)
 
-    def do_contour_extraction(self, ctx: Context) -> Optional[Context]:
+    def do_contour_extraction(self, ctx: Context) -> Context | None:
         """Extract droplet contour using edge detection."""
         detected = getattr(ctx, "drop_contour", None)
         if detected is None:
@@ -359,7 +358,7 @@ class PendantPipeline(PipelineBase):
             return fn(ctx) or ctx
         return super().do_contour_extraction(ctx)
 
-    def do_geometric_features(self, ctx: Context) -> Optional[Context]:
+    def do_geometric_features(self, ctx: Context) -> Context | None:
         """Extract axis and apex location from contour."""
         xy = ensure_contour(ctx)
         x, y = xy[:, 0], xy[:, 1]
@@ -372,7 +371,7 @@ class PendantPipeline(PipelineBase):
         ctx.geometry = Geometry(axis_x=axis_x, apex_xy=apex_xy)
         return ctx
 
-    def do_calibration(self, ctx: Context) -> Optional[Context]:
+    def do_calibration(self, ctx: Context) -> Context | None:
         """Calculate px_per_mm from needle calibration."""
         if ctx.scale and ctx.scale.get("px_per_mm", 0.0) > 0:
             return ctx
@@ -402,11 +401,11 @@ class PendantPipeline(PipelineBase):
         ctx.scale = {"px_per_mm": px_per_mm if px_per_mm > 0 else 1.0}
         return ctx
 
-    def do_physics(self, ctx: Context) -> Optional[Context]:
+    def do_physics(self, ctx: Context) -> Context | None:
         ctx.physics = ctx.physics or {"rho1": 1000.0, "rho2": 1.2, "g": 9.80665}
         return ctx
 
-    def do_profile_fitting(self, ctx: Context) -> Optional[Context]:
+    def do_profile_fitting(self, ctx: Context) -> Context | None:
         """Fit a calibrated Young-Laplace profile to extract R0 and beta."""
         try:
             xy = ensure_contour(ctx)
@@ -499,7 +498,7 @@ class PendantPipeline(PipelineBase):
             self.logger.warning(f"Strict Young-Laplace fit failed: {exc}")
         return ctx
 
-    def do_compute_metrics(self, ctx: Context) -> Optional[Context]:
+    def do_compute_metrics(self, ctx: Context) -> Context | None:
         """Compute surface tension, volume, and other derived metrics."""
         fit = ctx.fit or {}
         names = fit.get("param_names") or []
@@ -633,7 +632,7 @@ class PendantPipeline(PipelineBase):
         ctx.results = results
         return ctx
 
-    def do_overlay(self, ctx: Context) -> Optional[Context]:
+    def do_overlay(self, ctx: Context) -> Context | None:
         xy = ensure_contour(ctx)
         if not ctx.geometry:
             return ctx

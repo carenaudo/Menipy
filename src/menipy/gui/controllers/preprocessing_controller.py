@@ -4,16 +4,16 @@ from __future__ import annotations
 
 """GUI controller for Menipy preprocessing pipeline."""
 
-from typing import Any, Dict, Optional, Tuple
 import logging
+from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 from PySide6.QtCore import QObject, Signal
 
-from menipy.models.context import Context
-from menipy.models.config import PreprocessingSettings
-from menipy.models.state import PreprocessingState, MarkerSet
 from menipy.common import preprocessing, registry
+from menipy.models.config import PreprocessingSettings
+from menipy.models.context import Context
+from menipy.models.state import MarkerSet, PreprocessingState
 
 logger = logging.getLogger(__name__)
 
@@ -27,18 +27,18 @@ class PreprocessingPipelineController(QObject):
     previewReady = Signal(object, dict)
     errorOccurred = Signal(str)
 
-    def __init__(self, parent: Optional[QObject] = None) -> None:
+    def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._settings = PreprocessingSettings()
         self._markers = MarkerSet()
-        self._state: Optional[PreprocessingState] = None
+        self._state: PreprocessingState | None = None
         self._history: list[PreprocessingState] = []
         self._redo: list[PreprocessingState] = []
 
-        self._image: Optional[np.ndarray] = None
-        self._roi: Optional[Tuple[int, int, int, int]] = None
-        self._roi_mask: Optional[np.ndarray] = None
-        self._contact_line: Optional[Tuple[Tuple[int, int], Tuple[int, int]]] = None
+        self._image: np.ndarray | None = None
+        self._roi: tuple[int, int, int, int] | None = None
+        self._roi_mask: np.ndarray | None = None
+        self._contact_line: tuple[tuple[int, int], tuple[int, int]] | None = None
 
     # ------------------------------------------------------------------
     # Public API
@@ -47,21 +47,21 @@ class PreprocessingPipelineController(QObject):
     def settings(self) -> PreprocessingSettings:
         return self._settings
 
-    def set_settings(self, data: PreprocessingSettings | Dict[str, Any]) -> None:
+    def set_settings(self, data: PreprocessingSettings | dict[str, Any]) -> None:
         if isinstance(data, PreprocessingSettings):
             self._settings = data
         else:
             self._settings = PreprocessingSettings(**data)
         self.settingsChanged.emit(self._settings)
 
-    def settings_dict(self) -> Dict[str, Any]:
+    def settings_dict(self) -> dict[str, Any]:
         return self._settings.model_dump()
 
     @property
     def markers(self) -> MarkerSet:
         return self._markers
 
-    def update_markers(self, markers: MarkerSet | Dict[str, Any]) -> None:
+    def update_markers(self, markers: MarkerSet | dict[str, Any]) -> None:
         if isinstance(markers, MarkerSet):
             self._markers = markers
         else:
@@ -76,9 +76,9 @@ class PreprocessingPipelineController(QObject):
         self,
         image: np.ndarray,
         *,
-        roi: Optional[Tuple[int, int, int, int]] = None,
-        roi_mask: Optional[np.ndarray] = None,
-        contact_line: Optional[Tuple[Tuple[int, int], Tuple[int, int]]] = None,
+        roi: tuple[int, int, int, int] | None = None,
+        roi_mask: np.ndarray | None = None,
+        contact_line: tuple[tuple[int, int], tuple[int, int]] | None = None,
     ) -> None:
         if not isinstance(image, np.ndarray):
             raise TypeError("source image must be a numpy array")
@@ -97,9 +97,9 @@ class PreprocessingPipelineController(QObject):
     def update_geometry(
         self,
         *,
-        roi: Optional[Tuple[int, int, int, int]] = None,
-        roi_mask: Optional[np.ndarray] = None,
-        contact_line: Optional[Tuple[Tuple[int, int], Tuple[int, int]]] = None,
+        roi: tuple[int, int, int, int] | None = None,
+        roi_mask: np.ndarray | None = None,
+        contact_line: tuple[tuple[int, int], tuple[int, int]] | None = None,
     ) -> None:
         if roi is not None:
             self._roi = tuple(map(int, roi))
@@ -116,7 +116,7 @@ class PreprocessingPipelineController(QObject):
         """Has_source."""
         return self._image is not None
 
-    def run(self) -> Optional[PreprocessingState]:
+    def run(self) -> PreprocessingState | None:
         """Run."""
         if self._image is None:
             self.errorOccurred.emit("No source image available for preprocessing")
@@ -175,7 +175,7 @@ class PreprocessingPipelineController(QObject):
             self.previewReady.emit(ctx.preprocessed, metadata)
         return self._state
 
-    def undo(self) -> Optional[PreprocessingState]:
+    def undo(self) -> PreprocessingState | None:
         """Undo."""
         if len(self._history) <= 1:
             return None
@@ -186,7 +186,7 @@ class PreprocessingPipelineController(QObject):
         self._emit_preview_from_state()
         return self._state
 
-    def redo(self) -> Optional[PreprocessingState]:
+    def redo(self) -> PreprocessingState | None:
         """Redo."""
         if not self._redo:
             return None
@@ -197,7 +197,7 @@ class PreprocessingPipelineController(QObject):
         self._emit_preview_from_state()
         return self._state
 
-    def current_state(self) -> Optional[PreprocessingState]:
+    def current_state(self) -> PreprocessingState | None:
         """current state.
 
         Returns

@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Literal, Optional, Tuple
+from typing import Literal
 
 import numpy as np
 from pydantic import BaseModel, Field, field_validator
+
 from .typing import ContourArray
 
 
@@ -49,11 +50,11 @@ class Contour(BaseModel):
     Coordinates are in pixels unless `units='mm'` and scaling applied.
     """
 
-    xy: "ContourArray" = Field(description="array of shape (N, 2) with columns [x, y]")
+    xy: ContourArray = Field(description="array of shape (N, 2) with columns [x, y]")
     closed: bool = Field(default=True)
     units: Literal["px", "mm"] = Field(default="px")
-    smoothing: Optional[float] = Field(default=None, ge=0, description="spline/fit λ")
-    origin_hint: Optional[Tuple[float, float]] = Field(
+    smoothing: float | None = Field(default=None, ge=0, description="spline/fit λ")
+    origin_hint: tuple[float, float] | None = Field(
         default=None, description="optional origin (x0, y0)"
     )
 
@@ -72,19 +73,19 @@ class Contour(BaseModel):
 class Geometry(BaseModel):
     """Geometric landmarks required by solvers."""
 
-    apex_xy: Optional[Tuple[float, float]] = None  # pendant/sessile
-    axis_x: Optional[float] = None  # symmetry axis x (px or mm)
-    baseline_y: Optional[float] = None  # sessile: substrate y
-    contact_region_px: Optional[Tuple[int, int]] = None  # index range around CL
+    apex_xy: tuple[float, float] | None = None  # pendant/sessile
+    axis_x: float | None = None  # symmetry axis x (px or mm)
+    baseline_y: float | None = None  # sessile: substrate y
+    contact_region_px: tuple[int, int] | None = None  # index range around CL
     tilt_deg: float = Field(default=0.0)
 
 
 class CaptiveBubbleGeometry(Geometry):
     """Geometry landmarks for captive bubble analysis."""
 
-    ceiling_y: Optional[float] = Field(
+    ceiling_y: float | None = Field(
         default=None, description="y-coordinate of chamber ceiling"
     )
-    cap_depth_px: Optional[float] = Field(
+    cap_depth_px: float | None = Field(
         default=None, description="depth of bubble cap in pixels"
     )

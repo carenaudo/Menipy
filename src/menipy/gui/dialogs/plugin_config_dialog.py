@@ -1,28 +1,29 @@
 """Dialog for configuring plugin settings based on Pydantic models."""
 
-from typing import Type, Any, Dict, get_origin, get_args
 from enum import Enum
+from typing import Any, Dict, Type, get_args, get_origin
+
 from pydantic import BaseModel
-from PySide6.QtWidgets import (
-    QDialog,
-    QFormLayout,
-    QDialogButtonBox,
-    QVBoxLayout,
-    QSpinBox,
-    QDoubleSpinBox,
-    QCheckBox,
-    QLineEdit,
-    QComboBox,
-    QLabel,
-    QWidget,
-    QScrollArea,
-)
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QDialogButtonBox,
+    QDoubleSpinBox,
+    QFormLayout,
+    QLabel,
+    QLineEdit,
+    QScrollArea,
+    QSpinBox,
+    QVBoxLayout,
+    QWidget,
+)
 
 
 class PluginConfigDialog(QDialog):
     def __init__(
-        self, model_class: Type[BaseModel], current_values: Dict[str, Any], parent=None
+        self, model_class: type[BaseModel], current_values: dict[str, Any], parent=None
     ):
         super().__init__(parent)
         self.setWindowTitle(f"Configure {model_class.__name__}")
@@ -134,7 +135,7 @@ class PluginConfigDialog(QDialog):
         # Or just skip
         return None
 
-    def get_settings(self) -> Dict[str, Any]:
+    def get_settings(self) -> dict[str, Any]:
         """Get settings.
 
         Returns

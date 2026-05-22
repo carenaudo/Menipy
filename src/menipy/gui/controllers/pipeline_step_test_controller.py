@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping, Optional
+from collections.abc import Mapping
+from typing import Any, Optional
 
 from PySide6.QtCore import QObject, Slot
 from PySide6.QtWidgets import QDialog, QMessageBox
@@ -40,8 +41,8 @@ class PipelineStepTestController(QObject):
         pipeline_ctrl,
         preprocessing_ctrl=None,
         edge_detection_ctrl=None,
-        pipeline_map: Optional[Mapping[str, type]] = None,
-        parent: Optional[QObject] = None,
+        pipeline_map: Mapping[str, type] | None = None,
+        parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
         self.window = window

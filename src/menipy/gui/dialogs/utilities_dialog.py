@@ -5,28 +5,28 @@ Qt dialog for running image tests and utility functions.
 Lists all registered utilities and allows running them on the current image.
 """
 
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import (
-    QDialog,
-    QVBoxLayout,
-    QHBoxLayout,
-    QLabel,
-    QPushButton,
-    QListWidget,
-    QListWidgetItem,
-    QTextEdit,
-    QSplitter,
-    QFrame,
-    QGroupBox,
-    QMessageBox,
-)
-from PySide6.QtGui import QPixmap, QImage
-
-import numpy as np
 import logging
 
-from menipy.gui import theme
+import numpy as np
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QImage, QPixmap
+from PySide6.QtWidgets import (
+    QDialog,
+    QFrame,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QMessageBox,
+    QPushButton,
+    QSplitter,
+    QTextEdit,
+    QVBoxLayout,
+)
+
 from menipy.common.registry import UTILITIES
+from menipy.gui import theme
 
 logger = logging.getLogger(__name__)
 

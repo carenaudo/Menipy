@@ -1,9 +1,9 @@
 """Database abstraction for managing plugins."""
 
 from __future__ import annotations
+
 import sqlite3
 from pathlib import Path
-from typing import Optional, Tuple
 
 DB_DEFAULT = Path(__file__).resolve().parents[2] / "data" / "menipy_plugins.sqlite"
 
@@ -73,9 +73,9 @@ class PluginDB:
         name: str,
         kind: str,
         file_path: Path,
-        entry: Optional[str] = None,
-        description: Optional[str] = None,
-        version: Optional[str] = None,
+        entry: str | None = None,
+        description: str | None = None,
+        version: str | None = None,
     ) -> None:
         file_path = Path(
             file_path
@@ -105,9 +105,9 @@ class PluginDB:
                 (1 if active else 0, name, kind),
             )
 
-    def list_plugins(self, *, only_active: Optional[bool] = None) -> list[tuple]:
+    def list_plugins(self, *, only_active: bool | None = None) -> list[tuple]:
         q = "SELECT name, kind, file_path, entry, description, version, is_active FROM plugins"
-        params: Tuple = ()
+        params: tuple = ()
         if only_active is True:
             q += " WHERE is_active=1"
         elif only_active is False:
@@ -148,11 +148,11 @@ class PluginDB:
         *,
         pipeline_name: str,
         display_name: str,
-        icon: Optional[str] = None,
-        color: Optional[str] = None,
-        stages: Optional[list[str]] = None,
-        calibration_params: Optional[list[str]] = None,
-        primary_metrics: Optional[list[str]] = None,
+        icon: str | None = None,
+        color: str | None = None,
+        stages: list[str] | None = None,
+        calibration_params: list[str] | None = None,
+        primary_metrics: list[str] | None = None,
     ) -> None:
         """Upsert pipeline UI metadata for plugin-centric UI configuration."""
         import json
@@ -188,7 +188,7 @@ class PluginDB:
                 ),
             )
 
-    def get_pipeline_metadata(self, pipeline_name: str) -> Optional[dict]:
+    def get_pipeline_metadata(self, pipeline_name: str) -> dict | None:
         """Get pipeline UI metadata for a specific pipeline."""
         import json
 

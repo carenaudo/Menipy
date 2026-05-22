@@ -3,10 +3,10 @@
 Unit tests."""
 
 import sys
-import pytest
 
-from PySide6.QtWidgets import QApplication
+import pytest
 from PySide6.QtGui import QColor
+from PySide6.QtWidgets import QApplication
 
 from menipy.gui.dialogs.overlay_config_dialog import OverlayConfigDialog
 

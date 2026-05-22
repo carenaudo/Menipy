@@ -2,9 +2,11 @@
 
 # src/adsa/gui/viewmodels/plugins_vm.py
 from __future__ import annotations
+
 from PySide6.QtCore import QObject, Signal
-from menipy.gui.viewmodels import run_vm
+
 from menipy.gui.services.plugin_service import PluginService
+from menipy.gui.viewmodels import run_vm
 
 
 class PluginsViewModel(QObject):

@@ -1,7 +1,8 @@
 import pytest
-from menipy.pipelines.discover import PIPELINE_MAP
+
 from menipy.gui.services.pipeline_runner import _pick
 from menipy.pipelines.base import PipelineBase
+from menipy.pipelines.discover import PIPELINE_MAP
 
 
 def test_discover_pipelines_not_empty():

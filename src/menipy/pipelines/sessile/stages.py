@@ -5,22 +5,20 @@ Module implementation."""
 from __future__ import annotations
 
 import logging
-from typing import Optional
+
 import numpy as np
-import cv2
 
 logger = logging.getLogger(__name__)
 
-from menipy.pipelines.base import PipelineBase
-from menipy.models.context import Context
-from menipy.models.fit import FitConfig
-from menipy.common import solver as common_solver
 from menipy.common import overlay as ovl
 from menipy.common import registry
+from menipy.common import solver as common_solver
 from menipy.common.plugin_loader import get_solver
-from menipy.pipelines.utils import ensure_contour
-
 from menipy.math.young_laplace import young_laplace_ode
+from menipy.models.context import Context
+from menipy.models.fit import FitConfig
+from menipy.pipelines.base import PipelineBase
+from menipy.pipelines.utils import ensure_contour
 
 # Get solver from registry (loaded at startup)
 young_laplace_default = get_solver("young_laplace_ode", fallback=young_laplace_ode)
@@ -68,13 +66,13 @@ class SessilePipeline(PipelineBase):
         "primary_metrics": ["contact_angle_deg", "surface_tension_mN_m", "volume_uL"],
     }
 
-    def do_acquisition(self, ctx: Context) -> Optional[Context]:
+    def do_acquisition(self, ctx: Context) -> Context | None:
         """Load frames from disk or wrap existing image in frames."""
         from menipy.common.acquisition_stage import do_acquisition
 
         return do_acquisition(ctx, self.logger)
 
-    def do_preprocessing(self, ctx: Context) -> Optional[Context]:
+    def do_preprocessing(self, ctx: Context) -> Context | None:
         """Run preprocessing with automatic feature detection."""
         if self.preprocessor_name and self.preprocessor_name in registry.PREPROCESSORS:
             fn = registry.PREPROCESSORS[self.preprocessor_name]
@@ -83,7 +81,7 @@ class SessilePipeline(PipelineBase):
 
         return do_preprocessing(ctx)
 
-    def do_contour_extraction(self, ctx: Context) -> Optional[Context]:
+    def do_contour_extraction(self, ctx: Context) -> Context | None:
         """Extract droplet contour using edge detection."""
         # Check if drop_contour is already provided (e.g. from calibration wizard)
         drop_contour = getattr(ctx, "drop_contour", None)
@@ -117,7 +115,7 @@ class SessilePipeline(PipelineBase):
             return edge_detection.run(ctx, settings)
         return super().do_contour_extraction(ctx)
 
-    def do_contour_refinement(self, ctx: Context) -> Optional[Context]:
+    def do_contour_refinement(self, ctx: Context) -> Context | None:
         """Clip contour at substrate line, refine contact points, and optionally smooth."""
         # If using pre-detected contour, skip clipping to preserve the closed polygon
         if getattr(ctx, "drop_contour", None) is not None:
@@ -170,7 +168,7 @@ class SessilePipeline(PipelineBase):
 
         return ctx
 
-    def do_geometric_features(self, ctx: Context) -> Optional[Context]:
+    def do_geometric_features(self, ctx: Context) -> Context | None:
         """Extract geometric features: axis, apex, baseline, tilt, and angles."""
         xy = ensure_contour(ctx)
         x, y = xy[:, 0], xy[:, 1]
@@ -241,16 +239,16 @@ class SessilePipeline(PipelineBase):
         )
         return ctx
 
-    def do_calibration(self, ctx: Context) -> Optional[Context]:
+    def do_calibration(self, ctx: Context) -> Context | None:
         """Set up pixel-to-mm scaling."""
         ctx.scale = ctx.scale or {"px_per_mm": 1.0}
         return ctx
 
-    def do_physics(self, ctx: Context) -> Optional[Context]:
+    def do_physics(self, ctx: Context) -> Context | None:
         ctx.physics = ctx.physics or {"rho1": 1000.0, "rho2": 1.2, "g": 9.80665}
         return ctx
 
-    def do_profile_fitting(self, ctx: Context) -> Optional[Context]:
+    def do_profile_fitting(self, ctx: Context) -> Context | None:
         """Fit spherical Young-Laplace profile."""
         integrator = get_solver(self.solver_name, fallback=young_laplace_default)
         assert (
@@ -269,7 +267,7 @@ class SessilePipeline(PipelineBase):
         common_solver.run(ctx, integrator=integrator, config=cfg)
         return ctx
 
-    def do_compute_metrics(self, ctx: Context) -> Optional[Context]:
+    def do_compute_metrics(self, ctx: Context) -> Context | None:
         """Aggregate fit results and sessile metrics."""
         fit = ctx.fit or {}
         names = fit.get("param_names") or []
@@ -296,7 +294,7 @@ class SessilePipeline(PipelineBase):
             ctx.results = res
         return ctx
 
-    def do_overlay(self, ctx: Context) -> Optional[Context]:
+    def do_overlay(self, ctx: Context) -> Context | None:
         xy = ensure_contour(ctx)
 
         cmds = []

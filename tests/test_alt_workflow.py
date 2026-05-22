@@ -3,11 +3,10 @@
 Unit tests."""
 
 import numpy as np
-import pytest
 
 from menipy.common.geometry import (
-    find_contact_points_from_contour,
     detect_baseline_ransac,
+    find_contact_points_from_contour,
     refine_apex_curvature,
 )
 from menipy.pipelines.sessile.metrics import compute_sessile_metrics

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Optional, Tuple, Union, TypeAlias
 from datetime import datetime
+from typing import TypeAlias
 
 import numpy as np
 from pydantic import BaseModel, Field, field_validator
@@ -11,31 +11,31 @@ from pydantic_numpy.typing import Np2DArrayUint8, Np3DArrayUint8
 
 ImageGray: TypeAlias = Np2DArrayUint8
 ImageBGR: TypeAlias = Np3DArrayUint8
-ImageAny: TypeAlias = Union[ImageGray, ImageBGR]
+ImageAny: TypeAlias = ImageGray | ImageBGR
 
 
 class CameraMeta(BaseModel):
     """Minimal camera metadata recorded with frames."""
 
-    device: Optional[str] = Field(default=None, description="Camera name/id")
-    fps: Optional[float] = Field(default=None, gt=0)
-    exposure_ms: Optional[float] = Field(default=None, gt=0)
-    resolution: Optional[Tuple[int, int]] = Field(
+    device: str | None = Field(default=None, description="Camera name/id")
+    fps: float | None = Field(default=None, gt=0)
+    exposure_ms: float | None = Field(default=None, gt=0)
+    resolution: tuple[int, int] | None = Field(
         default=None, description="(height, width)"
     )
-    lens_mm: Optional[float] = Field(default=None, gt=0)
-    note: Optional[str] = None
+    lens_mm: float | None = Field(default=None, gt=0)
+    note: str | None = None
 
 
 class Calibration(BaseModel):
     """Pixel-to-metric scaling and optional distortion parameters."""
 
-    pixels_per_mm: Optional[float] = Field(default=None, gt=0)
-    mm_per_pixel: Optional[float] = Field(default=None, gt=0)
+    pixels_per_mm: float | None = Field(default=None, gt=0)
+    mm_per_pixel: float | None = Field(default=None, gt=0)
     # If both provided, they are cross-checked for consistency
-    k1: Optional[float] = None  # radial distortion (optional)
-    k2: Optional[float] = None
-    cx_cy: Optional[Tuple[float, float]] = Field(
+    k1: float | None = None  # radial distortion (optional)
+    k2: float | None = None
+    cx_cy: tuple[float, float] | None = Field(
         default=None, description="principal point (cx, cy) in pixels"
     )
 
@@ -54,11 +54,11 @@ class Frame(BaseModel):
     Accepts grayscale (H, W) or BGR (H, W, 3) uint8 arrays as used by OpenCV.
     """
 
-    image: "ImageAny" = Field(description="np.uint8 image; shape (H,W) or (H,W,3)")
-    timestamp: Optional[datetime] = Field(default=None)
-    ms_from_start: Optional[float] = Field(default=None, ge=0)
-    camera: Optional[CameraMeta] = None
-    calibration: Optional[Calibration] = None
+    image: ImageAny = Field(description="np.uint8 image; shape (H,W) or (H,W,3)")
+    timestamp: datetime | None = Field(default=None)
+    ms_from_start: float | None = Field(default=None, ge=0)
+    camera: CameraMeta | None = None
+    calibration: Calibration | None = None
 
     @field_validator("image")
     @classmethod

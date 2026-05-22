@@ -2,10 +2,10 @@
 
 Unit tests."""
 
-import pytest
 from pydantic import BaseModel
+from PySide6.QtWidgets import QLineEdit, QSpinBox
+
 from menipy.gui.dialogs.plugin_config_dialog import PluginConfigDialog
-from PySide6.QtWidgets import QSpinBox, QLineEdit
 
 
 class DummyModel(BaseModel):

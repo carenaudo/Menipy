@@ -1,9 +1,8 @@
-import pytest
 import numpy as np
 
 from menipy.models.context import Context
-from menipy.pipelines.captive_bubble.stages import CaptiveBubblePipeline
 from menipy.pipelines.captive_bubble.physics import compute_physics
+from menipy.pipelines.captive_bubble.stages import CaptiveBubblePipeline
 
 
 def test_captive_bubble_physics():
@@ -32,8 +31,8 @@ def test_captive_bubble_pipeline_integration(monkeypatch):
 
     # Give a dummy contour
     ctx = Context()
-    from menipy.models.geometry import CaptiveBubbleGeometry
     from menipy.models.context import Contour
+    from menipy.models.geometry import CaptiveBubbleGeometry
 
     ctx.contour = Contour(xy=np.array([[0, 0], [10, 0], [5, 10]], dtype=float))
 

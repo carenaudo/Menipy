@@ -3,25 +3,25 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 
-from menipy.models.context import Context
 from menipy.models.config import PreprocessingSettings
-from menipy.models.state import PreprocessingState, MarkerSet
+from menipy.models.context import Context
+from menipy.models.state import MarkerSet, PreprocessingState
 
 from .preprocessing_helpers import (  # Assuming this file exists or will be created
     PreprocessingContext,
     PreprocessingError,
+    apply_filter,
     convert_to_grayscale,
     crop_to_roi,
-    rescale_roi,
-    apply_filter,
-    subtract_background,
-    normalize_intensity,
     detect_contact_line,
     fill_holes,
+    normalize_intensity,
+    rescale_roi,
+    subtract_background,
 )
 
 try:
@@ -124,7 +124,7 @@ def run(
 # ---------------------------------------------------------------------------
 
 
-def _resolve_source_image(ctx: Context) -> Optional[np.ndarray]:
+def _resolve_source_image(ctx: Context) -> np.ndarray | None:
     candidates = [
         getattr(ctx, "current_frame", None),
         None,
@@ -148,7 +148,7 @@ def _resolve_source_image(ctx: Context) -> Optional[np.ndarray]:
     if not isinstance(img, np.ndarray):
         return None
     if hasattr(img, "image") and isinstance(
-        getattr(img, "image"), np.ndarray
+        img.image, np.ndarray
     ):  # Handle Frame object
         img = img.image
     if img.dtype != np.uint8:
@@ -173,7 +173,7 @@ def _resolve_settings(
     return PreprocessingSettings()
 
 
-def _resolve_markers(ctx: Context) -> Optional[MarkerSet]:
+def _resolve_markers(ctx: Context) -> MarkerSet | None:
     markers = getattr(ctx, "preprocessing_markers", None)
     if isinstance(markers, MarkerSet):
         return markers
@@ -187,7 +187,7 @@ def _resolve_markers(ctx: Context) -> Optional[MarkerSet]:
 
 def _compose_full_image(
     base: np.ndarray, roi: np.ndarray, state: PreprocessingState
-) -> Optional[np.ndarray]:
+) -> np.ndarray | None:
     if roi is None or state.roi_bounds is None:
         return None
     x, y, w, h = state.roi_bounds

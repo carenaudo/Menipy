@@ -82,7 +82,7 @@ class OverlayConfigDialog(QDialog):
         ("points", "Points", "point", False),
     )
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Overlay appearance")
         self._layer_controls: dict[str, dict[str, Any]] = {}
@@ -349,21 +349,21 @@ class OverlayConfigDialog(QDialog):
     def _maybe_render_live_preview(self, *args, **kwargs) -> None:
         self._render_example_preview(self.get_config())
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         cfg = self._collect_layer_config()
         cfg["live_preview"] = bool(self.live_preview.isChecked())
         cfg["stroke_scale_mode"] = self.stroke_scale_mode.currentData() or "screen"
         return cfg
 
-    def set_config(self, cfg: Optional[Dict[str, Any]]) -> None:
+    def set_config(self, cfg: dict[str, Any] | None) -> None:
         merged = {**self.DEFAULTS, **(cfg or {})}
         self._apply_config_to_widgets(merged)
         self._render_example_preview(self.get_config())
 
-    def _collect_layer_config(self) -> Dict[str, Any]:
+    def _collect_layer_config(self) -> dict[str, Any]:
         contour = self._layer_controls["contour"]
         points = self._layer_controls["points"]
-        cfg: Dict[str, Any] = {
+        cfg: dict[str, Any] = {
             "contour_visible": bool(contour["visible"].isChecked()),
             "contour_color": contour["_color"].name(),
             "contour_thickness": int(contour["thickness"].value()),
@@ -385,7 +385,7 @@ class OverlayConfigDialog(QDialog):
             cfg[f"{prefix}_alpha"] = float(controls["alpha"].value())
         return cfg
 
-    def _apply_config_to_widgets(self, cfg: Dict[str, Any]) -> None:
+    def _apply_config_to_widgets(self, cfg: dict[str, Any]) -> None:
         self._set_layer_values(
             "contour",
             visible=cfg["contour_visible"],
@@ -465,7 +465,7 @@ class OverlayConfigDialog(QDialog):
             controls[key].setVisible(enabled)
             controls[key].setEnabled(enabled)
 
-    def _render_example_preview(self, config: Dict[str, Any]) -> None:
+    def _render_example_preview(self, config: dict[str, Any]) -> None:
         pixmap = QPixmap(320, 230)
         pixmap.fill(QColor("#eeeeee"))
         painter = QPainter(pixmap)
@@ -579,6 +579,7 @@ class OverlayConfigDialog(QDialog):
 
 if __name__ == "__main__":
     import sys
+
     from PySide6.QtWidgets import QApplication
 
     app = QApplication(sys.argv)

@@ -30,6 +30,7 @@ dependencies = [
     "PySide6>=6.5.1",
     "pint",
     "pydantic",
+    "pydantic-numpy",
     "pydantic-pint",
 ]
 
@@ -85,11 +86,20 @@ exclude = '''
     | \.venv
     | \.mypy_cache
     | \.ruff_cache
+    | \.tmp
     | build
     | dist
+    | docs
+    | examples
     | docs/_build
     | data
+    | out
     | plot
+    | savetest
+    | archive
+    | tools
+    | scripts
+    | scripts/playground
     | \.egg-info
 )/
 '''
@@ -101,7 +111,21 @@ exclude = '''
 profile = "black"
 line_length = 88
 known_first_party = ["menipy"]
-skip = [".venv", "build", "dist", ".git"]
+skip = [
+    ".venv",
+    "build",
+    "dist",
+    ".git",
+    ".tmp",
+    "archive",
+    "data",
+    "docs",
+    "examples",
+    "out",
+    "savetest",
+    "scripts",
+    "tools",
+]
 skip_gitignore = true
 
 # =============================================================================
@@ -115,11 +139,20 @@ exclude = [
     ".venv",
     ".mypy_cache",
     ".ruff_cache",
+    ".tmp",
     "build",
     "dist",
+    "docs",
+    "examples",
     "docs/_build",
     "data",
+    "out",
     "plot",
+    "savetest",
+    "archive",
+    "scripts",
+    "scripts/playground",
+    "tools",
     "*.egg-info",
 ]
 
@@ -136,6 +169,11 @@ select = [
 ignore = [
     "E203",   # Whitespace before ':' (conflicts with black)
     "E501",   # Line too long (handled by black)
+    "E402",   # Runtime/plugin imports are used in scripts and plugin registration
+    "B008",   # Qt defaults and existing APIs use call expressions in defaults
+    "B905",   # Existing zip calls intentionally support Python 3.10 semantics
+    "UP007",  # Keep existing Union syntax where present
+    "UP035",  # Keep existing typing imports where present
 ]
 
 [tool.ruff.lint.per-file-ignores]

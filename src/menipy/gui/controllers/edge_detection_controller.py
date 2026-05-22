@@ -10,10 +10,10 @@ from typing import Any, Dict, Optional
 import numpy as np
 from PySide6.QtCore import QObject, Signal
 
-from menipy.models.config import EdgeDetectionSettings
-from menipy.models.context import Context
 from menipy.common import edge_detection
 from menipy.common.geometry import find_contact_points_from_contour
+from menipy.models.config import EdgeDetectionSettings
+from menipy.models.context import Context
 
 try:
     import cv2  # type: ignore
@@ -30,18 +30,18 @@ class EdgeDetectionPipelineController(QObject):
     previewRequested = Signal(object, dict)
     errorOccurred = Signal(str)
 
-    def __init__(self, parent: Optional[QObject] = None) -> None:
+    def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._settings = EdgeDetectionSettings()
-        self._source_image: Optional[np.ndarray] = None
-        self._contact_line: Optional[tuple] = None
+        self._source_image: np.ndarray | None = None
+        self._contact_line: tuple | None = None
         self._last_contact_points: tuple | None = None
 
     @property
     def settings(self) -> EdgeDetectionSettings:
         return self._settings
 
-    def set_settings(self, data: EdgeDetectionSettings | Dict[str, Any]) -> None:
+    def set_settings(self, data: EdgeDetectionSettings | dict[str, Any]) -> None:
         if isinstance(data, EdgeDetectionSettings):
             self._settings = data
         else:

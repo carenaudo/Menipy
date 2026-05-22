@@ -1,13 +1,14 @@
 """Smoke tests for controller flows in sessile pipeline Phase 4."""
 
-import pytest
-import numpy as np
-import cv2
 from unittest.mock import Mock, patch
 
+import cv2
+import numpy as np
+import pytest
+
 try:
-    from PySide6.QtWidgets import QApplication, QMainWindow
     from PySide6.QtCore import QPointF, QRectF
+    from PySide6.QtWidgets import QMainWindow
 
     PYSIDE_AVAILABLE = True
 except ImportError:
@@ -290,7 +291,7 @@ class TestSessileControllerFlows:
         # Mock acquisition failure
         controller._collect_acquisition_inputs = Mock(return_value=(False, {}))
 
-        with patch("PySide6.QtWidgets.QMessageBox.warning") as mock_warning:
+        with patch("PySide6.QtWidgets.QMessageBox.warning"):
             controller.run_full()
             # Warning should be called by _collect_acquisition_inputs, not by run_full directly
             # The test verifies that run_full properly handles the failure case
@@ -548,8 +549,8 @@ class TestSessileControllerFlows:
         controller.setup_ctrl.current_pipeline_name.return_value = "sessile"
 
         # Mock physics config with unit-aware values
-        from menipy.models.config import PhysicsParams
         from menipy.common.units import Q_
+        from menipy.models.config import PhysicsParams
 
         physics_config = PhysicsParams(
             delta_rho=Q_(1000.0, "kg/m^3"), needle_radius=Q_(0.5, "mm")

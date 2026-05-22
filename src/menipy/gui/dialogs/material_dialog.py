@@ -4,28 +4,28 @@ Material Database Dialog
 Dialog for managing and selecting materials.
 """
 
-from PySide6.QtCore import Qt, Signal, QSize
+from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QComboBox,
     QDialog,
-    QVBoxLayout,
+    QDoubleSpinBox,
+    QFormLayout,
+    QFrame,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QLineEdit,
+    QMessageBox,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
-    QHeaderView,
-    QComboBox,
-    QMessageBox,
-    QFrame,
-    QAbstractItemView,
-    QFormLayout,
-    QDoubleSpinBox,
     QTextEdit,
+    QVBoxLayout,
 )
 
-from menipy.gui import theme
 from menipy.common.material_db import MaterialDB
+from menipy.gui import theme
 
 
 class MaterialDialog(QDialog):

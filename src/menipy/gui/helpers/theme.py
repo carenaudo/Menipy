@@ -95,6 +95,7 @@ def get_dpi_aware_min_window_size() -> tuple[int, int]:
     except Exception:
         return base_w, base_h
 
+
 # =============================================================================
 # Animation Constants
 # =============================================================================

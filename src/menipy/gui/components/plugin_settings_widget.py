@@ -4,34 +4,35 @@ Reuses logic from PluginConfigDialog but as a dockable/embeddable widget.
 """
 
 from __future__ import annotations
-import json
-from typing import Dict, Any, Type, Optional
 
-from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QFormLayout,
-    QScrollArea,
-    QLabel,
-    QSpinBox,
-    QDoubleSpinBox,
-    QCheckBox,
-    QLineEdit,
-    QComboBox,
-    QGroupBox,
-    QPushButton,
-    QHBoxLayout,
-)
-from PySide6.QtCore import Signal, Qt
+import json
+from typing import Any, Dict, Optional, Type
 
 from pydantic import BaseModel
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QDoubleSpinBox,
+    QFormLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QScrollArea,
+    QSpinBox,
+    QVBoxLayout,
+    QWidget,
+)
+
 from menipy.common.plugin_settings import (
     get_detector_settings_model,
     resolve_plugin_settings,
 )
-from menipy.gui.dialogs.plugin_config_dialog import (
+from menipy.gui.dialogs.plugin_config_dialog import (  # reusing _create_widget logic if possible, or duplicating for independence
     PluginConfigDialog,
-)  # reusing _create_widget logic if possible, or duplicating for independence
+)
 
 
 class PluginSettingsWidget(QWidget):
@@ -44,9 +45,9 @@ class PluginSettingsWidget(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._current_method: Optional[str] = None
-        self._current_model: Optional[Type[BaseModel]] = None
-        self._inputs: Dict[str, QWidget] = {}
+        self._current_method: str | None = None
+        self._current_model: type[BaseModel] | None = None
+        self._inputs: dict[str, QWidget] = {}
         self._block_signals = False
 
         # Layouts
@@ -104,7 +105,7 @@ class PluginSettingsWidget(QWidget):
                 widget.deleteLater()
         self._inputs.clear()
 
-    def set_plugin(self, method_name: str, current_settings: Dict[str, Any] = None):
+    def set_plugin(self, method_name: str, current_settings: dict[str, Any] = None):
         """Build the settings form for the given plugin method."""
         self._current_method = method_name
         self._current_model = get_detector_settings_model(method_name)
@@ -158,15 +159,13 @@ class PluginSettingsWidget(QWidget):
     def _create_input_widget(self, type_annotation, value) -> QWidget | None:
         """Create appropriate widget for type."""
         # Reuse logic similar to PluginConfigDialog
-        from menipy.gui.dialogs.plugin_config_dialog import PluginConfigDialog
+        from enum import Enum
+        from typing import get_args, get_origin
 
         # We can actually just instantiate a temp dialog to use its method if we made it static?
         # Or just copy-paste for now to avoid refactoring the other file yet.
         # Let's verify PluginConfigDialog._create_widget is instance method. It is.
         # I'll implement a simplified version here.
-
-        from typing import get_origin, get_args
-        from enum import Enum
 
         # Unwrap Optional
         origin = get_origin(type_annotation)
@@ -236,7 +235,7 @@ class PluginSettingsWidget(QWidget):
             return
         self.settingsChanged.emit(self.get_current_settings())
 
-    def get_current_settings(self) -> Dict[str, Any]:
+    def get_current_settings(self) -> dict[str, Any]:
         """Get current settings.
 
         Returns

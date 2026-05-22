@@ -2,28 +2,30 @@
 
 Registers a simple JSON output handler that serializes results to a JSON string.
 """
+
+
 def output_results_json(ctx):
     """Placeholder docstring for output_results_json.
-    
+
     TODO: Complete docstring with full description.
-    
+
     Parameters
     ----------
     ctx : type
         Description of ctx.
-    
+
     Returns
     -------
     type
         Description of return value.
     """
     """Write analysis results to JSON format.
-    
+
     Parameters
     ----------
     ctx : AnalysisContext
         Context object with results attribute.
-    
+
     Returns
     -------
     AnalysisContext
@@ -33,8 +35,8 @@ def output_results_json(ctx):
     data = {"results": getattr(ctx, "results", None)}
     ctx._last_output = json.dumps(data)
     return ctx
+
+
 import json
 
-OUTPUTS = {
-    "json": output_results_json
-}
+OUTPUTS = {"json": output_results_json}

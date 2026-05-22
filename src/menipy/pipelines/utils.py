@@ -1,16 +1,16 @@
 """Shared utilities for pipeline stages."""
 
 from __future__ import annotations
-import numpy as np
-from typing import Optional
 
-from menipy.models.context import Context
-from menipy.models.config import EdgeDetectionSettings
+import numpy as np
+
 from menipy.common import edge_detection as edged
+from menipy.models.config import EdgeDetectionSettings
+from menipy.models.context import Context
 
 
 def ensure_contour(
-    ctx: Context, settings: Optional[EdgeDetectionSettings] = None
+    ctx: Context, settings: EdgeDetectionSettings | None = None
 ) -> np.ndarray:
     """
     Get the contour from the context, or run edge detection if it's missing.

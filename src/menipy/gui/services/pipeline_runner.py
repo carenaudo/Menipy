@@ -2,11 +2,13 @@
 
 # src/adsa/gui/services/pipeline_runner.py
 from __future__ import annotations
-from typing import Optional
-from PySide6.QtCore import QObject, Signal, QRunnable, QThreadPool
 
-from menipy.pipelines.base import PipelineBase, PipelineError
+from typing import Optional
+
+from PySide6.QtCore import QObject, QRunnable, QThreadPool, Signal
+
 from menipy.common import acquisition as acq
+from menipy.pipelines.base import PipelineBase, PipelineError
 
 # Import the same map the GUI uses to ensure consistency
 try:
@@ -19,8 +21,8 @@ class _Job(QRunnable):
     def __init__(
         self,
         pipeline_cls: type[PipelineBase],
-        image: Optional[str],
-        camera: Optional[int],
+        image: str | None,
+        camera: int | None,
         frames: int,
         callback,
         *,
@@ -41,7 +43,7 @@ class _Job(QRunnable):
         calibration_params=None,
         scale=None,
         physics=None,
-        stages: Optional[list[str]] = None,
+        stages: list[str] | None = None,
     ) -> None:
         super().__init__()
         self.pipeline_cls = pipeline_cls
@@ -131,8 +133,8 @@ class PipelineRunner(QObject):
     def run(
         self,
         pipeline: str,
-        image: Optional[str],
-        camera: Optional[int],
+        image: str | None,
+        camera: int | None,
         frames: int = 1,
         **overlays,
     ):
@@ -145,8 +147,8 @@ class PipelineRunner(QObject):
         pipeline: str,
         *,
         only: list[str],
-        image: Optional[str],
-        camera: Optional[int],
+        image: str | None,
+        camera: int | None,
         frames: int = 1,
         **overlays,
     ) -> None:
@@ -179,5 +181,5 @@ class PipelineRunner(QObject):
         )
         self.pool.start(job)
 
-    def _emit(self, success: bool, ctx, err: Optional[str]):
+    def _emit(self, success: bool, ctx, err: str | None):
         self.finished.emit({"ok": success, "ctx": ctx, "err": err})

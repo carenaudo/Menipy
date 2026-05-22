@@ -8,24 +8,25 @@ Extracted from MainController to adhere to Single Responsibility Principle.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Optional, Dict, Any
-import numpy as np
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
+import numpy as np
 from PySide6.QtCore import QObject, Slot
 from PySide6.QtWidgets import QDialog, QMessageBox
 
 from menipy.gui.dialogs.acquisition_config_dialog import AcquisitionConfigDialog
-from menipy.gui.dialogs.preprocessing_config_dialog import PreprocessingConfigDialog
 from menipy.gui.dialogs.edge_detection_config_dialog import EdgeDetectionConfigDialog
 from menipy.gui.dialogs.geometry_config_dialog import GeometryConfigDialog
 from menipy.gui.dialogs.overlay_config_dialog import OverlayConfigDialog
 from menipy.gui.dialogs.physics_config_dialog import PhysicsConfigDialog
+from menipy.gui.dialogs.preprocessing_config_dialog import PreprocessingConfigDialog
 from menipy.models.config import PhysicsParams
 
 if TYPE_CHECKING:
     from PySide6.QtWidgets import QMainWindow
-    from menipy.gui.controllers.preprocessing_controller import PreprocessingController
+
     from menipy.gui.controllers.edge_detection_controller import EdgeDetectionController
+    from menipy.gui.controllers.preprocessing_controller import PreprocessingController
 
 logger = logging.getLogger(__name__)
 
@@ -37,10 +38,10 @@ class DialogCoordinator(QObject):
         self,
         window: QMainWindow,
         settings,
-        preprocessing_ctrl: Optional[PreprocessingController] = None,
-        edge_detection_ctrl: Optional[EdgeDetectionController] = None,
-        image_loader: Optional[callable] = None,
-        parent: Optional[QObject] = None,
+        preprocessing_ctrl: PreprocessingController | None = None,
+        edge_detection_ctrl: EdgeDetectionController | None = None,
+        image_loader: callable | None = None,
+        parent: QObject | None = None,
     ):
         """Initialize.
 

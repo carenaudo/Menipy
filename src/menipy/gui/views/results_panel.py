@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import csv
-from typing import Any, List, Mapping, Optional
+from collections.abc import Mapping
+from typing import Any, List, Optional
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction
@@ -135,10 +136,8 @@ class ResultsPanel:
         self.panel = panel
         self.metric_host = metric_host
         self.residuals_table: QTableWidget | None = None
-        self.table: Optional[QTableWidget] = panel.findChild(
-            QTableWidget, "resultsTable"
-        )
-        self.summary_label: Optional[QLabel] = panel.findChild(QLabel, "summaryLabel")
+        self.table: QTableWidget | None = panel.findChild(QTableWidget, "resultsTable")
+        self.summary_label: QLabel | None = panel.findChild(QLabel, "summaryLabel")
         self.history = get_results_history()
         self.settings = AppSettings.load()
         self.unit_system = getattr(self.settings, "unit_system", "SI")
@@ -982,8 +981,8 @@ class ResultsPanel:
         return headers, rows
 
     def _prioritize_columns_for_pipeline(
-        self, headers: List[str], rows: List[List[Any]], pipeline_name: str
-    ) -> tuple[List[str], List[List[Any]]]:
+        self, headers: list[str], rows: list[list[Any]], pipeline_name: str
+    ) -> tuple[list[str], list[list[Any]]]:
         """Reorder columns to prioritize pipeline-specific metrics."""
         if not pipeline_name:
             return headers, rows
@@ -1141,7 +1140,7 @@ class ResultsPanel:
         self,
         results: Mapping[str, Any],
         pipeline_name: str = "unknown",
-        file_name: Optional[str] = None,
+        file_name: str | None = None,
     ) -> None:
         """Update display for a single measurement (legacy compatibility)."""
         if results:

@@ -6,18 +6,18 @@ Configuration dialog for global application settings.
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QDialog,
-    QVBoxLayout,
-    QHBoxLayout,
-    QLabel,
-    QFrame,
-    QPushButton,
-    QTabWidget,
     QCheckBox,
     QComboBox,
-    QLineEdit,
+    QDialog,
     QFileDialog,
     QFormLayout,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QTabWidget,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -150,10 +150,10 @@ class SettingsDialog(QDialog):
                 border-radius: 4px;
             }}
         """)
-        l = QVBoxLayout(group)
+        layout = QVBoxLayout(group)
         lbl = QLabel(title)
         lbl.setStyleSheet("font-weight: bold; font-size: 14px;")
-        l.addWidget(lbl)
+        layout.addWidget(lbl)
         return group
 
     def _browse_path(self, line_edit):

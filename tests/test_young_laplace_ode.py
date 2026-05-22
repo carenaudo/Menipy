@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+
 from menipy.math.young_laplace import young_laplace_ode
 from menipy.pipelines.pendant.strict_young_laplace import (
     integrate_young_laplace_profile_mm,

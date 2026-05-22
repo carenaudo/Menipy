@@ -3,6 +3,7 @@
 Registers a blur preprocessor that applies a Gaussian blur filter to the first frame
 if OpenCV is available. Useful for noise reduction before edge detection.
 """
+
 try:
     import cv2
 except Exception:
@@ -13,26 +14,26 @@ from menipy.common.registry import register_preprocessor
 
 def blur_preprocessor(ctx):
     """Placeholder docstring for blur_preprocessor.
-    
+
     TODO: Complete docstring with full description.
-    
+
     Parameters
     ----------
     ctx : type
         Description of ctx.
-    
+
     Returns
     -------
     type
         Description of return value.
     """
     """Apply Gaussian blur to the first frame for noise reduction.
-    
+
     Parameters
     ----------
     ctx : AnalysisContext
         Context object with frames attribute.
-    
+
     Returns
     -------
     AnalysisContext

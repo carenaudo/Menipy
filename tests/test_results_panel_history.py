@@ -4,13 +4,13 @@ from datetime import datetime
 
 from PySide6.QtWidgets import QLabel, QListWidget, QTableWidget, QVBoxLayout, QWidget
 
+from menipy.gui.services.settings_service import AppSettings
 from menipy.gui.views import results_panel as results_panel_module
 from menipy.gui.views.results_panel import (
     LEGACY_PIPELINES_FILTER,
     VALID_PIPELINES_FILTER,
     ResultsPanel,
 )
-from menipy.gui.services.settings_service import AppSettings
 from menipy.models.results import MeasurementResult
 
 

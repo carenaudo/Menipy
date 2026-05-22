@@ -10,6 +10,7 @@ import numpy as np
 
 from menipy.common.edge_detection import extract_external_contour
 from menipy.common.metrics import find_apex_index
+
 from .metrics import compute_pendant_metrics
 
 

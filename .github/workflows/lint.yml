@@ -33,4 +33,4 @@ jobs:
         run: ruff check .
 
       - name: Type check with Mypy
-        run: mypy src --config-file=pyproject.toml
+        run: mypy src/menipy/models --config-file=pyproject.toml

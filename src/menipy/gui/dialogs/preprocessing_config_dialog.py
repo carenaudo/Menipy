@@ -8,6 +8,7 @@ from typing import Optional
 
 import numpy as np
 from PySide6.QtCore import Qt, Signal, Slot
+from PySide6.QtGui import QColor, QImage, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -26,7 +27,6 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from PySide6.QtGui import QImage, QPixmap, QPainter, QPen, QColor
 
 from menipy.models.config import PreprocessingSettings
 
@@ -37,7 +37,7 @@ class PreprocessingConfigDialog(QDialog):
     previewRequested = Signal(object)
 
     def __init__(
-        self, settings: PreprocessingSettings, parent: Optional[QDialog] = None
+        self, settings: PreprocessingSettings, parent: QDialog | None = None
     ) -> None:
         super().__init__(parent)
         self.setWindowTitle("Preprocessing Configuration")
@@ -685,12 +685,12 @@ class PreprocessingConfigDialog(QDialog):
                     return None
                 return (r[0] - offset_x, r[1] - offset_y, r[2], r[3])
 
-            def to_local_line(l):
+            def to_local_line(line):
                 """to local line.
 
                 Parameters
                 ----------
-                l : type
+                line : type
                 Description.
 
                 Returns
@@ -698,9 +698,9 @@ class PreprocessingConfigDialog(QDialog):
                 type
                 Description.
                 """
-                if not l:
+                if not line:
                     return None
-                p1, p2 = l
+                p1, p2 = line
                 return (
                     (p1[0] - offset_x, p1[1] - offset_y),
                     (p2[0] - offset_x, p2[1] - offset_y),

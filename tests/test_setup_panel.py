@@ -2,16 +2,18 @@
 
 Unit tests."""
 
-import pytest
-from menipy.gui.views.main_window import MainWindow
-from menipy.gui.controllers.setup_panel_controller import SetupPanelController
-from menipy.gui.services.camera_service import CameraDevice
-from menipy.gui.views.image_view import DRAW_POINT, DRAW_LINE, DRAW_RECT
-from menipy.models.context import Context
 from unittest.mock import Mock
+
+import pytest
 from PySide6.QtCore import QPoint, Qt
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QListView, QSizePolicy
+
+from menipy.gui.controllers.setup_panel_controller import SetupPanelController
+from menipy.gui.services.camera_service import CameraDevice
+from menipy.gui.views.image_view import DRAW_LINE, DRAW_POINT, DRAW_RECT
+from menipy.gui.views.main_window import MainWindow
+from menipy.models.context import Context
 
 
 @pytest.fixture

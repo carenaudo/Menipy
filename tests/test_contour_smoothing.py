@@ -6,8 +6,8 @@ import pytest
 from menipy.common.contour_smoothing import (
     filter_monotonic_contour,
     find_contact_intersections,
-    smooth_contour,
     run,
+    smooth_contour,
 )
 from menipy.models.config import ContourSmoothingSettings
 from menipy.models.context import Context

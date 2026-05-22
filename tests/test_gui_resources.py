@@ -2,8 +2,9 @@
 
 Unit tests."""
 
-import pytest
 from pathlib import Path
+
+import pytest
 
 pytest.importorskip("PySide6")
 
@@ -20,8 +21,9 @@ def test_register_qrc_no_rcc(monkeypatch):
 
 def test_register_qrc_with_rcc(monkeypatch, tmp_path):
     pytest.importorskip("PySide6")
-    from menipy.gui import app
     from PySide6.QtCore import QResource
+
+    from menipy.gui import app
 
     called = {"count": 0}
 

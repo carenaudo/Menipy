@@ -8,26 +8,25 @@ substrate, needle, drop, and ROI regions with live preview.
 from __future__ import annotations
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import cv2
 import numpy as np
-
-from PySide6.QtCore import Qt, Signal, QSize
-from PySide6.QtGui import QImage, QPixmap, QColor, QPainter, QPen
+from PySide6.QtCore import QSize, Qt, Signal
+from PySide6.QtGui import QColor, QImage, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
+    QCheckBox,
     QDialog,
-    QVBoxLayout,
+    QFrame,
+    QGroupBox,
     QHBoxLayout,
     QLabel,
-    QPushButton,
-    QWidget,
-    QGroupBox,
-    QCheckBox,
     QProgressBar,
-    QSizePolicy,
+    QPushButton,
     QScrollArea,
-    QFrame,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
 )
 
 if TYPE_CHECKING:
@@ -58,7 +57,7 @@ class CalibrationWizardDialog(QDialog):
         self,
         image: np.ndarray,
         pipeline_name: str = "sessile",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ) -> None:
         """
         Initialize the calibration wizard dialog.
@@ -75,7 +74,7 @@ class CalibrationWizardDialog(QDialog):
 
         self.original_image = image.copy()
         self.pipeline_name = pipeline_name.lower()
-        self.result: Optional[CalibrationResult] = None
+        self.result: CalibrationResult | None = None
 
         # Region enable flags
         self._region_enabled = {
@@ -308,7 +307,7 @@ class CalibrationWizardDialog(QDialog):
         self._actual_btn.clicked.connect(self._actual_preview)
 
         # Connect region checkboxes
-        for region_id, widget in self._region_widgets.items():
+        for _region_id, widget in self._region_widgets.items():
             widget.checkbox.stateChanged.connect(self._on_region_toggled)
 
     def _show_original_image(self) -> None:
@@ -390,7 +389,7 @@ class CalibrationWizardDialog(QDialog):
                 logger.info("Preserving manual needle")
 
         # Import here to avoid circular imports
-        from menipy.common.auto_calibrator import run_auto_calibration, AutoCalibrator
+        from menipy.common.auto_calibrator import AutoCalibrator, run_auto_calibration
 
         try:
             logger.info(f"Running auto-calibration for {self.pipeline_name}...")
@@ -671,7 +670,7 @@ class CalibrationWizardDialog(QDialog):
         self.calibration_complete.emit(self.result)
         self.accept()
 
-    def get_result(self) -> Optional[CalibrationResult]:
+    def get_result(self) -> CalibrationResult | None:
         """Get the calibration result after dialog closes."""
         return self.result
 
@@ -798,7 +797,7 @@ class CalibrationWizardDialog(QDialog):
             if widget and widget.draw_btn:
                 widget.draw_btn.setChecked(False)
 
-    def _widget_to_image_coords(self, wx: int, wy: int) -> Optional[tuple]:
+    def _widget_to_image_coords(self, wx: int, wy: int) -> tuple | None:
         """Convert widget coordinates to image coordinates."""
         if not hasattr(self, "_current_pixmap") or self._current_pixmap is None:
             return None
@@ -875,6 +874,7 @@ class CalibrationWizardDialog(QDialog):
 # Standalone test
 if __name__ == "__main__":
     import sys
+
     from PySide6.QtWidgets import QApplication
 
     app = QApplication(sys.argv)

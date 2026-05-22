@@ -5,22 +5,23 @@ from __future__ import annotations
 
 import logging
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Optional, ClassVar
+from typing import Any, ClassVar
 
 import numpy as np
-
-# Core models
-from menipy.models.context import Context
-from menipy.models.config import PreprocessingSettings, EdgeDetectionSettings
-from menipy.models.fit import FitConfig
-from menipy.models.geometry import Contour, Geometry
 
 # Common utilities
 from menipy.common import edge_detection as edged
 from menipy.common import overlay as ovl
 from menipy.common import solver as common_solver
 from menipy.common._module_loader import load_module_from_path
+from menipy.models.config import EdgeDetectionSettings, PreprocessingSettings
+
+# Core models
+from menipy.models.context import Context
+from menipy.models.fit import FitConfig
+from menipy.models.geometry import Contour, Geometry
 
 # Make common utilities available to subclasses
 __all__ = [
@@ -57,7 +58,7 @@ class PipelineBase:
     _repo_root: ClassVar[Path] = Path(__file__).resolve().parents[3]
     _toy_path: ClassVar[Path] = _repo_root / "plugins" / "toy_young_laplace.py"
     _toy_mod = load_module_from_path(_toy_path, "menipy_plugins.toy_young_laplace")
-    young_laplace_sphere = getattr(_toy_mod, "toy_young_laplace")
+    young_laplace_sphere = _toy_mod.toy_young_laplace
     DEFAULT_SEQ = [
         ("acquisition", None),
         ("preprocessing", None),
@@ -75,11 +76,11 @@ class PipelineBase:
     ]
 
     # ---- Stage hooks (override in subclasses as needed) ----
-    def do_acquisition(self, ctx: Context) -> Optional[Context]:
+    def do_acquisition(self, ctx: Context) -> Context | None:
         """Load raw image data from file paths or wrap existing arrays."""
         return ctx
 
-    def do_preprocessing(self, ctx: Context) -> Optional[Context]:
+    def do_preprocessing(self, ctx: Context) -> Context | None:
         """Apply image filters and enhancements (blur, contrast, threshold)."""
         from menipy.common import preprocessing
 
@@ -87,7 +88,7 @@ class PipelineBase:
             return preprocessing.run(ctx, self.preprocessing_settings)
         return ctx
 
-    def do_feature_detection(self, ctx: Context) -> Optional[Context]:
+    def do_feature_detection(self, ctx: Context) -> Context | None:
         """Detect features like ROI, needle, substrate, and contact points.
 
         This stage runs automatic detection algorithms to identify key image
@@ -96,7 +97,7 @@ class PipelineBase:
         """
         return ctx
 
-    def do_contour_extraction(self, ctx: Context) -> Optional[Context]:
+    def do_contour_extraction(self, ctx: Context) -> Context | None:
         """Extract the droplet contour from the preprocessed image.
 
         Previously named 'edge_detection'. Uses Canny or registered plugins
@@ -108,7 +109,7 @@ class PipelineBase:
             return edge_detection.run(ctx, self.edge_detection_settings)
         return ctx
 
-    def do_contour_refinement(self, ctx: Context) -> Optional[Context]:
+    def do_contour_refinement(self, ctx: Context) -> Context | None:
         """Refine the extracted contour by clipping, smoothing, or filtering.
 
         Operations may include:
@@ -119,7 +120,7 @@ class PipelineBase:
         """
         return ctx
 
-    def do_calibration(self, ctx: Context) -> Optional[Context]:
+    def do_calibration(self, ctx: Context) -> Context | None:
         """Convert pixel measurements to physical units (mm).
 
         Previously named 'scaling'. Calculates px_per_mm from calibration
@@ -127,7 +128,7 @@ class PipelineBase:
         """
         return ctx
 
-    def do_geometric_features(self, ctx: Context) -> Optional[Context]:
+    def do_geometric_features(self, ctx: Context) -> Context | None:
         """Extract geometric features from the contour.
 
         Previously named 'geometry'. Calculates:
@@ -140,11 +141,11 @@ class PipelineBase:
         """
         return ctx
 
-    def do_physics(self, ctx: Context) -> Optional[Context]:
+    def do_physics(self, ctx: Context) -> Context | None:
         """Define physical parameters for the model (densities, gravity)."""
         return ctx
 
-    def do_profile_fitting(self, ctx: Context) -> Optional[Context]:
+    def do_profile_fitting(self, ctx: Context) -> Context | None:
         """Fit the physical model (Young-Laplace) to the contour data.
 
         Previously named 'solver'. Uses least-squares optimization to fit
@@ -152,7 +153,7 @@ class PipelineBase:
         """
         return ctx
 
-    def do_compute_metrics(self, ctx: Context) -> Optional[Context]:
+    def do_compute_metrics(self, ctx: Context) -> Context | None:
         """Aggregate and compute final measurement results.
 
         Previously named 'outputs'. Computes derived metrics like:
@@ -163,11 +164,11 @@ class PipelineBase:
         """
         return ctx
 
-    def do_overlay(self, ctx: Context) -> Optional[Context]:
+    def do_overlay(self, ctx: Context) -> Context | None:
         """Generate visual annotations to overlay on the original image."""
         return ctx
 
-    def do_validation(self, ctx: Context) -> Optional[Context]:
+    def do_validation(self, ctx: Context) -> Context | None:
         """Quality assurance checks on analysis results.
 
         This stage should verify:
@@ -210,27 +211,27 @@ class PipelineBase:
         return ctx
 
     # ---- Backward compatibility aliases (deprecated) ----
-    def do_edge_detection(self, ctx: Context) -> Optional[Context]:
+    def do_edge_detection(self, ctx: Context) -> Context | None:
         """DEPRECATED: Use do_contour_extraction instead."""
         return self.do_contour_extraction(ctx)
 
-    def do_geometry(self, ctx: Context) -> Optional[Context]:
+    def do_geometry(self, ctx: Context) -> Context | None:
         """DEPRECATED: Use do_geometric_features instead."""
         return self.do_geometric_features(ctx)
 
-    def do_scaling(self, ctx: Context) -> Optional[Context]:
+    def do_scaling(self, ctx: Context) -> Context | None:
         """DEPRECATED: Use do_calibration instead."""
         return self.do_calibration(ctx)
 
-    def do_solver(self, ctx: Context) -> Optional[Context]:
+    def do_solver(self, ctx: Context) -> Context | None:
         """DEPRECATED: Use do_profile_fitting instead."""
         return self.do_profile_fitting(ctx)
 
-    def do_outputs(self, ctx: Context) -> Optional[Context]:
+    def do_outputs(self, ctx: Context) -> Context | None:
         """DEPRECATED: Use do_compute_metrics instead."""
         return self.do_compute_metrics(ctx)
 
-    def do_optimization(self, ctx: Context) -> Optional[Context]:
+    def do_optimization(self, ctx: Context) -> Context | None:
         """DEPRECATED: This stage has been removed."""
         return ctx
 
@@ -239,9 +240,9 @@ class PipelineBase:
     def __init__(
         self,
         *,
-        logger: Optional[logging.Logger] = None,
-        preprocessing_settings: Optional[PreprocessingSettings] = None,
-        edge_detection_settings: Optional[EdgeDetectionSettings] = None,
+        logger: logging.Logger | None = None,
+        preprocessing_settings: PreprocessingSettings | None = None,
+        edge_detection_settings: EdgeDetectionSettings | None = None,
     ) -> None:
         self.logger = logger or logging.getLogger(f"menipy.pipelines.{self.name}")
         self.preprocessing_settings = preprocessing_settings
@@ -398,7 +399,7 @@ class PipelineBase:
         return ctx
 
     def _call_stage(
-        self, ctx: Context, stage_name: str, fn: Callable[[Context], Optional[Context]]
+        self, ctx: Context, stage_name: str, fn: Callable[[Context], Context | None]
     ) -> Context:
         start = time.perf_counter()
 

@@ -5,15 +5,13 @@ Module implementation."""
 from __future__ import annotations
 
 import numpy as np
-from typing import cast
-
 
 from menipy.common.geometry import (
-    find_contact_points_from_contour,
+    circle_fit_angle_at_point,
     detect_baseline_ransac,
+    find_contact_points_from_contour,
     refine_apex_curvature,
     tangent_angle_at_point,
-    circle_fit_angle_at_point,
 )
 from menipy.models.drop_extras import surface_area_mm2
 from menipy.models.surface_tension import volume_from_contour
@@ -119,7 +117,7 @@ def compute_sessile_metrics(
             # Unit vector along the line
             unit_line = line_vec / line_len
             # Perpendicular unit vector
-            unit_perp = np.array([-unit_line[1], unit_line[0]])
+            np.array([-unit_line[1], unit_line[0]])
 
             # Project contact points onto tilt-corrected coordinate system
             p1_proj = float(np.dot(p1 - p1_line, unit_line))

@@ -12,13 +12,13 @@ from typing import List
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtWidgets import (
     QDialog,
-    QVBoxLayout,
     QHBoxLayout,
+    QLabel,
     QListWidget,
     QListWidgetItem,
-    QTextBrowser,
     QPushButton,
-    QLabel,
+    QTextBrowser,
+    QVBoxLayout,
 )
 
 from menipy.gui import theme
@@ -47,7 +47,7 @@ class HelpDialog(QDialog):
         self.resize(900, 600)
 
         self._docs_dir = docs_dir or Path("docs")
-        self._files: List[Path] = self._find_markdown_files(self._docs_dir)
+        self._files: list[Path] = self._find_markdown_files(self._docs_dir)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(12, 12, 12, 12)
@@ -87,7 +87,7 @@ class HelpDialog(QDialog):
 
         # ------------------------------------------------------------------ helpers
 
-    def _find_markdown_files(self, root: Path) -> List[Path]:
+    def _find_markdown_files(self, root: Path) -> list[Path]:
         if not root.exists():
             return []
         return sorted([p for p in root.rglob("*.md") if p.is_file()])

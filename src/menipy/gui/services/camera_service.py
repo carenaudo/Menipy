@@ -10,7 +10,7 @@ try:
 except Exception:  # pragma: no cover - optional dependency guard
     cv2 = None  # type: ignore
 
-from PySide6.QtCore import QObject, QThread, QTimer, Signal, Slot, Qt
+from PySide6.QtCore import QObject, Qt, QThread, QTimer, Signal, Slot
 
 
 @dataclass
@@ -19,8 +19,8 @@ class CameraConfig:
 
     device: int = 0
     fps: int = 30
-    width: Optional[int] = None
-    height: Optional[int] = None
+    width: int | None = None
+    height: int | None = None
 
 
 @dataclass(frozen=True)
@@ -48,7 +48,7 @@ def discover_available_cameras(limit: int = 4) -> list[CameraDevice]:
     return [CameraDevice(0, "Camera 0")]
 
 
-def default_camera_resolutions() -> list[tuple[str, Optional[int], Optional[int]]]:
+def default_camera_resolutions() -> list[tuple[str, int | None, int | None]]:
     return [
         ("Default", None, None),
         ("640 x 480", 640, 480),
@@ -145,7 +145,7 @@ class CameraController(QObject):
     _start_requested = Signal(object)
     _stop_requested = Signal()
 
-    def __init__(self, parent: Optional[QObject] = None) -> None:
+    def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._thread = QThread(self)
         self._worker = _CameraWorker()

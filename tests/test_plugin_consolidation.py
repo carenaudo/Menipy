@@ -1,7 +1,6 @@
-from pathlib import Path
+import menipy.common.plugin_loader as loader
 from menipy.common import plugins
 from menipy.common._module_loader import load_module_from_path
-import menipy.common.plugin_loader as loader
 
 
 def test_module_loader_exports():

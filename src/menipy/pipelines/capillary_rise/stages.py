@@ -4,16 +4,15 @@ Module implementation."""
 
 from __future__ import annotations
 
-from typing import Optional
 import numpy as np
 
-from menipy.models.geometry import Geometry
-from menipy.pipelines.base import PipelineBase
-from menipy.models.context import Context
-from menipy.models.fit import FitConfig
 from menipy.common import overlay as ovl
 from menipy.common import solver as common_solver
 from menipy.common.plugin_loader import get_solver
+from menipy.models.context import Context
+from menipy.models.fit import FitConfig
+from menipy.models.geometry import Geometry
+from menipy.pipelines.base import PipelineBase
 from menipy.pipelines.utils import ensure_contour
 
 # Get solver from registry (loaded at startup)
@@ -49,13 +48,13 @@ class CapillaryRisePipeline(PipelineBase):
         ],
     }
 
-    def do_acquisition(self, ctx: Context) -> Optional[Context]:
+    def do_acquisition(self, ctx: Context) -> Context | None:
         return ctx
 
-    def do_preprocessing(self, ctx: Context) -> Optional[Context]:
+    def do_preprocessing(self, ctx: Context) -> Context | None:
         return ctx
 
-    def do_geometric_features(self, ctx: Context) -> Optional[Context]:
+    def do_geometric_features(self, ctx: Context) -> Context | None:
         """Extract baseline, apex, axis and rise height."""
         xy = ensure_contour(ctx)
         x, y = xy[:, 0], xy[:, 1]
@@ -75,16 +74,16 @@ class CapillaryRisePipeline(PipelineBase):
         ctx.h_px = h_px
         return ctx
 
-    def do_calibration(self, ctx: Context) -> Optional[Context]:
+    def do_calibration(self, ctx: Context) -> Context | None:
         """Set up pixel-to-mm scaling."""
         ctx.scale = ctx.scale or {"px_per_mm": 1.0}
         return ctx
 
-    def do_physics(self, ctx: Context) -> Optional[Context]:
+    def do_physics(self, ctx: Context) -> Context | None:
         ctx.physics = ctx.physics or {"rho1": 1000.0, "rho2": 1.2, "g": 9.80665}
         return ctx
 
-    def do_profile_fitting(self, ctx: Context) -> Optional[Context]:
+    def do_profile_fitting(self, ctx: Context) -> Context | None:
         """Fit spherical Young-Laplace profile."""
         # Wiring: toy spherical radius (real model would relate h to curvature & wetting)
         cfg = FitConfig(
@@ -97,18 +96,18 @@ class CapillaryRisePipeline(PipelineBase):
         common_solver.run(ctx, integrator=young_laplace_sphere, config=cfg)
         return ctx
 
-    def do_compute_metrics(self, ctx: Context) -> Optional[Context]:
+    def do_compute_metrics(self, ctx: Context) -> Context | None:
         """Aggregate fit results and rise height."""
         fit = ctx.fit or {}
         names = fit.get("param_names") or []
         params = fit.get("params", [])
-        res = {n: p for n, p in zip(names, params)}
+        res = dict(zip(names, params))
         res["h_px"] = getattr(ctx, "h_px", None)
         res["residuals"] = fit.get("residuals", {})
         ctx.results = res
         return ctx
 
-    def do_overlay(self, ctx: Context) -> Optional[Context]:
+    def do_overlay(self, ctx: Context) -> Context | None:
         xy = ensure_contour(ctx)
 
         baseline_y = (

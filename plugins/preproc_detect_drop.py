@@ -4,10 +4,10 @@ Drop contour detection preprocessor plugin.
 This plugin detects the drop contour and stores it in the context.
 Follows the stage-based pattern: operates on ctx and returns ctx.
 """
+
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 import numpy as np
 
@@ -19,15 +19,15 @@ logger = logging.getLogger(__name__)
 def detect_drop_preprocessor(ctx):
     """
     Preprocessor plugin that detects drop contour.
-    
+
     For sessile: uses adaptive thresholding, filters by position.
     For pendant: uses Otsu thresholding for high-contrast silhouettes.
-    
+
     Stores result in ctx.detected_contour.
-    
+
     Args:
         ctx: Pipeline context with image data
-        
+
     Returns:
         Updated context with detected_contour set.
     """
@@ -38,7 +38,7 @@ def detect_drop_preprocessor(ctx):
         if frames and len(frames) > 0:
             frame = frames[0]
             image = frame.image if hasattr(frame, "image") else frame
-    
+
     if image is None or not isinstance(image, np.ndarray):
         return ctx
 

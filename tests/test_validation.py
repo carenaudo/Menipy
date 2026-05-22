@@ -1,6 +1,4 @@
-import pytest
-
-from menipy.common.validation import validate, QAResult
+from menipy.common.validation import QAResult, validate
 from menipy.models.context import Context
 from menipy.models.geometry import Contour
 

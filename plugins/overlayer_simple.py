@@ -2,28 +2,30 @@
 
 Registers a basic overlay handler that attaches visual metadata to the context.
 """
+
+
 def add_simple_overlay(ctx):
     """Placeholder docstring for add_simple_overlay.
-    
+
     TODO: Complete docstring with full description.
-    
+
     Parameters
     ----------
     ctx : type
         Description of ctx.
-    
+
     Returns
     -------
     type
         Description of return value.
     """
     """Add a simple text overlay to the analysis context.
-    
+
     Parameters
     ----------
     ctx : AnalysisContext
         Context object to attach overlay metadata to.
-    
+
     Returns
     -------
     AnalysisContext
@@ -34,6 +36,5 @@ def add_simple_overlay(ctx):
     ctx.overlay.append({"type": "simple", "text": "overlay"})
     return ctx
 
-OVERLAYERS = {
-    "simple": add_simple_overlay
-}
+
+OVERLAYERS = {"simple": add_simple_overlay}

@@ -1,30 +1,30 @@
 """Dialog for managing and configuring plugins."""
 
 from __future__ import annotations
+
 import json
-from typing import Sequence
+from collections.abc import Sequence
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import QFile, QSize, Qt
+from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import (
-    QDialog,
-    QTableWidgetItem,
-    QMessageBox,
     QAbstractItemView,
+    QDialog,
+    QHBoxLayout,
+    QInputDialog,
+    QMessageBox,
     QPushButton,
     QStyle,
-    QWidget,
-    QHBoxLayout,
+    QTableWidgetItem,
     QToolButton,
-    QInputDialog,
+    QWidget,
 )
-from PySide6.QtUiTools import QUiLoader
-from PySide6.QtCore import QFile
 
-from menipy.gui.viewmodels.plugins_vm import PluginsViewModel
-from menipy.gui.services.settings_service import AppSettings
-from menipy.common.plugin_settings import get_detector_settings_model, DETECTOR_SETTINGS
+from menipy.common.plugin_settings import DETECTOR_SETTINGS, get_detector_settings_model
 from menipy.gui.dialogs.plugin_config_dialog import PluginConfigDialog
+from menipy.gui.services.settings_service import AppSettings
+from menipy.gui.viewmodels.plugins_vm import PluginsViewModel
 
 _COL_ACTIVE, _COL_NAME, _COL_KIND, _COL_CONFIG, _COL_PATH, _COL_DESC, _COL_VER = range(
     7
@@ -111,7 +111,7 @@ class PluginManagerDialog(QDialog):
         t = self.ui.pluginsTable
         t.blockSignals(True)
         t.setRowCount(len(rows))
-        for i, (name, kind, path, entry, desc, ver, active) in enumerate(rows):
+        for i, (name, kind, path, _entry, desc, ver, active) in enumerate(rows):
             # Active (checkbox)
             item_active = QTableWidgetItem()
             item_active.setFlags(Qt.ItemIsEnabled | Qt.ItemIsUserCheckable)

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import List, Literal, Optional, Tuple
+from typing import Literal
 
 from pydantic import BaseModel, Field
 from pydantic_numpy.typing import Np1DArrayFp64, NpNDArrayFp64
@@ -18,11 +18,11 @@ class SolverInfo(BaseModel):
     backend: Literal["scipy.least_squares", "scipy.leastsq", "custom"] = (
         "scipy.least_squares"
     )
-    method: Optional[str] = Field(default=None, description="lm/trf/dogbox/etc.")
-    iterations: Optional[int] = Field(default=None, ge=0)
+    method: str | None = Field(default=None, description="lm/trf/dogbox/etc.")
+    iterations: int | None = Field(default=None, ge=0)
     success: bool = True
-    message: Optional[str] = None
-    time_ms: Optional[float] = Field(default=None, ge=0)
+    message: str | None = None
+    time_ms: float | None = Field(default=None, ge=0)
 
 
 class Residuals(BaseModel):
@@ -30,27 +30,27 @@ class Residuals(BaseModel):
 
     rmse: float = Field(ge=0)
     max_abs: float = Field(ge=0)
-    dof: Optional[int] = Field(default=None, ge=0)
+    dof: int | None = Field(default=None, ge=0)
     # Optional full residual vector (e.g., per-point contour error in pixels/mm)
-    r: Optional["FloatVec"] = None
+    r: FloatVec | None = None
 
 
 class Confidence(BaseModel):
     """Optional confidence/uncertainty outputs."""
 
-    covariance: Optional[NpNDArrayFp64] = None
-    param_stderr: Optional[Np1DArrayFp64] = None
-    ci95: Optional[List[Tuple[float, float]]] = None  # per-parameter CIs
+    covariance: NpNDArrayFp64 | None = None
+    param_stderr: Np1DArrayFp64 | None = None
+    ci95: list[tuple[float, float]] | None = None  # per-parameter CIs
 
 
 class Fit(BaseModel):
     """Aggregated results of a numerical fit."""
 
-    params: List[float]
-    param_names: Optional[List[str]] = None
+    params: list[float]
+    param_names: list[str] | None = None
     solver: SolverInfo
     residuals: Residuals
-    confidence: Optional[Confidence] = None
+    confidence: Confidence | None = None
 
 
 @dataclass
@@ -63,11 +63,11 @@ class FitConfig:
     )
     loss: str = "soft_l1"  # options: linear, huber, cauchy, etc.
     f_scale: float = 1.0
-    max_nfev: Optional[int] = None
+    max_nfev: int | None = None
     verbose: int = 0
     distance: str = "pointwise"  # or "normal_projection"
-    weights: Optional[list[float]] = None
-    param_names: Optional[list[str]] = None
+    weights: list[float] | None = None
+    param_names: list[str] | None = None
 
     def to_solver_args(self) -> dict:
         """to solver args.

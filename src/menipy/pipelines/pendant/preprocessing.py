@@ -8,14 +8,13 @@ using the stage-based preprocessor plugins for automatic feature detection.
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from menipy.models.context import Context
 
 logger = logging.getLogger(__name__)
 
 
-def do_preprocessing(ctx: Context) -> Optional[Context]:
+def do_preprocessing(ctx: Context) -> Context | None:
     """
     Preprocess image for pendant drop analysis.
 
@@ -37,17 +36,15 @@ def do_preprocessing(ctx: Context) -> Optional[Context]:
 
     try:
         # Load and run auto_detect preprocessor plugin
-        from menipy.common.registry import PREPROCESSORS
-
         # Import plugin to register it
         import sys
         from pathlib import Path
 
+        from menipy.common.registry import PREPROCESSORS
+
         plugins_dir = Path(__file__).parent.parent.parent.parent.parent / "plugins"
         if plugins_dir.exists() and str(plugins_dir) not in sys.path:
             sys.path.insert(0, str(plugins_dir))
-
-        import preproc_auto_detect
 
         if "auto_detect" in PREPROCESSORS:
             # Create a wrapper context that allows pipeline_name
@@ -114,7 +111,7 @@ def do_preprocessing(ctx: Context) -> Optional[Context]:
 
 
 # Backward-compatible alias expected by older tests
-def run(ctx: Context) -> Optional[Context]:
+def run(ctx: Context) -> Context | None:
     """Run.
 
     Parameters

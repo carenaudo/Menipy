@@ -2,11 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 import cv2
 import numpy as np
-
 
 from menipy.common.geometry import fit_circle
 
@@ -15,7 +12,7 @@ GRAVITY = 9.81  # m s⁻²
 
 def droplet_volume(
     mask: np.ndarray, px_to_mm: float, centred: bool = True
-) -> Optional[float]:
+) -> float | None:
     """Return the droplet volume in mm³.
 
     The mask is treated as the silhouette of an axisymmetric drop. Each row is
@@ -63,7 +60,7 @@ def estimate_surface_tension(
     liquid_density: float,
     px_to_mm: float,
     apex_window_px: int = 10,
-) -> Optional[float]:
+) -> float | None:
     """Return surface tension of the drop in mN m⁻¹.
 
     The apex radius is obtained from a circular fit over a thin strip above the

@@ -56,5 +56,6 @@ SOLVERS = {"parabola": parabola_solver}
 
 # Auto-register when imported
 # Auto-register when imported
-from menipy.common.registry import SOLVERS
-SOLVERS.register("parabola", parabola_solver)
+from menipy.common.registry import SOLVERS as SOLVER_REGISTRY
+
+SOLVER_REGISTRY.register("parabola", parabola_solver)

@@ -4,18 +4,20 @@ Tests for edge detector plugins.
 Tests the Otsu, Adaptive, LoG, and Improved Snake edge detectors.
 """
 
-import pytest
-import numpy as np
-import cv2
 import sys
+from importlib import import_module
 from pathlib import Path
+
+import cv2
+import numpy as np
+import pytest
 
 # Add plugins directory to path
 plugins_dir = Path(__file__).parent.parent / "plugins"
 sys.path.insert(0, str(plugins_dir))
 
 # Import plugins to register them
-import edge_detectors
+import_module("edge_detectors")
 
 from menipy.common.registry import EDGE_DETECTORS
 from menipy.models.config import EdgeDetectionSettings
@@ -198,7 +200,6 @@ class TestImprovedSnakeDetector:
     def test_with_substrate_masking(self):
         """Test that substrate masking works (contour should stay above substrate)."""
         image = create_synthetic_drop_image(drop_center=(160, 180))
-        substrate_y = 200
 
         settings = EdgeDetectionSettings(
             method="improved_snake",

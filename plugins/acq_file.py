@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+
 def acquire_from_file(ctx):
     """
     Load image frames from disk so downstream stages receive numpy arrays
@@ -21,12 +22,13 @@ def acquire_from_file(ctx):
     if Frame is not None:
         ctx.current_frame = Frame(image=first)
     return ctx
+
+
 from menipy.common import acquisition as acq
+
 try:
     from menipy.models.frame import Frame
 except Exception:
     Frame = None
 
-ACQUISITIONS = {
-    "file": acquire_from_file
-}
+ACQUISITIONS = {"file": acquire_from_file}

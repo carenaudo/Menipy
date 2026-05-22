@@ -412,9 +412,7 @@ class _FakeControl:
 
 class _FakeResultsPanel:
     def __init__(self):
-        self.settings = Mock(
-            compare_methods_visible=False, diagnostics_visible=False
-        )
+        self.settings = Mock(compare_methods_visible=False, diagnostics_visible=False)
         self.key_results_shown = False
 
     def show_key_results(self):
@@ -477,7 +475,10 @@ def test_focus_presets_apply_workbench_modes():
     assert window.setupHost.isHidden()
     assert not window.inspectTabs.isHidden()
     assert not window.keyResultsHost.isHidden()
-    assert window.inspectTabs.currentWidget() in (window.resultsTab, window.residualsTab)
+    assert window.inspectTabs.currentWidget() in (
+        window.resultsTab,
+        window.residualsTab,
+    )
     assert window.results_panel_ctrl.settings.diagnostics_visible
     assert not window.results_panel_ctrl.settings.compare_methods_visible
 

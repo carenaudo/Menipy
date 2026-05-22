@@ -7,7 +7,8 @@ settings models, decoupling them from the core configuration.
 
 from __future__ import annotations
 
-from typing import Dict, Any, Type, Optional
+from typing import Any
+
 from pydantic import BaseModel
 
 from menipy.common.registry import Registry
@@ -17,19 +18,19 @@ from menipy.common.registry import Registry
 DETECTOR_SETTINGS = Registry("detector_settings")
 
 
-def register_detector_settings(name: str, settings_model: Type[BaseModel]) -> None:
+def register_detector_settings(name: str, settings_model: type[BaseModel]) -> None:
     """Register a settings model for a specific detector method."""
     DETECTOR_SETTINGS.register(name, settings_model)
 
 
-def get_detector_settings_model(name: str) -> Optional[Type[BaseModel]]:
+def get_detector_settings_model(name: str) -> type[BaseModel] | None:
     """Get the settings model class for a detector."""
     return DETECTOR_SETTINGS.get(name)
 
 
 def resolve_plugin_settings(
-    method: str, generic_settings: Dict[str, Any], **kwargs
-) -> Dict[str, Any]:
+    method: str, generic_settings: dict[str, Any], **kwargs
+) -> dict[str, Any]:
     """
     Resolve settings for a specific plugin method.
 

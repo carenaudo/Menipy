@@ -42,8 +42,8 @@ class QtLogHandler(logging.Handler):
 
 def install_qt_logging(
     log_view: QPlainTextEdit,
-    formatter: Optional[logging.Formatter] = None,
-    logger: Optional[logging.Logger] = None,
+    formatter: logging.Formatter | None = None,
+    logger: logging.Logger | None = None,
 ) -> tuple[QtLogBridge, QtLogHandler]:
     """Connect the global logger to a Qt text widget.
 

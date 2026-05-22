@@ -1,10 +1,11 @@
 """Application settings persistence service."""
 
 from __future__ import annotations
-from dataclasses import dataclass, field, asdict
-from pathlib import Path
+
 import json
-from typing import Optional, List
+from dataclasses import asdict, dataclass, field
+from pathlib import Path
+from typing import List, Optional
 
 
 def _default_path() -> Path:
@@ -15,23 +16,23 @@ def _default_path() -> Path:
 @dataclass
 class AppSettings:
     selected_pipeline: str = "sessile"
-    last_image_path: Optional[str] = None
-    plugin_dirs: List[str] = field(default_factory=lambda: ["./plugins"])
+    last_image_path: str | None = None
+    plugin_dirs: list[str] = field(default_factory=lambda: ["./plugins"])
     acquisition_requires_contact_line: bool = False
     # Overlay appearance configuration (serialized as a simple dict)
-    overlay_config: Optional[dict] = None
+    overlay_config: dict | None = None
     marker_config: dict = field(default_factory=dict)
     results_hidden_columns: dict = field(default_factory=dict)
     advanced_ui_visible: bool = False
     compare_methods_visible: bool = False
     diagnostics_visible: bool = False
-    guided_splitter_sizes: Optional[list[int]] = None
-    guided_vertical_splitter_sizes: Optional[list[int]] = None
+    guided_splitter_sizes: list[int] | None = None
+    guided_vertical_splitter_sizes: list[int] | None = None
     unit_system: str = "SI"  # "SI" or "CGS"
     path: Path = field(default_factory=_default_path, repr=False)
 
     @classmethod
-    def load(cls, path: Path | None = None) -> "AppSettings":
+    def load(cls, path: Path | None = None) -> AppSettings:
         p = path or _default_path()
         if not p.exists():
             p.parent.mkdir(parents=True, exist_ok=True)

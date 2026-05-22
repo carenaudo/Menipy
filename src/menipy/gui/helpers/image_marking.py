@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 @dataclass
 class _MarkerTags:
     center: str = "marker_center"
-    anchors: List[str] = field(default_factory=list)
-    background: List[str] = field(default_factory=list)
+    anchors: list[str] = field(default_factory=list)
+    background: list[str] = field(default_factory=list)
     contact_line: str = "marker_contact_line"
 
 
@@ -35,7 +35,7 @@ class ImageMarkerHelper(QObject):
         self,
         preview_panel: PreviewPanel,
         controller: PreprocessingPipelineController,
-        parent: Optional[QObject] = None,
+        parent: QObject | None = None,
     ) -> None:
         """Initialize.
 
@@ -126,7 +126,7 @@ class ImageMarkerHelper(QObject):
         except Exception as exc:  # pragma: no cover - guard UI responsiveness
             logger.debug("Preprocessing re-run failed after marker update: %s", exc)
 
-    def _refine_center(self, candidate: Tuple[float, float]) -> Tuple[float, float]:
+    def _refine_center(self, candidate: tuple[float, float]) -> tuple[float, float]:
         state = self._controller.current_state()
         if state is None or state.roi_bounds is None:
             return candidate
@@ -165,10 +165,10 @@ class ImageMarkerHelper(QObject):
 
     def _find_near_anchor(
         self,
-        anchors: List[Tuple[float, float]],
-        point: Tuple[float, float],
+        anchors: list[tuple[float, float]],
+        point: tuple[float, float],
         threshold: float = 8.0,
-    ) -> Optional[int]:
+    ) -> int | None:
         for idx, anchor in enumerate(anchors):
             dx = anchor[0] - point[0]
             dy = anchor[1] - point[1]

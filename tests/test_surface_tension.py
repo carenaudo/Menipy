@@ -6,9 +6,9 @@ import numpy as np
 import pytest
 
 from menipy.models.surface_tension import (
+    bond_number,
     jennings_pallas_beta,
     surface_tension,
-    bond_number,
     volume_from_contour,
 )
 

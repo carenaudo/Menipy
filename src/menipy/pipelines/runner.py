@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
+from menipy.models.config import EdgeDetectionSettings, PreprocessingSettings
 from menipy.models.context import Context
-from menipy.models.config import PreprocessingSettings, EdgeDetectionSettings
+
 from .base import PipelineBase, PipelineError
 from .discover import PIPELINE_MAP
 
@@ -23,8 +24,8 @@ class PipelineRunner:
         self,
         pipeline_name: str,
         *,
-        preprocessing_settings: Optional[PreprocessingSettings] = None,
-        edge_detection_settings: Optional[EdgeDetectionSettings] = None,
+        preprocessing_settings: PreprocessingSettings | None = None,
+        edge_detection_settings: EdgeDetectionSettings | None = None,
     ):
         """Initialize.
 

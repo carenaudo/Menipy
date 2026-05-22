@@ -2,9 +2,11 @@
 
 # src/menipy/gui/viewmodels/run_vm.py
 from __future__ import annotations
+
 from PySide6.QtCore import QObject, Signal
-from menipy.gui.services.pipeline_runner import PipelineRunner
+
 from menipy.gui.services.image_convert import to_pixmap
+from menipy.gui.services.pipeline_runner import PipelineRunner
 
 
 class RunViewModel(QObject):

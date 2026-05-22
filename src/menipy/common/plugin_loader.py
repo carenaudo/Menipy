@@ -13,7 +13,8 @@ registered utilities and wires them onto a PipelineBase instance.
 """
 
 from __future__ import annotations
-from typing import Callable
+
+from collections.abc import Callable
 
 from menipy.common import registry
 
@@ -51,7 +52,7 @@ def apply_registered_stages(pipeline, merge_strategy: str = "override") -> None:
 
     # apply per-pipeline stage entries if the registry exposes them
     if hasattr(registry, "PIPELINE_STAGES"):
-        stage_map = getattr(registry, "PIPELINE_STAGES").get(name, {})
+        stage_map = registry.PIPELINE_STAGES.get(name, {})
         for stage_name, fn in stage_map.items():
             attr = f"do_{stage_name}"
             existing = getattr(pipeline, attr, None)
@@ -95,24 +96,22 @@ def apply_registered_stages(pipeline, merge_strategy: str = "override") -> None:
 # Plugin Discovery and Loading
 # ---------------------------------------------------------------------------
 
-from typing import Callable, Any
+from typing import Any
+
 from menipy.common import plugins
 
 
-from typing import Optional
-
-
 def get_solver(
-    name: str, fallback: Optional[Callable[..., Any]] = None
-) -> Optional[Callable[..., Any]]:
+    name: str, fallback: Callable[..., Any] | None = None
+) -> Callable[..., Any] | None:
     """Get a solver by name from the registry (ensures plugins are loaded first)."""
     plugins.ensure_loaded()
     return registry.SOLVERS.get(name, fallback)
 
 
 def get_edge_detector(
-    name: str, fallback: Optional[Callable[..., Any]] = None
-) -> Optional[Callable[..., Any]]:
+    name: str, fallback: Callable[..., Any] | None = None
+) -> Callable[..., Any] | None:
     """Get an edge detector by name from the registry (ensures plugins are loaded first)."""
     plugins.ensure_loaded()
     return registry.EDGE_DETECTORS.get(name, fallback)

@@ -3,6 +3,7 @@
 Unit tests."""
 
 import numpy as np
+
 from menipy.common.geometry import find_contact_points_from_contour
 
 

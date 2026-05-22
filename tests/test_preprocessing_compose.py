@@ -3,6 +3,7 @@
 Unit tests."""
 
 import numpy as np
+
 from menipy.common import preprocessing
 from menipy.models.state import PreprocessingState
 

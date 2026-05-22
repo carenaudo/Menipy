@@ -8,14 +8,14 @@ import pytest
 
 from menipy.common.auto_calibrator import AutoCalibrator
 from menipy.common.geometry import (
-    estimate_contact_angle_tangent,
-    estimate_contact_angle_circle_fit,
-    tangent_angle_at_point,
     circle_fit_angle_at_point,
+    estimate_contact_angle_circle_fit,
+    estimate_contact_angle_tangent,
+    tangent_angle_at_point,
 )
 from menipy.models.context import Context
-from menipy.pipelines.sessile.stages import SessilePipeline
 from menipy.pipelines.sessile.metrics import compute_sessile_metrics
+from menipy.pipelines.sessile.stages import SessilePipeline
 
 
 def test_estimate_contact_angle_tangent():

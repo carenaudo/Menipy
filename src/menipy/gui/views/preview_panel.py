@@ -6,8 +6,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 
 from PySide6.QtCore import QLineF, QPointF, QRectF, Qt, Signal
 from PySide6.QtGui import QAction, QColor
@@ -77,8 +78,8 @@ class PreviewPanel:
     def __init__(
         self,
         panel: QWidget,
-        image_view_cls: Optional[type[Any]],
-        settings: Optional[Any] = None,
+        image_view_cls: type[Any] | None,
+        settings: Any | None = None,
     ) -> None:
         self.panel = panel
         self.settings = settings
@@ -86,8 +87,8 @@ class PreviewPanel:
         if not self.image_view and image_view_cls is not None:
             self.image_view = panel.findChild(image_view_cls, "previewView")
 
-        self._on_roi_selected: Optional[Callable[[QRectF], None]] = None
-        self._on_line_drawn: Optional[Callable[[QLineF], None]] = None
+        self._on_roi_selected: Callable[[QRectF], None] | None = None
+        self._on_line_drawn: Callable[[QLineF], None] | None = None
         self._overlay_buttons: list[QToolButton | QPushButton] = []
         self._layer_actions: dict[str, QAction] = {}
         self._layer_checks: dict[str, QCheckBox] = {}
@@ -199,7 +200,7 @@ class PreviewPanel:
         self._apply_all_layer_visibility()
 
     def set_draw_mode(
-        self, mode: Any, color: QColor = QColor(255, 0, 0), *, tag: Optional[str] = None
+        self, mode: Any, color: QColor = QColor(255, 0, 0), *, tag: str | None = None
     ) -> None:
         if self.image_view and hasattr(self.image_view, "set_draw_mode"):
             try:
@@ -244,11 +245,11 @@ class PreviewPanel:
         if self.image_view and hasattr(self.image_view, "set_marker_config"):
             self.image_view.set_marker_config(config or {})
 
-    def set_roi_callback(self, handler: Optional[Callable[[QRectF], None]]) -> None:
+    def set_roi_callback(self, handler: Callable[[QRectF], None] | None) -> None:
         """Register callback invoked when ROI is drawn."""
         self._on_roi_selected = handler
 
-    def set_line_callback(self, handler: Optional[Callable[[QLineF], None]]) -> None:
+    def set_line_callback(self, handler: Callable[[QLineF], None] | None) -> None:
         """Register callback invoked when a contact line is drawn."""
         self._on_line_drawn = handler
 
@@ -366,7 +367,7 @@ class PreviewPanel:
     def _wire_buttons(self) -> None:
         """_wire_buttons."""
 
-        def _find_button(name: str) -> Optional[QToolButton | QPushButton]:
+        def _find_button(name: str) -> QToolButton | QPushButton | None:
             button = self.panel.findChild(QToolButton, name)
             if button:
                 return button
@@ -411,7 +412,7 @@ class PreviewPanel:
     def _apply_control_icons(self) -> None:
         """Apply resource-backed icons to preview and transport controls."""
 
-        def _find_button(name: str) -> Optional[QToolButton | QPushButton]:
+        def _find_button(name: str) -> QToolButton | QPushButton | None:
             button = self.panel.findChild(QToolButton, name)
             if button:
                 return button
@@ -446,7 +447,7 @@ class PreviewPanel:
     def _install_guided_menus(self) -> None:
         """Replace exposed overlay controls with compact guided menus."""
 
-        def _find_button(name: str) -> Optional[QToolButton | QPushButton]:
+        def _find_button(name: str) -> QToolButton | QPushButton | None:
             button = self.panel.findChild(QToolButton, name)
             if button:
                 return button

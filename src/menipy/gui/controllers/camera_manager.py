@@ -13,10 +13,11 @@ from typing import TYPE_CHECKING, Optional
 from PySide6.QtCore import QObject, Signal, Slot
 
 if TYPE_CHECKING:
-    from menipy.gui.services.camera_service import CameraController, CameraConfig
-    from menipy.gui.controllers.setup_panel_controller import SetupPanelController
-    from menipy.gui.views.preview_panel import PreviewPanel
     from PySide6.QtWidgets import QMainWindow
+
+    from menipy.gui.controllers.setup_panel_controller import SetupPanelController
+    from menipy.gui.services.camera_service import CameraConfig, CameraController
+    from menipy.gui.views.preview_panel import PreviewPanel
 
 logger = logging.getLogger(__name__)
 
@@ -29,11 +30,11 @@ class CameraManager(QObject):
 
     def __init__(
         self,
-        camera_ctrl: Optional[CameraController],
+        camera_ctrl: CameraController | None,
         setup_ctrl: SetupPanelController,
         preview_panel: PreviewPanel,
         window: QMainWindow,
-        parent: Optional[QObject] = None,
+        parent: QObject | None = None,
     ):
         """Initialize.
 
@@ -56,7 +57,7 @@ class CameraManager(QObject):
         self.preview_panel = preview_panel
         self.window = window
 
-        self._active_camera_device: Optional[int] = None
+        self._active_camera_device: int | None = None
         self._camera_preview_logged = False
 
         # Wire camera signals

@@ -4,9 +4,10 @@
 from __future__ import annotations
 
 import logging
-import numpy as np
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
+
+import numpy as np
 
 try:
     import cv2  # type: ignore
@@ -14,23 +15,23 @@ except Exception:  # pragma: no cover - optional dependency
     cv2 = None  # type: ignore
 
 logger = logging.getLogger(__name__)
-from PySide6.QtCore import QObject, Slot, QPointF
-from PySide6.QtWidgets import QFileDialog, QMessageBox, QDialog
-from PySide6.QtGui import QImage, QColor
+from PySide6.QtCore import QObject, QPointF, Slot
+from PySide6.QtGui import QColor, QImage
+from PySide6.QtWidgets import QDialog, QFileDialog, QMessageBox
 
 from menipy.gui.controllers.camera_manager import CameraManager
-from menipy.gui.controllers.layout_manager import LayoutManager
 from menipy.gui.controllers.dialog_coordinator import DialogCoordinator
-from menipy.gui.controllers.overlay_manager import OverlayManager
 from menipy.gui.controllers.image_manager import ImageManager
+from menipy.gui.controllers.layout_manager import LayoutManager
+from menipy.gui.controllers.overlay_manager import OverlayManager
 
 if TYPE_CHECKING:
-    from menipy.gui.views.main_window import MainWindow
     from menipy.gui.controllers.pipeline_controller import PipelineController
     from menipy.gui.controllers.setup_panel_controller import SetupPanelController
+    from menipy.gui.services.camera_service import CameraController
+    from menipy.gui.views.main_window import MainWindow
     from menipy.gui.views.preview_panel import PreviewPanel
     from menipy.gui.views.results_panel import ResultsPanel
-    from menipy.gui.services.camera_service import CameraController
 
 
 class MainController(QObject):
@@ -286,7 +287,7 @@ class MainController(QObject):
             if not isinstance(result, CalibrationResult):
                 return
             self._last_calibration_result = result
-            setattr(self.window, "_last_calibration_result", result)
+            self.window._last_calibration_result = result
 
             try:
                 self.preview_panel.set_layer_visible("markers", True)
@@ -321,7 +322,7 @@ class MainController(QObject):
                 f"Calibration applied: ROI={result.roi_rect}, needle={result.needle_rect}, substrate={result.substrate_line is not None}"
             )
 
-        except Exception as exc:
+        except Exception:
             logger.exception("Failed to apply calibration results")
             self.window.statusBar().showMessage("Failed to apply calibration", 2000)
 
@@ -332,18 +333,6 @@ class MainController(QObject):
             self.window.runner.pool.clear()
             logger.info("Cleared pending tasks in the thread pool.")
             self.window.statusBar().showMessage("Stop request sent.", 2000)
-
-    @Slot()
-    def export_results_csv(self) -> None:
-        """Export the current results table to CSV."""
-        if not self.results_panel:
-            return
-        try:
-            self.results_panel.export_csv()
-        except Exception as exc:
-            QMessageBox.warning(
-                self.window, "Export Results", f"Failed to export results:\n{exc}"
-            )
 
     @Slot()
     def open_overlay(self) -> None:

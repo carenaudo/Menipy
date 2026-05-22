@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
 import logging
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from menipy.common.plugin_db import PluginDB
 
 if TYPE_CHECKING:
-    from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton
+    from PySide6.QtWidgets import QHBoxLayout, QPushButton, QVBoxLayout, QWidget
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class PipelineUIManager:
     """Manages dynamic pipeline UI generation and configuration based on plugin metadata."""
 
-    def __init__(self, plugin_db: Optional[PluginDB] = None):
+    def __init__(self, plugin_db: PluginDB | None = None):
         """Initialize.
 
         Parameters
@@ -25,7 +25,7 @@ class PipelineUIManager:
         Description.
         """
         self.plugin_db = plugin_db or PluginDB()
-        self._pipeline_metadata_cache: Dict[str, dict] = {}
+        self._pipeline_metadata_cache: dict[str, dict] = {}
         self._refresh_metadata_cache()
 
     def _refresh_metadata_cache(self) -> None:
@@ -40,11 +40,11 @@ class PipelineUIManager:
             logger.warning(f"Failed to load pipeline metadata: {e}")
             self._pipeline_metadata_cache = {}
 
-    def get_pipeline_metadata(self, pipeline_name: str) -> Optional[dict]:
+    def get_pipeline_metadata(self, pipeline_name: str) -> dict | None:
         """Get metadata for a specific pipeline."""
         return self._pipeline_metadata_cache.get(pipeline_name)
 
-    def get_all_pipeline_metadata(self) -> List[dict]:
+    def get_all_pipeline_metadata(self) -> list[dict]:
         """Get metadata for all pipelines."""
         return list(self._pipeline_metadata_cache.values())
 
@@ -52,11 +52,11 @@ class PipelineUIManager:
         self,
         pipeline_name: str,
         display_name: str,
-        icon: Optional[str] = None,
-        color: Optional[str] = None,
-        stages: Optional[List[str]] = None,
-        calibration_params: Optional[List[str]] = None,
-        primary_metrics: Optional[List[str]] = None,
+        icon: str | None = None,
+        color: str | None = None,
+        stages: list[str] | None = None,
+        calibration_params: list[str] | None = None,
+        primary_metrics: list[str] | None = None,
     ) -> None:
         """Register pipeline metadata in the PluginDB."""
         try:
@@ -77,17 +77,17 @@ class PipelineUIManager:
                 f"Failed to register pipeline metadata for {pipeline_name}: {e}"
             )
 
-    def get_required_stages(self, pipeline_name: str) -> List[str]:
+    def get_required_stages(self, pipeline_name: str) -> list[str]:
         """Get the list of required stages for a pipeline."""
         metadata = self.get_pipeline_metadata(pipeline_name)
         return metadata.get("stages", []) if metadata else []
 
-    def get_calibration_params(self, pipeline_name: str) -> List[str]:
+    def get_calibration_params(self, pipeline_name: str) -> list[str]:
         """Get the list of calibration parameters for a pipeline."""
         metadata = self.get_pipeline_metadata(pipeline_name)
         return metadata.get("calibration_params", []) if metadata else []
 
-    def get_primary_metrics(self, pipeline_name: str) -> List[str]:
+    def get_primary_metrics(self, pipeline_name: str) -> list[str]:
         """Get the list of primary metrics for a pipeline."""
         metadata = self.get_pipeline_metadata(pipeline_name)
         return metadata.get("primary_metrics", []) if metadata else []
@@ -121,7 +121,7 @@ class PipelineUIManager:
             else:
                 logger.warning(f"Pipeline {pipeline_name} has no ui_metadata attribute")
 
-    def validate_pipeline_config(self, pipeline_name: str, config: dict) -> List[str]:
+    def validate_pipeline_config(self, pipeline_name: str, config: dict) -> list[str]:
         """Validate pipeline configuration against metadata requirements."""
         errors = []
         metadata = self.get_pipeline_metadata(pipeline_name)

@@ -7,10 +7,11 @@ configuration as a dict. It's intentionally lightweight and uses PySide6.
 
 from __future__ import annotations
 
-from typing import Dict, Any
+from typing import Any, Dict
 
 import numpy as np
-from PySide6.QtCore import Signal, Qt
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -25,7 +26,6 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from PySide6.QtGui import QImage, QPixmap
 
 
 class GeometryConfigDialog(QDialog):
@@ -127,7 +127,7 @@ class GeometryConfigDialog(QDialog):
             parent=self,
         )
         button_bar.addWidget(buttons)
-        hl = QHBoxLayout()
+        QHBoxLayout()
         layout.addLayout(button_bar)
         ok_button = buttons.button(QDialogButtonBox.StandardButton.Ok)
         if ok_button is not None:
@@ -172,7 +172,7 @@ class GeometryConfigDialog(QDialog):
         except Exception:
             pass
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         return {
             "detector": str(self.detectorCombo.currentText()),
             "use_canny": bool(self.useCanny.isChecked()),
@@ -185,7 +185,7 @@ class GeometryConfigDialog(QDialog):
             ),
         }
 
-    def set_config(self, cfg: Dict[str, Any]) -> None:
+    def set_config(self, cfg: dict[str, Any]) -> None:
         if not cfg:
             return
         detector = cfg.get("detector")
@@ -264,6 +264,7 @@ class GeometryConfigDialog(QDialog):
 # Lightweight test harness when running module directly
 if __name__ == "__main__":
     import sys
+
     from PySide6.QtWidgets import QApplication
 
     app = QApplication(sys.argv)

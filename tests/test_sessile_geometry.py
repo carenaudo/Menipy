@@ -3,10 +3,10 @@
 Test module."""
 
 import numpy as np
-import pytest
+
 from menipy.pipelines.sessile.geometry import (
-    clip_contour_to_substrate,
     _segment_intersection,
+    clip_contour_to_substrate,
 )
 
 """

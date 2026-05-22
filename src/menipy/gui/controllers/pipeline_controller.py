@@ -4,18 +4,19 @@ from __future__ import annotations
 
 import importlib
 import logging
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Mapping, Optional, Dict
+from typing import Any, Dict, Optional
 
 import numpy as np
-from menipy.gui.controllers.preprocessing_controller import (
-    PreprocessingPipelineController,
-)
+from PySide6.QtWidgets import QMainWindow, QMessageBox, QPlainTextEdit
+
 from menipy.gui.controllers.edge_detection_controller import (
     EdgeDetectionPipelineController,
 )
-from PySide6.QtWidgets import QMessageBox, QPlainTextEdit, QMainWindow
-
+from menipy.gui.controllers.preprocessing_controller import (
+    PreprocessingPipelineController,
+)
 from menipy.models.config import PhysicsParams
 
 logger = logging.getLogger(__name__)
@@ -30,12 +31,12 @@ class PipelineController:
         setup_ctrl,
         preview_panel,
         results_panel,
-        preprocessing_ctrl: Optional[PreprocessingPipelineController],
-        edge_detection_ctrl: Optional[EdgeDetectionPipelineController],
+        preprocessing_ctrl: PreprocessingPipelineController | None,
+        edge_detection_ctrl: EdgeDetectionPipelineController | None,
         pipeline_map: Mapping[str, type],
-        sops: Optional[Any],
-        run_vm: Optional[Any],
-        log_view: Optional[QPlainTextEdit],
+        sops: Any | None,
+        run_vm: Any | None,
+        log_view: QPlainTextEdit | None,
     ) -> None:
         self.window = window
         self.setup_ctrl = setup_ctrl
@@ -48,10 +49,10 @@ class PipelineController:
         self.log_view = log_view
         self.pipeline_map = {str(k).lower(): v for k, v in (pipeline_map or {}).items()}
         self.contact_points = None  # Placeholder for manual contact points
-        self._latest_acquisition_overlays: Dict[str, Any] = {}
+        self._latest_acquisition_overlays: dict[str, Any] = {}
 
-    def _collect_acquisition_inputs(self) -> tuple[bool, Dict[str, Any]]:
-        overlays: Dict[str, Any] = {}
+    def _collect_acquisition_inputs(self) -> tuple[bool, dict[str, Any]]:
+        overlays: dict[str, Any] = {}
         preview = self.preview_panel
         missing: list[str] = []
 
@@ -94,11 +95,11 @@ class PipelineController:
         self._latest_acquisition_overlays = overlays
         return True, overlays
 
-    def _preprocessing_payload(self) -> Dict[str, Any]:
+    def _preprocessing_payload(self) -> dict[str, Any]:
         ctrl = self.preprocessing_ctrl
         if not ctrl:
             return {}
-        payload: Dict[str, Any] = {
+        payload: dict[str, Any] = {
             "preprocessing_settings": ctrl.settings.model_copy(deep=True),
         }
         try:
@@ -107,21 +108,21 @@ class PipelineController:
             payload["preprocessing_markers"] = ctrl.markers
         return payload
 
-    def _edge_detection_payload(self) -> Dict[str, Any]:
+    def _edge_detection_payload(self) -> dict[str, Any]:
         ctrl = self.edge_detection_ctrl
         if not ctrl:
             return {}
-        payload: Dict[str, Any] = {
+        payload: dict[str, Any] = {
             "edge_detection_settings": ctrl.settings.model_copy(deep=True),
         }
         return payload
 
-    def _calibration_result_payload(self) -> Dict[str, Any]:
+    def _calibration_result_payload(self) -> dict[str, Any]:
         result = getattr(self.window, "_last_calibration_result", None)
         if result is None:
             return {}
 
-        payload: Dict[str, Any] = {}
+        payload: dict[str, Any] = {}
         if getattr(result, "roi_rect", None):
             payload["roi"] = result.roi_rect
         if getattr(result, "needle_rect", None):
@@ -135,8 +136,8 @@ class PipelineController:
         return payload
 
     def _selected_source_image_for_calibration(
-        self, image_path: Optional[str]
-    ) -> Optional[np.ndarray]:
+        self, image_path: str | None
+    ) -> np.ndarray | None:
         if image_path:
             try:
                 import cv2  # type: ignore
@@ -158,8 +159,8 @@ class PipelineController:
         return None
 
     def _auto_calibration_payload(
-        self, pipeline_name: str, image_path: Optional[str]
-    ) -> tuple[Dict[str, Any], list[str]]:
+        self, pipeline_name: str, image_path: str | None
+    ) -> tuple[dict[str, Any], list[str]]:
         image = self._selected_source_image_for_calibration(image_path)
         if image is None:
             return {}, ["No selected image was available for silent auto-calibration."]
@@ -172,7 +173,7 @@ class PipelineController:
             logger.warning("Silent auto-calibration failed: %s", exc)
             return {}, [f"Auto-calibration failed: {exc}"]
 
-        payload: Dict[str, Any] = {}
+        payload: dict[str, Any] = {}
         if getattr(result, "roi_rect", None):
             payload["roi"] = result.roi_rect
             payload["roi_rect"] = result.roi_rect
@@ -202,9 +203,9 @@ class PipelineController:
     def _build_pipeline_run_kwargs(
         self,
         *,
-        sandbox_config: Optional[Mapping[str, Any]] = None,
+        sandbox_config: Mapping[str, Any] | None = None,
         auto_calibrate: bool = False,
-    ) -> tuple[str, Optional[type], Dict[str, Any], list[str]]:
+    ) -> tuple[str, type | None, dict[str, Any], list[str]]:
         params = self.setup_ctrl.gather_run_params()
         name = (params.get("name") or "sessile" or "").lower()
         pipeline_cls = self.pipeline_map.get(name)
@@ -214,7 +215,7 @@ class PipelineController:
         cam_id = params.get("cam_id")
         frames = params.get("frames")
 
-        overlays: Dict[str, Any] = {}
+        overlays: dict[str, Any] = {}
         if auto_calibrate:
             auto_payload, auto_warnings = self._auto_calibration_payload(name, image)
             overlays.update(auto_payload)
@@ -283,7 +284,7 @@ class PipelineController:
 
         return name, pipeline_cls, run_kwargs, warnings
 
-    def _should_check_acquisition(self, stages: Optional[list[str]]) -> bool:
+    def _should_check_acquisition(self, stages: list[str] | None) -> bool:
         if not stages:
             return True
         return any((stage or "").strip().lower() == "acquisition" for stage in stages)
@@ -330,7 +331,7 @@ class PipelineController:
         return {
             "analyze_func": analyze_func,
             "draw_func": getattr(drawing_module, f"draw_{mode}_overlay"),
-            "helper_bundle_class": getattr(geometry_module, "HelperBundle"),
+            "helper_bundle_class": geometry_module.HelperBundle,
         }
 
     def _prepare_helper_bundle(self, mode: str, helper_bundle_class, roi_rect):
@@ -530,8 +531,8 @@ class PipelineController:
 
             try:
                 pipeline_cls = PIPELINE_MAP["sessile"]
-            except Exception:
-                raise ValueError("Sessile pipeline not found")
+            except Exception as exc:
+                raise ValueError("Sessile pipeline not found") from exc
 
             pipeline = pipeline_cls()
             ctx = pipeline.run(**ctx.__dict__)
@@ -633,7 +634,7 @@ class PipelineController:
                 pass
 
     def test_stage(
-        self, stage_name: str, sandbox_config: Optional[Mapping[str, Any]] = None
+        self, stage_name: str, sandbox_config: Mapping[str, Any] | None = None
     ) -> dict[str, Any]:
         stage = (stage_name or "").strip().lower()
         if not stage or stage == "acquisition":
@@ -681,7 +682,7 @@ class PipelineController:
             )
             return
 
-        overlays: Dict[str, Any] = {}
+        overlays: dict[str, Any] = {}
         if self._should_check_acquisition([stage.lower() for stage in stages]):
             ready, overlays = self._collect_acquisition_inputs()
             if not ready:
@@ -707,7 +708,7 @@ class PipelineController:
         if params.get("analysis_params"):
             run_kwargs["analysis_params"] = params.get("analysis_params")
 
-        run_kwargs["only"] = [stage for stage in stages]
+        run_kwargs["only"] = list(stages)
 
         if self.run_vm and hasattr(self.run_vm, "run_subset"):
             try:
@@ -748,7 +749,7 @@ class PipelineController:
         stage_lower = (stage_name or "").strip().lower()
         params = self.setup_ctrl.gather_run_params()
 
-        overlays: Dict[str, Any] = {}
+        overlays: dict[str, Any] = {}
         if stage_lower == "acquisition":
             ready, overlays = self._collect_acquisition_inputs()
             if not ready:
@@ -871,6 +872,7 @@ class PipelineController:
     def _prepare_measurement_tracking(self, **kwargs) -> dict:
         """Prepare measurement tracking fields for Context before pipeline runs."""
         from datetime import datetime
+
         from menipy.models.results import get_results_history
 
         history = get_results_history()
@@ -886,9 +888,10 @@ class PipelineController:
 
     def add_measurement_to_history(self, ctx: Any, pipeline_name: str) -> None:
         """Add a completed measurement to the results history."""
-        from datetime import datetime
-        from menipy.models.results import MeasurementResult, get_results_history
         import uuid
+        from datetime import datetime
+
+        from menipy.models.results import MeasurementResult, get_results_history
 
         if not hasattr(ctx, "results") or not ctx.results:
             return

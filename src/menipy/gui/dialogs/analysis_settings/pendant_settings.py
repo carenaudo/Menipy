@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 from PySide6.QtWidgets import (
-    QWidget,
-    QFormLayout,
+    QCheckBox,
+    QComboBox,
     QDoubleSpinBox,
+    QFormLayout,
     QTextEdit,
     QVBoxLayout,
-    QComboBox,
-    QCheckBox,
+    QWidget,
 )
+
 from menipy.pipelines.pendant.stages import DEFAULT_PENDANT_APPROXIMATION_METHODS
 
 

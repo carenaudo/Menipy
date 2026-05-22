@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import numpy as np
 from numpy.linalg import lstsq
-from typing import Tuple
 
 
-def fit_circle(points: np.ndarray) -> Tuple[np.ndarray, float]:
+def fit_circle(points: np.ndarray) -> tuple[np.ndarray, float]:
     """Fit a circle to 2D points using linear least squares.
 
     Parameters
@@ -204,8 +203,8 @@ def detect_baseline_ransac(
         raise ValueError("contour must be of shape (N, 2)")
 
     # Filter edges: prefer points near the bottom of the contour
-    y_min = np.min(contour[:, 1])
-    y_max = np.max(contour[:, 1])
+    np.min(contour[:, 1])
+    np.max(contour[:, 1])
     # Use a percentile-based cutoff to robustly select bottom candidates
     bottom_threshold = float(np.percentile(contour[:, 1], 80))
     candidates = contour[contour[:, 1] >= bottom_threshold]
