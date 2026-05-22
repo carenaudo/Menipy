@@ -8,22 +8,57 @@ Menipy uses a flexible, pipeline-driven architecture to perform automated measur
 
 ## 2. User Workflow
 
-The main user workflow is centered around the "Setup" panel:
+The main workflow is organized around the top workflow bar, the left setup rail,
+the central preview, and the results/diagnostics area:
 
-1.  **Select Source Mode**: Choose the data source using the radio buttons:
-    *   **Single Image**: For analyzing one image file.
-    *   **Batch**: For processing all images in a folder.
-    *   **Camera**: For live analysis from a connected camera.
+1.  **Select Pipeline**: Use the analysis buttons in the top workflow bar
+    (`Sessile`, `Pendant`, `Osc.`, `Capillary`, `Captive`) to choose the active
+    pipeline.
 
-2.  **Select Source**: Provide the path to the image or folder, or select the camera ID.
+2.  **Select Source Mode**: Use the source buttons in the workflow bar:
+    *   **File**: Analyze one image file.
+    *   **Batch**: Process all compatible images in a folder.
+    *   **Camera**: Acquire frames from a connected camera.
 
-3.  **Select Pipeline**: Choose the desired analysis method (e.g., "Pendant Drop", "Sessile Drop") from the "Pipeline" dropdown menu.
+3.  **Select Source and Preview**: Browse for an image/folder or choose the
+    camera, then click **Preview** in the setup rail to load the source into the
+    preview panel.
 
-4.  **Configure Pipeline Stages**: The list of steps for the selected pipeline (e.g., `acquisition`, `preprocessing`, `edge_detection`, `geometry`) is displayed. Each stage can be configured individually by clicking its associated "config" button, which opens a detailed dialog for that stage's parameters.
+4.  **Calibrate and Configure**: Use **Calibrate** to run the auto-calibration
+    wizard, and use the setup rail or **Advanced** workflow controls for pipeline
+    settings and stage configuration.
 
-5.  **Run Analysis**: Click the **"Run All"** button to execute the entire pipeline on the selected source.
+5.  **Run Analysis**: Click **Run Analysis** to execute the pipeline on the
+    selected source.
 
-6.  **View Results**: After the pipeline completes, the image preview panel will update with graphical overlays (like contours and fitted lines), and the "Results" panel will display the final numerical metrics (e.g., surface tension, contact angle).
+6.  **Review Results**: The preview updates with overlays such as ROI,
+    contours, contact points, fit lines, or model profiles. The Results area
+    displays numerical metrics, timings, residuals, and diagnostics.
+
+### Scientific Step Testing
+
+For development and scientific review, Menipy provides a stage-testing panel:
+
+1. Choose **View -> Focus -> Science**.
+2. Click the **Test** button that appears next to the pipeline selection buttons.
+3. The left rail switches from the setup panel to **Step Test**.
+4. Select a stage and click **Run Stage**.
+
+The test panel lists the selected pipeline's executable stages except
+`acquisition`. It runs the requested stage with prerequisite stages included, so
+testing `profile_fitting`, for example, automatically runs the earlier stages
+needed to build the context. Before the test run, Menipy silently runs
+auto-calibration on the selected source and merges detected ROI, needle,
+substrate/contact line, contour, contact points, and apex into the test context.
+Missing detections are reported as inline prerequisite warnings instead of
+opening the calibration wizard.
+
+Configuration changes made in the test panel are sandboxed. They affect test
+runs only until **Apply** is clicked. **Discard** restores the sandbox from the
+current live settings. Editable test configuration currently covers
+`preprocessing`, `contour_extraction`, `geometric_features`, `physics`, and
+`overlay`; other stages can still be run and inspected with their current
+inputs.
 
 ## 3. Algorithms
 

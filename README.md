@@ -133,6 +133,15 @@ outer drop contour and overlays key features such as the apex and symmetry axis.
 Metrics including height, diameter, volume and surface tension are displayed in
 the panel. Detailed instructions are available in `docs/guides/drop_analysis.md`.
 
+### Science-Mode Pipeline Step Testing
+
+For method development and diagnostic review, choose **View -> Focus -> Science**
+in the GUI. A **Test** button appears next to the analysis-type buttons. It
+opens a left-rail Step Test panel where individual pipeline stages can be run
+with their prerequisites, excluding `acquisition`. Test runs use the selected
+source, silently auto-detect calibration prerequisites, and keep configuration
+changes sandboxed until **Apply** is clicked.
+
 ## Developer note: runtime resources and GUI logging
 
 During recent refactor work, the application now emits clear per-stage pipeline logs and a status message that is shown in the GUI status bar. If you run the GUI and see missing icon warnings for paths like `:/icons/...`, run the resource build helper:

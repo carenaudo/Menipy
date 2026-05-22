@@ -341,11 +341,14 @@ A JSON SOP configuration profile consists of the active stages list and specific
   "include_stages": [
     "acquisition",
     "preprocessing",
-    "edge_detection",
-    "geometry",
-    "scaling",
+    "feature_detection",
+    "contour_extraction",
+    "contour_refinement",
+    "calibration",
+    "geometric_features",
     "physics",
-    "solver",
+    "profile_fitting",
+    "compute_metrics",
     "overlay",
     "validation"
   ],
@@ -355,7 +358,7 @@ A JSON SOP configuration profile consists of the active stages list and specific
       "clip_limit": 2.0,
       "tile_grid_size": [8, 8]
     },
-    "edge_detection": {
+    "contour_extraction": {
       "method": "canny",
       "threshold1": 50,
       "threshold2": 150

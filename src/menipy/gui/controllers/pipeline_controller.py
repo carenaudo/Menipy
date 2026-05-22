@@ -7,6 +7,7 @@ import logging
 from pathlib import Path
 from typing import Any, Mapping, Optional, Dict
 
+import numpy as np
 from menipy.gui.controllers.preprocessing_controller import (
     PreprocessingPipelineController,
 )
@@ -132,6 +133,155 @@ class PipelineController:
         if getattr(result, "apex_point", None):
             payload["apex_point"] = result.apex_point
         return payload
+
+    def _selected_source_image_for_calibration(
+        self, image_path: Optional[str]
+    ) -> Optional[np.ndarray]:
+        if image_path:
+            try:
+                import cv2  # type: ignore
+
+                image = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
+                if image is not None:
+                    return image
+            except Exception:
+                logger.debug("Could not load selected source for auto-calibration")
+
+        try:
+            image_item = getattr(self.preview_panel, "image_item", None)
+            if image_item is not None and hasattr(image_item, "get_original_image"):
+                image = image_item.get_original_image()
+                if isinstance(image, np.ndarray):
+                    return image
+        except Exception:
+            logger.debug("Could not read preview image for auto-calibration")
+        return None
+
+    def _auto_calibration_payload(
+        self, pipeline_name: str, image_path: Optional[str]
+    ) -> tuple[Dict[str, Any], list[str]]:
+        image = self._selected_source_image_for_calibration(image_path)
+        if image is None:
+            return {}, ["No selected image was available for silent auto-calibration."]
+
+        try:
+            from menipy.common.auto_calibrator import AutoCalibrator
+
+            result = AutoCalibrator(image, pipeline_name).detect_all()
+        except Exception as exc:
+            logger.warning("Silent auto-calibration failed: %s", exc)
+            return {}, [f"Auto-calibration failed: {exc}"]
+
+        payload: Dict[str, Any] = {}
+        if getattr(result, "roi_rect", None):
+            payload["roi"] = result.roi_rect
+            payload["roi_rect"] = result.roi_rect
+        if getattr(result, "needle_rect", None):
+            payload["needle_rect"] = result.needle_rect
+        if getattr(result, "substrate_line", None):
+            payload["substrate_line"] = result.substrate_line
+            payload["contact_line"] = result.substrate_line
+        if getattr(result, "drop_contour", None) is not None:
+            payload["drop_contour"] = result.drop_contour
+            payload["detected_contour"] = result.drop_contour
+        if getattr(result, "contact_points", None):
+            payload["contact_points"] = result.contact_points
+        if getattr(result, "apex_point", None):
+            payload["apex_point"] = result.apex_point
+
+        warnings: list[str] = []
+        for label, key in (
+            ("ROI", "roi"),
+            ("needle region", "needle_rect"),
+            ("drop contour", "drop_contour"),
+        ):
+            if key not in payload:
+                warnings.append(f"Auto-calibration did not detect {label}.")
+        return payload, warnings
+
+    def _build_pipeline_run_kwargs(
+        self,
+        *,
+        sandbox_config: Optional[Mapping[str, Any]] = None,
+        auto_calibrate: bool = False,
+    ) -> tuple[str, Optional[type], Dict[str, Any], list[str]]:
+        params = self.setup_ctrl.gather_run_params()
+        name = (params.get("name") or "sessile" or "").lower()
+        pipeline_cls = self.pipeline_map.get(name)
+        warnings: list[str] = []
+
+        image = params.get("image")
+        cam_id = params.get("cam_id")
+        frames = params.get("frames")
+
+        overlays: Dict[str, Any] = {}
+        if auto_calibrate:
+            auto_payload, auto_warnings = self._auto_calibration_payload(name, image)
+            overlays.update(auto_payload)
+            warnings.extend(auto_warnings)
+
+        calibration_payload = self._calibration_result_payload()
+        for key, value in calibration_payload.items():
+            overlays.setdefault(key, value)
+
+        sandbox = dict(sandbox_config or {})
+        preprocessing_settings = sandbox.get("preprocessing_settings")
+        edge_detection_settings = sandbox.get("edge_detection_settings")
+        if preprocessing_settings is None:
+            overlays.update(self._preprocessing_payload())
+        else:
+            overlays["preprocessing_settings"] = preprocessing_settings
+        if edge_detection_settings is None:
+            overlays.update(self._edge_detection_payload())
+        else:
+            overlays["edge_detection_settings"] = edge_detection_settings
+
+        calibration_params = params.get("calibration_params") or {}
+        try:
+            needle_diameter_mm = float(
+                calibration_params.get("needle_diameter_mm", 0.54)
+            )
+        except (ValueError, TypeError):
+            needle_diameter_mm = 0.54
+        needle_rect = overlays.get("needle_rect")
+        if (
+            needle_rect
+            and isinstance(needle_diameter_mm, (int, float))
+            and needle_diameter_mm > 0
+        ):
+            try:
+                px_per_mm = float(needle_rect[2]) / needle_diameter_mm
+            except Exception:
+                px_per_mm = 100.0 / max(needle_diameter_mm or 0.1, 0.1)
+        else:
+            px_per_mm = 100.0 / max(needle_diameter_mm or 0.1, 0.1)
+            warnings.append("Needle width was unavailable; using fallback scale.")
+
+        run_kwargs = dict(overlays)
+        run_kwargs["calibration_params"] = calibration_params
+        run_kwargs["scale"] = {"px_per_mm": px_per_mm}
+        run_kwargs["physics"] = {
+            "rho1": calibration_params.get("drop_density_kg_m3", 1000.0),
+            "rho2": calibration_params.get("fluid_density_kg_m3", 1.2),
+            "g": calibration_params.get("g", 9.80665),
+        }
+        if params.get("analysis_params"):
+            run_kwargs["analysis_params"] = params.get("analysis_params")
+        if image is not None:
+            run_kwargs["image"] = image
+        if cam_id is not None:
+            run_kwargs["camera"] = cam_id
+        if frames is not None:
+            run_kwargs["frames"] = frames
+
+        physics_params = sandbox.get("physics_params")
+        if physics_params is not None and hasattr(physics_params, "g"):
+            try:
+                run_kwargs["physics"]["g"] = float(physics_params.g)
+            except Exception:
+                pass
+
+        return name, pipeline_cls, run_kwargs, warnings
 
     def _should_check_acquisition(self, stages: Optional[list[str]]) -> bool:
         if not stages:
@@ -384,8 +534,6 @@ class PipelineController:
                 raise ValueError("Sessile pipeline not found")
 
             pipeline = pipeline_cls()
-            # Prepare measurement tracking
-            ctx_dict = self._prepare_measurement_tracking(**ctx.__dict__)
             ctx = pipeline.run(**ctx.__dict__)
 
             # Update UI with results
@@ -483,6 +631,37 @@ class PipelineController:
                 self.window.statusBar().showMessage("Analysis complete.", 3000)
             except Exception:
                 pass
+
+    def test_stage(
+        self, stage_name: str, sandbox_config: Optional[Mapping[str, Any]] = None
+    ) -> dict[str, Any]:
+        stage = (stage_name or "").strip().lower()
+        if not stage or stage == "acquisition":
+            return {
+                "ok": False,
+                "ctx": None,
+                "warnings": ["Acquisition is not testable."],
+            }
+
+        name, pipeline_cls, run_kwargs, warnings = self._build_pipeline_run_kwargs(
+            sandbox_config=sandbox_config,
+            auto_calibrate=True,
+        )
+        if not pipeline_cls:
+            QMessageBox.warning(self.window, "Step Test", f"Unknown pipeline: {name}")
+            return {"ok": False, "ctx": None, "warnings": warnings}
+
+        run_kwargs["only"] = [stage]
+        ctx_ret = self._run_pipeline_direct(pipeline_cls, **run_kwargs)
+        if ctx_ret is not None:
+            self._display_context(ctx_ret)
+            if getattr(ctx_ret, "results", None):
+                self.add_measurement_to_history(ctx_ret, name)
+            try:
+                self.window.statusBar().showMessage("Step test complete.", 2000)
+            except Exception:
+                pass
+        return {"ok": ctx_ret is not None, "ctx": ctx_ret, "warnings": warnings}
 
     def run_all(self) -> None:
         if not self.sops:

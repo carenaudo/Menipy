@@ -8,27 +8,56 @@ Menipy's analysis capabilities are built around a flexible pipeline architecture
 
 ### 1.1. `PipelineBase`: The Skeleton
 
-The foundation of all pipelines is the `PipelineBase` class (`src/menipy/pipelines/base.py`). It defines a series of stages that a data processing workflow typically follows. The key stages are:
+The foundation of all pipelines is the `PipelineBase` class (`src/menipy/pipelines/base.py`). It defines a series of stages that a data processing workflow typically follows. The current canonical stage names are:
 
-1.  **Acquisition**: Acquiring raw data (e.g., loading an image from a file).
-2.  **Preprocessing**: Initial filtering and cleaning of the data (e.g., blurring, noise reduction).
-3.  **Edge Detection**: Identifying the contour of the object of interest (e.g., the droplet).
-4.  **Geometry**: Extracting geometric features from the contour (e.g., apex, baseline, contact points).
-5.  **Scaling**: Converting pixel-based measurements to physical units (e.g., mm).
-6.  **Physics**: Defining the physical model and its parameters (e.g., densities, gravity).
-7.  **Solver**: Fitting the physical model to the data.
-8.  **Optimization**: Fine-tuning the model parameters.
-9.  **Outputs**: Formatting and collecting the results.
-10. **Overlay**: Generating visualizations to overlay on the original data.
-11. **Validation**: Performing quality checks on the results.
+1.  **`acquisition`**: Acquire raw data, such as loading an image from a file.
+2.  **`preprocessing`**: Filter, crop, normalize, and clean the data.
+3.  **`feature_detection`**: Detect supporting features such as ROI, needle, substrate, and contact points.
+4.  **`contour_extraction`**: Extract the object contour from the preprocessed image.
+5.  **`contour_refinement`**: Clip, smooth, or otherwise clean the contour.
+6.  **`calibration`**: Convert pixel measurements to physical units.
+7.  **`geometric_features`**: Extract geometric features from the contour.
+8.  **`physics`**: Define physical model parameters such as densities and gravity.
+9.  **`profile_fitting`**: Fit the physical/model profile to the measured contour.
+10. **`compute_metrics`**: Collect final numerical results.
+11. **`overlay`**: Generate visualizations for the preview panel.
+12. **`validation`**: Perform quality checks on the results.
 
 The `PipelineBase` class provides a `run` method that executes these stages in a predefined order. Each stage is implemented as a `do_*` method (e.g., `do_acquisition`, `do_preprocessing`).
+
+Legacy stage method aliases such as `do_edge_detection`, `do_geometry`,
+`do_scaling`, `do_solver`, and `do_outputs` still exist for compatibility, but
+new pipelines should use the canonical names above.
 
 ### 1.2. The `Context` Object
 
 A central piece of the pipeline is the `Context` object. This is a simple data container that is passed from one stage to the next. Each stage can read data from the `Context`, perform its processing, and then write its results back to the `Context`. This allows for a loosely coupled architecture where stages only need to know about the `Context`, not about each other.
 
-### 1.3. Pipeline Discovery
+### 1.3. Stage Testing in the GUI
+
+The GUI exposes a Science-mode **Step Test** panel for inspecting pipeline stage
+behavior. It is available from **View -> Focus -> Science**, then the **Test**
+button in the workflow bar.
+
+For developers, this panel is useful because it exercises the same pipeline
+stage plan used by normal execution:
+
+```python
+pipeline.run_with_plan(only=[stage_name], include_prereqs=True, **run_kwargs)
+```
+
+The panel intentionally excludes `acquisition` from the selectable stage list.
+Instead, it uses the selected GUI source and silently runs `AutoCalibrator` to
+provide prerequisite context fields such as `roi`, `needle_rect`,
+`substrate_line`, `drop_contour`, `contact_points`, and `apex_point`. If a
+feature cannot be detected, the panel reports an inline prerequisite warning.
+
+Stage configuration edits in the panel are sandboxed. The controller clones live
+preprocessing, edge-detection, geometry, physics, and overlay settings for test
+runs. **Apply** writes sandbox values back to the live controllers/settings;
+**Discard** reloads from the live state.
+
+### 1.4. Pipeline Discovery
 
 Pipelines are discovered automatically by the `discover.py` module (`src/menipy/pipelines/discover.py`). To be discovered, a pipeline must meet the following criteria:
 
@@ -109,12 +138,12 @@ __all__ = ["MyPipeline"]
 
 Menipy provides a set of common utility functions in `src/menipy/common` for tasks like edge detection, solving, and creating overlays. You are encouraged to use these to avoid code duplication.
 
-For example, to run Canny edge detection in your `do_edge_detection` stage:
+For example, to run Canny edge detection in your `do_contour_extraction` stage:
 
 ```python
 from menipy.common import edge_detection as edged
 
-def do_edge_detection(self, ctx: Context) -> Optional[Context]:
+def do_contour_extraction(self, ctx: Context) -> Optional[Context]:
     edged.run(ctx, method="canny")
     return ctx
 ```

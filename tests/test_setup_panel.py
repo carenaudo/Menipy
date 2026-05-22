@@ -7,6 +7,7 @@ from menipy.gui.views.main_window import MainWindow
 from menipy.gui.controllers.setup_panel_controller import SetupPanelController
 from menipy.gui.services.camera_service import CameraDevice
 from menipy.gui.views.image_view import DRAW_POINT, DRAW_LINE, DRAW_RECT
+from menipy.models.context import Context
 from unittest.mock import Mock
 from PySide6.QtCore import QPoint, Qt
 from PySide6.QtGui import QImage
@@ -175,6 +176,129 @@ def test_top_workflow_calibrate_and_run_buttons_removed(main_window):
     assert not hasattr(main_window, "workflowAdvancedBtn")
 
 
+def test_science_focus_controls_pipeline_test_button(main_window, qtbot):
+    main_window.settings.save = lambda: None
+    main_window.results_panel_ctrl.settings.save = lambda: None
+    assert main_window.workflowTestPipelineBtn.isHidden()
+
+    main_window.actionFocusScience.trigger()
+    qtbot.wait(20)
+
+    assert not main_window.workflowTestPipelineBtn.isHidden()
+
+    main_window.actionFocusMeasure.trigger()
+    qtbot.wait(20)
+
+    assert main_window.workflowTestPipelineBtn.isHidden()
+    assert not main_window.workflowTestPipelineBtn.isChecked()
+
+
+def test_pipeline_test_button_swaps_left_rail(main_window, qtbot):
+    main_window.settings.save = lambda: None
+    main_window.results_panel_ctrl.settings.save = lambda: None
+    main_window.actionFocusScience.trigger()
+    qtbot.wait(20)
+
+    qtbot.mouseClick(main_window.workflowTestPipelineBtn, Qt.LeftButton)
+    qtbot.wait(20)
+
+    assert main_window.workflowTestPipelineBtn.isChecked()
+    assert not main_window.setupHost.isHidden()
+    assert main_window.setup_panel.isHidden()
+    assert not main_window.pipeline_step_test_panel.isHidden()
+
+    main_window.actionFocusAnalysis.trigger()
+    qtbot.wait(20)
+
+    assert main_window.workflowTestPipelineBtn.isHidden()
+    assert main_window.pipeline_step_test_panel.isHidden()
+    assert not main_window.setup_panel.isHidden()
+
+
+def test_pipeline_test_stage_list_excludes_acquisition(main_window):
+    controller = main_window.pipeline_step_test_ctrl
+
+    controller.refresh_stages()
+
+    assert "acquisition" not in controller.panel._stage_names
+    assert "preprocessing" in controller.panel._stage_names
+
+
+def test_pipeline_test_stage_list_refreshes_on_pipeline_switch(
+    main_window, monkeypatch
+):
+    controller = main_window.pipeline_step_test_ctrl
+
+    class FakePipeline:
+        def build_plan(self):
+            return [
+                ("acquisition", object()),
+                ("preprocessing", object()),
+                ("validation", object()),
+            ]
+
+    monkeypatch.setitem(controller.pipeline_map, "pendant", FakePipeline)
+    main_window.setup_panel_ctrl._select_pipeline_button("pendant")
+    controller.refresh_stages()
+
+    assert controller.panel._stage_names == ["preprocessing", "validation"]
+
+
+def test_pipeline_test_sandbox_does_not_mutate_live_settings_until_apply(main_window):
+    controller = main_window.pipeline_step_test_ctrl
+    live_settings = main_window.preprocessing_ctrl.settings
+    original_value = live_settings.crop_to_roi
+
+    controller._preprocessing_settings.crop_to_roi = not original_value
+    controller._set_dirty(True)
+
+    assert main_window.preprocessing_ctrl.settings.crop_to_roi is original_value
+
+    controller.apply_sandbox()
+
+    assert main_window.preprocessing_ctrl.settings.crop_to_roi is (not original_value)
+
+
+def test_pipeline_test_stage_runs_with_prereqs_and_auto_payload(
+    main_window, monkeypatch
+):
+    calls = {}
+
+    class FakePipeline:
+        def build_plan(self):
+            return [("acquisition", object()), ("preprocessing", object())]
+
+        def run_with_plan(self, *, only=None, include_prereqs=True, **kwargs):
+            calls["only"] = only
+            calls["include_prereqs"] = include_prereqs
+            calls["kwargs"] = kwargs
+            ctx = Context()
+            ctx.timings_ms = {"preprocessing": 1.0}
+            return ctx
+
+    monkeypatch.setitem(main_window.pipeline_ctrl.pipeline_map, "sessile", FakePipeline)
+    monkeypatch.setattr(
+        main_window.pipeline_ctrl,
+        "_auto_calibration_payload",
+        lambda pipeline, image: (
+            {
+                "roi": (1, 2, 3, 4),
+                "needle_rect": (5, 6, 7, 8),
+                "drop_contour": object(),
+            },
+            [],
+        ),
+    )
+
+    result = main_window.pipeline_ctrl.test_stage("preprocessing", {})
+
+    assert result["ok"] is True
+    assert calls["only"] == ["preprocessing"]
+    assert calls["include_prereqs"] is True
+    assert calls["kwargs"]["roi"] == (1, 2, 3, 4)
+    assert calls["kwargs"]["needle_rect"] == (5, 6, 7, 8)
+
+
 def test_workflow_bar_owns_analysis_and_source_controls(main_window):
     controller = main_window.setup_panel_ctrl
 
@@ -232,7 +356,9 @@ def test_workflow_source_mode_buttons_do_not_clip_when_narrow(main_window, qtbot
     qtbot.wait(80)
 
     host = main_window.workflowSourceHost
-    widths = {button.width() for button in main_window.workflowSourceModeButtons.values()}
+    widths = {
+        button.width() for button in main_window.workflowSourceModeButtons.values()
+    }
     heights = {
         button.height() for button in main_window.workflowSourceModeButtons.values()
     }
@@ -344,9 +470,7 @@ def test_camera_dropdown_falls_back_to_camera_zero(main_window, monkeypatch):
     assert controller.gather_run_params()["cam_id"] == 0
 
 
-def test_camera_settings_button_applies_dialog_values(
-    main_window, qtbot, monkeypatch
-):
+def test_camera_settings_button_applies_dialog_values(main_window, qtbot, monkeypatch):
     from menipy.gui.views import main_window as main_window_module
 
     _disconnect_camera_preview(main_window)

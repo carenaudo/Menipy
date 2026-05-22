@@ -655,9 +655,7 @@ class ResultsPanel:
             return False
         return bool((measurement.results or {}).get("residuals"))
 
-    def _update_residuals_table(
-        self, measurement: MeasurementResult | None
-    ) -> None:
+    def _update_residuals_table(self, measurement: MeasurementResult | None) -> None:
         table = self.residuals_table
         if table is None:
             return
@@ -768,7 +766,7 @@ class ResultsPanel:
         return {str(value) for value in values}
 
     def _save_hidden_columns(self, hidden: set[str]) -> None:
-        settings = AppSettings.load()
+        settings = self.settings
         data = dict(getattr(settings, "results_hidden_columns", {}) or {})
         data[self._column_settings_key()] = sorted(hidden)
         settings.results_hidden_columns = data

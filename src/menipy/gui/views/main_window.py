@@ -31,6 +31,9 @@ from menipy.gui.controllers.edge_detection_controller import (
     EdgeDetectionPipelineController,
 )
 from menipy.gui.controllers.pipeline_controller import PipelineController
+from menipy.gui.controllers.pipeline_step_test_controller import (
+    PipelineStepTestController,
+)
 from menipy.gui.controllers.plugins_controller import PluginsController
 from menipy.gui.controllers.preprocessing_controller import (
     PreprocessingPipelineController,
@@ -42,6 +45,7 @@ from menipy.gui.helpers.image_marking import ImageMarkerHelper
 from menipy.gui.helpers.icon_loader import set_button_icon
 from menipy.gui.helpers.logging_bridge import install_qt_logging
 from menipy.gui.views.preview_panel import PreviewPanel
+from menipy.gui.views.pipeline_step_test_panel import PipelineStepTestPanel
 from menipy.gui.views.results_panel import ResultsPanel
 from menipy.gui.services.camera_service import CameraConfig, CameraController
 from menipy.gui.views.image_view import DRAW_NONE
@@ -178,9 +182,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             """Load a .ui file from a Qt resource path or a filesystem fallback."""
             f = QFile(res_path)
             if not f.exists():
-                f = QFile(
-                    str(Path(__file__).resolve().parent / fallback_filename)
-                )
+                f = QFile(str(Path(__file__).resolve().parent / fallback_filename))
             f.open(QFile.ReadOnly)
             w = loader.load(f, self)
             f.close()
@@ -275,6 +277,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             run_vm=self.run_vm,
             log_view=self.logView,
         )
+        self._install_pipeline_step_test_panel()
 
         if self.preview_panel.has_view():
             try:
@@ -561,6 +564,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
             analysis_layout.addWidget(button)
 
+        self.workflowTestPipelineBtn = QToolButton(self.workflowBar)
+        self.workflowTestPipelineBtn.setObjectName("workflowTestPipelineBtn")
+        self.workflowTestPipelineBtn.setText("Test")
+        self.workflowTestPipelineBtn.setToolTip("Test pipeline steps")
+        self.workflowTestPipelineBtn.setCheckable(True)
+        self.workflowTestPipelineBtn.setAutoRaise(True)
+        self.workflowTestPipelineBtn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.workflowTestPipelineBtn.setMinimumHeight(30)
+        self.workflowTestPipelineBtn.setMaximumHeight(32)
+        set_button_icon(self.workflowTestPipelineBtn, "play", size=15)
+        self.workflowTestPipelineBtn.hide()
+        self.workflowTestPipelineBtn.toggled.connect(self._set_pipeline_test_visible)
+        analysis_layout.addWidget(self.workflowTestPipelineBtn)
+
         self._add_workflow_label(source_layout, "Source")
         source_mode_buttons: dict[str, QToolButton] = {}
         for mode_name, object_name, tooltip, icon_name, target_radio in (
@@ -697,6 +714,76 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._sync_workflow_source_mode_buttons(setup_ctrl.current_mode())
         setup_ctrl._update_widget_states()
         self._workflow_setup_controls_installed = True
+
+    def _install_pipeline_step_test_panel(self) -> None:
+        """Install the scientific step-test rail beside the normal setup panel."""
+        if getattr(self, "_pipeline_step_test_panel_installed", False):
+            return
+        layout = getattr(self, "setupHostLayout", None)
+        if layout is None:
+            return
+        self.pipeline_step_test_panel = PipelineStepTestPanel(self.setupHost)
+        self.pipeline_step_test_panel.hide()
+        layout.addWidget(self.pipeline_step_test_panel)
+        self.pipeline_step_test_ctrl = PipelineStepTestController(
+            window=self,
+            panel=self.pipeline_step_test_panel,
+            setup_ctrl=self.setup_panel_ctrl,
+            pipeline_ctrl=self.pipeline_ctrl,
+            preprocessing_ctrl=self.preprocessing_ctrl,
+            edge_detection_ctrl=self.edge_detection_ctrl,
+            pipeline_map=PIPELINE_MAP,
+            parent=self,
+        )
+        self.setup_panel_ctrl.pipeline_changed.connect(
+            lambda _pipeline: self.pipeline_step_test_ctrl.refresh_stages()
+        )
+        self._pipeline_step_test_panel_installed = True
+
+    def _set_scientific_test_available(self, available: bool) -> None:
+        button = getattr(self, "workflowTestPipelineBtn", None)
+        if button is None:
+            return
+        button.setVisible(bool(available))
+        if not available:
+            self._set_pipeline_test_visible(False)
+
+    def _set_pipeline_test_visible(self, visible: bool) -> None:
+        panel = getattr(self, "pipeline_step_test_panel", None)
+        button = getattr(self, "workflowTestPipelineBtn", None)
+        setup_panel = getattr(self, "setup_panel", None)
+        if panel is None or setup_panel is None:
+            return
+
+        visible = bool(visible)
+        if button is not None and button.isChecked() != visible:
+            button.blockSignals(True)
+            try:
+                button.setChecked(visible)
+            finally:
+                button.blockSignals(False)
+
+        if visible:
+            ctrl = getattr(self, "pipeline_step_test_ctrl", None)
+            if ctrl is not None:
+                ctrl.refresh_from_live()
+                ctrl.refresh_stages()
+            setup_panel.hide()
+            panel.show()
+            if getattr(self, "setupHost", None) is not None:
+                self.setupHost.setVisible(True)  # type: ignore[attr-defined]
+            setup_toggle = getattr(self, "toggleSetupBtn", None)
+            setup_action = getattr(self, "actionToggleSetup", None)
+            for toggle in (setup_toggle, setup_action):
+                if toggle is not None and hasattr(toggle, "setChecked"):
+                    toggle.blockSignals(True)
+                    try:
+                        toggle.setChecked(True)
+                    finally:
+                        toggle.blockSignals(False)
+        else:
+            panel.hide()
+            setup_panel.show()
 
     def _create_workflow_source_mode_button(
         self,
@@ -1127,6 +1214,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         results_panel = getattr(self, "results_panel_ctrl", None)
 
         if mode == "measure":
+            self._set_scientific_test_available(False)
             if results_panel and hasattr(results_panel, "show_key_results"):
                 results_panel.show_key_results()
             self._set_panel_visibility(True, False, True)
@@ -1137,19 +1225,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return
 
         if mode == "science":
+            self._set_scientific_test_available(True)
             if results_panel:
                 results_panel.set_compare_methods_visible(False, refresh=False)
                 results_panel.set_diagnostics_visible(True)
             self._set_panel_visibility(False, True, True)
             has_residuals = bool(
-                results_panel
-                and results_panel.has_residuals_for_current_selection()
+                results_panel and results_panel.has_residuals_for_current_selection()
             )
             self._select_inspect_tab("residualsTab" if has_residuals else "resultsTab")
             self._apply_focus_sizes(preview_ratio=0.66, key_results_width=300)
             return
 
         if mode == "analysis":
+            self._set_scientific_test_available(False)
             if results_panel:
                 results_panel.set_compare_methods_visible(True, refresh=False)
                 results_panel.set_diagnostics_visible(False)
