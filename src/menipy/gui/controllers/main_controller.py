@@ -140,6 +140,9 @@ class MainController(QObject):
         self.setup_ctrl.source_mode_changed.connect(
             self.camera_manager.on_source_mode_changed
         )
+        self.setup_ctrl.camera_config_changed.connect(
+            self.camera_manager.on_camera_config_changed
+        )
 
         # Pipeline Runner VM
         run_vm = getattr(self.window, "run_vm", None)

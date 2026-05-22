@@ -8,7 +8,7 @@ from PySide6.QtCore import QSize
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QAbstractButton
 
-_ICON_DIR = Path(__file__).resolve().parent / "resources" / "icons"
+_ICON_DIR = Path(__file__).resolve().parents[1] / "resources" / "icons"
 
 
 def load_icon(name: str) -> QIcon:
@@ -36,10 +36,10 @@ def set_button_icon(
     """Apply a named icon to a button when the icon can be loaded."""
     if button is None:
         return
+    button.setIconSize(QSize(size, size))
     icon = load_icon(name)
     if icon.isNull():
         return
     button.setIcon(icon)
-    button.setIconSize(QSize(size, size))
     if clear_text:
         button.setText("")

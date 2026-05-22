@@ -80,17 +80,8 @@ class CameraManager(QObject):
         MODE_CAMERA = getattr(self.setup_ctrl, "MODE_CAMERA", "camera")
 
         if mode == MODE_CAMERA:
-            params = self.setup_ctrl.gather_run_params()
-            cam_id = params.get("cam_id")
-            try:
-                device = int(cam_id) if cam_id is not None else 0
-            except (TypeError, ValueError):
-                device = 0
-
-            # Import here to avoid circular imports
-            from menipy.gui.services.camera_service import CameraConfig
-
-            config = CameraConfig(device=device)
+            config = self.setup_ctrl.camera_config()
+            device = config.device
 
             try:
                 self._active_camera_device = device
@@ -111,6 +102,13 @@ class CameraManager(QObject):
             logger.info("Camera preview stopped")
             self._active_camera_device = None
             self._camera_preview_logged = False
+
+    @Slot()
+    def on_camera_config_changed(self) -> None:
+        if self.setup_ctrl.current_mode() == getattr(
+            self.setup_ctrl, "MODE_CAMERA", "camera"
+        ):
+            self.on_source_mode_changed(self.setup_ctrl.current_mode())
 
     @Slot(object)
     def _on_camera_frame(self, frame: object) -> None:

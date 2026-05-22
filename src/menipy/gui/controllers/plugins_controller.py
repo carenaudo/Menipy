@@ -88,7 +88,9 @@ class PluginsController:
         """_add_toggle_to_view_menu."""
         if not self.dock:
             return
-        menu_view: Optional[QMenu] = self.window.findChild(QMenu, "menuView")
+        menu_view: Optional[QMenu] = self.window.findChild(QMenu, "menuPanels")
+        if not menu_view:
+            menu_view = self.window.findChild(QMenu, "menuView")
         if not menu_view:
             return
         action = QAction("Plugins", self.window)

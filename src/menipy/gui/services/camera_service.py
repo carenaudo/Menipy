@@ -23,6 +23,44 @@ class CameraConfig:
     height: Optional[int] = None
 
 
+@dataclass(frozen=True)
+class CameraDevice:
+    """Best-effort camera device description for UI selection."""
+
+    device: int
+    label: str
+
+
+def discover_available_cameras(limit: int = 4) -> list[CameraDevice]:
+    """Return available cameras without opening devices during normal UI setup."""
+    devices: list[CameraDevice] = []
+    try:
+        from PySide6.QtMultimedia import QMediaDevices
+
+        for index, camera in enumerate(QMediaDevices.videoInputs()):
+            description = camera.description() or f"Camera {index}"
+            devices.append(CameraDevice(index, description))
+    except Exception:
+        devices = []
+
+    if devices:
+        return devices[: max(1, int(limit))]
+    return [CameraDevice(0, "Camera 0")]
+
+
+def default_camera_resolutions() -> list[tuple[str, Optional[int], Optional[int]]]:
+    return [
+        ("Default", None, None),
+        ("640 x 480", 640, 480),
+        ("1280 x 720", 1280, 720),
+        ("1920 x 1080", 1920, 1080),
+    ]
+
+
+def default_camera_fps_values() -> list[int]:
+    return [15, 24, 30, 60]
+
+
 class _CameraWorker(QObject):
     frame_ready = Signal(object)
     started = Signal(int)

@@ -37,6 +37,7 @@ from menipy.gui.controllers.preprocessing_controller import (
 )
 from menipy.gui.controllers.setup_panel_controller import SetupPanelController
 from menipy.gui.dialogs.advanced_workflow_dialog import AdvancedWorkflowDialog
+from menipy.gui.dialogs.camera_settings_dialog import CameraSettingsDialog
 from menipy.gui.helpers.image_marking import ImageMarkerHelper
 from menipy.gui.helpers.icon_loader import set_button_icon
 from menipy.gui.helpers.logging_bridge import install_qt_logging
@@ -201,7 +202,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.preview_panel = PreviewPanel(self.overlay_panel, ImageView, self.settings)
         self.results_panel_ctrl = ResultsPanel(
-            self.results_panel, getattr(self, "keyResultsHost", None)
+            self.results_panel,
+            getattr(self, "keyResultsHost", None),
+            getattr(self, "residualsHostLayout", None),
         )
 
         self.preprocessing_ctrl = PreprocessingPipelineController(self)
@@ -331,20 +334,31 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             logger.debug("Startup preview load failed", exc_info=True)
 
     def _setup_units_menu(self):
-        """Creates a Units menu to toggle between SI and CGS."""
+        """Create a Config > Units submenu to toggle between SI and CGS."""
         from PySide6.QtGui import QActionGroup
+        from PySide6.QtWidgets import QMenu
 
         menu_bar = self.menuBar()
         units_menu = getattr(self, "menuUnits", None)
         if units_menu is None:
-            units_menu = menu_bar.addMenu("&Units")
+            config_menu = getattr(self, "menuConfig", None)
+            if isinstance(config_menu, QMenu):
+                units_menu = QMenu("&Units", self)
+                config_menu.addMenu(units_menu)
+            else:
+                units_menu = menu_bar.addMenu("&Units")
             units_menu.setObjectName("menuUnits")
-            help_menu = getattr(self, "menuHelp", None)
-            if help_menu is not None:
-                menu_bar.removeAction(units_menu.menuAction())
-                menu_bar.insertMenu(help_menu.menuAction(), units_menu)
             self.menuUnits = units_menu
         else:
+            help_menu = getattr(self, "menuHelp", None)
+            config_menu = getattr(self, "menuConfig", None)
+            if (
+                isinstance(config_menu, QMenu)
+                and help_menu is not None
+                and units_menu.menuAction() in menu_bar.actions()
+            ):
+                menu_bar.removeAction(units_menu.menuAction())
+                config_menu.addMenu(units_menu)
             units_menu.clear()
 
         si_action = QAction("SI (mm, kg/m³)", self)
@@ -592,8 +606,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         source_stack.setContentsMargins(0, 0, 0, 0)
         image_display = self._create_workflow_source_display("workflowImageDisplay")
         batch_display = self._create_workflow_source_display("workflowBatchDisplay")
+        camera_settings_btn = self._create_workflow_camera_settings_button()
         self.workflowImageDisplay = image_display
         self.workflowBatchDisplay = batch_display
+        self.workflowCameraSettingsBtn = camera_settings_btn
 
         source_pages: dict[str, QWidget] = {}
         source_page_layouts: dict[str, QHBoxLayout] = {}
@@ -615,7 +631,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             (setup_ctrl.browseBtn, 34),
             (setup_ctrl.batchBrowseBtn, 34),
             (setup_ctrl.sourceIdCombo, 160),
-            (setup_ctrl.framesSpin, 72),
         ):
             if widget is None:
                 continue
@@ -648,7 +663,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 setup_ctrl.batchBrowseBtn
             )
         if setup_ctrl.framesSpin is not None:
-            source_page_layouts[setup_ctrl.MODE_CAMERA].addWidget(setup_ctrl.framesSpin)
+            setup_ctrl.framesSpin.setParent(self.workflowBar)
+            setup_ctrl.framesSpin.hide()
+        source_page_layouts[setup_ctrl.MODE_CAMERA].addWidget(camera_settings_btn)
 
         source_layout.addWidget(source_stack_host)
         self.workflowSourceStackHost = source_stack_host
@@ -702,6 +719,42 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 lambda _checked=False, radio=target_radio: radio.click()
             )
         return button
+
+    def _create_workflow_camera_settings_button(self) -> QToolButton:
+        button = QToolButton(self.workflowBar)
+        button.setObjectName("workflowCameraSettingsBtn")
+        button.setAutoRaise(True)
+        button.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        button.setFixedSize(34, 30)
+        button.setToolTip("Camera settings")
+        set_button_icon(button, "settings", size=16, clear_text=True)
+        button.clicked.connect(self._show_camera_settings_dialog)
+        return button
+
+    def _show_camera_settings_dialog(self) -> None:
+        setup_ctrl = getattr(self, "setup_panel_ctrl", None)
+        if setup_ctrl is None:
+            return
+        current = setup_ctrl.camera_settings_values()
+        dialog = CameraSettingsDialog(
+            cameras=setup_ctrl.camera_devices(),
+            current_device=int(current["device"]),
+            frames=int(current["frames"]),
+            fps=int(current["fps"]),
+            width=current["width"],
+            height=current["height"],
+            parent=self,
+        )
+        if dialog.exec() == dialog.Accepted:
+            values = dialog.values()
+            setup_ctrl.apply_camera_settings(
+                device=int(values["device"]),
+                frames=int(values["frames"]),
+                fps=int(values["fps"]),
+                width=values["width"],
+                height=values["height"],
+            )
+            self._sync_workflow_source_displays()
 
     def _sync_workflow_source_mode_buttons(self, mode: str) -> None:
         buttons = getattr(self, "workflowSourceModeButtons", {})
@@ -845,7 +898,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             "actionRunFull": "run_full_pipeline",
             "actionRunSelected": "run_full_pipeline",
             "actionStop": "stop_pipeline",
-            "actionOverlay": "open_overlay",
             "actionConfigOverlay": "open_overlay",
             "actionConfigMarkers": "open_marker_config",
             "actionConfigPipeline": "open_pipeline_config",
@@ -1022,6 +1074,22 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             except Exception:
                 pass
 
+        focus_actions = {
+            "actionFocusMeasure": "measure",
+            "actionFocusScience": "science",
+            "actionFocusAnalysis": "analysis",
+        }
+        for action_name, mode in focus_actions.items():
+            action = getattr(self, action_name, None)
+            if not action:
+                continue
+            try:
+                action.triggered.connect(
+                    lambda _checked=False, m=mode: self._apply_focus_preset(m)
+                )
+            except Exception:
+                pass
+
         self._set_panel_visibility(True, True, True)
 
     def _cache_splitter_sizes(self) -> None:
@@ -1052,6 +1120,87 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self._set_panel_visibility(True, False, True)
         else:
             self._set_panel_visibility(True, True, True)
+
+    def _apply_focus_preset(self, mode: str) -> None:
+        if not hasattr(self, "rootSplitter"):
+            return
+        results_panel = getattr(self, "results_panel_ctrl", None)
+
+        if mode == "measure":
+            if results_panel and hasattr(results_panel, "show_key_results"):
+                results_panel.show_key_results()
+            self._set_panel_visibility(True, False, True)
+            self._apply_focus_sizes(
+                preview_ratio=1.0, key_results_width=320, collapse_setup=False
+            )
+            self._select_inspect_tab("resultsTab")
+            return
+
+        if mode == "science":
+            if results_panel:
+                results_panel.set_compare_methods_visible(False, refresh=False)
+                results_panel.set_diagnostics_visible(True)
+            self._set_panel_visibility(False, True, True)
+            has_residuals = bool(
+                results_panel
+                and results_panel.has_residuals_for_current_selection()
+            )
+            self._select_inspect_tab("residualsTab" if has_residuals else "resultsTab")
+            self._apply_focus_sizes(preview_ratio=0.66, key_results_width=300)
+            return
+
+        if mode == "analysis":
+            if results_panel:
+                results_panel.set_compare_methods_visible(True, refresh=False)
+                results_panel.set_diagnostics_visible(False)
+            self._set_panel_visibility(False, True, False)
+            self._select_inspect_tab("resultsTab")
+            self._apply_focus_sizes(preview_ratio=0.32, key_results_width=0)
+
+    def _apply_focus_sizes(
+        self,
+        *,
+        preview_ratio: float,
+        key_results_width: int,
+        collapse_setup: bool = True,
+    ) -> None:
+        if collapse_setup:
+            try:
+                root_total = max(1, sum(self.rootSplitter.sizes()))  # type: ignore[attr-defined]
+                self.rootSplitter.setSizes([0, root_total])  # type: ignore[attr-defined]
+            except Exception:
+                pass
+
+        try:
+            vertical_total = max(1, sum(self.workbenchSplitter.sizes()))  # type: ignore[attr-defined]
+            preview_size = int(vertical_total * preview_ratio)
+            inspector_size = vertical_total - preview_size
+            self.workbenchSplitter.setSizes(  # type: ignore[attr-defined]
+                [max(1, preview_size), max(0, inspector_size)]
+            )
+        except Exception:
+            pass
+
+        try:
+            preview_total = max(1, sum(self.previewResultsSplitter.sizes()))  # type: ignore[attr-defined]
+            key_width = min(max(0, key_results_width), preview_total - 1)
+            self.previewResultsSplitter.setSizes(  # type: ignore[attr-defined]
+                [max(1, preview_total - key_width), key_width]
+            )
+        except Exception:
+            pass
+
+    def _select_inspect_tab(self, tab_name: str) -> None:
+        tabs = getattr(self, "inspectTabs", None)
+        tab = getattr(self, tab_name, None)
+        if tabs is None or tab is None:
+            return
+        try:
+            index = tabs.indexOf(tab)
+            if index >= 0:
+                tabs.setCurrentIndex(index)
+        except Exception:
+            pass
 
     def _set_panel_visibility(
         self,

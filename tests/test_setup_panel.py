@@ -5,6 +5,7 @@ Unit tests."""
 import pytest
 from menipy.gui.views.main_window import MainWindow
 from menipy.gui.controllers.setup_panel_controller import SetupPanelController
+from menipy.gui.services.camera_service import CameraDevice
 from menipy.gui.views.image_view import DRAW_POINT, DRAW_LINE, DRAW_RECT
 from unittest.mock import Mock
 from PySide6.QtCore import QPoint, Qt
@@ -259,6 +260,23 @@ def test_workflow_source_mode_buttons_do_not_clip_when_narrow(main_window, qtbot
     assert not main_window.workflowSourceModeButtons[controller.MODE_SINGLE].isChecked()
 
 
+def test_workflow_camera_page_uses_dropdown_and_settings_button(main_window, qtbot):
+    _disconnect_camera_preview(main_window)
+    controller = main_window.setup_panel_ctrl
+
+    qtbot.mouseClick(
+        main_window.workflowSourceModeButtons[controller.MODE_CAMERA], Qt.LeftButton
+    )
+    qtbot.wait(20)
+
+    camera_layout = main_window._workflow_source_page_layouts[controller.MODE_CAMERA]
+    assert camera_layout.indexOf(controller.sourceIdCombo) >= 0
+    assert camera_layout.indexOf(main_window.workflowCameraSettingsBtn) >= 0
+    assert camera_layout.indexOf(controller.framesSpin) == -1
+    assert controller.framesSpin.isHidden()
+    assert not controller.sourceIdCombo.isEditable()
+
+
 def test_workflow_source_displays_compact_names_and_keep_full_paths(
     main_window, tmp_path
 ):
@@ -288,6 +306,106 @@ def test_workflow_source_displays_compact_names_and_keep_full_paths(
     assert controller.sourceIdCombo.itemText(0) == "frame001.png"
     assert controller.sourceIdCombo.itemData(0) == str(batch_image)
     assert controller.gather_run_params()["image"] == str(batch_image)
+
+
+def test_camera_dropdown_uses_discovered_cameras(main_window, monkeypatch):
+    from menipy.gui.controllers import setup_panel_controller as setup_module
+
+    controller = main_window.setup_panel_ctrl
+    _disconnect_camera_preview(main_window)
+    monkeypatch.setattr(
+        setup_module,
+        "discover_available_cameras",
+        lambda: [CameraDevice(0, "Built-in Camera"), CameraDevice(2, "USB Camera")],
+    )
+
+    controller.cameraModeRadio.click()
+
+    assert not controller.sourceIdCombo.isEditable()
+    assert controller.sourceIdCombo.itemText(0) == "Built-in Camera"
+    assert controller.sourceIdCombo.itemData(0) == 0
+    assert controller.sourceIdCombo.itemText(1) == "USB Camera"
+    assert controller.sourceIdCombo.itemData(1) == 2
+
+
+def test_camera_dropdown_falls_back_to_camera_zero(main_window, monkeypatch):
+    from menipy.gui.controllers import setup_panel_controller as setup_module
+
+    controller = main_window.setup_panel_ctrl
+    _disconnect_camera_preview(main_window)
+    monkeypatch.setattr(setup_module, "discover_available_cameras", lambda: [])
+
+    controller.cameraModeRadio.click()
+
+    assert not controller.sourceIdCombo.isEditable()
+    assert controller.sourceIdCombo.count() == 1
+    assert controller.sourceIdCombo.itemText(0) == "Camera 0"
+    assert controller.sourceIdCombo.itemData(0) == 0
+    assert controller.gather_run_params()["cam_id"] == 0
+
+
+def test_camera_settings_button_applies_dialog_values(
+    main_window, qtbot, monkeypatch
+):
+    from menipy.gui.views import main_window as main_window_module
+
+    _disconnect_camera_preview(main_window)
+    controller = main_window.setup_panel_ctrl
+    controller.cameraModeRadio.click()
+
+    class FakeCameraSettingsDialog:
+        Accepted = 1
+
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
+
+        def exec(self):
+            return self.Accepted
+
+        def values(self):
+            return {
+                "device": 2,
+                "frames": 12,
+                "fps": 60,
+                "width": 1280,
+                "height": 720,
+            }
+
+    monkeypatch.setattr(
+        main_window_module, "CameraSettingsDialog", FakeCameraSettingsDialog
+    )
+
+    qtbot.mouseClick(main_window.workflowCameraSettingsBtn, Qt.LeftButton)
+
+    values = controller.camera_settings_values()
+    assert values["device"] == 2
+    assert values["frames"] == 12
+    assert values["fps"] == 60
+    assert values["width"] == 1280
+    assert values["height"] == 720
+    assert controller.gather_run_params()["frames"] == 12
+
+
+def test_camera_preview_uses_selected_capture_config(main_window):
+    controller = main_window.setup_panel_ctrl
+    start = Mock()
+    main_window.main_controller.camera_manager.camera_ctrl.start = start
+
+    controller.apply_camera_settings(
+        device=1,
+        frames=5,
+        fps=24,
+        width=640,
+        height=480,
+    )
+    controller.cameraModeRadio.click()
+
+    start.assert_called()
+    config = start.call_args.args[0]
+    assert config.device == 1
+    assert config.fps == 24
+    assert config.width == 640
+    assert config.height == 480
 
 
 def _disconnect_camera_preview(main_window):

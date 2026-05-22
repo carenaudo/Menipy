@@ -26,6 +26,11 @@ from PySide6.QtWidgets import (
 
 from menipy.gui.controllers.sop_controller import SopController
 from menipy.gui.helpers.icon_loader import set_button_icon
+from menipy.gui.services.camera_service import (
+    CameraConfig,
+    CameraDevice,
+    discover_available_cameras,
+)
 from menipy.gui.views.image_view import DRAW_LINE, DRAW_POINT, DRAW_RECT
 
 try:
@@ -55,6 +60,7 @@ class SetupPanelController(QObject):
     config_stage_requested = Signal(str)
     pipeline_changed = Signal(str)
     source_mode_changed = Signal(str)
+    camera_config_changed = Signal()
     auto_calibrate_requested = Signal()
     advanced_requested = Signal()
 
@@ -319,6 +325,11 @@ class SetupPanelController(QObject):
                 self._mode_map[btn] = mode
         self._mode = self.MODE_SINGLE
         self._last_camera_id = "0"
+        self._camera_devices: list[CameraDevice] = [CameraDevice(0, "Camera 0")]
+        self._camera_frames = int(self.framesSpin.value()) if self.framesSpin else 1
+        self._camera_fps = 30
+        self._camera_width: Optional[int] = None
+        self._camera_height: Optional[int] = None
         self._workflow_source_stack_mode = False
 
         if self.singleModeRadio and not self.singleModeRadio.isChecked():
@@ -364,9 +375,53 @@ class SetupPanelController(QObject):
         self._workflow_source_stack_mode = bool(enabled)
         self._update_widget_states()
 
+    def camera_devices(self) -> list[CameraDevice]:
+        return list(self._camera_devices)
+
+    def camera_config(self) -> CameraConfig:
+        try:
+            device = int(self._last_camera_id)
+        except (TypeError, ValueError):
+            device = 0
+        return CameraConfig(
+            device=device,
+            fps=int(self._camera_fps or 30),
+            width=self._camera_width,
+            height=self._camera_height,
+        )
+
+    def camera_settings_values(self) -> dict[str, Any]:
+        config = self.camera_config()
+        return {
+            "device": config.device,
+            "frames": int(self._camera_frames or 1),
+            "fps": config.fps,
+            "width": config.width,
+            "height": config.height,
+        }
+
+    def apply_camera_settings(
+        self,
+        *,
+        device: int,
+        frames: int,
+        fps: int,
+        width: Optional[int],
+        height: Optional[int],
+    ) -> None:
+        self._last_camera_id = str(int(device))
+        self._camera_frames = max(1, int(frames or 1))
+        self._camera_fps = max(1, int(fps or 30))
+        self._camera_width = int(width) if width else None
+        self._camera_height = int(height) if height else None
+        if self.framesSpin:
+            self.framesSpin.setValue(self._camera_frames)
+        self._populate_camera_selection()
+        self.camera_config_changed.emit()
+
     def gather_run_params(self) -> dict[str, Any]:
         mode = self._mode
-        frames = int(self.framesSpin.value()) if self.framesSpin else 1
+        frames = int(self._camera_frames if mode == self.MODE_CAMERA else self.framesSpin.value()) if self.framesSpin else int(self._camera_frames or 1)
         selected = self._selected_source_value()
 
         image: Optional[str] = None
@@ -837,15 +892,13 @@ class SetupPanelController(QObject):
     def _apply_mode(self, mode: str, emit: bool = True) -> None:
         if mode not in {self.MODE_SINGLE, self.MODE_BATCH, self.MODE_CAMERA}:
             mode = self.MODE_SINGLE
-        if mode == self._mode and not emit:
-            pass
-        elif mode == self._mode and emit:
-            self.source_mode_changed.emit(mode)
-        else:
+        changed = mode != self._mode
+        if changed:
             self._mode = mode
-            self.source_mode_changed.emit(mode)
         self._update_widget_states()
         self._refresh_source_items()
+        if emit and (changed or mode == self._mode):
+            self.source_mode_changed.emit(mode)
 
     def _update_widget_states(self) -> None:
         """_update_widget_states."""
@@ -883,7 +936,7 @@ class SetupPanelController(QObject):
         set_mode_visible(self.framesSpin, camera)
         set_mode_visible(self.labelFrames, camera)
         if self.sourceIdCombo:
-            self.sourceIdCombo.setEditable(camera)
+            self.sourceIdCombo.setEditable(False)
             self.sourceIdCombo.setEnabled(camera or batch)
         set_mode_visible(self.sourceIdCombo, camera or batch)
         set_mode_visible(self.labelSourceId, camera or batch)
@@ -978,11 +1031,30 @@ class SetupPanelController(QObject):
         if not self.sourceIdCombo:
             return
         combo = self.sourceIdCombo
+        try:
+            devices = discover_available_cameras()
+        except Exception:
+            devices = []
+        self._camera_devices = devices or [CameraDevice(0, "Camera 0")]
+        try:
+            selected_device = int(self._last_camera_id or "0")
+        except (TypeError, ValueError):
+            selected_device = 0
+        if all(camera.device != selected_device for camera in self._camera_devices):
+            self._camera_devices.append(
+                CameraDevice(selected_device, f"Camera {selected_device}")
+            )
         combo.blockSignals(True)
         combo.clear()
-        combo.setEditable(True)
+        combo.setEditable(False)
+        for camera in self._camera_devices:
+            combo.addItem(camera.label, userData=int(camera.device))
+        index = combo.findData(selected_device)
+        combo.setCurrentIndex(max(0, index))
+        data = combo.currentData()
+        if isinstance(data, int):
+            self._last_camera_id = str(data)
         combo.setEnabled(True)
-        combo.setCurrentText(self._last_camera_id)
         combo.blockSignals(False)
 
     def _set_combo_items(self, items: list[tuple[str, str]]) -> None:
@@ -1004,6 +1076,8 @@ class SetupPanelController(QObject):
         if not self.sourceIdCombo:
             return None
         data = self.sourceIdCombo.currentData()
+        if isinstance(data, int):
+            return str(data)
         if isinstance(data, str) and data:
             return data
         text = self.sourceIdCombo.currentText().strip()
@@ -1022,4 +1096,6 @@ class SetupPanelController(QObject):
 
     def _on_combo_text_changed(self, text: str) -> None:
         if self._mode == self.MODE_CAMERA:
-            self._last_camera_id = text.strip() or "0"
+            data = self.sourceIdCombo.currentData() if self.sourceIdCombo else None
+            self._last_camera_id = str(data if isinstance(data, int) else (text.strip() or "0"))
+            self.camera_config_changed.emit()

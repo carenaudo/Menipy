@@ -58,6 +58,7 @@ def _rich_measurement(pipeline: str = "pendant") -> MeasurementResult:
             "surface_tension_mN_m": 29.0,
             "strict_rmse_mm": 0.01,
             "approx_volume_apex_surface_tension_mN_m": 30.0,
+            "residuals": {"rmse": 0.01, "units": "mm"},
         },
     )
 
@@ -157,6 +158,38 @@ def test_results_panel_exports_visible_columns(monkeypatch, qtbot, tmp_path):
     assert "Surface Tension" in header
 
 
+def test_results_panel_keeps_residuals_out_of_results_columns(
+    monkeypatch, qtbot, tmp_path
+):
+    history = FakeHistory([_rich_measurement()])
+    settings_path = tmp_path / "settings.json"
+    export_path = tmp_path / "visible.csv"
+    original_load = AppSettings.load
+    monkeypatch.setattr(results_panel_module, "get_results_history", lambda: history)
+    monkeypatch.setattr(
+        results_panel_module.AppSettings,
+        "load",
+        classmethod(lambda cls: original_load(settings_path)),
+    )
+    monkeypatch.setattr(
+        "PySide6.QtWidgets.QFileDialog.getSaveFileName",
+        lambda *_args, **_kwargs: (str(export_path), "CSV Files (*.csv)"),
+    )
+    panel, _table = _panel_widget()
+    qtbot.addWidget(panel)
+    controller = ResultsPanel(panel)
+    controller.set_pipeline_filter("pendant")
+
+    assert "residuals" not in controller._raw_headers
+    column_labels = [action.text() for action in controller.columns_menu.actions()]
+    assert "Residuals" not in column_labels
+
+    controller.export_csv()
+
+    header = export_path.read_text(encoding="utf-8").splitlines()[0]
+    assert "residual" not in header.lower()
+
+
 def test_results_panel_guided_defaults_hide_comparison_and_diagnostics(
     monkeypatch, qtbot, tmp_path
 ):
@@ -193,6 +226,64 @@ def test_results_panel_metric_cards_show_latest_key_values(monkeypatch, qtbot):
 
     assert panel.findChild(QLabel, "metricValue_ift").text() == "29 mN/m"
     assert panel.findChild(QLabel, "metricValue_diameter").text() == "2 mm"
+
+
+def test_results_panel_renders_dict_residuals(monkeypatch, qtbot):
+    history = FakeHistory([_rich_measurement()])
+    monkeypatch.setattr(results_panel_module, "get_results_history", lambda: history)
+    panel, _table = _panel_widget()
+    residuals_table = QTableWidget()
+    qtbot.addWidget(panel)
+    qtbot.addWidget(residuals_table)
+
+    ResultsPanel(panel, residuals_table=residuals_table)
+
+    assert residuals_table.horizontalHeaderItem(0).text() == "Metric"
+    assert residuals_table.item(0, 0).text() == "rmse"
+    assert residuals_table.item(0, 1).text() == "0.01"
+
+
+def test_results_panel_renders_vector_residuals_on_selection(monkeypatch, qtbot):
+    vector_measurement = MeasurementResult(
+        id="pendant_vector",
+        timestamp=datetime(2026, 4, 27, 12, 0, 1),
+        pipeline="pendant",
+        file_name="vector.png",
+        results={
+            "diameter_mm": 3.0,
+            "residuals": {"values": [0.1, -0.2], "units": "px"},
+        },
+    )
+    history = FakeHistory([_rich_measurement(), vector_measurement])
+    monkeypatch.setattr(results_panel_module, "get_results_history", lambda: history)
+    panel, table = _panel_widget()
+    residuals_table = QTableWidget()
+    qtbot.addWidget(panel)
+    qtbot.addWidget(residuals_table)
+    ResultsPanel(panel, residuals_table=residuals_table)
+
+    table.selectRow(1)
+
+    assert residuals_table.horizontalHeaderItem(0).text() == "Index"
+    assert residuals_table.horizontalHeaderItem(1).text() == "Residual"
+    assert residuals_table.horizontalHeaderItem(2).text() == "Unit"
+    assert residuals_table.item(0, 0).text() == "0"
+    assert residuals_table.item(0, 1).text() == "0.1"
+    assert residuals_table.item(0, 2).text() == "px"
+
+
+def test_results_panel_residuals_empty_state(monkeypatch, qtbot):
+    history = FakeHistory([_measurement("sessile")])
+    monkeypatch.setattr(results_panel_module, "get_results_history", lambda: history)
+    panel, _table = _panel_widget()
+    residuals_table = QTableWidget()
+    qtbot.addWidget(panel)
+    qtbot.addWidget(residuals_table)
+
+    ResultsPanel(panel, residuals_table=residuals_table)
+
+    assert residuals_table.horizontalHeaderItem(0).text() == "Residuals"
+    assert residuals_table.item(0, 0).text() == "No residuals for selected measurement"
 
 
 def test_results_panel_can_render_metric_cards_in_lateral_host(monkeypatch, qtbot):

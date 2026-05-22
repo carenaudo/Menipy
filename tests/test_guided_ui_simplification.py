@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from types import MethodType
 from unittest.mock import Mock
 
 from PySide6.QtCore import QFile
@@ -10,7 +11,11 @@ from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import QMainWindow
 
 from menipy.gui.controllers.setup_panel_controller import SetupPanelController
-from menipy.gui.views.main_window import _workbench_root_sizes, _workbench_vertical_sizes
+from menipy.gui.views.main_window import (
+    MainWindow,
+    _workbench_root_sizes,
+    _workbench_vertical_sizes,
+)
 
 
 class DummySettings:
@@ -304,11 +309,12 @@ def test_menu_xml_order_and_config_actions():
         "actionConfigOverlay",
         "actionConfigMarkers",
         "actionConfigPipeline",
+        "menuUnits",
+        "actionConfigAcquisition",
         "actionConfigPreprocessing",
         "actionConfigEdgeDetection",
         "actionConfigGeometry",
         "actionConfigPhysics",
-        "actionConfigAcquisition",
     ]
 
     view = root.find(".//widget[@name='menuView']")
@@ -319,10 +325,166 @@ def test_menu_xml_order_and_config_actions():
         if action.attrib["name"] != "separator"
     ]
     assert view_actions == [
-        "actionOverlay",
-        "actionToggleSetup",
-        "actionToggleResultsTable",
-        "actionToggleKeyResults",
+        "menuFocus",
+        "menuPanels",
         "actionResetLayout",
         "actionFitPreview",
     ]
+
+    focus = root.find(".//widget[@name='menuFocus']")
+    assert focus is not None
+    focus_actions = [
+        action.attrib["name"]
+        for action in focus.findall("addaction")
+        if action.attrib["name"] != "separator"
+    ]
+    assert focus_actions == [
+        "actionFocusMeasure",
+        "actionFocusScience",
+        "actionFocusAnalysis",
+    ]
+
+    panels = root.find(".//widget[@name='menuPanels']")
+    assert panels is not None
+    panel_actions = [
+        action.attrib["name"]
+        for action in panels.findall("addaction")
+        if action.attrib["name"] != "separator"
+    ]
+    assert panel_actions == [
+        "actionToggleSetup",
+        "actionToggleResultsTable",
+        "actionToggleKeyResults",
+    ]
+
+
+class _FakeHost:
+    def __init__(self, visible=True):
+        self.visible = visible
+
+    def setVisible(self, visible):
+        self.visible = bool(visible)
+
+    def isVisible(self):
+        return self.visible
+
+    def isHidden(self):
+        return not self.visible
+
+
+class _FakeSplitter:
+    def __init__(self, sizes):
+        self._sizes = list(sizes)
+
+    def sizes(self):
+        return list(self._sizes)
+
+    def setSizes(self, sizes):
+        self._sizes = list(sizes)
+
+
+class _FakeTabs(_FakeHost):
+    def __init__(self, results_tab, residuals_tab):
+        super().__init__(True)
+        self._tabs = [results_tab, residuals_tab]
+        self.current = results_tab
+
+    def indexOf(self, tab):
+        return self._tabs.index(tab) if tab in self._tabs else -1
+
+    def setCurrentIndex(self, index):
+        self.current = self._tabs[index]
+
+    def currentWidget(self):
+        return self.current
+
+
+class _FakeControl:
+    def __init__(self):
+        self.checked = None
+
+    def blockSignals(self, _blocked):
+        pass
+
+    def setChecked(self, checked):
+        self.checked = bool(checked)
+
+
+class _FakeResultsPanel:
+    def __init__(self):
+        self.settings = Mock(
+            compare_methods_visible=False, diagnostics_visible=False
+        )
+        self.key_results_shown = False
+
+    def show_key_results(self):
+        self.key_results_shown = True
+        self.settings.compare_methods_visible = False
+        self.settings.diagnostics_visible = False
+
+    def set_compare_methods_visible(self, visible, *, refresh=True):
+        self.settings.compare_methods_visible = bool(visible)
+
+    def set_diagnostics_visible(self, visible, *, refresh=True):
+        self.settings.diagnostics_visible = bool(visible)
+
+    def has_residuals_for_current_selection(self):
+        return False
+
+
+def _focus_window():
+    window = Mock()
+    window.width.return_value = 1200
+    window.height.return_value = 800
+    window.rootSplitter = _FakeSplitter([320, 880])
+    window.workbenchSplitter = _FakeSplitter([560, 240])
+    window.previewResultsSplitter = _FakeSplitter([900, 320])
+    window.setupHost = _FakeHost(True)
+    window.keyResultsHost = _FakeHost(True)
+    window.resultsTab = object()
+    window.residualsTab = object()
+    window.inspectTabs = _FakeTabs(window.resultsTab, window.residualsTab)
+    window.results_panel_ctrl = _FakeResultsPanel()
+    window.toggleSetupBtn = _FakeControl()
+    window.toggleInspectBtn = _FakeControl()
+    window.toggleKeyResultsBtn = _FakeControl()
+    window.actionToggleSetup = _FakeControl()
+    window.actionToggleResultsTable = _FakeControl()
+    window.actionToggleKeyResults = _FakeControl()
+    window._splitter_sizes_full = None
+    window._workbench_splitter_sizes_full = None
+    window._preview_results_sizes_full = None
+    for name in (
+        "_apply_focus_preset",
+        "_apply_focus_sizes",
+        "_select_inspect_tab",
+        "_set_panel_visibility",
+        "_sync_layout_buttons",
+    ):
+        setattr(window, name, MethodType(getattr(MainWindow, name), window))
+    return window
+
+
+def test_focus_presets_apply_workbench_modes():
+    window = _focus_window()
+
+    window._apply_focus_preset("measure")
+    assert not window.setupHost.isHidden()
+    assert window.inspectTabs.isHidden()
+    assert not window.keyResultsHost.isHidden()
+
+    window._apply_focus_preset("science")
+    assert window.setupHost.isHidden()
+    assert not window.inspectTabs.isHidden()
+    assert not window.keyResultsHost.isHidden()
+    assert window.inspectTabs.currentWidget() in (window.resultsTab, window.residualsTab)
+    assert window.results_panel_ctrl.settings.diagnostics_visible
+    assert not window.results_panel_ctrl.settings.compare_methods_visible
+
+    window._apply_focus_preset("analysis")
+    assert window.setupHost.isHidden()
+    assert not window.inspectTabs.isHidden()
+    assert window.keyResultsHost.isHidden()
+    assert window.inspectTabs.currentWidget() is window.resultsTab
+    assert window.results_panel_ctrl.settings.compare_methods_visible
+    assert not window.results_panel_ctrl.settings.diagnostics_visible

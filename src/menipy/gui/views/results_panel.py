@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
     QLabel,
+    QLayout,
     QListWidget,
     QListWidgetItem,
     QMenu,
@@ -117,7 +118,13 @@ LABEL_MAP = {
 class ResultsPanel:
     """Provides a helper wrapper around the results table widget with measurement history support."""
 
-    def __init__(self, panel: QWidget, metric_host: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        panel: QWidget,
+        metric_host: QWidget | None = None,
+        residuals_host: QWidget | QLayout | None = None,
+        residuals_table: QTableWidget | None = None,
+    ) -> None:
         """Initialize.
 
         Parameters
@@ -127,6 +134,7 @@ class ResultsPanel:
         """
         self.panel = panel
         self.metric_host = metric_host
+        self.residuals_table: QTableWidget | None = None
         self.table: Optional[QTableWidget] = panel.findChild(
             QTableWidget, "resultsTable"
         )
@@ -145,6 +153,7 @@ class ResultsPanel:
         # Add controls for history management
         self._setup_controls()
         self._setup_metric_cards()
+        self.install_residuals_table(residuals_host, residuals_table)
 
         if self.table:
             # Start with empty table - will be populated by update_history()
@@ -154,6 +163,29 @@ class ResultsPanel:
 
         # Load and display existing history
         self.update_history()
+
+    def install_residuals_table(
+        self,
+        residuals_host: QWidget | QLayout | None = None,
+        residuals_table: QTableWidget | None = None,
+    ) -> QTableWidget | None:
+        """Attach a residuals table to the selected measurement."""
+        if residuals_table is not None:
+            self.residuals_table = residuals_table
+        elif residuals_host is not None:
+            table = QTableWidget()
+            table.setObjectName("residualsTable")
+            if isinstance(residuals_host, QLayout):
+                layout = residuals_host
+            else:
+                layout = residuals_host.layout() or QVBoxLayout(residuals_host)
+            layout.addWidget(table)
+            self.residuals_table = table
+
+        if self.residuals_table is not None:
+            self.residuals_table.setAlternatingRowColors(True)
+            self._update_residuals_for_current_selection()
+        return self.residuals_table
 
     def _setup_controls(self) -> None:
         """Setup control buttons and filters."""
@@ -523,6 +555,7 @@ class ResultsPanel:
         self.table.resizeColumnsToContents()
         if rows and self.table.currentRow() < 0:
             self.table.selectRow(0)
+        self._update_residuals_for_current_selection()
 
     def _rebuild_recent_results(
         self, measurements: list[MeasurementResult] | None = None
@@ -587,6 +620,7 @@ class ResultsPanel:
             measurement = self._measurement_for_row(row)
             if measurement:
                 self._update_metric_cards(measurement.results or {})
+            self._update_residuals_table(measurement)
         finally:
             self._syncing_selection = False
 
@@ -603,8 +637,118 @@ class ResultsPanel:
             measurement = self._measurement_for_row(row)
             if measurement:
                 self._update_metric_cards(measurement.results or {})
+            self._update_residuals_table(measurement)
         finally:
             self._syncing_selection = False
+
+    def _update_residuals_for_current_selection(self) -> None:
+        if not self.table:
+            self._update_residuals_table(None)
+            return
+        self._update_residuals_table(self._measurement_for_row(self.table.currentRow()))
+
+    def has_residuals_for_current_selection(self) -> bool:
+        if not self.table:
+            return False
+        measurement = self._measurement_for_row(self.table.currentRow())
+        if measurement is None:
+            return False
+        return bool((measurement.results or {}).get("residuals"))
+
+    def _update_residuals_table(
+        self, measurement: MeasurementResult | None
+    ) -> None:
+        table = self.residuals_table
+        if table is None:
+            return
+        residuals = None
+        if measurement is not None:
+            residuals = (measurement.results or {}).get("residuals")
+        self._render_residuals(residuals)
+
+    def _render_residuals(self, residuals: Any) -> None:
+        table = self.residuals_table
+        if table is None:
+            return
+        table.clear()
+        table.setRowCount(0)
+
+        if not residuals:
+            table.setColumnCount(1)
+            table.setHorizontalHeaderLabels(["Residuals"])
+            table.setRowCount(1)
+            item = QTableWidgetItem("No residuals for selected measurement")
+            item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+            table.setItem(0, 0, item)
+            table.resizeColumnsToContents()
+            return
+
+        if isinstance(residuals, Mapping):
+            vector = self._first_residual_vector(residuals)
+            if vector is not None:
+                self._render_residual_vector(vector, residuals.get("units"))
+                return
+            table.setColumnCount(2)
+            table.setHorizontalHeaderLabels(["Metric", "Value"])
+            rows = [
+                (str(key), self._format_residual_value(value))
+                for key, value in residuals.items()
+            ]
+            table.setRowCount(len(rows))
+            for row, (key, value) in enumerate(rows):
+                for col, text in enumerate((key, value)):
+                    item = QTableWidgetItem(text)
+                    item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+                    table.setItem(row, col, item)
+            table.resizeColumnsToContents()
+            return
+
+        if isinstance(residuals, (list, tuple)):
+            self._render_residual_vector(residuals, None)
+            return
+
+        table.setColumnCount(2)
+        table.setHorizontalHeaderLabels(["Metric", "Value"])
+        table.setRowCount(1)
+        residual_text = self._format_residual_value(residuals)
+        for col, text in enumerate(("residuals", residual_text)):
+            item = QTableWidgetItem(text)
+            item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+            table.setItem(0, col, item)
+        table.resizeColumnsToContents()
+
+    def _first_residual_vector(self, residuals: Mapping[str, Any]) -> Any:
+        for key in ("values", "vector", "residuals", "data"):
+            value = residuals.get(key)
+            if isinstance(value, (list, tuple)):
+                return value
+        return None
+
+    def _render_residual_vector(self, values: Any, units: Any) -> None:
+        table = self.residuals_table
+        if table is None:
+            return
+        show_units = units not in (None, "")
+        headers = ["Index", "Residual"] + (["Unit"] if show_units else [])
+        table.setColumnCount(len(headers))
+        table.setHorizontalHeaderLabels(headers)
+        table.setRowCount(len(values))
+        for row, value in enumerate(values):
+            cells = [str(row), self._format_residual_value(value)]
+            if show_units:
+                cells.append(str(units))
+            for col, text in enumerate(cells):
+                item = QTableWidgetItem(text)
+                item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+                table.setItem(row, col, item)
+        table.resizeColumnsToContents()
+
+    def _format_residual_value(self, value: Any) -> str:
+        if isinstance(value, float):
+            return f"{value:.6g}"
+        if isinstance(value, (list, tuple)):
+            return ", ".join(self._format_residual_value(item) for item in value)
+        return str(value)
 
     def _measurement_for_row(self, row: int) -> MeasurementResult | None:
         measurements = self._filtered_measurements()
@@ -713,7 +857,7 @@ class ResultsPanel:
 
     def hide_diagnostics_columns(self) -> None:
         diagnostic_prefixes = ("strict_", "fit_", "geometric_", "approx_")
-        diagnostic_names = {"residuals", "diameter_line", "model_profile_px"}
+        diagnostic_names = {"diameter_line", "model_profile_px"}
         hidden = {
             key
             for key in self._raw_headers
@@ -756,7 +900,6 @@ class ResultsPanel:
     def _is_diagnostic_column(self, key: str) -> bool:
         diagnostic_prefixes = ("strict_", "fit_", "geometric_")
         diagnostic_names = {
-            "residuals",
             "diameter_line",
             "model_profile_px",
             "contact_angle_fit_rmse_px",
@@ -782,6 +925,7 @@ class ResultsPanel:
         all_keys: set[str] = set()
         for measurement in measurements:
             all_keys.update(measurement.results.keys())
+        all_keys.discard("residuals")
 
         priority_columns = [
             "file_name",
