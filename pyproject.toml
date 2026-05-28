@@ -81,27 +81,31 @@ line-length = 88
 target-version = ["py310", "py311", "py312"]
 include = '\.pyi?$'
 exclude = '''
-/(
-    \.git
-    | \.venv
-    | \.mypy_cache
-    | \.ruff_cache
-    | \.tmp
-    | build
-    | dist
-    | docs
-    | examples
-    | docs/_build
-    | data
-    | out
-    | plot
-    | savetest
-    | archive
-    | tools
-    | scripts
-    | scripts/playground
-    | \.egg-info
-)/
+(
+    /(
+        \.git
+        | \.venv
+        | \.mypy_cache
+        | \.ruff_cache
+        | \.tmp
+        | build
+        | dist
+        | docs
+        | examples
+        | docs/_build
+        | data
+        | out
+        | plot
+        | savetest
+        | archive
+        | tools
+        | scripts
+        | scripts/playground
+        | \.egg-info
+    )/
+    | /pendant_baseline\.py$
+    | /sessile_baseline\.py$
+)
 '''
 
 # =============================================================================
@@ -125,6 +129,8 @@ skip = [
     "savetest",
     "scripts",
     "tools",
+    "pendant_baseline.py",
+    "sessile_baseline.py",
 ]
 skip_gitignore = true
 
@@ -153,6 +159,8 @@ exclude = [
     "scripts",
     "scripts/playground",
     "tools",
+    "pendant_baseline.py",
+    "sessile_baseline.py",
     "*.egg-info",
 ]
 
