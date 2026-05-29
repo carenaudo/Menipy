@@ -43,13 +43,16 @@ class MaterialDialog(QDialog):
     # Alias for backward compatibility (users might expect material_selected)
     material_selected = item_selected
 
-    def __init__(self, parent=None, selection_mode=False, table_type="materials"):
+    def __init__(
+        self, parent=None, selection_mode=False, table_type="materials", db=None
+    ):
         super().__init__(parent)
         self.setWindowTitle(f"{table_type.title()} Database")
         self.resize(800, 500)
         self._selection_mode = selection_mode
         self._table_type = table_type
-        self._db = MaterialDB()
+        self._selected_item = None
+        self._db = db or MaterialDB()
         self._db.init_schema()
 
         self._setup_ui()
@@ -269,14 +272,18 @@ class MaterialDialog(QDialog):
                     row, 4, QTableWidgetItem(str(item.get("description", "")))
                 )
 
-    def _on_select(self):
+    def _on_select(self, *_args):
         """Handle selection."""
         row = self._table.currentRow()
         if row >= 0:
             item = self._table.item(row, 0)
             data = item.data(Qt.ItemDataRole.UserRole)
+            self._selected_item = data
             self.item_selected.emit(data)
             self.accept()
+
+    def selected_item(self) -> dict | None:
+        return self._selected_item
 
     def _on_add(self):
         """Handle add button."""

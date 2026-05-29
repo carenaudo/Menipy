@@ -451,11 +451,13 @@ def get_stylesheet() -> str:
     /* =================================================================== */
     QTableWidget, QTableView {{
         background-color: {BG_PRIMARY};
+        alternate-background-color: {BG_SECONDARY};
         color: {TEXT_PRIMARY};
         gridline-color: #E1E4E8;
         border: 1px solid {BORDER_DEFAULT};
         border-radius: 4px;
         selection-background-color: {ACCENT_BLUE};
+        selection-color: {BG_PRIMARY};
     }}
 
     QHeaderView::section {{
@@ -467,8 +469,14 @@ def get_stylesheet() -> str:
         font-weight: bold;
     }}
 
-    QTableWidget::item {{
+    QTableWidget::item, QTableView::item {{
+        color: {TEXT_PRIMARY};
         padding: 6px;
+    }}
+
+    QTableWidget::item:selected, QTableView::item:selected {{
+        background-color: {ACCENT_BLUE};
+        color: {BG_PRIMARY};
     }}
 
     /* =================================================================== */

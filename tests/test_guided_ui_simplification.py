@@ -234,6 +234,18 @@ def test_theme_font_resolver_uses_available_candidate(qtbot, monkeypatch):
     assert theme.resolve_font_family() == fallback_family
 
 
+def test_theme_tables_keep_text_readable_on_dark_selection():
+    from menipy.gui import theme
+
+    stylesheet = theme.get_stylesheet()
+
+    assert f"alternate-background-color: {theme.BG_SECONDARY};" in stylesheet
+    assert "QTableWidget::item, QTableView::item" in stylesheet
+    assert f"color: {theme.TEXT_PRIMARY};" in stylesheet
+    assert "QTableWidget::item:selected" in stylesheet
+    assert f"color: {theme.BG_PRIMARY};" in stylesheet
+
+
 def test_workbench_layout_xml_places_preview_above_results():
     tree = ET.parse("src/menipy/gui/views/main_window_split.ui")
     root = tree.getroot()

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 from typing import Any
 
@@ -85,13 +86,14 @@ class MaterialDB:
         );
         """
 
-        with self.connect() as con:
-            con.executescript(ddl_materials)
-            con.executescript(ddl_needles)
-            con.executescript(ddl_syringes)
+        with closing(self.connect()) as con:
+            with con:
+                con.executescript(ddl_materials)
+                con.executescript(ddl_needles)
+                con.executescript(ddl_syringes)
 
-            # Seed default data if empty
-            self._seed_defaults(con)
+                # Seed default data if empty
+                self._seed_defaults(con)
 
     def _seed_defaults(self, con: sqlite3.Connection):
         """Seed default data if tables are empty."""
@@ -154,11 +156,12 @@ class MaterialDB:
     # -------------------------------------------------------------------------
 
     def get_material(self, name: str) -> dict[str, Any] | None:
-        with self.connect() as con:
-            row = con.execute(
-                "SELECT * FROM materials WHERE name=?", (name,)
-            ).fetchone()
-            return dict(row) if row else None
+        with closing(self.connect()) as con:
+            with con:
+                row = con.execute(
+                    "SELECT * FROM materials WHERE name=?", (name,)
+                ).fetchone()
+                return dict(row) if row else None
 
     def list_materials(self, mtype: str | None = None) -> list[dict[str, Any]]:
         query = "SELECT * FROM materials"
@@ -168,9 +171,10 @@ class MaterialDB:
             params.append(mtype)
         query += " ORDER BY name"
 
-        with self.connect() as con:
-            rows = con.execute(query, params).fetchall()
-            return [dict(row) for row in rows]
+        with closing(self.connect()) as con:
+            with con:
+                rows = con.execute(query, params).fetchall()
+                return [dict(row) for row in rows]
 
     def upsert_material(self, name: str, data: dict[str, Any]) -> int:
         """Insert or update a material. Returns row ID."""
@@ -204,28 +208,33 @@ class MaterialDB:
             updated_at=CURRENT_TIMESTAMP
         """
 
-        with self.connect() as con:
-            cur = con.execute(sql, [name] + values)
-            return cur.lastrowid
+        with closing(self.connect()) as con:
+            with con:
+                cur = con.execute(sql, [name] + values)
+                return cur.lastrowid
 
     def delete_material(self, name_or_id: str | int) -> bool:
-        with self.connect() as con:
-            if isinstance(name_or_id, int):
-                cur = con.execute("DELETE FROM materials WHERE id=?", (name_or_id,))
-            else:
-                cur = con.execute("DELETE FROM materials WHERE name=?", (name_or_id,))
-            return cur.rowcount > 0
+        with closing(self.connect()) as con:
+            with con:
+                if isinstance(name_or_id, int):
+                    cur = con.execute("DELETE FROM materials WHERE id=?", (name_or_id,))
+                else:
+                    cur = con.execute(
+                        "DELETE FROM materials WHERE name=?", (name_or_id,)
+                    )
+                return cur.rowcount > 0
 
     # -------------------------------------------------------------------------
     # Needles Operations
     # -------------------------------------------------------------------------
 
     def list_needles(self) -> list[dict[str, Any]]:
-        with self.connect() as con:
-            rows = con.execute(
-                "SELECT * FROM needles ORDER BY outer_diameter DESC"
-            ).fetchall()
-            return [dict(row) for row in rows]
+        with closing(self.connect()) as con:
+            with con:
+                rows = con.execute(
+                    "SELECT * FROM needles ORDER BY outer_diameter DESC"
+                ).fetchall()
+                return [dict(row) for row in rows]
 
     def upsert_needle(self, name: str, outer_diameter: float, **kwargs) -> int:
         keys = ["gauge", "inner_diameter", "description", "is_favorite"]
@@ -246,9 +255,10 @@ class MaterialDB:
             updated_at=CURRENT_TIMESTAMP
         """
 
-        with self.connect() as con:
-            cur = con.execute(sql, [name] + values)
-            return cur.lastrowid
+        with closing(self.connect()) as con:
+            with con:
+                cur = con.execute(sql, [name] + values)
+                return cur.lastrowid
 
     # -------------------------------------------------------------------------
     # Syringes Operations
@@ -262,9 +272,12 @@ class MaterialDB:
         type
         Description.
         """
-        with self.connect() as con:
-            rows = con.execute("SELECT * FROM syringes ORDER BY volume_ul").fetchall()
-            return [dict(row) for row in rows]
+        with closing(self.connect()) as con:
+            with con:
+                rows = con.execute(
+                    "SELECT * FROM syringes ORDER BY volume_ul"
+                ).fetchall()
+                return [dict(row) for row in rows]
 
     def upsert_syringe(
         self,
@@ -300,6 +313,7 @@ class MaterialDB:
             updated_at=CURRENT_TIMESTAMP
         """
 
-        with self.connect() as con:
-            cur = con.execute(sql, [name] + values)
-            return cur.lastrowid
+        with closing(self.connect()) as con:
+            with con:
+                cur = con.execute(sql, [name] + values)
+                return cur.lastrowid

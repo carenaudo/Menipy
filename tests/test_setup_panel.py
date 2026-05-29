@@ -2,7 +2,9 @@
 
 Unit tests."""
 
+from pathlib import Path
 from unittest.mock import Mock
+from uuid import uuid4
 
 import pytest
 from PySide6.QtCore import QPoint, Qt
@@ -606,8 +608,48 @@ def test_preview_mapping_stays_inside_scene_after_source_toggles(main_window, qt
     assert getattr(image_view, "_mode", None) == "fit"
 
 
+<<<<<<< Updated upstream
 def test_database_buttons_open_selectors_and_apply_values(main_window, qtbot):
+=======
+def test_material_catalog_service_seeds_empty_catalog():
+    from menipy.gui.services.material_catalog_service import MaterialCatalogService
+
+    db_path = Path("build/tmp/tests") / f"catalog-{uuid4().hex}.sqlite"
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    service = MaterialCatalogService(db_path)
+
+    try:
+        assert any(m["name"] == "Water (20°C)" for m in service.list_materials())
+        assert any(n["name"] == "22G" for n in service.list_needles())
+    finally:
+        db_path.unlink(missing_ok=True)
+
+
+def test_database_buttons_apply_selected_catalog_values(main_window, qtbot):
+>>>>>>> Stashed changes
     controller = main_window.setup_panel_ctrl
+
+    class FakeCatalogService:
+        def __init__(self):
+            self.materials = [
+                {"name": "Water (20°C)", "density": 998.2},
+                {"name": "Air (20°C)", "density": 1.204},
+            ]
+
+        def select_needle(self, parent):
+            assert parent is main_window
+            return {
+                "name": "22G",
+                "outer_diameter": 0.72,
+                "inner_diameter": 0.41,
+            }
+
+        def select_material(self, parent):
+            assert parent is main_window
+            return self.materials.pop(0)
+
+    controller._catalog_service = FakeCatalogService()
+
     for button in (
         controller.needleDbBtn,
         controller.dropDensityDbBtn,
@@ -616,6 +658,7 @@ def test_database_buttons_open_selectors_and_apply_values(main_window, qtbot):
         assert button is not None
         assert button.isEnabled()
         assert not button.icon().isNull()
+<<<<<<< Updated upstream
         assert "not connected yet" not in button.toolTip()
 
     material_items = iter(
@@ -658,6 +701,21 @@ def test_database_selection_converts_values_to_display_unit_system(main_window, 
 
     controller._select_database_item.assert_called_once_with("needles")
     assert controller.needleLengthSpin.value() == pytest.approx(0.13)
+=======
+
+    qtbot.mouseClick(controller.needleDbBtn, Qt.LeftButton)
+    assert controller.needleLengthSpin.value() == pytest.approx(0.72)
+    assert controller.pendantNeedleIdSpin.value() == pytest.approx(0.41)
+    assert "22G" in main_window.statusBar().currentMessage()
+
+    qtbot.mouseClick(controller.dropDensityDbBtn, Qt.LeftButton)
+    assert controller.dropDensitySpin.value() == pytest.approx(998.2)
+    assert "Water (20°C)" in main_window.statusBar().currentMessage()
+
+    qtbot.mouseClick(controller.fluidDensityDbBtn, Qt.LeftButton)
+    assert controller.fluidDensitySpin.value() == pytest.approx(1.204)
+    assert "Air (20°C)" in main_window.statusBar().currentMessage()
+>>>>>>> Stashed changes
 
 
 def test_advanced_buttons_open_dialog_without_inline_expansion(main_window, qtbot):

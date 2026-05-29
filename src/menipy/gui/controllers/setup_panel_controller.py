@@ -34,6 +34,7 @@ from menipy.gui.services.camera_service import (
     CameraDevice,
     discover_available_cameras,
 )
+from menipy.gui.services.material_catalog_service import MaterialCatalogService
 from menipy.gui.views.image_view import DRAW_LINE, DRAW_POINT, DRAW_RECT
 
 try:
@@ -320,12 +321,16 @@ class SetupPanelController(QObject):
         self._camera_width: int | None = None
         self._camera_height: int | None = None
         self._workflow_source_stack_mode = False
+        self._catalog_service = MaterialCatalogService()
 
         if self.singleModeRadio and not self.singleModeRadio.isChecked():
             self.singleModeRadio.setChecked(True)
 
         if self.sourceIdCombo:
             self.sourceIdCombo.setEditable(False)
+        for density_spin in (self.dropDensitySpin, self.fluidDensitySpin):
+            if density_spin:
+                density_spin.setDecimals(max(3, density_spin.decimals()))
 
         self._populate_pipeline_combo()
         self._restore_settings()
@@ -731,6 +736,7 @@ class SetupPanelController(QObject):
                 lambda _checked=False: self.advanced_requested.emit()
             )
         if self.needleDbBtn:
+<<<<<<< Updated upstream
             self.needleDbBtn.clicked.connect(self._on_needle_database_clicked)
         if self.dropDensityDbBtn:
             self.dropDensityDbBtn.clicked.connect(
@@ -739,6 +745,20 @@ class SetupPanelController(QObject):
         if self.fluidDensityDbBtn:
             self.fluidDensityDbBtn.clicked.connect(
                 self._on_fluid_density_database_clicked
+=======
+            self.needleDbBtn.clicked.connect(self._select_needle_from_database)
+        if self.dropDensityDbBtn:
+            self.dropDensityDbBtn.clicked.connect(
+                lambda _checked=False: self._select_material_from_database(
+                    self.dropDensitySpin, "heavy phase"
+                )
+            )
+        if self.fluidDensityDbBtn:
+            self.fluidDensityDbBtn.clicked.connect(
+                lambda _checked=False: self._select_material_from_database(
+                    self.fluidDensitySpin, "light phase"
+                )
+>>>>>>> Stashed changes
             )
         if self.drawPointBtn:
             self.drawPointBtn.clicked.connect(
@@ -798,6 +818,7 @@ class SetupPanelController(QObject):
             self.sourceIdCombo.currentTextChanged.connect(self._on_combo_text_changed)
         self._mode_group.buttonToggled.connect(self._on_mode_toggled)
 
+<<<<<<< Updated upstream
     def _select_database_item(self, table_type: str) -> dict[str, Any] | None:
         """Open a database selector and return the accepted item."""
         from menipy.gui.dialogs.material_dialog import MaterialDialog
@@ -887,8 +908,80 @@ class SetupPanelController(QObject):
             try:
                 name = str(item.get("name") or "database item")
                 status_bar().showMessage(f"{label} set from {name}.", 2500)
+=======
+    def _show_database_placeholder(self) -> None:
+        self._show_status_message("Database selection is not connected yet.", 2500)
+
+    def _show_status_message(self, message: str, timeout_ms: int = 2500) -> None:
+        status_bar = getattr(self.window, "statusBar", None)
+        if callable(status_bar):
+            try:
+                status_bar().showMessage(message, timeout_ms)
+                return
+>>>>>>> Stashed changes
             except Exception:
                 pass
+
+    def _select_needle_from_database(self) -> None:
+        record = self._catalog_service.select_needle(self.window)
+        if not record:
+            self._show_status_message("No needle selected.", 1500)
+            return
+        self._apply_needle_record(record)
+
+    def _select_material_from_database(
+        self, target_spin: QDoubleSpinBox | None, phase_label: str
+    ) -> None:
+        record = self._catalog_service.select_material(self.window)
+        if not record:
+            self._show_status_message("No material selected.", 1500)
+            return
+        self._apply_material_record(record, target_spin, phase_label)
+
+    def _apply_needle_record(self, record: dict[str, Any]) -> None:
+        from menipy.common.units import convert_from_si
+
+        system = getattr(self.settings, "unit_system", "SI")
+        name = str(record.get("name") or record.get("gauge") or "needle")
+        outer_diameter = self._number_from_record(record, "outer_diameter")
+        inner_diameter = self._number_from_record(record, "inner_diameter")
+
+        if outer_diameter is not None and self.needleLengthSpin:
+            self.needleLengthSpin.setValue(
+                convert_from_si(outer_diameter, "length", system)
+            )
+        if inner_diameter is not None and self.pendantNeedleIdSpin:
+            self.pendantNeedleIdSpin.setValue(
+                convert_from_si(inner_diameter, "length", system)
+            )
+        self._show_status_message(f"Selected needle: {name}", 2500)
+
+    def _apply_material_record(
+        self,
+        record: dict[str, Any],
+        target_spin: QDoubleSpinBox | None,
+        phase_label: str,
+    ) -> None:
+        from menipy.common.units import convert_from_si
+
+        density = self._number_from_record(record, "density")
+        name = str(record.get("name") or "material")
+        if density is None or target_spin is None:
+            self._show_status_message(f"{name} has no density value.", 2500)
+            return
+        system = getattr(self.settings, "unit_system", "SI")
+        target_spin.setValue(convert_from_si(density, "density", system))
+        self._show_status_message(f"Selected {phase_label}: {name}", 2500)
+
+    @staticmethod
+    def _number_from_record(record: dict[str, Any], key: str) -> float | None:
+        value = record.get(key)
+        if value in (None, ""):
+            return None
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
 
     def _sync_combo_to_pipeline(self, pipeline_name: str) -> bool:
         """Ensure the legacy combo box reflects the segmented button selection."""
