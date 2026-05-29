@@ -736,16 +736,6 @@ class SetupPanelController(QObject):
                 lambda _checked=False: self.advanced_requested.emit()
             )
         if self.needleDbBtn:
-<<<<<<< Updated upstream
-            self.needleDbBtn.clicked.connect(self._on_needle_database_clicked)
-        if self.dropDensityDbBtn:
-            self.dropDensityDbBtn.clicked.connect(
-                self._on_drop_density_database_clicked
-            )
-        if self.fluidDensityDbBtn:
-            self.fluidDensityDbBtn.clicked.connect(
-                self._on_fluid_density_database_clicked
-=======
             self.needleDbBtn.clicked.connect(self._select_needle_from_database)
         if self.dropDensityDbBtn:
             self.dropDensityDbBtn.clicked.connect(
@@ -758,7 +748,6 @@ class SetupPanelController(QObject):
                 lambda _checked=False: self._select_material_from_database(
                     self.fluidDensitySpin, "light phase"
                 )
->>>>>>> Stashed changes
             )
         if self.drawPointBtn:
             self.drawPointBtn.clicked.connect(
@@ -818,7 +807,6 @@ class SetupPanelController(QObject):
             self.sourceIdCombo.currentTextChanged.connect(self._on_combo_text_changed)
         self._mode_group.buttonToggled.connect(self._on_mode_toggled)
 
-<<<<<<< Updated upstream
     def _select_database_item(self, table_type: str) -> dict[str, Any] | None:
         """Open a database selector and return the accepted item."""
         from menipy.gui.dialogs.material_dialog import MaterialDialog
@@ -908,9 +896,8 @@ class SetupPanelController(QObject):
             try:
                 name = str(item.get("name") or "database item")
                 status_bar().showMessage(f"{label} set from {name}.", 2500)
-=======
-    def _show_database_placeholder(self) -> None:
-        self._show_status_message("Database selection is not connected yet.", 2500)
+            except Exception:
+                pass
 
     def _show_status_message(self, message: str, timeout_ms: int = 2500) -> None:
         status_bar = getattr(self.window, "statusBar", None)
@@ -918,7 +905,6 @@ class SetupPanelController(QObject):
             try:
                 status_bar().showMessage(message, timeout_ms)
                 return
->>>>>>> Stashed changes
             except Exception:
                 pass
 
