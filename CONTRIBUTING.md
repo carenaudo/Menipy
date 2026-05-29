@@ -8,6 +8,7 @@ Thank you for your interest in contributing to Menipy! This guide will help you 
 - [Running Tests](#running-tests)
 - [Code Style](#code-style)
 - [Adding New Features](#adding-new-features)
+- [Developer Documentation](#developer-documentation)
 - [Submitting Changes](#submitting-changes)
 
 ---
@@ -32,7 +33,7 @@ python -m venv .venv
 
 # Upgrade pip and install the package with dev dependencies
 python -m pip install --upgrade pip
-pip install -e .[dev,test]
+pip install -e ".[dev,test]"
 
 # Install pre-commit hooks
 pre-commit install
@@ -271,7 +272,7 @@ Pipelines are the core analysis workflows in Menipy. To add a new pipeline:
 2. Implement the required stages (see existing pipelines for reference)
 3. Register your pipeline in the `__init__.py`
 
-📖 **Full guide**: [Adding a New Analysis Pipeline](docs/guides/developer_guide_pipelines.md)
+Full guide: [Adding a New Analysis Pipeline](docs/guides/developer_guide_pipelines.md)
 
 ### Adding a New Plugin
 
@@ -281,7 +282,26 @@ Plugins extend Menipy with custom filters, solvers, and other functionality:
 2. Implement the required interface for your plugin type
 3. Register using the `@register` decorator
 
-📖 **Full guide**: [Adding a New Image Filter Plugin](docs/guides/developer_guide_plugins.md)
+Full guide: [Adding a New Image Filter Plugin](docs/guides/developer_guide_plugins.md)
+
+---
+
+## Developer Documentation
+
+Use these references before changing extension points or public workflow
+contracts:
+
+- [Pipeline guide](docs/guides/developer_guide_pipelines.md) for adding or
+  modifying analysis workflows.
+- [Plugin guide](docs/guides/developer_guide_plugins.md) for supported plugin
+  kinds, registration, migration, and tests.
+- [Utility plugin guide](docs/guides/developer_guide_utilities.md) for tools
+  exposed through the GUI utilities menu.
+- [Result contracts](docs/contracts/) for pipeline result schemas and results
+  panel integration expectations.
+
+For user-facing workflow documentation, update [DOCUMENTATION.md](DOCUMENTATION.md)
+or the relevant guide under `docs/guides/`.
 
 ---
 
