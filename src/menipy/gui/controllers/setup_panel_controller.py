@@ -11,12 +11,14 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QButtonGroup,
     QComboBox,
+    QDialog,
     QDoubleSpinBox,
     QGroupBox,
     QLabel,
     QLineEdit,
     QListWidget,
     QMainWindow,
+    QMessageBox,
     QPushButton,
     QRadioButton,
     QSizePolicy,
@@ -659,7 +661,7 @@ class SetupPanelController(QObject):
                 button.setToolButtonStyle(Qt.ToolButtonIconOnly)
                 button.setAutoRaise(True)
                 button.setEnabled(True)
-                button.setToolTip(f"{tooltip} (not connected yet)")
+                button.setToolTip(tooltip)
                 button.setFixedSize(30, 28)
                 button.setStyleSheet("QToolButton { padding: 3px; }")
 
@@ -728,9 +730,16 @@ class SetupPanelController(QObject):
             self.advancedToggleBtn.clicked.connect(
                 lambda _checked=False: self.advanced_requested.emit()
             )
-        for button in (self.needleDbBtn, self.dropDensityDbBtn, self.fluidDensityDbBtn):
-            if button:
-                button.clicked.connect(self._show_database_placeholder)
+        if self.needleDbBtn:
+            self.needleDbBtn.clicked.connect(self._on_needle_database_clicked)
+        if self.dropDensityDbBtn:
+            self.dropDensityDbBtn.clicked.connect(
+                self._on_drop_density_database_clicked
+            )
+        if self.fluidDensityDbBtn:
+            self.fluidDensityDbBtn.clicked.connect(
+                self._on_fluid_density_database_clicked
+            )
         if self.drawPointBtn:
             self.drawPointBtn.clicked.connect(
                 lambda: self.draw_mode_requested.emit(DRAW_POINT)
@@ -789,14 +798,95 @@ class SetupPanelController(QObject):
             self.sourceIdCombo.currentTextChanged.connect(self._on_combo_text_changed)
         self._mode_group.buttonToggled.connect(self._on_mode_toggled)
 
-    def _show_database_placeholder(self) -> None:
+    def _select_database_item(self, table_type: str) -> dict[str, Any] | None:
+        """Open a database selector and return the accepted item."""
+        from menipy.gui.dialogs.material_dialog import MaterialDialog
+
+        selected: dict[str, Any] | None = None
+
+        def _capture(item: dict) -> None:
+            nonlocal selected
+            selected = dict(item or {})
+
+        dialog = MaterialDialog(self.window, selection_mode=True, table_type=table_type)
+        dialog.item_selected.connect(_capture)
+        if dialog.exec() == QDialog.Accepted:
+            return selected
+        return None
+
+    def _on_needle_database_clicked(self) -> None:
+        item = self._select_database_item("needles")
+        if not item:
+            return
+        self._apply_database_value(
+            item=item,
+            field="outer_diameter",
+            spinbox=self.needleLengthSpin,
+            quantity="length",
+            label="Needle OD",
+        )
+
+    def _on_drop_density_database_clicked(self) -> None:
+        item = self._select_database_item("materials")
+        if not item:
+            return
+        self._apply_database_value(
+            item=item,
+            field="density",
+            spinbox=self.dropDensitySpin,
+            quantity="density",
+            label="Heavy phase density",
+        )
+
+    def _on_fluid_density_database_clicked(self) -> None:
+        item = self._select_database_item("materials")
+        if not item:
+            return
+        self._apply_database_value(
+            item=item,
+            field="density",
+            spinbox=self.fluidDensitySpin,
+            quantity="density",
+            label="Light phase density",
+        )
+
+    def _apply_database_value(
+        self,
+        *,
+        item: dict[str, Any],
+        field: str,
+        spinbox: QDoubleSpinBox | None,
+        quantity: str,
+        label: str,
+    ) -> None:
+        """Apply a selected database value to a setup spinbox."""
+        if spinbox is None:
+            return
+
+        raw_value = item.get(field)
+        if not isinstance(raw_value, (int, float)):
+            QMessageBox.warning(
+                self.window,
+                "Database Selection",
+                f"Selected item does not define {field.replace('_', ' ')}.",
+            )
+            return
+
+        from menipy.common.units import convert_from_si
+
+        system = getattr(self.settings, "unit_system", "SI")
+        value = convert_from_si(float(raw_value), quantity, system)
+        if value < spinbox.minimum():
+            spinbox.setMinimum(value)
+        if value > spinbox.maximum():
+            spinbox.setMaximum(value)
+        spinbox.setValue(value)
+
         status_bar = getattr(self.window, "statusBar", None)
         if callable(status_bar):
             try:
-                status_bar().showMessage(
-                    "Database selection is not connected yet.", 2500
-                )
-                return
+                name = str(item.get("name") or "database item")
+                status_bar().showMessage(f"{label} set from {name}.", 2500)
             except Exception:
                 pass
 

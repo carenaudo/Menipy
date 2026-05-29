@@ -170,11 +170,22 @@ def compute_sessile_metrics(
     if substrate_line is not None and p1 is not None and p2 is not None:
         if contact_angle_method == "tangent":
             # Use tangent method
+            contour_len = len(contour.reshape(-1, 2))
+            tangent_window_px = 30 if contour_len > 200 else 15
+            tangent_weight_power = 2.0 if contour_len > 200 else 4.0
             theta_left_deg, uncertainty_left = tangent_angle_at_point(
-                contour, p1, substrate_line
+                contour,
+                p1,
+                substrate_line,
+                window_px=tangent_window_px,
+                weight_power=tangent_weight_power,
             )
             theta_right_deg, uncertainty_right = tangent_angle_at_point(
-                contour, p2, substrate_line
+                contour,
+                p2,
+                substrate_line,
+                window_px=tangent_window_px,
+                weight_power=tangent_weight_power,
             )
         elif contact_angle_method == "circle_fit":
             # Use circle fit method

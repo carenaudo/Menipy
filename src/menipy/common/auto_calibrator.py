@@ -14,6 +14,12 @@ from dataclasses import dataclass, field
 import cv2
 import numpy as np
 
+from menipy.common.sessile_detection import (
+    detect_sessile_drop_contour,
+    detect_sessile_substrate_line,
+    segment_sessile_binary,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -247,29 +253,14 @@ class AutoCalibrator:
 
     def _segment_image_adaptive(self) -> None:
         """Segment using adaptive thresholding (for sessile)."""
-        blur = cv2.GaussianBlur(self.enhanced_gray, (5, 5), 0)
-
-        binary = cv2.adaptiveThreshold(
-            blur,
-            255,
-            cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-            cv2.THRESH_BINARY_INV,
-            self.adaptive_block_size,
-            self.adaptive_c,
+        self._binary_clean = segment_sessile_binary(
+            self.original_image,
+            substrate_y=self._substrate_y,
+            clahe_clip_limit=self.clahe_clip_limit,
+            clahe_tile_size=self.clahe_tile_size,
+            adaptive_block_size=self.adaptive_block_size,
+            adaptive_c=self.adaptive_c,
         )
-
-        # Mask below substrate line
-        if self._substrate_y is not None:
-            binary[self._substrate_y - 2 :, :] = 0
-
-        # Morphological cleanup
-        kernel = np.ones((3, 3), np.uint8)
-        binary_clean = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel, iterations=2)
-        binary_clean = cv2.morphologyEx(
-            binary_clean, cv2.MORPH_CLOSE, kernel, iterations=2
-        )
-
-        self._binary_clean = binary_clean
 
     def _segment_image_otsu(self) -> None:
         """Segment using Otsu thresholding (for pendant high-contrast)."""
@@ -289,31 +280,17 @@ class AutoCalibrator:
         self,
     ) -> tuple[tuple[tuple[int, int], tuple[int, int]] | None, float]:
         """Detect substrate baseline using gradient analysis on image margins."""
-        margin_px = max(10, min(50, int(self.width * self.margin_fraction)))
-
-        left_strip = self.enhanced_gray[:, 0:margin_px]
-        right_strip = self.enhanced_gray[:, self.width - margin_px : self.width]
-
-        y_left = self._find_horizon_median(left_strip)
-        y_right = self._find_horizon_median(right_strip)
-
-        if y_left is None and y_right is None:
+        substrate_line, confidence = detect_sessile_substrate_line(
+            self.original_image,
+            clahe_clip_limit=self.clahe_clip_limit,
+            clahe_tile_size=self.clahe_tile_size,
+            side_margin_fraction=self.margin_fraction,
+        )
+        if substrate_line is None:
             self._substrate_y = int(self.height * 0.8)
             return ((0, self._substrate_y), (self.width, self._substrate_y)), 0.3
 
-        if y_left is None:
-            y_left = y_right
-        if y_right is None:
-            y_right = y_left
-
-        self._substrate_y = int((y_left + y_right) / 2)
-
-        diff = abs(y_left - y_right)
-        max_diff = self.height * 0.1
-        consistency = max(0.0, 1.0 - diff / max_diff)
-        confidence = 0.5 + 0.5 * consistency
-
-        substrate_line = ((0, self._substrate_y), (self.width, self._substrate_y))
+        self._substrate_y = int(substrate_line[0][1])
         return substrate_line, confidence
 
     def _find_horizon_median(self, strip_gray: np.ndarray) -> int | None:
@@ -383,221 +360,16 @@ class AutoCalibrator:
         """
         if self._binary_clean is None:
             return None, None, 0.0
-
-        contours, _ = cv2.findContours(
-            self._binary_clean, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+        detection = detect_sessile_drop_contour(
+            self.original_image,
+            substrate_y=self._substrate_y,
+            needle_rect=self._needle_rect,
+            min_area_fraction=self.min_area_fraction,
         )
-
-        if not contours:
-            return None, None, 0.0
-
-        center_x = self.width // 2
-        min_area = self.image_area * self.min_area_fraction
-        substrate_touch_tolerance = 15  # pixels
-
-        # Separate contours: those touching substrate vs floating
-        substrate_contours = []
-        floating_contours = []
-
-        for cnt in contours:
-            x, y, w, h = cv2.boundingRect(cnt)
-            area = cv2.contourArea(cnt)
-            top_y = y
-            bottom_y = y + h
-
-            # Skip very small contours
-            if area < min_area:
-                continue
-
-            # Skip contours touching image edges (except bottom/substrate)
-            if x < 5 or (x + w) > (self.width - 5):
-                continue
-
-            # ===== NEEDLE FILTER =====
-            # Skip contours too close to needle (pendant drops)
-            if self._needle_rect is not None:
-                n_x, n_y, n_w, n_h = self._needle_rect
-                needle_bottom = n_y + n_h
-                needle_center_x = n_x + n_w // 2
-
-                # Sessile drop must start well BELOW needle bottom (50px gap)
-                min_gap_from_needle = 50
-                if top_y < needle_bottom + min_gap_from_needle:
-                    logger.debug(
-                        f"Skipping contour near needle (top_y={top_y}, needle_bottom={needle_bottom})"
-                    )
-                    continue
-
-                # Skip contours horizontally aligned with needle if close to it
-                cnt_center_x = x + w // 2
-                if (
-                    abs(cnt_center_x - needle_center_x) < n_w
-                    and top_y < needle_bottom + 100
-                ):
-                    logger.debug("Skipping contour aligned with needle")
-                    continue
-
-            # ===== RECTANGULARITY FILTER =====
-            # Skip rectangular contours (likely ROI boundaries, not droplets)
-            rect_area = w * h
-            if rect_area > 0:
-                rectangularity = area / rect_area
-                # Perfect rectangle = 1.0, circle/ellipse ≈ 0.78
-                if rectangularity > 0.85:
-                    logger.debug(
-                        f"Skipping rectangular contour (rect={rectangularity:.2f})"
-                    )
-                    continue
-
-            # ===== REFLECTION FILTER =====
-            # Center must be ABOVE substrate (not a reflection below substrate)
-            if self._substrate_y is not None:
-                cnt_cy = y + h // 2
-                if cnt_cy > self._substrate_y:
-                    continue
-
-            # Calculate metrics for sorting
-            cnt_center_x = x + w // 2
-            distance_from_center = abs(cnt_center_x - center_x)
-
-            # ===== SUBSTRATE CONTACT CHECK =====
-            if self._substrate_y is not None:
-                distance_to_substrate = abs(bottom_y - self._substrate_y)
-                touches_substrate = distance_to_substrate <= substrate_touch_tolerance
-
-                if touches_substrate:
-                    substrate_contours.append(
-                        (cnt, area, distance_from_center, distance_to_substrate)
-                    )
-                else:
-                    floating_contours.append(
-                        (cnt, area, distance_from_center, distance_to_substrate)
-                    )
-            else:
-                floating_contours.append((cnt, area, distance_from_center, 0))
-
-        # Prefer substrate-touching contours
-        if substrate_contours:
-            # Sort by: closest to substrate, then largest area, then closest to center
-            substrate_contours.sort(key=lambda x: (x[3], -x[1], x[2]))
-            valid_contours = substrate_contours
-            logger.info(
-                f"Found {len(substrate_contours)} substrate-touching contour(s)"
-            )
-        elif floating_contours:
-            floating_contours.sort(key=lambda x: (-x[1], x[2]))
-            valid_contours = floating_contours
-            logger.warning(
-                "No substrate-touching contours found, using floating contours"
-            )
-        else:
-            # No valid contours found after filtering - try fallback
-            if contours:
-                largest = max(contours, key=cv2.contourArea)
-                if cv2.contourArea(largest) > min_area:
-                    # Set as best_cnt and let the contact point detection below handle it
-                    self._drop_contour = largest
-                    best_cnt = largest
-                    valid_contours = [(largest, cv2.contourArea(largest), 0, 0)]
-                    logger.info("Using fallback: largest contour from unfiltered list")
-                else:
-                    return None, None, 0.0
-            else:
-                return None, None, 0.0
-
-        # Select best contour from valid_contours
-        best_cnt = valid_contours[0][0]
-        self._drop_contour = best_cnt
-
-        hull = cv2.convexHull(best_cnt)
-        points = hull[:, 0, :]
-
-        if self._substrate_y is not None:
-            # Find contact points: leftmost and rightmost points near substrate
-            substrate_tolerance = 20  # pixels tolerance for "near substrate"
-
-            # Get points that are near the substrate line
-            near_substrate = [
-                pt
-                for pt in points
-                if abs(pt[1] - self._substrate_y) <= substrate_tolerance
-            ]
-
-            # Get dome points (above substrate, including boundary points)
-            # We accept points up to substrate_tolerance below substrate (handling reflection)
-            # but we CLAMP them to the substrate level to ensure a flat baseline.
-            dome_raw = [
-                pt
-                for pt in points
-                if pt[1] <= (self._substrate_y + substrate_tolerance)
-            ]
-            dome_points = []
-            for pt in dome_raw:
-                if pt[1] > self._substrate_y:
-                    # Clamp to substrate line
-                    dome_points.append(
-                        np.array([pt[0], self._substrate_y], dtype=pt.dtype)
-                    )
-                else:
-                    dome_points.append(pt)
-
-            # Find contact points from near_substrate or from the whole contour
-            if near_substrate:
-                # Contact points are leftmost and rightmost near substrate
-                sorted_near = sorted(near_substrate, key=lambda p: p[0])
-                x_left = sorted_near[0][0]
-                x_right = sorted_near[-1][0]
-            elif len(points) > 0:
-                # Fallback: use leftmost and rightmost of the whole contour
-                sorted_pts = sorted(points, key=lambda p: p[0])
-                x_left = sorted_pts[0][0]
-                x_right = sorted_pts[-1][0]
-            else:
-                # No valid points
-                drop_contour = points.astype(np.float64)
-                return drop_contour, None, 0.4
-
-            # Contact points are at the substrate Y level
-            cp_left = (int(x_left), self._substrate_y)
-            cp_right = (int(x_right), self._substrate_y)
-            contact_points = (cp_left, cp_right)
-
-            if dome_points:
-                dome_points = sorted(dome_points, key=lambda p: p[0])
-
-                # Build a closed polygon:
-                # 1. Start at left contact point (on substrate)
-                # 2. Trace dome contour from left to right
-                # 3. End at right contact point (on substrate)
-                # 4. Close back to left contact point (the baseline)
-                final_polygon = np.array(
-                    [[x_left, self._substrate_y]]  # Left contact point
-                    + [[p[0], p[1]] for p in dome_points]  # Dome contour
-                    + [[x_right, self._substrate_y]]  # Right contact point
-                    + [[x_left, self._substrate_y]],  # Close polygon back to start
-                    dtype=np.float64,
-                )
-            else:
-                # No dome points - use convex hull but add contact points
-                all_pts = sorted(points, key=lambda p: p[0])
-                final_polygon = np.array(
-                    [[x_left, self._substrate_y]]  # Left contact point
-                    + [[p[0], p[1]] for p in all_pts]  # All contour points
-                    + [[x_right, self._substrate_y]]  # Right contact point
-                    + [[x_left, self._substrate_y]],  # Close polygon
-                    dtype=np.float64,
-                )
-
-            hull_area = cv2.contourArea(hull)
-            cnt_area = cv2.contourArea(best_cnt)
-            solidity = cnt_area / max(hull_area, 1)
-            confidence = min(1.0, solidity + 0.2)
-
-            logger.info(f"Contact points detected: left={cp_left}, right={cp_right}")
-            return final_polygon, contact_points, confidence
-
-        drop_contour = points.astype(np.float64)
-        return drop_contour, None, 0.6
+        self._drop_contour = detection.contour
+        if detection.binary_mask is not None:
+            self._binary_clean = detection.binary_mask
+        return detection.contour, detection.contact_points, detection.confidence
 
     # ======================== Pendant Detection Methods ========================
 

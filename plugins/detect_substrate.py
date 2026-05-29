@@ -12,6 +12,7 @@ import cv2
 import numpy as np
 
 from menipy.common.registry import register_substrate_detector
+from menipy.common.sessile_detection import detect_sessile_substrate_line
 
 logger = logging.getLogger(__name__)
 
@@ -67,46 +68,25 @@ def detect_substrate_gradient(
     --------
     detect_substrate_hough : Detects substrate using Hough line transform
     """
-    # Convert to grayscale
-    if len(image.shape) == 3:
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    else:
-        gray = image.copy()
-
-    height, width = gray.shape[:2]
-
-    # Apply CLAHE
-    clahe = cv2.createCLAHE(clipLimit=clahe_clip_limit, tileGridSize=clahe_tile_size)
-    enhanced = clahe.apply(gray)
-
-    # Calculate margin size
-    margin_px = max(10, min(50, int(width * margin_fraction)))
-
-    # Extract left and right strips
-    left_strip = enhanced[:, 0:margin_px]
-    right_strip = enhanced[:, width - margin_px : width]
-
-    # Find horizon in each strip
-    y_left = _find_horizon_median(left_strip, height)
-    y_right = _find_horizon_median(right_strip, height)
-
-    if y_left is None and y_right is None:
-        # Fallback: assume substrate at bottom 20%
+    substrate_line, confidence = detect_sessile_substrate_line(
+        image,
+        clahe_clip_limit=clahe_clip_limit,
+        clahe_tile_size=clahe_tile_size,
+        side_margin_fraction=margin_fraction,
+    )
+    if substrate_line is None:
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) if len(image.shape) == 3 else image
+        height, width = gray.shape[:2]
         substrate_y = int(height * 0.8)
         logger.warning(f"Substrate detection fallback: y={substrate_y}")
         return ((0, substrate_y), (width, substrate_y))
 
-    if y_left is None:
-        y_left = y_right
-    if y_right is None:
-        y_right = y_left
-
-    substrate_y = int((y_left + y_right) / 2)
-
     logger.info(
-        f"Substrate detected at y={substrate_y} (left={y_left}, right={y_right})"
+        "Substrate detected at y=%s (conf=%.2f)",
+        substrate_line[0][1],
+        confidence,
     )
-    return ((0, substrate_y), (width, substrate_y))
+    return substrate_line
 
 
 def _find_horizon_median(strip_gray: np.ndarray, img_height: int) -> int | None:

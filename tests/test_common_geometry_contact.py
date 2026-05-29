@@ -32,3 +32,41 @@ def test_find_contact_points_circle():
     dright = ((right_pt[0] - cx) ** 2 + (right_pt[1] - cy) ** 2) ** 0.5
     assert abs(dleft - r) < 4.0
     assert abs(dright - r) < 4.0
+
+
+def test_find_contact_points_ignores_closed_baseline_segment():
+    theta = np.linspace(np.pi, 0.0, 120)
+    dome = np.column_stack([100.0 + 50.0 * np.cos(theta), 100.0 - 35.0 * np.sin(theta)])
+    baseline = np.column_stack([np.linspace(150.0, 50.0, 40), np.full(40, 100.0)])
+    contour = np.vstack([dome, baseline])
+
+    left_pt, right_pt = find_contact_points_from_contour(
+        contour, ((40.0, 100.0), (160.0, 100.0)), tolerance=5.0
+    )
+
+    assert left_pt is not None and right_pt is not None
+    np.testing.assert_allclose(left_pt, [50.0, 100.0], atol=1.0)
+    np.testing.assert_allclose(right_pt, [150.0, 100.0], atol=1.0)
+
+
+def test_find_contact_points_orders_tilted_substrate_along_line():
+    substrate = ((0.0, 0.0), (120.0, 24.0))
+    line_vec = np.array([120.0, 24.0])
+    line_unit = line_vec / np.linalg.norm(line_vec)
+    normal = np.array([-line_unit[1], line_unit[0]])
+    coords = np.linspace(20.0, 100.0, 100)
+    heights = 30.0 * np.sin(np.pi * (coords - 20.0) / 80.0)
+    contour = np.array(
+        [np.array(substrate[0]) + line_unit * s - normal * h for s, h in zip(coords, heights)]
+    )
+
+    left_pt, right_pt = find_contact_points_from_contour(
+        contour, substrate, tolerance=4.0
+    )
+
+    assert left_pt is not None and right_pt is not None
+    assert np.dot(left_pt - np.array(substrate[0]), line_unit) < np.dot(
+        right_pt - np.array(substrate[0]), line_unit
+    )
+    assert abs(np.dot(left_pt - np.array(substrate[0]), normal)) < 1e-6
+    assert abs(np.dot(right_pt - np.array(substrate[0]), normal)) < 1e-6

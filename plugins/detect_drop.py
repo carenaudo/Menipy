@@ -16,6 +16,7 @@ from menipy.common.plugin_settings import (
     resolve_plugin_settings,
 )
 from menipy.common.registry import register_drop_detector
+from menipy.common.sessile_detection import detect_sessile_drop_contour
 
 # NOTE: cv2 import moved inside functions
 
@@ -48,7 +49,7 @@ class DropSessileSettings(BaseModel):
         0.85, description="Max rectangularity to filter out ROI boxes"
     )
     min_gap_from_needle: int = Field(
-        50, description="Min vertical gap from needle bottom for sessile contour"
+        40, description="Min vertical gap from needle bottom for sessile contour"
     )
     needle_alignment_guard: int = Field(
         100, description="Max vertical distance for center-alignment needle guard"
@@ -149,56 +150,10 @@ def detect_drop_sessile(
     --------
     detect_drop_pendant : Detects drop contour for pendant drops
     """
-    import cv2
-
     raw_cfg = resolve_plugin_settings(
         "sessile", kwargs.get("plugin_settings", {}), **kwargs
     )
     cfg = DropSessileSettings(**raw_cfg)
-
-    # Convert to grayscale
-    if len(image.shape) == 3:
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    else:
-        gray = image.copy()
-
-    height, width = gray.shape[:2]
-    image_area = height * width
-
-    # Apply CLAHE
-    clahe = cv2.createCLAHE(
-        clipLimit=cfg.clahe_clip_limit, tileGridSize=clahe_tile_size
-    )
-    enhanced = clahe.apply(gray)
-
-    # Gaussian blur + adaptive threshold
-    blur = cv2.GaussianBlur(enhanced, (5, 5), 0)
-    binary = cv2.adaptiveThreshold(
-        blur,
-        255,
-        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-        cv2.THRESH_BINARY_INV,
-        cfg.adaptive_block_size,
-        cfg.adaptive_c,
-    )
-
-    # Mask below substrate line
-    if substrate_y is not None:
-        binary[substrate_y - 2 :, :] = 0
-
-    # Morphological cleanup
-    kernel = np.ones((3, 3), np.uint8)
-    binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel, iterations=2)
-    binary = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel, iterations=2)
-
-    # Find contours
-    contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    if not contours:
-        return None
-
-    center_x = width // 2
-    min_area = image_area * cfg.min_area_fraction
 
     # Accept legacy callers that pass geometry via kwargs/plugin settings wrapper.
     if needle_rect is None:
@@ -206,150 +161,25 @@ def detect_drop_sessile(
         if isinstance(maybe_needle, tuple) and len(maybe_needle) == 4:
             needle_rect = maybe_needle
 
-    # Filter valid contours - separate into substrate-touching and non-touching
-    substrate_contours = []  # Contours touching substrate (preferred)
-    floating_contours = []  # Contours not touching substrate (fallback)
-
-    for cnt in contours:
-        x, y, w, h = cv2.boundingRect(cnt)
-        area = cv2.contourArea(cnt)
-        bottom_y = y + h  # Bottom edge of bounding box
-
-        # Skip needle (touches top)
-        if y < 5:
-            continue
-
-        # Skip contours too close to the detected needle.
-        if needle_rect is not None:
-            n_x, n_y, n_w, n_h = needle_rect
-            needle_bottom = n_y + n_h
-            needle_center_x = n_x + n_w // 2
-
-            if y < needle_bottom + cfg.min_gap_from_needle:
-                continue
-
-            cnt_center_x = x + w // 2
-            if (
-                abs(cnt_center_x - needle_center_x) < n_w
-                and y < needle_bottom + cfg.needle_alignment_guard
-            ):
-                continue
-
-        # Skip rectangular contours (likely ROI boundaries, not droplets)
-        rect_area = w * h
-        if rect_area > 0:
-            rectangularity = area / rect_area
-            # Perfect rectangle = 1.0, circle/ellipse ≈ 0.78 (pi/4)
-            if rectangularity > cfg.rectangularity_threshold:
-                continue
-
-        # Filter by area and position
-        if area > min_area and x > 5 and (x + w) < (width - 5):
-            cnt_center_x = x + w // 2
-            distance_from_center = abs(cnt_center_x - center_x)
-
-            # Check if contour touches substrate
-            if substrate_y is not None:
-                distance_to_substrate = abs(bottom_y - substrate_y)
-                touches_substrate = (
-                    distance_to_substrate <= cfg.substrate_touch_tolerance
-                )
-
-                if touches_substrate:
-                    substrate_contours.append(
-                        (cnt, area, distance_from_center, distance_to_substrate)
-                    )
-                else:
-                    floating_contours.append(
-                        (cnt, area, distance_from_center, distance_to_substrate)
-                    )
-            else:
-                # No substrate line - use old behavior
-                floating_contours.append((cnt, area, distance_from_center, 0))
-
-    # Prefer substrate-touching contours
-    if substrate_contours:
-        # Sort by: closest to substrate, then largest area, then closest to center
-        substrate_contours.sort(key=lambda x: (x[3], -x[1], x[2]))
-        valid_contours = substrate_contours
-        logger.info(f"Found {len(substrate_contours)} substrate-touching contour(s)")
-    elif floating_contours:
-        # Fallback: use floating contours if no substrate-touching ones
-        floating_contours.sort(key=lambda x: (-x[1], x[2]))
-        valid_contours = floating_contours
-        logger.warning(
-            f"No substrate-touching contours found, using {len(floating_contours)} floating contour(s)"
-        )
-    else:
-        # Fallback to largest contour
-        largest = max(contours, key=cv2.contourArea)
-        if cv2.contourArea(largest) > min_area:
-            hull = cv2.convexHull(largest)
-            return hull[:, 0, :].astype(np.float64), None
+    detection = detect_sessile_drop_contour(
+        image,
+        substrate_y=substrate_y,
+        needle_rect=needle_rect,
+        min_area_fraction=cfg.min_area_fraction,
+        substrate_touch_tolerance=cfg.substrate_touch_tolerance,
+        rectangularity_threshold=cfg.rectangularity_threshold,
+        min_gap_from_needle=cfg.min_gap_from_needle,
+        needle_alignment_guard=cfg.needle_alignment_guard,
+        clahe_clip_limit=cfg.clahe_clip_limit,
+        clahe_tile_size=clahe_tile_size,
+        adaptive_block_size=cfg.adaptive_block_size,
+        adaptive_c=cfg.adaptive_c,
+    )
+    if detection.contour is None:
         return None
 
-    # Select best contour
-    best_cnt = valid_contours[0][0]
-
-    # Apply convex hull
-    hull = cv2.convexHull(best_cnt)
-    points = hull[:, 0, :]
-
-    # Reconstruct with flat base at substrate
-    if substrate_y is not None:
-        substrate_tolerance = 20
-
-        near_substrate = [
-            pt for pt in points if abs(pt[1] - substrate_y) <= substrate_tolerance
-        ]
-
-        dome_raw = [pt for pt in points if pt[1] <= (substrate_y + substrate_tolerance)]
-        dome_points = []
-        for pt in dome_raw:
-            if pt[1] > substrate_y:
-                dome_points.append(np.array([pt[0], substrate_y], dtype=pt.dtype))
-            else:
-                dome_points.append(pt)
-
-        if near_substrate:
-            sorted_near = sorted(near_substrate, key=lambda p: p[0])
-            x_left = sorted_near[0][0]
-            x_right = sorted_near[-1][0]
-        elif len(points) > 0:
-            sorted_pts = sorted(points, key=lambda p: p[0])
-            x_left = sorted_pts[0][0]
-            x_right = sorted_pts[-1][0]
-        else:
-            return points.astype(np.float64), None
-
-        cp_left = (int(x_left), substrate_y)
-        cp_right = (int(x_right), substrate_y)
-        contact_points = (cp_left, cp_right)
-
-        if dome_points:
-            dome_points = sorted(dome_points, key=lambda p: p[0])
-            final_polygon = np.array(
-                [[x_left, substrate_y]]
-                + [[p[0], p[1]] for p in dome_points]
-                + [[x_right, substrate_y]]
-                + [[x_left, substrate_y]],
-                dtype=np.float64,
-            )
-        else:
-            sorted_pts = sorted(points, key=lambda p: p[0])
-            final_polygon = np.array(
-                [[x_left, substrate_y]]
-                + [[p[0], p[1]] for p in sorted_pts]
-                + [[x_right, substrate_y]]
-                + [[x_left, substrate_y]],
-                dtype=np.float64,
-            )
-
-        logger.info(f"Sessile drop detected with {len(final_polygon)} points")
-        return final_polygon, contact_points
-
-    logger.info(f"Sessile drop detected with {len(points)} points (no substrate)")
-    return points.astype(np.float64), None
+    logger.info("Sessile drop detected with %s points", len(detection.contour))
+    return detection.contour, detection.contact_points
 
 
 def detect_drop_pendant(

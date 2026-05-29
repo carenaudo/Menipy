@@ -606,7 +606,7 @@ def test_preview_mapping_stays_inside_scene_after_source_toggles(main_window, qt
     assert getattr(image_view, "_mode", None) == "fit"
 
 
-def test_database_buttons_are_drawn_and_noop(main_window, qtbot):
+def test_database_buttons_open_selectors_and_apply_values(main_window, qtbot):
     controller = main_window.setup_panel_ctrl
     for button in (
         controller.needleDbBtn,
@@ -616,10 +616,48 @@ def test_database_buttons_are_drawn_and_noop(main_window, qtbot):
         assert button is not None
         assert button.isEnabled()
         assert not button.icon().isNull()
-        qtbot.mouseClick(button, Qt.LeftButton)
-        assert "Database selection is not connected yet" in (
-            main_window.statusBar().currentMessage()
-        )
+        assert "not connected yet" not in button.toolTip()
+
+    material_items = iter(
+        [
+            {"name": "Water", "density": 997.0},
+            {"name": "Air", "density": 1.204},
+        ]
+    )
+    table_types = []
+
+    def fake_select(table_type):
+        table_types.append(table_type)
+        if table_type == "needles":
+            return {"name": "22G", "outer_diameter": 0.72}
+        return next(material_items)
+
+    controller._select_database_item = Mock(side_effect=fake_select)
+
+    qtbot.mouseClick(controller.needleDbBtn, Qt.LeftButton)
+    assert controller.needleLengthSpin.value() == pytest.approx(0.72)
+
+    qtbot.mouseClick(controller.dropDensityDbBtn, Qt.LeftButton)
+    assert controller.dropDensitySpin.value() == pytest.approx(997.0)
+
+    qtbot.mouseClick(controller.fluidDensityDbBtn, Qt.LeftButton)
+    assert controller.fluidDensitySpin.value() == pytest.approx(1.2)
+
+    assert table_types == ["needles", "materials", "materials"]
+
+
+def test_database_selection_converts_values_to_display_unit_system(main_window, qtbot):
+    controller = main_window.setup_panel_ctrl
+    controller.settings.unit_system = "CGS"
+    controller.refresh_ui_labels()
+    controller._select_database_item = Mock(
+        return_value={"name": "18G", "outer_diameter": 1.27}
+    )
+
+    qtbot.mouseClick(controller.needleDbBtn, Qt.LeftButton)
+
+    controller._select_database_item.assert_called_once_with("needles")
+    assert controller.needleLengthSpin.value() == pytest.approx(0.13)
 
 
 def test_advanced_buttons_open_dialog_without_inline_expansion(main_window, qtbot):

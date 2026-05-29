@@ -172,6 +172,25 @@ def test_tangent_method_ignores_closed_baseline_segment():
     assert metrics["contact_angle_fit_rmse_px"]["right"] >= 0.0
 
 
+def test_tangent_method_ignores_vertical_contact_closure_edge():
+    contact_point = np.array([0.0, 100.0])
+    substrate_line = ((0.0, 100.0), (120.0, 100.0))
+    target_angle = 52.0
+    x = np.linspace(0.0, 40.0, 24)
+    branch = np.column_stack(
+        [x, 100.0 - x * np.tan(np.deg2rad(target_angle))]
+    )
+    vertical_closure = np.column_stack(
+        [np.zeros(24), np.linspace(100.0, 0.0, 24)]
+    )
+    contour = np.vstack([vertical_closure, branch])
+
+    angle, rmse = tangent_angle_at_point(contour, contact_point, substrate_line)
+
+    assert angle == pytest.approx(target_angle, abs=2.0)
+    assert rmse >= 0.0
+
+
 def test_sessile_contour_extraction_normalizes_opencv_contour_shape():
     contour = np.array(
         [[50, 100], [75, 140], [100, 150], [125, 140], [150, 100]],
@@ -251,6 +270,45 @@ def test_circle_fit_angle_at_point():
     # For a circle, contact angle should be 90 degrees
     assert 85 < angle < 95, f"Expected ~90°, got {angle}°"
     assert uncertainty >= 0, f"Uncertainty should be non-negative: {uncertainty}"
+
+
+def test_sessile_3_auto_detection_finds_true_contact_angles():
+    sample = "data/samples/sessile_3.jpeg"
+    image = cv2.imread(sample)
+    assert image is not None
+
+    calibration = AutoCalibrator(image, "sessile").detect_all()
+
+    assert calibration.drop_contour is not None
+    assert calibration.substrate_line is not None
+    assert calibration.contact_points is not None
+
+    substrate_y = calibration.substrate_line[0][1]
+    assert 240 <= substrate_y <= 260
+
+    left_contact, right_contact = calibration.contact_points
+    assert right_contact[0] - left_contact[0] > 150
+    assert abs(left_contact[1] - substrate_y) <= 2
+    assert abs(right_contact[1] - substrate_y) <= 2
+
+    ctx = SessilePipeline().run_with_plan(
+        only=["compute_metrics"],
+        image=sample,
+        drop_contour=calibration.drop_contour,
+        contact_points=calibration.contact_points,
+        apex_point=calibration.apex_point,
+        needle_rect=calibration.needle_rect,
+        roi_rect=calibration.roi_rect,
+        substrate_line=calibration.substrate_line,
+        calibration_params={
+            "needle_diameter_mm": 1.83,
+            "drop_density_kg_m3": 1000.0,
+            "fluid_density_kg_m3": 1.2,
+        },
+    )
+
+    assert ctx.results["theta_left_deg"] == pytest.approx(52.0, abs=5.0)
+    assert ctx.results["theta_right_deg"] == pytest.approx(52.0, abs=5.0)
 
 
 @pytest.mark.parametrize(

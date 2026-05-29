@@ -119,63 +119,55 @@ def find_contact_points_from_contour(
     if contour.ndim != 2 or contour.shape[1] != 2:
         raise ValueError("contour must be of shape (N, 2)")
 
+    contour = np.asarray(contour, dtype=float)
     a = np.array(contact_line[0], dtype=float)
     b = np.array(contact_line[1], dtype=float)
-
-    # Compute distance to the user line for each contour point
-    dists = np.array([point_to_segment_distance(p, a, b) for p in contour])
-
-    # Candidate points within tolerance
-    candidate_idx = np.where(dists <= tolerance)[0]
-    if candidate_idx.size == 0:
-        # Expand tolerance heuristically
-        candidate_idx = np.argsort(dists)[: max(2, int(0.02 * len(contour)))]
-
-    # Estimate curvature and prefer high-curvature points near the line
-    kappa = curvature_estimates(contour, window=5)
-
-    # Score candidates by inverse distance times curvature magnitude
-    scores = []
-    for idx in candidate_idx:
-        score = (1.0 / (dists[idx] + 1e-6)) * (kappa[idx] + 1e-6)
-        scores.append((score, idx))
-    if not scores:
+    line_vec = b - a
+    line_len = float(np.linalg.norm(line_vec))
+    if line_len <= 1e-12:
         return (None, None)
 
-    # Sort candidates by x to separate left/right; use contour x positions
-    candidates = sorted(scores, key=lambda s: s[0], reverse=True)
+    line_unit = line_vec / line_len
+    normal = np.array([-line_unit[1], line_unit[0]], dtype=float)
 
-    # If fewer than 2 distinct lateral positions among top candidates, fall back to extremes
-    top_indices = [idx for _, idx in candidates[:6]]
-    xs = contour[top_indices, 0]
-    if np.ptp(xs) < 2.0 and len(contour) >= 2:
-        # pick leftmost/rightmost based on projection onto the line perpendicular direction
-        proj_axis = np.array([-(b - a)[1], (b - a)[0]])
-        proj_vals = (contour[:, :2] - a).dot(proj_axis)
-        left_idx = int(np.argmin(proj_vals))
-        right_idx = int(np.argmax(proj_vals))
-        return (contour[left_idx], contour[right_idx])
+    def project_to_line(pt: np.ndarray) -> np.ndarray:
+        return a + line_unit * float(np.dot(pt - a, line_unit))
 
-    # Choose highest-scoring candidate on the left half and right half relative to contact line midpoint
-    mid = 0.5 * (a + b)
-    left_cands = [i for _, i in candidates if contour[i, 0] <= mid[0]]
-    right_cands = [i for _, i in candidates if contour[i, 0] > mid[0]]
+    def line_coord(pt: np.ndarray) -> float:
+        return float(np.dot(pt - a, line_unit))
 
-    left_pt = contour[left_cands[0]] if left_cands else None
-    right_pt = contour[right_cands[0]] if right_cands else None
+    signed = (contour - a) @ normal
+    intersections: list[np.ndarray] = []
+    for p0, p1, h0, h1 in zip(
+        contour, np.roll(contour, -1, axis=0), signed, np.roll(signed, -1)
+    ):
+        dh = float(h1 - h0)
+        if abs(dh) <= 1e-12:
+            continue
+        if h0 == 0.0 or h0 * h1 < 0.0:
+            t = float(-h0 / dh)
+            if -1e-9 <= t <= 1.0 + 1e-9:
+                intersections.append(p0 + t * (p1 - p0))
 
-    # As fallback, choose best two by score and order them left/right
-    if left_pt is None or right_pt is None:
-        best_two = [idx for _, idx in candidates[:2]]
-        if len(best_two) == 2:
-            p0 = contour[best_two[0]]
-            p1 = contour[best_two[1]]
-            if p0[0] <= p1[0]:
-                return (p0, p1)
-            else:
-                return (p1, p0)
+    if len(intersections) >= 2:
+        intersections.sort(key=line_coord)
+        return (project_to_line(intersections[0]), project_to_line(intersections[-1]))
 
-    return (left_pt, right_pt)
+    dists = np.abs(signed)
+    candidate_idx = np.where(dists <= tolerance)[0]
+    if candidate_idx.size < 2:
+        candidate_idx = np.argsort(dists)[: max(2, int(0.02 * len(contour)))]
+    if candidate_idx.size < 2:
+        return (None, None)
+
+    candidates = contour[candidate_idx]
+    coords = np.array([line_coord(pt) for pt in candidates], dtype=float)
+    order = np.argsort(coords)
+    left = project_to_line(candidates[order[0]])
+    right = project_to_line(candidates[order[-1]])
+    if np.linalg.norm(right - left) < 1e-6:
+        return (None, None)
+    return (left, right)
 
 
 def detect_baseline_ransac(
@@ -363,6 +355,7 @@ def estimate_contact_angle_tangent(
     substrate_line: tuple[tuple[float, float], tuple[float, float]],
     window_px: int = 15,
     method: str = "poly",
+    weight_power: float = 4.0,
 ) -> tuple[float, float]:
     """Estimate contact angle using tangent method near contact point.
 
@@ -399,7 +392,7 @@ def estimate_contact_angle_tangent(
 
             vectors = local_points - np.asarray(contact_point, dtype=float)
             distances = np.linalg.norm(vectors, axis=1)
-            weights = 1.0 / np.maximum(distances, 1.0) ** 2
+            weights = 1.0 / np.maximum(distances, 1.0) ** weight_power
             _, _, vh = np.linalg.svd(
                 vectors * np.sqrt(weights[:, None]), full_matrices=False
             )
@@ -412,6 +405,32 @@ def estimate_contact_angle_tangent(
                 vectors[:, 0] * tangent[1] - vectors[:, 1] * tangent[0]
             )
             rmse = float(np.sqrt(np.average(distances_to_line**2, weights=weights)))
+            if angle_deg > 75.0 and len(local_points) >= 3:
+                center, radius = fit_circle(local_points)
+                vec_to_contact = contact_point - center
+                dist = np.linalg.norm(vec_to_contact)
+                if dist > max(1e-9, radius * 1e-9):
+                    radial = vec_to_contact / dist
+                    circle_tangent = np.array([-radial[1], radial[0]], dtype=float)
+                    circle_along = abs(float(np.dot(circle_tangent, substrate_vec)))
+                    circle_upward = abs(float(np.dot(circle_tangent, normal_vec)))
+                    circle_angle = float(
+                        np.degrees(np.arctan2(circle_upward, circle_along))
+                    )
+                    circle_rmse = float(
+                        np.sqrt(
+                            np.mean(
+                                (
+                                    np.linalg.norm(local_points - center, axis=1)
+                                    - radius
+                                )
+                                ** 2
+                            )
+                        )
+                    )
+                    if circle_rmse <= max(2.0, rmse * 5.0):
+                        angle_deg = circle_angle
+                        rmse = circle_rmse
         except Exception:
             angle_deg = 90.0
             rmse = 1.0
@@ -499,6 +518,16 @@ def _contact_branch_points(
         radius = float(window_px) * factor
         distances = np.linalg.norm(rel_all, axis=1)
         mask = (distances <= radius) & (h_all > 0.5) & ((s_all * inward_sign) >= -1.0)
+        progress_threshold = max(1.0, radius * 0.08)
+        branch_mask = mask & ((s_all * inward_sign) > progress_threshold)
+        near_axis_mask = mask & (np.abs(s_all * inward_sign) <= progress_threshold)
+        near_axis_heights = h_all[near_axis_mask]
+        has_vertical_closure = (
+            near_axis_heights.size >= 3
+            and float(np.ptp(near_axis_heights)) > radius * 0.5
+        )
+        if has_vertical_closure and np.count_nonzero(branch_mask) >= 3:
+            mask = branch_mask
         local_points = contour_2d[mask]
         if local_points.shape[0] >= 3:
             return local_points, substrate_vec, normal_vec
@@ -573,6 +602,7 @@ def tangent_angle_at_point(
     contact_point: np.ndarray,
     substrate_line: tuple[tuple[float, float], tuple[float, float]],
     window_px: int = 15,
+    weight_power: float = 4.0,
 ) -> tuple[float, float]:
     """Estimate contact angle at a point using local tangent (polynomial fit).
 
@@ -595,7 +625,12 @@ def tangent_angle_at_point(
         Uncertainty estimate (RMSE of fit).
     """
     return estimate_contact_angle_tangent(
-        contour, contact_point, substrate_line, window_px, method="poly"
+        contour,
+        contact_point,
+        substrate_line,
+        window_px,
+        method="poly",
+        weight_power=weight_power,
     )
 
 
