@@ -676,7 +676,7 @@ def fit_sessile_young_laplace(
 # ==============================================================================
 
 def main():
-    sample_path = Path("data/samples/gota depositada 1.png")
+    sample_path = Path("data/samples/sessile_3.jpeg")
     if not sample_path.exists():
         logger.error(f"Sample image not found at {sample_path}")
         sys.exit(1)

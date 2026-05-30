@@ -75,7 +75,9 @@ def detect_substrate_gradient(
         side_margin_fraction=margin_fraction,
     )
     if substrate_line is None:
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) if len(image.shape) == 3 else image
+        gray = (
+            cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) if len(image.shape) == 3 else image
+        )
         height, width = gray.shape[:2]
         substrate_y = int(height * 0.8)
         logger.warning(f"Substrate detection fallback: y={substrate_y}")

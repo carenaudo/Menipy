@@ -34,9 +34,7 @@ def enhance_sessile_gray(
     clahe_tile_size: tuple[int, int] = (8, 8),
 ) -> np.ndarray:
     """Apply the contrast enhancement used by sessile auto-detection."""
-    clahe = cv2.createCLAHE(
-        clipLimit=clahe_clip_limit, tileGridSize=clahe_tile_size
-    )
+    clahe = cv2.createCLAHE(clipLimit=clahe_clip_limit, tileGridSize=clahe_tile_size)
     return clahe.apply(gray)
 
 
@@ -196,9 +194,8 @@ def detect_sessile_drop_contour(
             cnt_center_x = x + w // 2
             if y < needle_bottom + min_gap_from_needle:
                 continue
-            if (
-                abs(cnt_center_x - needle_center_x) < n_w
-                and y < needle_bottom + min(min_gap_from_needle, needle_alignment_guard)
+            if abs(cnt_center_x - needle_center_x) < n_w and y < needle_bottom + min(
+                min_gap_from_needle, needle_alignment_guard
             ):
                 continue
 

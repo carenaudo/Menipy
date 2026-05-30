@@ -103,6 +103,10 @@ class Context(BaseModel):
 
     # Specific algorithm variables (found during refactor)
     contact_points: tuple[tuple[int, int], tuple[int, int]] | None = None
+    sessile_calc_contour: np.ndarray | None = None
+    sessile_calc_contact_points: (
+        tuple[tuple[float, float], tuple[float, float]] | None
+    ) = None
     apex_point: tuple[int, int] | None = None
     r_eq_series_px: list | None = None
     centers_px: list | None = None

@@ -57,7 +57,10 @@ def test_find_contact_points_orders_tilted_substrate_along_line():
     coords = np.linspace(20.0, 100.0, 100)
     heights = 30.0 * np.sin(np.pi * (coords - 20.0) / 80.0)
     contour = np.array(
-        [np.array(substrate[0]) + line_unit * s - normal * h for s, h in zip(coords, heights)]
+        [
+            np.array(substrate[0]) + line_unit * s - normal * h
+            for s, h in zip(coords, heights)
+        ]
     )
 
     left_pt, right_pt = find_contact_points_from_contour(

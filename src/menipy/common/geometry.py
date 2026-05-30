@@ -420,10 +420,7 @@ def estimate_contact_angle_tangent(
                     circle_rmse = float(
                         np.sqrt(
                             np.mean(
-                                (
-                                    np.linalg.norm(local_points - center, axis=1)
-                                    - radius
-                                )
+                                (np.linalg.norm(local_points - center, axis=1) - radius)
                                 ** 2
                             )
                         )

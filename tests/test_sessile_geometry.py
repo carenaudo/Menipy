@@ -6,6 +6,7 @@ import numpy as np
 
 from menipy.pipelines.sessile.geometry import (
     _segment_intersection,
+    build_sessile_calculation_contour,
     clip_contour_to_substrate,
 )
 
@@ -166,3 +167,61 @@ def test_no_clipping_needed():
 
     assert len(refined) == 3
     assert contacts is None
+
+
+def test_build_sessile_calculation_contour_projects_to_substrate():
+    contour = np.array(
+        [
+            [0.0, 0.0],
+            [2.0, -1.0],
+            [4.0, 0.0],
+            [5.0, 2.0],
+            [4.0, 4.0],
+            [2.0, 5.0],
+            [0.0, 4.0],
+            [-1.0, 2.0],
+        ],
+        dtype=float,
+    )
+    substrate = ((-5.0, 6.0), (8.0, 6.0))
+    apex = (2.0, 0.0)
+    contacts = ((-1.0, 2.0), (5.0, 2.0))
+
+    calc_xy, calc_contacts = build_sessile_calculation_contour(
+        contour, substrate, apex, contact_points=contacts
+    )
+
+    assert calc_contacts is not None
+    left, right = calc_contacts
+    assert abs(left[1] - 6.0) < 1e-5
+    assert abs(right[1] - 6.0) < 1e-5
+    np.testing.assert_allclose(calc_xy[0], calc_xy[-1], atol=1e-8)
+
+
+def test_build_sessile_calculation_contour_handles_tilted_substrate():
+    contour = np.array(
+        [
+            [1.0, 1.0],
+            [3.0, 1.0],
+            [4.0, 3.0],
+            [3.0, 5.0],
+            [1.0, 5.0],
+            [0.0, 3.0],
+        ],
+        dtype=float,
+    )
+    substrate = ((-2.0, 6.0), (6.0, 8.0))
+    apex = (2.0, 1.0)
+    contacts = ((0.0, 3.0), (4.0, 3.0))
+
+    calc_xy, calc_contacts = build_sessile_calculation_contour(
+        contour, substrate, apex, contact_points=contacts
+    )
+
+    assert calc_contacts is not None
+    left, right = [np.asarray(p, dtype=float) for p in calc_contacts]
+    p1 = np.asarray(substrate[0], dtype=float)
+    p2 = np.asarray(substrate[1], dtype=float)
+    line_vec = p2 - p1
+    assert abs(float(np.cross(line_vec, left - p1))) < 1e-5
+    assert abs(float(np.cross(line_vec, right - p1))) < 1e-5

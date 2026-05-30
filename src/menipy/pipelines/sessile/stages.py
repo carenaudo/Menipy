@@ -117,6 +117,9 @@ class SessilePipeline(PipelineBase):
 
     def do_contour_refinement(self, ctx: Context) -> Context | None:
         """Clip contour at substrate line, refine contact points, and optionally smooth."""
+        ctx.sessile_calc_contour = None
+        ctx.sessile_calc_contact_points = None
+
         # If using pre-detected contour, skip clipping to preserve the closed polygon
         if getattr(ctx, "drop_contour", None) is not None:
             # Still apply smoothing if enabled
@@ -125,6 +128,55 @@ class SessilePipeline(PipelineBase):
                 from menipy.common import contour_smoothing
 
                 ctx = contour_smoothing.run(ctx, smoothing_settings)
+
+            substrate_line = getattr(ctx, "substrate_line", None)
+            if substrate_line and ctx.contour is not None:
+                from .geometry import build_sessile_calculation_contour
+
+                xy = ensure_contour(ctx)
+                x, y = xy[:, 0], xy[:, 1]
+                apex_point = getattr(ctx, "apex_point", None)
+                if apex_point is not None:
+                    apex_xy = (float(apex_point[0]), float(apex_point[1]))
+                else:
+                    apex_i = int(np.argmin(y))
+                    apex_xy = (float(x[apex_i]), float(y[apex_i]))
+
+                existing_contacts = getattr(ctx, "contact_points", None)
+                if existing_contacts is not None:
+                    ctx.sessile_calc_contour = np.asarray(xy, dtype=float)
+                    ctx.sessile_calc_contact_points = (
+                        (
+                            float(existing_contacts[0][0]),
+                            float(existing_contacts[0][1]),
+                        ),
+                        (
+                            float(existing_contacts[1][0]),
+                            float(existing_contacts[1][1]),
+                        ),
+                    )
+                else:
+                    calc_xy, calc_contact_points = build_sessile_calculation_contour(
+                        xy,
+                        substrate_line,
+                        apex_xy,
+                        contact_points=getattr(
+                            ctx, "sessile_calc_contact_points", None
+                        ),
+                    )
+                    ctx.sessile_calc_contour = np.asarray(calc_xy, dtype=float)
+                    if calc_contact_points:
+                        ctx.sessile_calc_contact_points = calc_contact_points
+                        ctx.contact_points = (
+                            (
+                                int(round(calc_contact_points[0][0])),
+                                int(round(calc_contact_points[0][1])),
+                            ),
+                            (
+                                int(round(calc_contact_points[1][0])),
+                                int(round(calc_contact_points[1][1])),
+                            ),
+                        )
             return ctx
 
         xy = ensure_contour(ctx)
@@ -135,16 +187,17 @@ class SessilePipeline(PipelineBase):
 
         # Get apex for reference
         x, y = xy[:, 0], xy[:, 1]
-        if getattr(ctx, "apex_point", None) is not None:
+        apex_point = getattr(ctx, "apex_point", None)
+        if apex_point is not None:
             apex_xy = (
-                float(ctx.apex_point[0]),
-                float(ctx.apex_point[1]),
+                float(apex_point[0]),
+                float(apex_point[1]),
             )
         else:
             apex_i = int(np.argmin(y))
             apex_xy = (float(x[apex_i]), float(y[apex_i]))
 
-        from .geometry import clip_contour_to_substrate
+        from .geometry import build_sessile_calculation_contour, clip_contour_to_substrate
 
         xy, refined_contact_points = clip_contour_to_substrate(
             xy, substrate_line, apex_xy
@@ -155,9 +208,48 @@ class SessilePipeline(PipelineBase):
 
         ctx.contour = Contour(xy=xy)
 
-        # Store refined contact points for use in geometric_features
         if refined_contact_points:
-            ctx.contact_points = refined_contact_points
+            ctx.sessile_calc_contour = np.asarray(xy, dtype=float)
+            ctx.sessile_calc_contact_points = (
+                (
+                    float(refined_contact_points[0][0]),
+                    float(refined_contact_points[0][1]),
+                ),
+                (
+                    float(refined_contact_points[1][0]),
+                    float(refined_contact_points[1][1]),
+                ),
+            )
+            ctx.contact_points = (
+                (
+                    int(round(refined_contact_points[0][0])),
+                    int(round(refined_contact_points[0][1])),
+                ),
+                (
+                    int(round(refined_contact_points[1][0])),
+                    int(round(refined_contact_points[1][1])),
+                ),
+            )
+        else:
+            calc_xy, calc_contact_points = build_sessile_calculation_contour(
+                xy,
+                substrate_line,
+                apex_xy,
+                contact_points=None,
+            )
+            ctx.sessile_calc_contour = np.asarray(calc_xy, dtype=float)
+            if calc_contact_points:
+                ctx.sessile_calc_contact_points = calc_contact_points
+                ctx.contact_points = (
+                    (
+                        int(round(calc_contact_points[0][0])),
+                        int(round(calc_contact_points[0][1])),
+                    ),
+                    (
+                        int(round(calc_contact_points[1][0])),
+                        int(round(calc_contact_points[1][1])),
+                    ),
+                )
 
         # Apply optional contour smoothing
         smoothing_settings = getattr(ctx, "contour_smoothing_settings", None)
@@ -170,8 +262,14 @@ class SessilePipeline(PipelineBase):
 
     def do_geometric_features(self, ctx: Context) -> Context | None:
         """Extract geometric features: axis, apex, baseline, tilt, and angles."""
-        xy = ensure_contour(ctx)
-        x, y = xy[:, 0], xy[:, 1]
+        xy_display = ensure_contour(ctx)
+        x, y = xy_display[:, 0], xy_display[:, 1]
+
+        xy_calc = getattr(ctx, "sessile_calc_contour", None)
+        if xy_calc is None:
+            xy_calc = xy_display
+        else:
+            xy_calc = np.asarray(xy_calc, dtype=float).reshape(-1, 2)
 
         # Use substrate line if provided, otherwise auto-detect
         substrate_line = getattr(ctx, "substrate_line", None)
@@ -189,10 +287,11 @@ class SessilePipeline(PipelineBase):
             tilt_deg = 0.0
 
         axis_x = float(np.median(x))
-        if getattr(ctx, "apex_point", None) is not None:
+        apex_point = getattr(ctx, "apex_point", None)
+        if apex_point is not None:
             apex_xy = (
-                float(ctx.apex_point[0]),
-                float(ctx.apex_point[1]),
+                float(apex_point[0]),
+                float(apex_point[1]),
             )
         else:
             apex_i = int(np.argmin(y))
@@ -212,13 +311,15 @@ class SessilePipeline(PipelineBase):
             contact_angle_method = "tangent"
 
         # Get contact points (may have been set by contour_refinement)
-        use_contact_points = getattr(ctx, "contact_points", None)
+        use_contact_points = getattr(ctx, "sessile_calc_contact_points", None)
+        if use_contact_points is None:
+            use_contact_points = getattr(ctx, "contact_points", None)
 
         from .metrics import compute_sessile_metrics
 
         # Compute metrics (will be stored in ctx.results by compute_metrics stage)
         metrics = compute_sessile_metrics(
-            xy,
+            xy_calc,
             px_per_mm=px_per_mm,
             substrate_line=substrate_line,
             apex=apex_xy,

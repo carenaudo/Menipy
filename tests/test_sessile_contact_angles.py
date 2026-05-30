@@ -14,6 +14,7 @@ from menipy.common.geometry import (
     tangent_angle_at_point,
 )
 from menipy.models.context import Context
+from menipy.models.geometry import Contour
 from menipy.pipelines.sessile.metrics import compute_sessile_metrics
 from menipy.pipelines.sessile.stages import SessilePipeline
 
@@ -177,12 +178,8 @@ def test_tangent_method_ignores_vertical_contact_closure_edge():
     substrate_line = ((0.0, 100.0), (120.0, 100.0))
     target_angle = 52.0
     x = np.linspace(0.0, 40.0, 24)
-    branch = np.column_stack(
-        [x, 100.0 - x * np.tan(np.deg2rad(target_angle))]
-    )
-    vertical_closure = np.column_stack(
-        [np.zeros(24), np.linspace(100.0, 0.0, 24)]
-    )
+    branch = np.column_stack([x, 100.0 - x * np.tan(np.deg2rad(target_angle))])
+    vertical_closure = np.column_stack([np.zeros(24), np.linspace(100.0, 0.0, 24)])
     contour = np.vstack([vertical_closure, branch])
 
     angle, rmse = tangent_angle_at_point(contour, contact_point, substrate_line)
@@ -203,6 +200,37 @@ def test_sessile_contour_extraction_normalizes_opencv_contour_shape():
     xy = np.asarray(ctx.contour.xy)
     assert xy.shape == (5, 2)
     np.testing.assert_allclose(xy[0], [50.0, 100.0])
+
+
+def test_sessile_refinement_builds_separate_calculation_contour():
+    contour = np.array(
+        [
+            [10.0, 20.0],
+            [25.0, 10.0],
+            [40.0, 20.0],
+            [45.0, 35.0],
+            [40.0, 45.0],
+            [10.0, 45.0],
+            [5.0, 35.0],
+        ],
+        dtype=float,
+    )
+    ctx = Context(
+        contour=Contour(xy=contour),
+        substrate_line=((0.0, 50.0), (60.0, 50.0)),
+        apex_point=(25, 10),
+    )
+
+    pipe = SessilePipeline()
+    out = pipe.do_contour_refinement(ctx)
+
+    assert out is not None
+    assert out.contour is not None
+    assert out.sessile_calc_contour is not None
+    assert len(np.asarray(out.sessile_calc_contour).reshape(-1, 2)) >= len(
+        np.asarray(out.contour.xy).reshape(-1, 2)
+    )
+    assert out.sessile_calc_contact_points is not None
 
 
 def test_contact_angle_uncertainty_estimation():
