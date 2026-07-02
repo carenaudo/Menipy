@@ -733,7 +733,94 @@ def find_contact_points(drop_mask, bl, gray=None):
 
 
 # --------------------------------------------------------------------------- #
-# 7. Full pipeline
+# 7. Drop region (upper contour + contact-point chord)
+# --------------------------------------------------------------------------- #
+def extract_drop_region(contour_pts, left_contact, right_contact, shape=None):
+    """Isolate the droplet region bounded by:
+        * ABOVE - the droplet's upper contour: the arc that runs from the
+          left contact point, over the apex, to the right contact point;
+        * BELOW - the straight chord joining the two contact points.
+
+    Everything else is discarded: the artificial clipped bottom edge of the
+    segmentation and any contour wiggle sitting on/below the chord. The
+    result is the clean, mathematically closed drop profile you want for
+    area/volume integration or for restricting a shape fit to the true
+    liquid-air interface.
+
+    Returns dict:
+        upper_profile : (M,2) float, ordered left_contact -> apex -> right_contact
+        polygon       : (M+2,2) float, closed loop (upper_profile then the chord)
+        region_mask   : uint8 mask of the enclosed area (only if `shape` given)
+        area_px       : polygon area in px^2 (shoelace)
+        apex          : (x,y) topmost profile point (max height above the chord)
+    """
+    pts = np.asarray(contour_pts, dtype=np.float64)
+    L = np.asarray(left_contact, dtype=np.float64)
+    R = np.asarray(right_contact, dtype=np.float64)
+
+    # index of the contour point nearest each contact point
+    iL = int(np.argmin(np.sum((pts - L) ** 2, axis=1)))
+    iR = int(np.argmin(np.sum((pts - R) ** 2, axis=1)))
+
+    # the closed contour splits into two arcs between iL and iR; keep the one
+    # containing the apex (the point farthest above the chord)
+    chord = R - L
+    clen = np.hypot(*chord) + 1e-9
+    # signed perpendicular distance of every point from the chord line;
+    # positive on the side where the droplet body (apex) lies
+    perp = ((pts[:, 0] - L[0]) * (-chord[1]) + (pts[:, 1] - L[1]) * chord[0]) / clen
+    apex_idx = int(np.argmax(np.abs(perp)))
+    apex_sign = np.sign(perp[apex_idx]) or 1.0
+
+    def arc(i0, i1):
+        if i0 <= i1:
+            return list(range(i0, i1 + 1))
+        return list(range(i0, len(pts))) + list(range(0, i1 + 1))
+
+    arc1 = arc(iL, iR)
+    arc2 = arc(iR, iL)
+    # pick the arc whose interior lies on the droplet (apex) side of the chord
+    def side_score(idxs):
+        p = perp[idxs]
+        return np.mean(p) * apex_sign  # higher => more on droplet side
+    upper_idx = arc1 if side_score(arc1) >= side_score(arc2) else arc2
+
+    upper = pts[upper_idx]
+    # ensure ordering runs left_contact -> ... -> right_contact
+    if np.sum((upper[0] - L) ** 2) > np.sum((upper[-1] - L) ** 2):
+        upper = upper[::-1]
+
+    # keep only the part strictly above the chord (drop the endpoints' dip
+    # onto/below the chord), then pin the exact contact points as endpoints
+    keep = (perp[upper_idx] * apex_sign) >= -0.5
+    if np.sum((upper[0] - L) ** 2) > np.sum((upper[-1] - L) ** 2):
+        keep = keep[::-1]
+    upper = upper[keep] if keep.sum() >= 3 else upper
+    upper_profile = np.vstack([L, upper, R])
+
+    # close the region with the chord (right_contact back to left_contact)
+    polygon = np.vstack([upper_profile, R, L])
+
+    # shoelace area
+    x, y = polygon[:, 0], polygon[:, 1]
+    area = 0.5 * abs(np.dot(x, np.roll(y, -1)) - np.dot(y, np.roll(x, -1)))
+
+    out = dict(
+        upper_profile=upper_profile,
+        polygon=polygon,
+        area_px=float(area),
+        apex=tuple(pts[apex_idx]),
+    )
+    if shape is not None:
+        h, w = shape[:2]
+        region_mask = np.zeros((h, w), dtype=np.uint8)
+        cv2.fillPoly(region_mask, [np.round(polygon).astype(np.int32)], 255)
+        out["region_mask"] = region_mask
+    return out
+
+
+# --------------------------------------------------------------------------- #
+# 8. Full pipeline
 # --------------------------------------------------------------------------- #
 def analyze(path, out_path=None, draw=True):
     img, gray = load_gray(path)
@@ -779,6 +866,10 @@ def analyze(path, out_path=None, draw=True):
 
     left_pt, right_pt = find_contact_points(drop_mask, bl, gray=gray_d)
 
+    # isolate the clean drop region: upper contour arc + contact-point chord
+    drop_region = extract_drop_region(contour_clean, left_pt, right_pt,
+                                      shape=gray.shape)
+
     diag.update(
         baseline_inlier_ratio=bl["inlier_ratio"],
         baseline_angle_deg=bl["angle_deg"],
@@ -791,9 +882,18 @@ def analyze(path, out_path=None, draw=True):
     vis = None
     if draw:
         vis = img.copy()
-        cs = contour_clean.astype(np.int32).reshape(-1, 1, 2)
-        cv2.polylines(vis, [cs], isClosed=not (needle and needle["attached"]),
-                      color=(0, 255, 0), thickness=2)
+        # shade the isolated drop region (upper contour + chord)
+        overlay = vis.copy()
+        poly_i = np.round(drop_region["polygon"]).astype(np.int32)
+        cv2.fillPoly(overlay, [poly_i], (0, 200, 0))
+        vis = cv2.addWeighted(overlay, 0.25, vis, 0.75, 0)
+        # upper contour profile (the kept droplet interface) in green
+        up_i = np.round(drop_region["upper_profile"]).astype(np.int32).reshape(-1, 1, 2)
+        cv2.polylines(vis, [up_i], isClosed=False, color=(0, 255, 0), thickness=2)
+        # chord between contact points in magenta
+        cv2.line(vis, tuple(np.round(left_pt).astype(int)),
+                 tuple(np.round(right_pt).astype(int)), (255, 0, 255), 2)
+        # substrate baseline in blue
         cv2.line(vis, (0, int(round(bl["y_left"]))),
                  (w - 1, int(round(bl["y_right"]))), (255, 0, 0), 2)
         for p in (left_pt, right_pt):
@@ -805,6 +905,9 @@ def analyze(path, out_path=None, draw=True):
         if out_path:
             cv2.imwrite(out_path, vis)
             cv2.imwrite(out_path.replace(".png", "_mask.png"), drop_mask)
+            if "region_mask" in drop_region:
+                cv2.imwrite(out_path.replace(".png", "_region.png"),
+                            drop_region["region_mask"])
 
     return dict(
         contour_subpix=contour_clean,          # (N,2) float64, needle removed
@@ -813,6 +916,7 @@ def analyze(path, out_path=None, draw=True):
         baseline=bl,                           # {m,b,angle_deg,y_left,y_right,...}
         left_contact=left_pt,                  # (x,y) float
         right_contact=right_pt,                # (x,y) float
+        drop_region=drop_region,               # upper_profile, polygon, region_mask, area_px, apex
         needle=needle,                         # dict or None (attached flag inside)
         mask=drop_mask,
         diagnostics=diag,
