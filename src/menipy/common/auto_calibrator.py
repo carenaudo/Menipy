@@ -10,12 +10,16 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
+from types import SimpleNamespace
 
 import cv2
 import numpy as np
 
+from menipy.common.detection_result import normalize_detection_result
+from menipy.common.geometry_prototypes import detect_bilateral_needle
 from menipy.common.sessile_detection import (
     detect_sessile_drop_contour,
+    detect_sessile_needle_shaft,
     detect_sessile_substrate_line,
     segment_sessile_binary,
 )
@@ -47,6 +51,7 @@ class CalibrationResult:
 
     # Confidence scores for each detection (0.0 - 1.0)
     confidence_scores: dict = field(default_factory=dict)
+    detector_diagnostics: dict = field(default_factory=dict)
 
     # Enhanced image used for detection (for preview)
     enhanced_image: np.ndarray | None = None
@@ -75,6 +80,10 @@ class AutoCalibrator:
         margin_fraction: float = 0.05,
         min_area_fraction: float = 0.005,
         roi_padding: int = 20,
+        experimental_geometry_mode: str = "off",
+        needle_geometry_method: str = "legacy",
+        onnx_proposal_mode: str = "off",
+        segmentation_provider: str = "mobilesam",
     ) -> None:
         """
         Initialize the auto-calibrator.
@@ -92,6 +101,10 @@ class AutoCalibrator:
         """
         self.original_image = image.copy()
         self.pipeline_name = pipeline_name.lower()
+        self.experimental_geometry_mode = str(experimental_geometry_mode)
+        self.needle_geometry_method = str(needle_geometry_method)
+        self.onnx_proposal_mode = str(onnx_proposal_mode)
+        self.segmentation_provider = str(segmentation_provider)
 
         # Parameters
         self.clahe_clip_limit = clahe_clip_limit
@@ -145,6 +158,10 @@ class AutoCalibrator:
 
         # Step 1: Detect substrate baseline
         substrate_line, substrate_conf = self._detect_substrate()
+        substrate_outcome = normalize_detection_result(
+            substrate_line, feature="substrate", confidence=substrate_conf
+        )
+        result.detector_diagnostics["substrate"] = substrate_outcome.to_diagnostics()
         if substrate_line:
             result.substrate_line = substrate_line
             result.confidence_scores["substrate"] = substrate_conf
@@ -160,6 +177,19 @@ class AutoCalibrator:
 
         # Step 3: Detect needle
         needle_rect, needle_conf = self._detect_needle_sessile()
+        if self.needle_geometry_method == "bilateral_robust" or self.experimental_geometry_mode == "shadow":
+            experimental = detect_bilateral_needle(self.original_image)
+            result.detector_diagnostics["needle_bilateral"] = experimental.to_diagnostics()
+            if self.needle_geometry_method == "bilateral_robust" and experimental.accepted:
+                needle_rect = experimental.value["needle_rect"]
+                needle_conf = experimental.confidence
+            elif self.needle_geometry_method == "bilateral_robust":
+                needle_rect = None
+                needle_conf = 0.0
+        needle_outcome = normalize_detection_result(
+            needle_rect, feature="needle", confidence=needle_conf
+        )
+        result.detector_diagnostics["needle"] = needle_outcome.to_diagnostics()
         if needle_rect:
             result.needle_rect = needle_rect
             result.confidence_scores["needle"] = needle_conf
@@ -167,6 +197,14 @@ class AutoCalibrator:
 
         # Step 4: Detect drop contour
         drop_contour, contact_pts, drop_conf = self._detect_drop_sessile()
+        drop_outcome = normalize_detection_result(
+            drop_contour,
+            feature="drop",
+            confidence=drop_conf,
+            mask=self._binary_clean,
+            metrics={"contact_points_detected": contact_pts is not None},
+        )
+        result.detector_diagnostics["drop"] = drop_outcome.to_diagnostics()
         if drop_contour is not None and len(drop_contour) > 0:
             result.drop_contour = drop_contour
             result.contact_points = contact_pts
@@ -174,6 +212,14 @@ class AutoCalibrator:
             logger.info(
                 f"Drop detected with {len(drop_contour)} points (conf={drop_conf:.2f})"
             )
+            apex_y = float(np.min(drop_contour[:, 1]))
+            apex_band = drop_contour[np.abs(drop_contour[:, 1] - apex_y) <= 1.0]
+            apex_x = float(np.median(apex_band[:, 0]))
+            result.apex_point = (int(round(apex_x)), int(round(apex_y)))
+            result.confidence_scores["apex"] = 0.95
+            result.detector_diagnostics["apex"] = normalize_detection_result(
+                result.apex_point, feature="apex", confidence=0.95
+            ).to_diagnostics()
 
         # Step 5: Compute ROI from detected regions
         roi_rect, roi_conf = self._compute_roi(result)
@@ -188,6 +234,7 @@ class AutoCalibrator:
                 result.confidence_scores.values()
             ) / len(result.confidence_scores)
 
+        self._attach_onnx_shadow(result)
         return result
 
     def _detect_pendant(self) -> CalibrationResult:
@@ -208,12 +255,32 @@ class AutoCalibrator:
 
         # Step 2: Find the main drop contour
         drop_cnt, drop_conf = self._find_pendant_drop_contour()
+        result.detector_diagnostics["drop"] = normalize_detection_result(
+            drop_cnt, feature="drop", confidence=drop_conf, mask=self._binary_clean
+        ).to_diagnostics()
         if drop_cnt is None:
             logger.warning("Pendant: Could not find drop contour")
             return result
 
         # Step 3: Detect needle and contact points
         needle_rect, contact_pts, needle_conf = self._detect_needle_pendant(drop_cnt)
+        if self.needle_geometry_method == "bilateral_robust" or self.experimental_geometry_mode == "shadow":
+            experimental = detect_bilateral_needle(self.original_image, drop_cnt)
+            result.detector_diagnostics["needle_bilateral"] = experimental.to_diagnostics()
+            if self.needle_geometry_method == "bilateral_robust" and experimental.accepted:
+                needle_rect = experimental.value["needle_rect"]
+                contact_pts = experimental.value["contact_points"]
+                needle_conf = experimental.confidence
+            elif self.needle_geometry_method == "bilateral_robust":
+                needle_rect = None
+                contact_pts = None
+                needle_conf = 0.0
+        result.detector_diagnostics["needle"] = normalize_detection_result(
+            needle_rect,
+            feature="needle",
+            confidence=needle_conf,
+            metrics={"contact_points_detected": contact_pts is not None},
+        ).to_diagnostics()
         if needle_rect:
             result.needle_rect = needle_rect
             result.contact_points = contact_pts
@@ -247,7 +314,29 @@ class AutoCalibrator:
                 result.confidence_scores.values()
             ) / len(result.confidence_scores)
 
+        self._attach_onnx_shadow(result)
         return result
+
+    def _attach_onnx_shadow(self, result: CalibrationResult) -> None:
+        """Record proposal diagnostics without changing calibration fields."""
+        if self.onnx_proposal_mode != "shadow":
+            return
+        from menipy.common.onnx_shadow import run_shadow_segmentation
+
+        proxy = SimpleNamespace(
+            image=self.original_image,
+            frames=None,
+            drop_contour=result.drop_contour,
+            detected_contour=result.drop_contour,
+            contour=None,
+            needle_rect=result.needle_rect,
+            onnx_proposal_mode="shadow",
+            segmentation_provider=self.segmentation_provider,
+            onnx_proposal_classes=["droplet", "needle"],
+            onnx_proposals={},
+        )
+        run_shadow_segmentation(proxy, self.pipeline_name)
+        result.detector_diagnostics["onnx_proposals"] = proxy.onnx_proposals
 
     # ======================== Segmentation Methods ========================
 
@@ -320,6 +409,13 @@ class AutoCalibrator:
         self,
     ) -> tuple[tuple[int, int, int, int] | None, float]:
         """Detect needle region (contour touching top border) for sessile."""
+        shaft_rect, shaft_confidence, _ = detect_sessile_needle_shaft(
+            self.original_image, substrate_y=self._substrate_y
+        )
+        if shaft_rect is not None:
+            self._needle_rect = shaft_rect
+            return shaft_rect, shaft_confidence
+
         if self._binary_clean is None:
             return None, 0.0
 
@@ -330,19 +426,21 @@ class AutoCalibrator:
         if not contours:
             return None, 0.0
 
+        candidates = []
         for cnt in contours:
             x, y, w, h = cv2.boundingRect(cnt)
+            if y >= 5 or x <= 2 or x + w >= self.width - 2 or w > self.width * 0.2:
+                continue
+            aspect_ratio = h / max(w, 1)
+            center_error = abs((x + w / 2) - self.width / 2) / self.width
+            score = min(1.0, aspect_ratio / 5.0) * 0.6 + (1.0 - center_error) * 0.4
+            candidates.append((score, cnt, (x, y, w, h)))
 
-            if y < 5:
-                self._needle_contour = cnt
-                self._needle_rect = (x, y, w, h)  # Store for drop detection filter
-                aspect_ratio = h / max(w, 1)
-                if aspect_ratio > 2:
-                    confidence = min(1.0, 0.7 + 0.1 * min(aspect_ratio / 5, 3))
-                else:
-                    confidence = 0.5
-
-                return (x, y, w, h), confidence
+        if candidates:
+            confidence, cnt, rect = max(candidates, key=lambda item: item[0])
+            self._needle_contour = cnt
+            self._needle_rect = rect
+            return rect, float(np.clip(confidence, 0.0, 1.0))
 
         return None, 0.0
 
@@ -427,6 +525,8 @@ class AutoCalibrator:
         walks down to find where the contour deviates (contact points).
         """
         x, y, w, h = cv2.boundingRect(drop_cnt)
+        if y >= 5:
+            return None, None, 0.0
         pts = drop_cnt.reshape(-1, 2)
 
         # Define needle shaft reference (top 20 pixels)
@@ -445,7 +545,7 @@ class AutoCalibrator:
         ref_x_right = np.median(right_shaft_pts[:, 0])
 
         # Tolerance: how many pixels "out" counts as drop starting?
-        tolerance = 3
+        tolerance = 0
 
         # Create mask for precise scanning
         mask = np.zeros((self.height, self.width), dtype=np.uint8)
@@ -510,10 +610,9 @@ class AutoCalibrator:
         pts = drop_cnt.reshape(-1, 2)
 
         # Apex is the point with maximum Y (bottom of drop)
-        apex_idx = np.argmax(pts[:, 1])
-        apex_pt = pts[apex_idx]
-
-        apex = (int(apex_pt[0]), int(apex_pt[1]))
+        apex_y = int(np.max(pts[:, 1]))
+        apex_band = pts[np.abs(pts[:, 1] - apex_y) <= 1]
+        apex = (int(round(float(np.median(apex_band[:, 0])))), apex_y)
 
         # High confidence - apex is straightforward to find
         return apex, 0.95

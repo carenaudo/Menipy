@@ -1,5 +1,13 @@
 # Developer Guide: Menipy Plugins
 
+`sessile_dynamic` is a built-in temporal pipeline, not a detector plugin. It
+uses the authoritative sessile detector registries independently on each
+frame, then applies clean-room association and validity in
+`common.temporal_sessile`. Plugins remain responsible only for their normalized
+single-frame `DetectionResult`; they must not retain hidden temporal state.
+This keeps static and dynamic callers deterministic and makes reacquisition
+explicit.
+
 This guide explains the architecture of Menipy plugins and provides a step-by-step walkthrough for creating new ones.
 
 ## 1. Core Concepts
@@ -218,6 +226,15 @@ def register(registries):
 ### 3.6 Testing Your Plugin
 
 After updating, run Menipy and use the plugin CLI or GUI to confirm your plugin is discovered and registered. Check the logs for any errors.
+
+### 3.7 Segmentation proposal providers
+
+Expose `SEGMENTATION_PROVIDERS = {"name": ProviderFactory}` or use
+`register_segmentation_provider`. Providers accept BGR images and geometric
+`SegmentationPrompt` values and return `SegmentationProposal` values. They are
+proposal-only extensions: registration does not authorize replacing detector
+outputs, calibration, acceptance, or physical results. ONNX providers must use
+a verified model manifest and remain optional at runtime.
 
 ---
 

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import math
+import time
 from collections.abc import Callable
 
 import numpy as np
@@ -137,6 +138,7 @@ def run(
         return rr
 
     # Solve
+    started = time.perf_counter()
     res = least_squares(
         fun,
         x0=np.asarray(config.x0, dtype=float),
@@ -150,6 +152,7 @@ def run(
         verbose=config.verbose,
         method="trf",
     )
+    solve_time_ms = (time.perf_counter() - started) * 1000.0
 
     # Collect outputs
     r_vec = res.fun
@@ -162,6 +165,10 @@ def run(
         "residuals": {
             "rmse": rmse,
             "max_abs": max_abs,
+            "mean_abs": float(np.mean(np.abs(r_vec))) if r_vec.size else float("nan"),
+            "median_abs": float(np.median(np.abs(r_vec))) if r_vec.size else float("nan"),
+            "p95_abs": float(np.percentile(np.abs(r_vec), 95)) if r_vec.size else float("nan"),
+            "units": getattr(ctx.contour, "units", None),
             "dof": int(r_vec.size - res.x.size),
             "r": r_vec.tolist(),
         },
@@ -169,8 +176,13 @@ def run(
             "backend": "scipy.least_squares",
             "method": "trf",
             "iterations": int(res.nfev),
+            "nfev": int(res.nfev),
+            "njev": int(res.njev) if res.njev is not None else None,
+            "status": int(res.status),
+            "termination_reason": str(res.message),
             "success": bool(res.success),
             "message": str(res.message),
+            "time_ms": solve_time_ms,
         },
     }
 

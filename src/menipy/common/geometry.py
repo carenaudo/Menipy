@@ -631,6 +631,32 @@ def tangent_angle_at_point(
     )
 
 
+def tangent_angle_at_point_pure(
+    contour: np.ndarray,
+    contact_point: np.ndarray,
+    substrate_line: tuple[tuple[float, float], tuple[float, float]],
+    window_px: int = 15,
+    weight_power: float = 4.0,
+) -> tuple[float, float]:
+    """Fit only the local tangent, without the legacy circular substitution."""
+    local_points, substrate_vec, normal_vec = _contact_branch_points(
+        np.asarray(contour), np.asarray(contact_point), substrate_line, window_px
+    )
+    if len(local_points) < 3:
+        return float("nan"), float("inf")
+    vectors = local_points - np.asarray(contact_point, dtype=float)
+    distances = np.linalg.norm(vectors, axis=1)
+    weights = 1.0 / np.maximum(distances, 1.0) ** weight_power
+    _, _, vh = np.linalg.svd(vectors * np.sqrt(weights[:, None]), full_matrices=False)
+    tangent = vh[0] / (np.linalg.norm(vh[0]) or 1.0)
+    along = abs(float(np.dot(tangent, substrate_vec)))
+    upward = abs(float(np.dot(tangent, normal_vec)))
+    angle = float(np.degrees(np.arctan2(upward, along)))
+    line_dist = np.abs(vectors[:, 0] * tangent[1] - vectors[:, 1] * tangent[0])
+    rmse = float(np.sqrt(np.average(line_dist**2, weights=weights)))
+    return angle, rmse
+
+
 def circle_fit_angle_at_point(
     contour: np.ndarray,
     contact_point: np.ndarray,

@@ -92,6 +92,11 @@ def auto_detect_preprocessor(ctx):
             if detect_roi and "detect_roi" in PREPROCESSORS:
                 ctx = PREPROCESSORS["detect_roi"](ctx)
 
+        if getattr(ctx, "onnx_proposal_mode", "off") == "shadow":
+            from menipy.common.onnx_shadow import run_shadow_segmentation
+
+            ctx = run_shadow_segmentation(ctx, pipeline)
+
         logger.info("Auto-detection complete")
 
     except Exception as e:

@@ -102,19 +102,34 @@ class ImageManager(QObject):
 
     @Slot()
     def browse_image(self):
-        """Opens a file dialog to select a single image."""
+        """Open an image, or a video when the dynamic pipeline is selected."""
         start_dir = str(Path(self.settings.last_image_path or Path.home()).parent)
+        dynamic = self.setup_ctrl.current_pipeline_name() == "sessile_dynamic"
+        file_filter = (
+            "Videos (*.avi *.mp4 *.mov *.mkv *.m4v)"
+            if dynamic
+            else "Images (*.png *.jpg *.jpeg *.bmp *.tif *.tiff)"
+        )
         path, _ = QFileDialog.getOpenFileName(
             self.window,
-            "Open Image",
+            "Open Video" if dynamic else "Open Image",
             start_dir,
-            "Images (*.png *.jpg *.jpeg *.bmp *.tif *.tiff)",
+            file_filter,
         )
         if path:
             self.settings.last_image_path = path
             self.setup_ctrl.set_image_path(path)
-            self.preview_panel.load_path(path)
+            if dynamic and cv2 is not None:
+                capture = cv2.VideoCapture(path)
+                ok, image = capture.read()
+                capture.release()
+                if ok:
+                    self.preview_panel.display(image)
+            else:
+                self.preview_panel.load_path(path)
             if self.preprocessing_ctrl is not None:
+                if dynamic:
+                    return
                 image = self.load_preprocessing_image(path_override=path)
                 if image is not None:
                     self.preprocessing_ctrl.set_source(image)

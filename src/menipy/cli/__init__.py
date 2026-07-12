@@ -167,6 +167,7 @@ def main(argv: list[str] | None = None) -> int:
             "capillary_rise",
             "pendant",
             "captive_bubble",
+            "sessile_dynamic",
         ],
         help="Droplet shape analysis pipeline to run (default: sessile)",
     )
@@ -177,6 +178,10 @@ def main(argv: list[str] | None = None) -> int:
     src.add_argument("--camera", type=int, help="Camera index (e.g., 0)")
     src.add_argument(
         "--input-dir", "-i", type=str, help="Input directory containing batch images"
+    )
+    src.add_argument("--video", type=str, help="Video source for sessile_dynamic")
+    src.add_argument(
+        "--sequence-dir", type=str, help="Ordered image sequence for sessile_dynamic"
     )
 
     ap.add_argument(
@@ -272,6 +277,19 @@ def main(argv: list[str] | None = None) -> int:
         type=str,
         help="Edge detection filter to override (e.g., canny, sobel)",
     )
+    ap.add_argument("--fps", type=float, help="Required FPS for --sequence-dir")
+    ap.add_argument("--px-per-mm", type=float, help="Fixed calibrated sequence scale")
+    ap.add_argument(
+        "--onnx-proposal-mode",
+        choices=["off", "shadow"],
+        default="off",
+        help="Run optional ONNX proposals without promoting their outputs",
+    )
+    ap.add_argument(
+        "--segmentation-provider",
+        default="mobilesam",
+        help="Registered non-authoritative segmentation provider",
+    )
 
     # SQLite Plugins controls
     ap.add_argument(
@@ -309,6 +327,37 @@ def main(argv: list[str] | None = None) -> int:
     sp_set_dirs.add_argument(
         "--db", type=str, default="adsa_plugins.sqlite", help="SQLite db path"
     )
+    sp_annotate = sub.add_parser(
+        "annotate", help="Generate review-required ADSA segmentation proposals"
+    )
+    sp_annotate.add_argument("--input", required=True, help="Input image or directory")
+    sp_annotate.add_argument(
+        "--pipeline",
+        dest="annotation_pipeline",
+        choices=["sessile", "pendant"],
+        default="sessile",
+    )
+    sp_annotate.add_argument(
+        "--provider", default="mobilesam", help="Segmentation proposal provider"
+    )
+    sp_annotate.add_argument(
+        "--output", default=".tmp/adsa-ml/proposals", help="Ignored proposal output"
+    )
+    sp_annotate.add_argument(
+        "--license-id",
+        default="unresolved-evaluation-only",
+        help="License/provenance classification recorded for source images",
+    )
+    sp_yolo = sub.add_parser(
+        "coco-to-yolo", help="Convert approved COCO polygons to YOLO segmentation"
+    )
+    sp_yolo.add_argument("--input", required=True, help="COCO annotation JSON")
+    sp_yolo.add_argument("--output", required=True, help="YOLO label directory")
+    sp_yolo.add_argument(
+        "--include-proposed",
+        action="store_true",
+        help="Research-only conversion including unreviewed proposals",
+    )
 
     args = ap.parse_args(argv)
 
@@ -321,6 +370,40 @@ def main(argv: list[str] | None = None) -> int:
         db.init_schema()
         db.set_setting("plugin_dirs", args.dirs)
         print(f"[adsa] Stored plugin scan directories in DB: {args.dirs}")
+        return 0
+    if args.command == "annotate":
+        from menipy.common.annotation_dataset import annotate_images, collect_images
+
+        try:
+            images = collect_images(args.input)
+            if not images:
+                print("[adsa] No supported images found for annotation.")
+                return 2
+            annotate_images(
+                images,
+                pipeline=args.annotation_pipeline,
+                output_dir=args.output,
+                provider_name=args.provider,
+                license_id=args.license_id,
+            )
+        except (FileNotFoundError, RuntimeError, ValueError) as exc:
+            print(f"[adsa] Annotation failed: {exc}")
+            return 2
+        print(f"[adsa] Proposed annotations written to: {Path(args.output).resolve()}")
+        return 0
+    if args.command == "coco-to-yolo":
+        from menipy.common.annotation_dataset import convert_coco_to_yolo
+
+        try:
+            summary = convert_coco_to_yolo(
+                args.input,
+                args.output,
+                approved_only=not args.include_proposed,
+            )
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            print(f"[adsa] COCO conversion failed: {exc}")
+            return 2
+        print(f"[adsa] YOLO conversion complete: {summary['label_files']} label files")
         return 0
 
     # Resolve Output Folder (supporting user-specified --output-dir and --out)
@@ -470,6 +553,31 @@ def main(argv: list[str] | None = None) -> int:
     if args.no_overlay:
         runner.pipeline.do_overlay = lambda ctx: ctx
 
+    if args.video or args.sequence_dir:
+        if args.pipeline != "sessile_dynamic":
+            ap.error("--video and --sequence-dir require --pipeline sessile_dynamic")
+        if args.sequence_dir and (args.fps is None or args.fps <= 0):
+            ap.error("--sequence-dir requires a positive --fps")
+        source_path = Path(args.video or args.sequence_dir).expanduser().resolve()
+        try:
+            ctx = runner.run(
+                sequence_path=str(source_path),
+                sequence_fps=args.fps,
+                px_per_mm=args.px_per_mm,
+                needle_diameter_mm=needle_diameter_mm,
+                analysis_params={"contact_angle_method": "auto_residual"},
+            )
+            if ctx.dynamic_sessile_result is None:
+                raise PipelineError("dynamic_result_missing")
+            from menipy.common.temporal_sessile import export_dynamic_result
+
+            export_dynamic_result(ctx.dynamic_sessile_result, out_dir)
+            logger.info(f"Dynamic analysis complete. Outputs written to {out_dir}")
+            return 0 if ctx.dynamic_sessile_result.accepted else 3
+        except (PipelineError, ValueError) as exc:
+            logger.error(f"Dynamic pipeline execution error: {exc}")
+            return 2
+
     # Build input files queue
     files_queue: list[Path] = []
     if args.image:
@@ -566,6 +674,8 @@ def main(argv: list[str] | None = None) -> int:
                 scale=scale_dict,
                 needle_diameter_mm=needle_diameter_mm,
                 physics={"rho1": rho1, "rho2": rho2, "g": 9.80665},
+                onnx_proposal_mode=args.onnx_proposal_mode,
+                segmentation_provider=args.segmentation_provider,
             )
 
             # Export outputs
@@ -574,9 +684,12 @@ def main(argv: list[str] | None = None) -> int:
             if getattr(ctx, "overlay", None) is not None:
                 _save_image_bgr(out_dir / "overlay.png", ctx.overlay)
 
+            from menipy.models.results import build_persisted_analysis
+
+            persisted = build_persisted_analysis(ctx)
             results_out = {
                 "pipeline": runner.pipeline.name,
-                "results": ctx.results,
+                **persisted,
                 "qa": ctx.qa.to_dict() if hasattr(ctx.qa, "to_dict") else ctx.qa,
                 "timings_ms": ctx.timings_ms,
                 "log": ctx.log,
@@ -643,6 +756,8 @@ def main(argv: list[str] | None = None) -> int:
                 scale=scale_dict,
                 needle_diameter_mm=target_needle_diam,
                 physics={"rho1": rho1, "rho2": rho2, "g": 9.80665},
+                onnx_proposal_mode=args.onnx_proposal_mode,
+                segmentation_provider=args.segmentation_provider,
             )
 
             # Export individual image visuals
@@ -664,9 +779,12 @@ def main(argv: list[str] | None = None) -> int:
                 _save_image_bgr(out_dir / overlay_name, ctx.overlay)
 
             # Write standard results dictionary
+            from menipy.models.results import build_persisted_analysis
+
+            persisted = build_persisted_analysis(ctx)
             results_out = {
                 "pipeline": runner.pipeline.name,
-                "results": ctx.results,
+                **persisted,
                 "qa": ctx.qa.to_dict() if hasattr(ctx.qa, "to_dict") else ctx.qa,
                 "timings_ms": ctx.timings_ms,
                 "log": ctx.log,
@@ -676,18 +794,16 @@ def main(argv: list[str] | None = None) -> int:
                 json.dump(results_out, f, indent=2, cls=NumpyEncoder)
 
             # Extract metrics for consolidated batch CSV
-            qa_ok = (
-                ctx.qa.get("ok", True)
-                if isinstance(ctx.qa, dict)
-                else getattr(ctx.qa, "ok", True)
-            )
-            metrics = ctx.results if isinstance(ctx.results, dict) else {}
+            qa_ok = persisted["accepted"]
+            metrics = persisted["results"]
 
             run_records.append(
                 {
                     "image_path": str(img_path),
                     "pipeline": runner.pipeline.name,
                     "qa_ok": qa_ok,
+                    "rejection_reasons": persisted["rejection_reasons"],
+                    "diagnostics": persisted["diagnostics"],
                     "metrics": metrics,
                 }
             )
@@ -700,7 +816,13 @@ def main(argv: list[str] | None = None) -> int:
     # 5. Generate consolidated results.csv in batch mode
     if args.input_dir and run_records:
         csv_path = out_dir / "results.csv"
-        csv_headers = ["image_path", "pipeline", "qa_ok"]
+        csv_headers = [
+            "image_path",
+            "pipeline",
+            "qa_ok",
+            "rejection_reasons",
+            "diagnostics_json",
+        ]
 
         # Collect dynamic metric headers
         unique_metric_keys = set()
@@ -717,6 +839,10 @@ def main(argv: list[str] | None = None) -> int:
                         "image_path": rec["image_path"],
                         "pipeline": rec["pipeline"],
                         "qa_ok": rec["qa_ok"],
+                        "rejection_reasons": ";".join(rec["rejection_reasons"]),
+                        "diagnostics_json": json.dumps(
+                            rec["diagnostics"], cls=NumpyEncoder, separators=(",", ":")
+                        ),
                         **rec["metrics"],
                     }
                     writer.writerow(row_data)

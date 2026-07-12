@@ -30,6 +30,27 @@ This document defines the pendant pipeline results contract used by the GUI Resu
   - `timings_ms` (object) — Per‑stage timings populated by the pipeline runner.
   - `image_path` (string) — Source image path (for provenance in exports).
 
+### Common diagnostics envelope
+
+New runs may include the additive `diagnostics` object with `solver`,
+`residuals`, `confidence`, `validity`, `calibration`, `side_discrepancy`, and
+`detectors`. The established `residuals`, `strict_rmse_mm`, and
+`strict_fit_stop_reason` fields remain available during migration.
+
+When explicitly enabled, `diagnostics.experimental_geometry` may contain a
+robust pendant axis initializer with `axis_origin_px`, `axis_direction_xy`,
+`r0_seed_mm`, `beta_seed`, coverage, asymmetry, and rejection reasons. The
+legacy vertical-axis fields remain valid when the initializer is disabled.
+
+Phase-C shadow runs may add `diagnostics.onnx_proposals`. Proposal masks and
+contours are non-authoritative and do not alter calibration, strict fitting,
+surface tension, acceptance, or rejection reasons.
+
+Persisted measurements include `accepted`, `rejection_reasons`, and
+diagnostics. A rejected solve remains auditable but its physical candidate
+values are not exported inside `results` as valid measurements. These fields
+are optional, so schema version `1.0` is unchanged.
+
 Notes
 - Current implementation emits `diameter_mm`, `height_mm`, `r0_mm`, `beta`, `surface_tension_mN_m`, `volume_uL`, and possibly `needle_surface_mm2`, `s1`, strict fit diagnostics, and geometric comparison values.
 - Public `r0_mm`, `beta`, and `surface_tension_mN_m` come from strict Young-Laplace only when the fit succeeds and passes residual gates. Otherwise public surface tension falls back to the first enabled approximation with `ok` status in this order: multi-selected-plane, selected-plane, volume-apex lookup, then legacy Jennings-Pallas.

@@ -19,7 +19,7 @@ flowchart LR
     CoreRunner["Headless execution<br/>pipelines/runner.py"]
     Discovery["Pipeline discovery<br/>pipelines/discover.py"]
     Base["Stage plan and lifecycle<br/>pipelines/base.py"]
-    Pipelines["Mode implementations<br/>pipelines/*/stages.py"]
+    Pipelines["Static and temporal mode implementations<br/>pipelines/*/stages.py"]
     Context["Shared run state<br/>models/context.py"]
     Settings["Configuration models<br/>models/config.py"]
     Shared["Algorithms and services<br/>common/ + math/"]
@@ -83,6 +83,7 @@ consumer that requests a named implementation.
 | `src/menipy/gui/` | PySide6 application, controllers, dialogs, services, views, and resources | `src/menipy/gui/app.py`, `src/menipy/gui/controllers/main_controller.py` |
 | `src/menipy/pipelines/` | Pipeline lifecycle, discovery, runner, and analysis-mode stages | `src/menipy/pipelines/base.py`, `src/menipy/pipelines/discover.py` |
 | `src/menipy/common/` | Shared acquisition, detection, preprocessing, geometry, plugins, material data, units, and validation | Open the module named by the pipeline stage or controller |
+| `models/mobilesam/` | Versioned ONNX-only MobileSAM TinyViT encoder and prompt/mask decoder | `models/mobilesam/README.md`, `src/menipy/common/mobilesam_onnx.py` |
 | `src/menipy/models/` | Pydantic settings, shared context, geometry, fit, frame, state, and result data | `src/menipy/models/context.py`, `src/menipy/models/config.py` |
 | `src/menipy/math/` | Reusable scientific equations and numerical models | `src/menipy/math/young_laplace.py` |
 | `src/menipy/viz/` | Non-Qt plotting helpers | `src/menipy/viz/plots.py` |
@@ -90,6 +91,7 @@ consumer that requests a named implementation.
 | `tests/` | Behavioral and architectural coverage | Start with the test whose name matches the subsystem |
 | `docs/guides/` | Scientific, pipeline, plugin, GUI, and development explanations | `docs/guides/developer_guide_pipelines.md` |
 | `docs/contracts/` | Pipeline results and results-panel integration contracts | Open the contract for the affected pipeline |
+| `docs/research/` | Reproducible research plans and evidence-backed external-method assessments | `docs/research/adsa_open_source_evaluation_plan.md` |
 | `scripts/` | Import analysis, documentation generation, legacy analysis, and standalone diagnostics | Treat outputs as reports, not application state |
 | `tools/` | Resource building, audits, migrations, and maintenance helpers | Read the tool module docstring before running it |
 | `.github/workflows/` | Test, lint, pre-commit, and Qt resource CI | `.github/workflows/ci.yml`, `.github/workflows/lint.yml` |
@@ -104,9 +106,13 @@ consumer that requests a named implementation.
 | Change CLI arguments, batch execution, or exports | `src/menipy/cli/__init__.py` -> `src/menipy/pipelines/runner.py` | `tests/test_cli.py`, the affected pipeline contract |
 | Change the stage lifecycle or stage selection | `src/menipy/pipelines/base.py` -> `src/menipy/pipelines/discover.py` -> `src/menipy/pipelines/runner.py` | `tests/test_pipeline_runner.py`, `tests/test_alt_workflow.py` |
 | Change a specific analysis mode | `src/menipy/pipelines/<mode>/stages.py` and sibling mode modules | `tests/test_<mode>*.py`, `docs/contracts/<mode>_results.md` when present |
+| Change dynamic sessile tracking, video timing, hysteresis, or timeline exports | `src/menipy/common/sequence_acquisition.py` -> `src/menipy/common/temporal_sessile.py` -> `src/menipy/pipelines/sessile_dynamic/` | `tests/test_phase_d_dynamic_sessile.py`, `tests/data/adsa_temporal_manifest.json`, `docs/contracts/sessile_dynamic_results.md` |
 | Change sessile contour or contact-angle behavior | `src/menipy/common/sessile_detection.py` -> `src/menipy/pipelines/sessile/geometry.py` -> `src/menipy/pipelines/sessile/stages.py` | `tests/test_sessile_auto_detection.py`, `tests/test_sessile_geometry.py`, `tests/test_sessile_contact_angles.py` |
-| Change pendant fitting or surface tension | `src/menipy/pipelines/pendant/` -> `src/menipy/math/young_laplace.py` | `tests/test_pendant_pipeline.py`, `tests/test_surface_tension.py`, `tests/test_young_laplace_ode.py`, `docs/contracts/pendant_results.md` |
+| Change pendant fitting, surface tension, or Phase-B axis initialization | `src/menipy/pipelines/pendant/` -> `src/menipy/math/young_laplace.py` -> `src/menipy/common/geometry_prototypes.py` | `tests/test_pendant_pipeline.py`, `tests/test_adsa_geometry_phase_b.py`, `docs/contracts/pendant_results.md` |
 | Change calibration or automatic feature detection | `src/menipy/common/auto_calibrator.py`, `src/menipy/common/detection_helpers.py`, detector modules in `plugins/` | `tests/test_auto_calibrator.py`, `tests/test_detection_plugins.py` |
+| Change ADSA diagnostics, rejection, or detector conformance | `src/menipy/common/validation.py` -> `src/menipy/models/results.py` -> results consumers | `tests/test_phase_a_diagnostics.py`, `tests/test_phase_a_results_gui.py`, `tests/test_adsa_detector_conformance.py` |
+| Change MobileSAM inference or regenerate its ONNX graphs | `src/menipy/common/mobilesam_onnx.py` -> `models/mobilesam/`; build with `scripts/export_mobilesam_onnx.py` | `tests/test_mobilesam_onnx.py`, `models/mobilesam/README.md` |
+| Change ONNX proposal providers or annotation datasets | `src/menipy/common/segmentation_providers.py` -> `src/menipy/common/onnx_shadow.py` -> `src/menipy/common/annotation_dataset.py` | `tests/test_phase_c_onnx_providers.py`, `docs/contracts/onnx_segmentation_providers.md`, `docs/contracts/adsa_annotation_dataset.md` |
 | Change shared run data or settings | `src/menipy/models/context.py`, `src/menipy/models/config.py`, then every stage/controller that reads the field | `tests/test_models.py`, pipeline and controller tests using the field |
 | Add or modify a plugin kind | `src/menipy/common/registry.py` -> `src/menipy/common/plugins.py` -> `src/menipy/common/plugin_loader.py` -> matching `plugins/*.py` | `tests/test_plugin_consolidation.py`, `tests/test_detection_plugins.py`, `docs/guides/developer_guide_plugins.md` |
 | Change material or needle database behavior | `src/menipy/common/material_db.py` -> `src/menipy/gui/services/material_catalog_service.py` -> setup/dialog controllers | `tests/test_setup_panel.py`, `tests/test_guided_ui_simplification.py` |
@@ -114,8 +120,8 @@ consumer that requests a named implementation.
 | Change packaging, lint, types, or test configuration | `pyproject.toml`, `.pre-commit-config.yaml`, `.github/workflows/` | Run the corresponding local command and relevant workflow-equivalent tests |
 
 `<mode>` means one of the directories currently discovered under
-`src/menipy/pipelines/`: `sessile`, `pendant`, `oscillating`, `capillary_rise`,
-or `captive_bubble`.
+`src/menipy/pipelines/`: `sessile`, `sessile_dynamic`, `pendant`, `oscillating`,
+`capillary_rise`, or `captive_bubble`.
 
 ## Tooling and generated information
 
@@ -128,6 +134,19 @@ override current source, tests, or documentation.
   and `scripts/generate_recommendations.py` add runtime-import and orphan reports.
 - Documentation: `scripts/generate_docs.py` and Sphinx configuration under
   `docs/` generate documentation output.
+- ADSA detector conformance: `tests/data/adsa_detector_manifest.json` defines
+  48 deterministic cases; `tests/adsa_conformance.py` generates them in memory,
+  and `scripts/benchmark_adsa_phase_a.py` writes non-blocking performance evidence.
+- Phase-B geometry conformance: `tests/data/adsa_geometry_manifest.json` defines
+  60 deterministic cases; `tests/adsa_geometry_conformance.py` generates them
+  in memory, and `scripts/benchmark_adsa_phase_b.py` writes non-blocking evidence.
+- Phase-C ONNX proposals: `tests/test_phase_c_onnx_providers.py` blocks model
+  integrity, topology, determinism, shadow invariance, and dataset review
+  status; `scripts/benchmark_adsa_phase_c.py` writes non-blocking mask evidence.
+- Phase-D temporal sessile: `tests/data/adsa_temporal_manifest.json` defines 48
+  deterministic sequences; `tests/adsa_temporal_conformance.py` generates them
+  without binary fixtures, and `scripts/benchmark_adsa_phase_d.py` exports the
+  fast gate and full benchmark evidence.
 - Maintenance: `tools/audit_docstrings.py`, `tools/build_resources.py`, and
   migration/remediation helpers operate on the repository but are not runtime
   dependencies.

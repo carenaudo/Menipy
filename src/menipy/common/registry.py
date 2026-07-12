@@ -63,6 +63,8 @@ class Registry:
 EDGE_DETECTORS = Registry("edge_detectors")
 SOLVERS = Registry("solvers")
 PENDANT_APPROXIMATORS = Registry("pendant_approximators")
+PENDANT_INITIALIZERS = Registry("pendant_initializers")
+SEGMENTATION_PROVIDERS = Registry("segmentation_providers")
 
 # Other common stage utilities
 ACQUISITIONS = Registry("acquisitions")
@@ -100,6 +102,16 @@ def register_solver(name: str, fn: Callable[..., Any]) -> None:
 def register_pendant_approximator(name: str, fn: Callable[..., Any]) -> None:
     """Register a pendant surface-tension approximation plugin."""
     PENDANT_APPROXIMATORS.register(name, fn)
+
+
+def register_pendant_initializer(name: str, fn: Callable[..., Any]) -> None:
+    """Register a pendant geometry initializer."""
+    PENDANT_INITIALIZERS.register(name, fn)
+
+
+def register_segmentation_provider(name: str, fn: Callable[..., Any]) -> None:
+    """Register a non-authoritative segmentation proposal provider."""
+    SEGMENTATION_PROVIDERS.register(name, fn)
 
 
 def register_acquisition(name: str, fn: Callable[..., Any]) -> None:
@@ -189,6 +201,8 @@ def get_registry_snapshot() -> dict[str, dict[str, Callable[..., Any]]]:
         "edge_detectors": dict(EDGE_DETECTORS),
         "solvers": dict(SOLVERS),
         "pendant_approximators": dict(PENDANT_APPROXIMATORS),
+        "pendant_initializers": dict(PENDANT_INITIALIZERS),
+        "segmentation_providers": dict(SEGMENTATION_PROVIDERS),
         "acquisitions": dict(ACQUISITIONS),
         "preprocessors": dict(PREPROCESSORS),
         "geometries": dict(GEOMETRIES),

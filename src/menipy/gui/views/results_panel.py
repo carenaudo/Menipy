@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import json
 from collections.abc import Mapping
 from typing import Any, List, Optional
 
@@ -83,6 +84,7 @@ VALID_PIPELINES = {
     "oscillating",
     "capillary_rise",
     "captive_bubble",
+    "sessile_dynamic",
 }
 VALID_PIPELINES_FILTER = "__valid__"
 LEGACY_PIPELINES_FILTER = "__legacy__"
@@ -113,6 +115,9 @@ LABEL_MAP = {
     "uncertainty_deg": "Angle Uncertainty (°)",
     "uncertainty_left_deg": "Left Angle Uncertainty (°)",
     "uncertainty_right_deg": "Right Angle Uncertainty (°)",
+    "theta_advancing_deg": "Advancing Angle (°)",
+    "theta_receding_deg": "Receding Angle (°)",
+    "contact_angle_hysteresis_deg": "Hysteresis (°)",
 }
 
 
@@ -201,6 +206,9 @@ class ResultsPanel:
         self.pipeline_combo = QComboBox()
         self.pipeline_combo.addItem("All Valid Pipelines", VALID_PIPELINES_FILTER)
         self.pipeline_combo.addItem(load_icon("sessile"), "Sessile", "sessile")
+        self.pipeline_combo.addItem(
+            load_icon("sessile"), "Dynamic Sessile", "sessile_dynamic"
+        )
         self.pipeline_combo.addItem(load_icon("pendant"), "Pendant", "pendant")
         self.pipeline_combo.addItem(
             load_icon("oscillating"), "Oscillating", "oscillating"
@@ -431,7 +439,7 @@ class ResultsPanel:
             return
 
         try:
-            with open(file_path, "w", newline="") as csvfile:
+            with open(file_path, "w", newline="", encoding="utf-8") as csvfile:
                 writer = csv.writer(csvfile)
 
                 # Write headers
@@ -596,6 +604,7 @@ class ResultsPanel:
             ("diameter_mm", "Diameter", " mm"),
             ("volume_uL", "Volume", " µL"),
             ("contact_angle_deg", "Angle", "°"),
+            ("contact_angle_hysteresis_deg", "Hysteresis", "°"),
         ):
             value = results.get(key)
             if value in (None, ""):
@@ -652,7 +661,9 @@ class ResultsPanel:
         measurement = self._measurement_for_row(self.table.currentRow())
         if measurement is None:
             return False
-        return bool((measurement.results or {}).get("residuals"))
+        return bool(
+            measurement.diagnostics or (measurement.results or {}).get("residuals")
+        )
 
     def _update_residuals_table(self, measurement: MeasurementResult | None) -> None:
         table = self.residuals_table
@@ -660,8 +671,28 @@ class ResultsPanel:
             return
         residuals = None
         if measurement is not None:
-            residuals = (measurement.results or {}).get("residuals")
+            if measurement.diagnostics:
+                residuals = self._flatten_diagnostics(measurement)
+            else:
+                residuals = (measurement.results or {}).get("residuals")
         self._render_residuals(residuals)
+
+    def _flatten_diagnostics(self, measurement: MeasurementResult) -> dict[str, Any]:
+        rows: dict[str, Any] = {
+            "status": "accepted" if measurement.accepted else "rejected"
+        }
+        if measurement.rejection_reasons:
+            rows["rejection_reasons"] = ", ".join(measurement.rejection_reasons)
+
+        def visit(prefix: str, value: Any) -> None:
+            if isinstance(value, Mapping):
+                for key, nested in value.items():
+                    visit(f"{prefix}.{key}" if prefix else str(key), nested)
+            elif value not in (None, "", [], {}):
+                rows[prefix] = value
+
+        visit("", measurement.diagnostics)
+        return rows
 
     def _render_residuals(self, residuals: Any) -> None:
         table = self.residuals_table
@@ -900,6 +931,8 @@ class ResultsPanel:
             "diameter_line",
             "model_profile_px",
             "contact_angle_fit_rmse_px",
+            "rejection_reasons",
+            "diagnostics_json",
         }
         return key.startswith(diagnostic_prefixes) or key in diagnostic_names
 
@@ -928,6 +961,9 @@ class ResultsPanel:
             "file_name",
             "timestamp",
             "pipeline",
+            "status",
+            "rejection_reasons",
+            "diagnostics_json",
             "diameter_mm",
             "height_mm",
             "volume_uL",
@@ -965,6 +1001,12 @@ class ResultsPanel:
                     value = measurement.timestamp.strftime("%H:%M:%S")
                 elif col == "pipeline":
                     value = measurement.pipeline.title()
+                elif col == "status":
+                    value = "Accepted" if measurement.accepted else "Rejected"
+                elif col == "rejection_reasons":
+                    value = ";".join(measurement.rejection_reasons)
+                elif col == "diagnostics_json":
+                    value = json.dumps(measurement.diagnostics, separators=(",", ":"))
                 else:
                     value = measurement.results.get(col)
                     if isinstance(value, (int, float)):
@@ -994,7 +1036,7 @@ class ResultsPanel:
         priority_columns = []
 
         # Always include timestamp and file info first
-        for base in ("file_name", "timestamp", "pipeline"):
+        for base in ("file_name", "timestamp", "pipeline", "status"):
             if base in headers:
                 priority_columns.append(base)
 
@@ -1040,6 +1082,8 @@ class ResultsPanel:
         key = pipeline_name.lower().replace(" ", "_")
         if key == "capillary_rise":
             return load_icon("capillary_rise")
+        if key == "sessile_dynamic":
+            return load_icon("sessile")
         if key in VALID_PIPELINES:
             return load_icon(key)
         return load_icon("info")
@@ -1051,6 +1095,12 @@ class ResultsPanel:
             return "Time"
         if header == "pipeline":
             return "Pipeline"
+        if header == "status":
+            return "Status"
+        if header == "rejection_reasons":
+            return "Rejection Reasons"
+        if header == "diagnostics_json":
+            return "Diagnostics JSON"
         return LABEL_MAP.get(header, header.replace("_", " ").title())
 
     def _update_summary(self) -> None:
@@ -1091,6 +1141,8 @@ class ResultsPanel:
                     "theta_left_deg",
                     "angle_mean",
                     "angle_left",
+                    "theta_advancing_deg",
+                    "theta_receding_deg",
                 ),
                 "°",
             ),

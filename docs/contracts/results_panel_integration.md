@@ -59,5 +59,9 @@ This guide standardizes how the GUI Results Panel renders results for each pipel
 - Sessile: `diameter_mm`, `height_mm`, `theta_left_deg`, `theta_right_deg`, (`contact_angle_deg` legacy), `volume_uL`, `drop_surface_mm2`, `baseline_tilt_deg`.
 - Captive bubble: `depth_mm`, `diameter_mm`, `r0_mm`, (`gamma_mN_m` optional), `volume_uL`, `drop_surface_mm2`.
 - Oscillating: `f0_Hz`, `r0_eq_mm`, (`gamma_mN_m` optional), plus diagnostics (`fps`, `snr`, `peak_width_Hz`, `n_frames`).
+- Dynamic sessile: `theta_advancing_deg`, `theta_receding_deg`,
+  `contact_angle_hysteresis_deg`, `n_valid_frames`, and `valid_fraction`.
+  History stores one summary record; the preview timeline and long-form export
+  consume the per-frame contract. Rejected sequences show no metric cards.
 - Capillary rise: `h_mm`, `r_tube_mm`, (`gamma_mN_m`/`theta_deg` optional).
 

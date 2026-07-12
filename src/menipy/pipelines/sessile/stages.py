@@ -197,7 +197,10 @@ class SessilePipeline(PipelineBase):
             apex_i = int(np.argmin(y))
             apex_xy = (float(x[apex_i]), float(y[apex_i]))
 
-        from .geometry import build_sessile_calculation_contour, clip_contour_to_substrate
+        from .geometry import (
+            build_sessile_calculation_contour,
+            clip_contour_to_substrate,
+        )
 
         xy, refined_contact_points = clip_contour_to_substrate(
             xy, substrate_line, apex_xy
@@ -307,7 +310,7 @@ class SessilePipeline(PipelineBase):
 
         # Get contact angle method
         contact_angle_method = getattr(ctx, "contact_angle_method", "tangent")
-        if contact_angle_method not in ["tangent", "circle_fit", "spherical_cap"]:
+        if contact_angle_method not in ["tangent", "circle_fit", "spherical_cap", "auto_residual"]:
             contact_angle_method = "tangent"
 
         # Get contact points (may have been set by contour_refinement)
@@ -329,6 +332,27 @@ class SessilePipeline(PipelineBase):
             contact_angle_method=contact_angle_method,
             contact_points=use_contact_points,
         )
+
+        if getattr(ctx, "experimental_geometry_mode", "off") == "shadow" and contact_angle_method != "auto_residual":
+            shadow_metrics = compute_sessile_metrics(
+                xy_calc,
+                px_per_mm=px_per_mm,
+                substrate_line=substrate_line,
+                apex=apex_xy,
+                contact_point_tolerance_px=20.0,
+                auto_detect_baseline=auto_detect_baseline,
+                auto_detect_apex=auto_detect_apex,
+                contact_angle_method="auto_residual",
+                contact_points=use_contact_points,
+            )
+            shadow_payload = {
+                "accepted": True,
+                "promoted_method": contact_angle_method,
+                "shadow": shadow_metrics.get("contact_angle_selector", {}),
+                "theta_left_deg": shadow_metrics.get("theta_left_deg"),
+                "theta_right_deg": shadow_metrics.get("theta_right_deg"),
+            }
+            metrics.setdefault("experimental_geometry", {})["sessile_contact_selector"] = shadow_payload
 
         # Store metrics temporarily for compute_metrics stage
         ctx._sessile_metrics = metrics

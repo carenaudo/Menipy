@@ -12,6 +12,7 @@ from menipy.common.geometry import (
     find_contact_points_from_contour,
     refine_apex_curvature,
     tangent_angle_at_point,
+    tangent_angle_at_point_pure,
 )
 from menipy.models.drop_extras import surface_area_mm2
 from menipy.models.surface_tension import volume_from_contour
@@ -166,9 +167,34 @@ def compute_sessile_metrics(
     theta_right_deg = 0.0
     uncertainty_left = 0.0
     uncertainty_right = 0.0
+    method_left = method_right = "unavailable"
+    selector_diagnostics: dict = {}
 
     if substrate_line is not None and p1 is not None and p2 is not None:
-        if contact_angle_method == "tangent":
+        if contact_angle_method == "auto_residual":
+            contour_len = len(contour.reshape(-1, 2))
+            tangent_window_px = 30 if contour_len > 200 else 15
+            tangent_weight_power = 2.0 if contour_len > 200 else 4.0
+
+            def choose(point: np.ndarray) -> tuple[float, float, str, dict]:
+                tangent_angle, tangent_rmse = tangent_angle_at_point_pure(
+                    contour, point, substrate_line, window_px=tangent_window_px, weight_power=tangent_weight_power
+                )
+                circle_angle, circle_rmse = circle_fit_angle_at_point(contour, point, substrate_line)
+                tangent_ok = bool(np.isfinite(tangent_angle) and np.isfinite(tangent_rmse) and tangent_rmse < 10.0)
+                circle_ok = bool(np.isfinite(circle_angle) and np.isfinite(circle_rmse) and circle_rmse < 10.0)
+                # Tangent remains the preferred/simple model unless circle is
+                # materially better (20% lower residual).
+                if circle_ok and (not tangent_ok or circle_rmse <= tangent_rmse * 0.8):
+                    return circle_angle, circle_rmse, "circle_fit", {"tangent": {"angle_deg": tangent_angle, "rmse_px": tangent_rmse, "accepted": tangent_ok}, "circle_fit": {"angle_deg": circle_angle, "rmse_px": circle_rmse, "accepted": True}, "reason": "circle_materially_lower_residual"}
+                if tangent_ok:
+                    return tangent_angle, tangent_rmse, "tangent", {"tangent": {"angle_deg": tangent_angle, "rmse_px": tangent_rmse, "accepted": True}, "circle_fit": {"angle_deg": circle_angle, "rmse_px": circle_rmse, "accepted": circle_ok}, "reason": "tangent_preferred_or_tie"}
+                return float("nan"), float("inf"), "rejected", {"tangent": {"angle_deg": tangent_angle, "rmse_px": tangent_rmse, "accepted": False}, "circle_fit": {"angle_deg": circle_angle, "rmse_px": circle_rmse, "accepted": circle_ok}, "reason": "no_valid_contact_angle_model"}
+
+            theta_left_deg, uncertainty_left, method_left, diag_left = choose(p1)
+            theta_right_deg, uncertainty_right, method_right, diag_right = choose(p2)
+            selector_diagnostics = {"left": diag_left, "right": diag_right, "method_left": method_left, "method_right": method_right}
+        elif contact_angle_method == "tangent":
             # Use tangent method
             contour_len = len(contour.reshape(-1, 2))
             tangent_window_px = 30 if contour_len > 200 else 15
@@ -256,6 +282,8 @@ def compute_sessile_metrics(
         "baseline_method": baseline_method,
         "apex_method": apex_method,
         "method": contact_angle_method,
+        **({"method_left": method_left, "method_right": method_right, "contact_angle_selector": selector_diagnostics} if contact_angle_method == "auto_residual" else {}),
+        **({"experimental_geometry": {"sessile_contact_selector": {"accepted": method_left != "rejected" and method_right != "rejected", "rejection_reasons": (["left_contact_angle_no_valid_model"] if method_left == "rejected" else []) + (["right_contact_angle_no_valid_model"] if method_right == "rejected" else []), "method_left": method_left, "method_right": method_right}}} if contact_angle_method == "auto_residual" else {}),
         "uncertainty_deg": {"left": uncertainty_left, "right": uncertainty_right},
         "contact_angle_fit_rmse_px": {
             "left": uncertainty_left,

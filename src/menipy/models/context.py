@@ -13,6 +13,7 @@ from .frame import Frame
 from .geometry import Contour, Geometry
 from .result import Result
 from .state import MarkerSet
+from .temporal import DynamicSessileResult, SequenceMetadata, TemporalFrameResult
 
 
 class Context(BaseModel):
@@ -54,6 +55,26 @@ class Context(BaseModel):
     physics: dict[str, Any] = Field(default_factory=dict)
     results: dict[str, Any] = Field(default_factory=dict)
     qa: Any = Field(default_factory=dict)
+    detector_diagnostics: dict[str, Any] = Field(default_factory=dict)
+    # Experimental Phase-B geometry controls.  Legacy behavior remains the default.
+    experimental_geometry_mode: str = "off"
+    needle_geometry_method: str = "legacy"
+    pendant_initializer: str = "legacy"
+    contact_angle_method: str = "tangent"
+    pendant_axis_origin_px: tuple[float, float] | None = None
+    pendant_axis_direction_xy: tuple[float, float] | None = None
+    onnx_proposal_mode: str = "off"
+    segmentation_provider: str = "mobilesam"
+    onnx_proposal_classes: list[str] = Field(
+        default_factory=lambda: ["droplet", "needle"]
+    )
+    onnx_proposals: dict[str, Any] = Field(default_factory=dict)
+    # Phase-D sequence analysis. These fields are additive and unused by static modes.
+    sequence_path: str | None = None
+    sequence_fps: float | None = None
+    sequence_metadata: SequenceMetadata | None = None
+    temporal_frame_results: list[TemporalFrameResult] = Field(default_factory=list)
+    dynamic_sessile_result: DynamicSessileResult | None = None
 
     # Overlay rendering (optional)
     overlay: np.ndarray | None = None  # overlay-only image (BGR)

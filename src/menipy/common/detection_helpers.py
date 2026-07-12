@@ -10,10 +10,12 @@ from __future__ import annotations
 
 import logging
 from importlib import import_module
+from types import SimpleNamespace
 from typing import Any
 
 import numpy as np
 
+from menipy.common.detection_result import normalize_detection_result
 from menipy.common.image_utils import edges_to_xy, ensure_gray
 
 logger = logging.getLogger(__name__)
@@ -64,6 +66,10 @@ def auto_detect_features(
     detect_drop: bool = True,
     detect_apex: bool = True,
     detect_roi: bool = True,
+    experimental_geometry_mode: str = "off",
+    needle_geometry_method: str = "legacy",
+    onnx_proposal_mode: str = "off",
+    segmentation_provider: str = "mobilesam",
 ) -> dict[str, Any]:
     """
     Run automatic feature detection for a pipeline.
@@ -87,6 +93,7 @@ def auto_detect_features(
         return {}
 
     results: dict[str, Any] = {}
+    diagnostics: dict[str, Any] = {}
     pipeline = pipeline.lower()
 
     # 1. Detect substrate (sessile only)
@@ -94,7 +101,12 @@ def auto_detect_features(
     if detect_substrate and pipeline == "sessile":
         if "gradient" in SUBSTRATE_DETECTORS:
             substrate_line = SUBSTRATE_DETECTORS["gradient"](image)
-            if substrate_line:
+            outcome = normalize_detection_result(
+                substrate_line, feature="substrate", parameters={"detector": "gradient"}
+            )
+            diagnostics["substrate"] = outcome.to_diagnostics()
+            if outcome.accepted:
+                substrate_line = outcome.value
                 results["substrate_line"] = substrate_line
                 # Extract Y for other detections
                 substrate_y = int((substrate_line[0][1] + substrate_line[1][1]) / 2)
@@ -102,9 +114,18 @@ def auto_detect_features(
     # 2. Detect needle
     if detect_needle:
         detector_name = pipeline if pipeline in NEEDLE_DETECTORS else "sessile"
+        experimental_name = f"{pipeline}_bilateral"
+        run_experimental = needle_geometry_method == "bilateral_robust" or experimental_geometry_mode == "shadow"
         if detector_name in NEEDLE_DETECTORS:
             needle_result = NEEDLE_DETECTORS[detector_name](image)
-            if needle_result:
+            outcome = normalize_detection_result(
+                needle_result,
+                feature="needle",
+                parameters={"detector": detector_name},
+            )
+            diagnostics["needle"] = outcome.to_diagnostics()
+            if outcome.accepted:
+                needle_result = outcome.value
                 if (
                     pipeline == "pendant"
                     and isinstance(needle_result, tuple)
@@ -115,6 +136,18 @@ def auto_detect_features(
                     results["contact_points"] = needle_result[1]
                 else:
                     results["needle_rect"] = needle_result
+        if run_experimental and experimental_name in NEEDLE_DETECTORS:
+            experimental_raw = NEEDLE_DETECTORS[experimental_name](image)
+            experimental = normalize_detection_result(experimental_raw, feature="needle", parameters={"detector": experimental_name})
+            diagnostics["needle_bilateral"] = experimental.to_diagnostics()
+            if needle_geometry_method == "bilateral_robust":
+                if experimental.accepted and isinstance(experimental.value, dict):
+                    results["needle_rect"] = experimental.value.get("needle_rect")
+                    if pipeline == "pendant":
+                        results["contact_points"] = experimental.value.get("contact_points")
+                else:
+                    results.pop("needle_rect", None)
+                    results.pop("contact_points", None)
 
     # 3. Detect drop contour
     drop_contour = None
@@ -125,7 +158,14 @@ def auto_detect_features(
                 drop_result = DROP_DETECTORS[detector_name](
                     image, substrate_y=substrate_y
                 )
-                if drop_result:
+                outcome = normalize_detection_result(
+                    drop_result,
+                    feature="drop",
+                    parameters={"detector": detector_name},
+                )
+                diagnostics["drop"] = outcome.to_diagnostics()
+                if outcome.accepted:
+                    drop_result = outcome.value
                     if isinstance(drop_result, tuple) and len(drop_result) == 2:
                         drop_contour, contact_pts = drop_result
                         results["drop_contour"] = drop_contour
@@ -135,8 +175,15 @@ def auto_detect_features(
                         drop_contour = drop_result
                         results["drop_contour"] = drop_contour
             else:
-                drop_contour = DROP_DETECTORS[detector_name](image)
-                if drop_contour is not None:
+                raw_drop = DROP_DETECTORS[detector_name](image)
+                outcome = normalize_detection_result(
+                    raw_drop,
+                    feature="drop",
+                    parameters={"detector": detector_name},
+                )
+                diagnostics["drop"] = outcome.to_diagnostics()
+                drop_contour = outcome.value
+                if outcome.accepted:
                     results["drop_contour"] = drop_contour
 
     # 4. Detect apex
@@ -152,6 +199,8 @@ def auto_detect_features(
                 apex_point = APEX_DETECTORS[detector_name](drop_contour)
             if apex_point:
                 results["apex_point"] = apex_point
+            outcome = normalize_detection_result(apex_point, feature="apex")
+            diagnostics["apex"] = outcome.to_diagnostics()
 
     # 5. Detect ROI
     if detect_roi:
@@ -173,7 +222,27 @@ def auto_detect_features(
             roi_rect = ROI_DETECTORS[detector_name](image, **roi_kwargs)
             if roi_rect:
                 results["roi_rect"] = roi_rect
+            outcome = normalize_detection_result(roi_rect, feature="roi")
+            diagnostics["roi"] = outcome.to_diagnostics()
 
+    results["detector_diagnostics"] = diagnostics
+    if onnx_proposal_mode == "shadow":
+        from menipy.common.onnx_shadow import run_shadow_segmentation
+
+        proxy = SimpleNamespace(
+            image=image,
+            frames=None,
+            drop_contour=results.get("drop_contour"),
+            detected_contour=results.get("drop_contour"),
+            contour=None,
+            needle_rect=results.get("needle_rect"),
+            onnx_proposal_mode="shadow",
+            segmentation_provider=segmentation_provider,
+            onnx_proposal_classes=["droplet", "needle"],
+            onnx_proposals={},
+        )
+        run_shadow_segmentation(proxy, pipeline)
+        diagnostics["onnx_proposals"] = proxy.onnx_proposals
     logger.info(f"Auto-detected features for {pipeline}: {list(results.keys())}")
     return results
 

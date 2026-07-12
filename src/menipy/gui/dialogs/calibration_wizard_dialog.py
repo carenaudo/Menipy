@@ -453,7 +453,12 @@ class CalibrationWizardDialog(QDialog):
         if not allow_fallback:
             return primary
 
-        candidates = [(self.pipeline_name, primary)]
+        supported_detectors = {"pendant", "sessile"}
+        candidates = (
+            [(self.pipeline_name, primary)]
+            if self.pipeline_name in supported_detectors
+            else []
+        )
         for detector_name in ("pendant", "sessile"):
             if detector_name == self.pipeline_name:
                 continue
@@ -468,12 +473,21 @@ class CalibrationWizardDialog(QDialog):
                     exc_info=True,
                 )
 
+        preferred_fallback = {"captive_bubble": "pendant"}.get(self.pipeline_name)
+        if preferred_fallback is not None:
+            for detector_name, candidate in candidates:
+                if detector_name == preferred_fallback and self._calibration_score(candidate) > 0:
+                    candidate.confidence_scores["detector_pipeline"] = detector_name
+                    return candidate
+
         best_name, best = max(
             candidates, key=lambda item: self._calibration_score(item[1])
         )
         primary_score = self._calibration_score(primary)
         best_score = self._calibration_score(best)
-        if best is not primary and best_score > primary_score + 0.15:
+        if self.pipeline_name not in supported_detectors or (
+            best is not primary and best_score > primary_score + 0.15
+        ):
             best.confidence_scores["detector_pipeline"] = best_name
             logger.info(
                 "Auto-calibration used %s detector instead of %s (score %.2f > %.2f)",

@@ -25,6 +25,28 @@ class PendantStrictFitInput:
     beta_seed: float
     physics: dict[str, Any]
     needle_radius_mm: float | None = None
+    axis_origin_px: tuple[float, float] | None = None
+    axis_direction_xy: tuple[float, float] | None = None
+
+
+def _axis_frame(
+    *, axis_x_px: float, apex_y_px: float,
+    axis_origin_px: tuple[float, float] | None,
+    axis_direction_xy: tuple[float, float] | None,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return image-space origin and orthonormal (radial, axial) basis."""
+    origin = np.asarray(axis_origin_px or (axis_x_px, apex_y_px), dtype=float)
+    direction = np.asarray(axis_direction_xy or (0.0, -1.0), dtype=float)
+    norm = float(np.linalg.norm(direction))
+    if norm <= 1e-12:
+        direction = np.array([0.0, -1.0], dtype=float)
+    else:
+        direction /= norm
+    radial = np.array([-direction[1], direction[0]], dtype=float)
+    # Preserve the historical x-right orientation for a vertical axis.
+    if radial[0] < 0:
+        radial = -radial
+    return origin, np.column_stack([radial, direction])
 
 
 def build_pendant_profile_envelope_mm(
@@ -34,6 +56,8 @@ def build_pendant_profile_envelope_mm(
     apex_y_px: float,
     px_per_mm: float,
     bin_px: float = 1.0,
+    axis_origin_px: tuple[float, float] | None = None,
+    axis_direction_xy: tuple[float, float] | None = None,
 ) -> np.ndarray:
     """Collapse a pendant contour into a radial ``(r_mm, z_mm)`` envelope."""
     xy = np.asarray(contour_px, dtype=float).reshape(-1, 2)
@@ -41,21 +65,23 @@ def build_pendant_profile_envelope_mm(
         return np.empty((0, 2), dtype=float)
 
     bin_px = max(float(bin_px), 1.0)
-    row_keys = np.rint(xy[:, 1] / bin_px).astype(int)
+    origin, basis = _axis_frame(axis_x_px=axis_x_px, apex_y_px=apex_y_px, axis_origin_px=axis_origin_px, axis_direction_xy=axis_direction_xy)
+    local = (xy - origin) @ basis
+    row_keys = np.rint(local[:, 1] * px_per_mm / bin_px).astype(int)
     rows: list[tuple[float, float]] = []
     for row in np.unique(row_keys):
         pts = xy[row_keys == row]
         if pts.size == 0:
             continue
-        y_px = float(np.mean(pts[:, 1]))
-        z_mm = (float(apex_y_px) - y_px) / float(px_per_mm)
+        local_pts = local[row_keys == row]
+        z_mm = float(np.mean(local_pts[:, 1])) / float(px_per_mm)
         if z_mm < -0.5 / float(px_per_mm):
             continue
-        xs = pts[:, 0]
+        xs = local_pts[:, 0]
         if xs.size >= 2:
             r_mm = (float(np.max(xs)) - float(np.min(xs))) / (2.0 * px_per_mm)
         else:
-            r_mm = float(np.max(np.abs(xs - float(axis_x_px)))) / float(px_per_mm)
+            r_mm = float(np.max(np.abs(xs))) / float(px_per_mm)
         if np.isfinite(z_mm) and np.isfinite(r_mm) and r_mm >= 0:
             rows.append((r_mm, max(0.0, z_mm)))
 
@@ -88,14 +114,15 @@ def pendant_contour_to_model_mm(
     axis_x_px: float,
     apex_y_px: float,
     px_per_mm: float,
+    axis_origin_px: tuple[float, float] | None = None,
+    axis_direction_xy: tuple[float, float] | None = None,
 ) -> np.ndarray:
     """Convert image-space pendant contour points into apex-centered mm."""
     xy = np.asarray(contour_px, dtype=float).reshape(-1, 2)
     if px_per_mm <= 0:
         raise ValueError("px_per_mm must be positive")
-    x_mm = (xy[:, 0] - float(axis_x_px)) / float(px_per_mm)
-    z_mm = (float(apex_y_px) - xy[:, 1]) / float(px_per_mm)
-    return np.column_stack([x_mm, z_mm])
+    origin, basis = _axis_frame(axis_x_px=axis_x_px, apex_y_px=apex_y_px, axis_origin_px=axis_origin_px, axis_direction_xy=axis_direction_xy)
+    return (xy - origin) @ basis / float(px_per_mm)
 
 
 def model_mm_to_pendant_px(
@@ -104,12 +131,13 @@ def model_mm_to_pendant_px(
     axis_x_px: float,
     apex_y_px: float,
     px_per_mm: float,
+    axis_origin_px: tuple[float, float] | None = None,
+    axis_direction_xy: tuple[float, float] | None = None,
 ) -> np.ndarray:
     """Convert apex-centered strict model coordinates back to image pixels."""
     xy = np.asarray(model_mm, dtype=float).reshape(-1, 2)
-    x_px = xy[:, 0] * float(px_per_mm) + float(axis_x_px)
-    y_px = float(apex_y_px) - xy[:, 1] * float(px_per_mm)
-    return np.column_stack([x_px, y_px])
+    origin, basis = _axis_frame(axis_x_px=axis_x_px, apex_y_px=apex_y_px, axis_origin_px=axis_origin_px, axis_direction_xy=axis_direction_xy)
+    return xy * float(px_per_mm) @ basis.T + origin
 
 
 def integrate_young_laplace_profile_mm(
@@ -271,6 +299,8 @@ def fit_pendant_young_laplace_strict(
         axis_x_px=fit_input.axis_x_px,
         apex_y_px=fit_input.apex_y_px,
         px_per_mm=fit_input.px_per_mm,
+        axis_origin_px=fit_input.axis_origin_px,
+        axis_direction_xy=fit_input.axis_direction_xy,
     )
     if obs_mm.shape[0] < 8:
         return {
@@ -299,6 +329,8 @@ def fit_pendant_young_laplace_strict(
         axis_x_px=fit_input.axis_x_px,
         apex_y_px=fit_input.apex_y_px,
         px_per_mm=fit_input.px_per_mm,
+        axis_origin_px=fit_input.axis_origin_px,
+        axis_direction_xy=fit_input.axis_direction_xy,
     )
     diameter_mm = float(np.ptp(obs_mm[:, 0]))
     height_mm = float(np.ptp(obs_mm[:, 1]))
@@ -400,6 +432,8 @@ def fit_pendant_young_laplace_strict(
         axis_x_px=fit_input.axis_x_px,
         apex_y_px=fit_input.apex_y_px,
         px_per_mm=fit_input.px_per_mm,
+        axis_origin_px=fit_input.axis_origin_px,
+        axis_direction_xy=fit_input.axis_direction_xy,
     )
 
     return {

@@ -50,6 +50,7 @@ class PipelineController:
         self.pipeline_map = {str(k).lower(): v for k, v in (pipeline_map or {}).items()}
         self.contact_points = None  # Placeholder for manual contact points
         self._latest_acquisition_overlays: dict[str, Any] = {}
+        self._dynamic_context_persisted = False
 
     def _collect_acquisition_inputs(self) -> tuple[bool, dict[str, Any]]:
         overlays: dict[str, Any] = {}
@@ -123,6 +124,8 @@ class PipelineController:
             return {}
 
         payload: dict[str, Any] = {}
+        if getattr(result, "detector_diagnostics", None):
+            payload["detector_diagnostics"] = dict(result.detector_diagnostics)
         if getattr(result, "roi_rect", None):
             payload["roi"] = result.roi_rect
         if getattr(result, "needle_rect", None):
@@ -212,6 +215,8 @@ class PipelineController:
         warnings: list[str] = []
 
         image = params.get("image")
+        if name == "sessile_dynamic" and params.get("mode") == "batch":
+            image = params.get("batch_folder")
         cam_id = params.get("cam_id")
         frames = params.get("frames")
 
@@ -266,6 +271,21 @@ class PipelineController:
             "rho2": calibration_params.get("fluid_density_kg_m3", 1.2),
             "g": calibration_params.get("g", 9.80665),
         }
+        settings_owner = getattr(self, "settings", None) or getattr(
+            self.window, "settings", None
+        )
+        pipeline_settings = getattr(settings_owner, "pipeline_settings", {}) or {}
+        for key in (
+            "experimental_geometry_mode",
+            "needle_geometry_method",
+            "pendant_initializer",
+            "contact_angle_method",
+            "onnx_proposal_mode",
+            "segmentation_provider",
+            "onnx_proposal_classes",
+        ):
+            if key in pipeline_settings:
+                run_kwargs[key] = pipeline_settings[key]
         if params.get("analysis_params"):
             run_kwargs["analysis_params"] = params.get("analysis_params")
         if image is not None:
@@ -556,7 +576,10 @@ class PipelineController:
             QMessageBox.warning(self.window, "Run", f"Unknown pipeline: {name}")
             return
 
-        ready, overlays = self._collect_acquisition_inputs()
+        if name == "sessile_dynamic":
+            ready, overlays = True, {}
+        else:
+            ready, overlays = self._collect_acquisition_inputs()
         if not ready:
             return
 
@@ -568,6 +591,8 @@ class PipelineController:
             overlays.setdefault(key, value)
 
         image = params.get("image")
+        if name == "sessile_dynamic" and params.get("mode") == "batch":
+            image = params.get("batch_folder")
         cam_id = params.get("cam_id")
         frames = params.get("frames")
 
@@ -597,7 +622,8 @@ class PipelineController:
         run_kwargs = dict(overlays)
         # Pass structured context data
         run_kwargs["calibration_params"] = calibration_params
-        run_kwargs["scale"] = {"px_per_mm": px_per_mm}
+        if name != "sessile_dynamic" or needle_rect:
+            run_kwargs["scale"] = {"px_per_mm": px_per_mm}
         run_kwargs["physics"] = {
             "rho1": calibration_params.get("drop_density_kg_m3", 1000.0),
             "rho2": calibration_params.get("fluid_density_kg_m3", 1.2),
@@ -607,7 +633,12 @@ class PipelineController:
             run_kwargs["analysis_params"] = params.get("analysis_params")
 
         if image is not None:
-            run_kwargs["image"] = image
+            if name == "sessile_dynamic":
+                run_kwargs["sequence_path"] = image
+                analysis = params.get("analysis_params") or {}
+                run_kwargs["sequence_fps"] = analysis.get("sequence_fps")
+            else:
+                run_kwargs["image"] = image
         if cam_id is not None:
             run_kwargs["camera"] = cam_id
         if frames is not None:
@@ -843,6 +874,9 @@ class PipelineController:
 
     def on_context_ready(self, ctx: Any) -> None:
         self._display_context(ctx)
+        if getattr(ctx, "dynamic_sessile_result", None) is not None:
+            self.add_measurement_to_history(ctx, "sessile_dynamic")
+            self._dynamic_context_persisted = True
         self.window.statusBar().showMessage("Preview updated", 1000)
 
     def _display_context(self, ctx: Any) -> None:
@@ -864,6 +898,9 @@ class PipelineController:
     def on_results_ready(self, results: Mapping[str, Any]) -> None:
         params = self.setup_ctrl.gather_run_params()
         pipeline_name = (params.get("name") or "unknown").lower()
+        if pipeline_name == "sessile_dynamic" and self._dynamic_context_persisted:
+            self._dynamic_context_persisted = False
+            return
         self.results_panel.update_single_measurement(
             results, pipeline_name=pipeline_name
         )
@@ -891,9 +928,19 @@ class PipelineController:
         import uuid
         from datetime import datetime
 
-        from menipy.models.results import MeasurementResult, get_results_history
+        from menipy.models.results import (
+            MeasurementResult,
+            build_persisted_analysis,
+            get_results_history,
+        )
 
-        if not hasattr(ctx, "results") or not ctx.results:
+        if not hasattr(ctx, "results"):
+            return
+        persisted = build_persisted_analysis(ctx)
+        if pipeline_name == "sessile_dynamic":
+            persisted["results"] = dict(persisted["results"])
+            persisted["results"].pop("series", None)
+        if not ctx.results and persisted["accepted"]:
             return
 
         # Generate measurement ID
@@ -903,6 +950,8 @@ class PipelineController:
 
         # Extract file information safely (tests may provide Mock values)
         file_path = getattr(ctx, "image_path", None)
+        if not file_path:
+            file_path = getattr(ctx, "sequence_path", None)
         file_name = None
         try:
             if not isinstance(file_path, (str, bytes)):
@@ -940,7 +989,10 @@ class PipelineController:
                 pipeline=pipeline_name,
                 file_path=file_path,
                 file_name=file_name,
-                results=dict(ctx.results),
+                results=persisted["results"],
+                accepted=persisted["accepted"],
+                rejection_reasons=persisted["rejection_reasons"],
+                diagnostics=persisted["diagnostics"],
             )
         except Exception:
             try:
@@ -950,7 +1002,10 @@ class PipelineController:
                     pipeline=pipeline_name,
                     file_path=None,
                     file_name=None,
-                    results=dict(ctx.results),
+                    results=persisted["results"],
+                    accepted=persisted["accepted"],
+                    rejection_reasons=persisted["rejection_reasons"],
+                    diagnostics=persisted["diagnostics"],
                 )
             except Exception:
                 # If even the minimal record cannot be created, log and continue
@@ -967,7 +1022,7 @@ class PipelineController:
         # Also notify results panel of new results for immediate UI update
         # Some tests expect `results_panel.update` to be called with the raw results dict
         try:
-            self.results_panel.update(getattr(ctx, "results", {}))
+            self.results_panel.update(persisted["results"])
         except Exception:
             # Be forgiving if the panel doesn't implement update
             pass

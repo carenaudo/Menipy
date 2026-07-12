@@ -20,6 +20,10 @@ class SolverInfo(BaseModel):
     )
     method: str | None = Field(default=None, description="lm/trf/dogbox/etc.")
     iterations: int | None = Field(default=None, ge=0)
+    nfev: int | None = Field(default=None, ge=0, description="function evaluations")
+    njev: int | None = Field(default=None, ge=0, description="Jacobian evaluations")
+    status: int | None = Field(default=None, description="backend termination code")
+    termination_reason: str | None = None
     success: bool = True
     message: str | None = None
     time_ms: float | None = Field(default=None, ge=0)
@@ -30,6 +34,10 @@ class Residuals(BaseModel):
 
     rmse: float = Field(ge=0)
     max_abs: float = Field(ge=0)
+    mean_abs: float | None = Field(default=None, ge=0)
+    median_abs: float | None = Field(default=None, ge=0)
+    p95_abs: float | None = Field(default=None, ge=0)
+    units: str | None = None
     dof: int | None = Field(default=None, ge=0)
     # Optional full residual vector (e.g., per-point contour error in pixels/mm)
     r: FloatVec | None = None

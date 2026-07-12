@@ -50,6 +50,9 @@ test = [
 docs = [
     "sphinx>=7.2.0",
 ]
+onnx = [
+    "onnxruntime>=1.16.0",
+]
 
 [project.scripts]
 menipy = "menipy.gui:main"

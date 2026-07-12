@@ -14,7 +14,7 @@ This document defines the sessile pipeline results contract used by the GUI Resu
   - `volume_uL` (float) — Volume in microlitres.
   - `drop_surface_mm2` (float) — Drop surface area in mm².
   - `baseline_tilt_deg` (float) — Estimated substrate tilt in degrees.
-  - `method` (string) — Angle method tag: `tangent`, `spherical_cap`, `circle_fit`, `young_laplace`.
+  - `method` (string) — Angle method tag: `tangent`, `spherical_cap`, `circle_fit`, `auto_residual`, `young_laplace`.
 - optional keys:
   - `contact_angle_deg` (float) — Single angle from spherical‑cap approximation (legacy/quick estimate).
   - `uncertainty_deg` (object) — Angle uncertainty per side: `{ "left": x, "right": y }`.
@@ -23,6 +23,27 @@ This document defines the sessile pipeline results contract used by the GUI Resu
   - `timings_ms` (object) — Per‑stage timings populated by the pipeline runner.
   - `image_path` (string) — Source image path (for provenance in exports).
   - `diagnostics` (object) — Optional diagnostics including residuals, fit quality metrics, etc.
+
+### Common diagnostics envelope
+
+For new runs, `diagnostics` uses the additive Phase-A envelope with optional
+`solver`, `residuals`, `confidence`, `validity`, `calibration`,
+`side_discrepancy`, and `detectors` objects. Legacy top-level residual and
+method fields remain supported. Persisted measurements also expose
+`accepted`, `rejection_reasons`, and a separate diagnostics object.
+
+Phase-B opt-in runs may add `experimental_geometry` with bilateral needle
+lines and per-side selector candidates. `auto_residual` may select tangent on
+one side and circle fit on the other; `method_left` and `method_right` are
+diagnostic tags and do not change the schema version.
+
+Phase-C shadow runs may add `diagnostics.onnx_proposals`. These values are
+comparison metadata only and never replace the sessile contour, substrate,
+contact points, angles, acceptance, or rejection reasons.
+
+When `accepted` is false, physical measurement keys are not promoted into the
+persisted `results` object. The rejected record and its diagnostics remain
+available for audit, GUI inspection, and JSON/CSV export.
 
 Notes
 - Current implementation may emit only `contact_angle_deg` and omit left/right angles; both schemas are supported. The Results Panel must handle either gracefully.
@@ -61,6 +82,7 @@ Notes
 - GUI mapping must tolerate presence of only `contact_angle_deg` and absence of left/right angles.
 - If the angle method is unknown/missing, display values without method tag and no uncertainty.
 - New keys must not break existing consumers; increment `schema_version` when changing required fields.
+- Phase-A fields are optional and therefore keep schema version `1.0`.
 
 ## Provenance and Exports
 

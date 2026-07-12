@@ -25,6 +25,7 @@ from menipy.pipelines.base import PipelineBase
 from menipy.pipelines.pendant import (  # noqa: F401
     approximations as _pendant_approximations,
 )
+from menipy.pipelines.pendant import initializers as _pendant_initializers  # noqa: F401
 from menipy.pipelines.pendant.strict_young_laplace import (
     PendantStrictFitInput,
     build_pendant_profile_envelope_mm,
@@ -362,9 +363,26 @@ class PendantPipeline(PipelineBase):
         """Extract axis and apex location from contour."""
         xy = ensure_contour(ctx)
         x, y = xy[:, 0], xy[:, 1]
-        axis_x = float(np.median(x))
         apex_i = int(np.argmax(y))  # pendant apex at bottom
         apex_xy = (float(x[apex_i]), float(y[apex_i]))
+        initializer_name = str(getattr(ctx, "pendant_initializer", "legacy"))
+        mode = str(getattr(ctx, "experimental_geometry_mode", "off"))
+        init = None
+        if initializer_name == "robust_axis" or mode == "shadow":
+            fn = registry.PENDANT_INITIALIZERS.get("robust_axis")
+            if fn is not None:
+                init = fn(xy, float((ctx.scale or {}).get("px_per_mm", 1.0)))
+                ctx.results.setdefault("diagnostics", {}).setdefault("experimental_geometry", {})["pendant_initializer"] = init.to_diagnostics()
+                ctx.results.setdefault("experimental_geometry", {})["pendant_initializer"] = init.to_diagnostics()
+        if initializer_name == "robust_axis" and init is not None and init.accepted:
+            apex_xy = init.apex_xy
+            ctx.pendant_axis_origin_px = init.axis_origin_px
+            ctx.pendant_axis_direction_xy = init.axis_direction_xy
+            axis_x = float(init.axis_origin_px[0])
+        else:
+            axis_x = float(np.median(x))
+            ctx.pendant_axis_origin_px = None
+            ctx.pendant_axis_direction_xy = None
 
         from menipy.models.geometry import Geometry
 
@@ -472,8 +490,36 @@ class PendantPipeline(PipelineBase):
                     beta_seed=beta_seed,
                     physics=ctx.physics or {},
                     needle_radius_mm=needle_radius_mm,
+                    axis_origin_px=getattr(ctx, "pendant_axis_origin_px", None),
+                    axis_direction_xy=getattr(ctx, "pendant_axis_direction_xy", None),
                 )
             )
+            if getattr(ctx, "experimental_geometry_mode", "off") == "shadow" and getattr(ctx, "pendant_initializer", "legacy") == "legacy":
+                robust_fn = registry.PENDANT_INITIALIZERS.get("robust_axis")
+                if robust_fn is not None:
+                    robust_init = robust_fn(xy, px_per_mm)
+                    robust_fit = None
+                    if robust_init.accepted:
+                        robust_fit = fit_pendant_young_laplace_strict(
+                            PendantStrictFitInput(
+                                contour_px=xy,
+                                axis_x_px=float(robust_init.axis_origin_px[0]),
+                                apex_y_px=float(robust_init.apex_xy[1]),
+                                px_per_mm=px_per_mm,
+                                r0_seed_mm=robust_init.r0_seed_mm,
+                                beta_seed=robust_init.beta_seed,
+                                physics=ctx.physics or {},
+                                needle_radius_mm=needle_radius_mm,
+                                axis_origin_px=robust_init.axis_origin_px,
+                                axis_direction_xy=robust_init.axis_direction_xy,
+                            )
+                        )
+                    ctx.results.setdefault("experimental_geometry", {}).setdefault("pendant_initializer", {})["shadow_fit"] = {
+                        "initializer": robust_init.to_diagnostics(),
+                        "strict_fit_success": bool((robust_fit or {}).get("strict_fit_success", False)),
+                        "strict_rmse_mm": (robust_fit or {}).get("strict_rmse_mm"),
+                        "solver": (robust_fit or {}).get("solver", {}),
+                    }
         except Exception as exc:
             ctx.fit = {
                 "params": [],

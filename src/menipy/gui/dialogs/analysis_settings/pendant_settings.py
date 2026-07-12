@@ -76,6 +76,33 @@ class PipelineSettingsWidget(QWidget):
             self._edge.setCurrentText(settings["edge_detector"])
         form.addRow("Edge detector", self._edge)
 
+        self._experimental_mode = QComboBox()
+        self._experimental_mode.addItems(["off", "shadow"])
+        self._experimental_mode.setCurrentText(settings.get("experimental_geometry_mode", "off"))
+        form.addRow("Experimental geometry", self._experimental_mode)
+
+        self._needle_geometry = QComboBox()
+        self._needle_geometry.addItems(["legacy", "bilateral_robust"])
+        self._needle_geometry.setCurrentText(settings.get("needle_geometry_method", "legacy"))
+        form.addRow("Needle geometry", self._needle_geometry)
+
+        self._pendant_initializer = QComboBox()
+        self._pendant_initializer.addItems(["legacy", "robust_axis"])
+        self._pendant_initializer.setCurrentText(settings.get("pendant_initializer", "legacy"))
+        form.addRow("Pendant initializer", self._pendant_initializer)
+
+        self._onnx_mode = QComboBox()
+        self._onnx_mode.addItems(["off", "shadow"])
+        self._onnx_mode.setCurrentText(settings.get("onnx_proposal_mode", "off"))
+        form.addRow("ONNX proposals", self._onnx_mode)
+
+        self._segmentation_provider = QComboBox()
+        self._segmentation_provider.addItems(["mobilesam"])
+        self._segmentation_provider.setCurrentText(
+            settings.get("segmentation_provider", "mobilesam")
+        )
+        form.addRow("Segmentation provider", self._segmentation_provider)
+
         self._approx_checks: dict[str, QCheckBox] = {}
         enabled_approximations = settings.get(
             "pendant_approximation_methods", DEFAULT_PENDANT_APPROXIMATION_METHODS
@@ -128,6 +155,11 @@ class PipelineSettingsWidget(QWidget):
         Description.
         """
         return {
+            "experimental_geometry_mode": self._experimental_mode.currentText(),
+            "needle_geometry_method": self._needle_geometry.currentText(),
+            "pendant_initializer": self._pendant_initializer.currentText(),
+            "onnx_proposal_mode": self._onnx_mode.currentText(),
+            "segmentation_provider": self._segmentation_provider.currentText(),
             "rho1": float(self._rho1.value()),
             "rho2": float(self._rho2.value()),
             "g": float(self._g.value()),

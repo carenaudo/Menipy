@@ -43,6 +43,9 @@ class _Job(QRunnable):
         calibration_params=None,
         scale=None,
         physics=None,
+        sequence_path=None,
+        sequence_fps=None,
+        analysis_params=None,
         stages: list[str] | None = None,
     ) -> None:
         super().__init__()
@@ -68,6 +71,9 @@ class _Job(QRunnable):
         self.calibration_params = calibration_params
         self.scale = scale
         self.physics = physics
+        self.sequence_path = sequence_path
+        self.sequence_fps = sequence_fps
+        self.analysis_params = analysis_params
         self.stages = stages
 
     def run(self):
@@ -99,6 +105,9 @@ class _Job(QRunnable):
                 "calibration_params": self.calibration_params,
                 "scale": self.scale,
                 "physics": self.physics,
+                "sequence_path": self.sequence_path,
+                "sequence_fps": self.sequence_fps,
+                "analysis_params": self.analysis_params,
                 "image": self.image,
                 "camera": self.camera,
                 "frames": self.frames,

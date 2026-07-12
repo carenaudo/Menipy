@@ -205,9 +205,10 @@ class PipelineBase:
            - 'errors': list - fatal issues
            - 'scores': dict - quality scores per check
         """
-        from menipy.common.validation import validate
+        from menipy.common.validation import build_diagnostics, validate
 
         ctx.qa = validate(ctx)
+        ctx.results["diagnostics"] = build_diagnostics(ctx, ctx.qa)
         return ctx
 
     # ---- Backward compatibility aliases (deprecated) ----
@@ -299,10 +300,15 @@ class PipelineBase:
             ctx.camera_id = cam
 
         if "frames" in kwargs and kwargs["frames"] is not None:
-            try:
-                ctx.frames_requested = int(kwargs["frames"])
-            except Exception:
-                ctx.frames_requested = kwargs["frames"]
+            frame_arg = kwargs["frames"]
+            if isinstance(frame_arg, (list, tuple, np.ndarray)):
+                ctx.frames = list(frame_arg) if isinstance(frame_arg, tuple) else frame_arg
+                try:
+                    ctx.frames_requested = len(frame_arg)
+                except TypeError:
+                    ctx.frames_requested = 1
+            else:
+                ctx.frames_requested = int(frame_arg)
 
         if "roi" in kwargs and kwargs["roi"] is not None:
             ctx.roi = kwargs["roi"]
@@ -345,6 +351,22 @@ class PipelineBase:
                 if key in type(ctx).model_fields:
                     setattr(ctx, key, value)
 
+        # Pipeline-specific analysis settings (GUI/CLI) are additive fields on
+        # Context; legacy callers may continue passing this nested mapping.
+        analysis_params = kwargs.get("analysis_params") or {}
+        if isinstance(analysis_params, dict):
+            for key in (
+                "experimental_geometry_mode",
+                "needle_geometry_method",
+                "pendant_initializer",
+                "contact_angle_method",
+                "onnx_proposal_mode",
+                "segmentation_provider",
+                "onnx_proposal_classes",
+            ):
+                if key in analysis_params and key in type(ctx).model_fields:
+                    setattr(ctx, key, analysis_params[key])
+
         # Prioritize kwargs over instance settings to avoid multiple value errors.
         if "preprocessing_settings" not in kwargs:
             kwargs["preprocessing_settings"] = self.preprocessing_settings
@@ -384,6 +406,7 @@ class PipelineBase:
             "px_per_mm",
             "needle_diameter_mm",
             "calibration_params",
+            "analysis_params",
             "preprocessing_settings",
             "edge_detection_settings",
             "measurement_id",

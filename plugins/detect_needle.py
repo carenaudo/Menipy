@@ -16,6 +16,7 @@ from menipy.common.plugin_settings import (
     resolve_plugin_settings,
 )
 from menipy.common.registry import register_needle_detector
+from menipy.common.geometry_prototypes import detect_bilateral_needle
 
 # NOTE: cv2 import moved inside functions
 
@@ -353,6 +354,8 @@ def detect_needle_pendant(
 # Register plugins
 register_needle_detector("sessile", detect_needle_sessile)
 register_needle_detector("pendant", detect_needle_pendant)
+register_needle_detector("sessile_bilateral", detect_bilateral_needle)
+register_needle_detector("pendant_bilateral", detect_bilateral_needle)
 
 # Register settings
 # We use names that users will find in the plugin manager dropdown

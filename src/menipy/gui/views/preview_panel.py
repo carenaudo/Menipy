@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
 )
 
 from menipy.gui.helpers.icon_loader import load_icon, set_button_icon
+from menipy.gui.views.dynamic_timeline import DynamicTimelineWidget
 
 LAYER_DEFAULTS = {
     "contour": True,
@@ -96,6 +97,13 @@ class PreviewPanel:
         self._status_label: QLabel | None = self.panel.findChild(
             QLabel, "previewStatusLabel"
         )
+        self._dynamic_ctx: Any | None = None
+        self.dynamic_timeline = DynamicTimelineWidget(self.panel)
+        self.dynamic_timeline.setObjectName("dynamicSessileTimeline")
+        self.dynamic_timeline.setVisible(False)
+        self.dynamic_timeline.frame_changed.connect(self._display_dynamic_frame)
+        if self.panel.layout() is not None:
+            self.panel.layout().addWidget(self.dynamic_timeline)
         if self._status_label:
             self._status_label.setStyleSheet(
                 "color: #57606A; font-weight: 600; padding: 2px 8px;"
@@ -174,6 +182,15 @@ class PreviewPanel:
         """Display a completed pipeline context with interactive overlay layers."""
         if not self.image_view or ctx is None:
             return
+        dynamic = getattr(ctx, "dynamic_sessile_result", None)
+        if dynamic is not None:
+            self._dynamic_ctx = ctx
+            self.dynamic_timeline.setVisible(True)
+            self.dynamic_timeline.set_sequence(dynamic.frames, dynamic.metadata.fps)
+            self._display_dynamic_frame(0)
+            return
+        self.dynamic_timeline.setVisible(False)
+        self._dynamic_ctx = None
         base = self._context_base_image(ctx)
         commands = list(getattr(ctx, "overlay_commands", None) or [])
         if base is not None and commands:
@@ -188,6 +205,33 @@ class PreviewPanel:
         if base is not None:
             self.display(base)
             self._set_status("Analysis preview")
+
+    def _display_dynamic_frame(self, index: int) -> None:
+        ctx = self._dynamic_ctx
+        if ctx is None:
+            return
+        frames = list(getattr(ctx, "frames", None) or [])
+        results = list(getattr(ctx, "temporal_frame_results", None) or [])
+        if index < 0 or index >= len(frames) or index >= len(results):
+            return
+        frame = frames[index]
+        image = getattr(frame, "image", frame)
+        result = results[index]
+        self.display(image)
+        commands: list[dict[str, Any]] = []
+        if result.contour:
+            commands.append({"type": "polyline", "points": result.contour, "closed": True, "color": "yellow", "thickness": 2})
+        if result.baseline:
+            commands.append({"type": "line", "p1": result.baseline[0], "p2": result.baseline[1], "color": "cyan", "thickness": 2})
+        for contact in result.contacts or ():
+            commands.append({"type": "cross", "p": contact, "color": "red", "size": 6, "thickness": 2})
+        if result.predicted_roi:
+            x, y, width, height = result.predicted_roi
+            commands.append({"type": "rectangle", "rect": (x, y, width, height), "color": "magenta", "thickness": 1})
+        commands.append({"type": "text", "p": (10, 24), "text": f"{result.state} · {'accepted' if result.accepted else 'rejected'}", "color": "white", "scale": 0.6, "thickness": 2})
+        self.render_overlay_commands(commands)
+        reasons = ", ".join(result.rejection_reasons)
+        self._set_status(f"Frame {index + 1}/{len(results)} · {result.state}" + (f" · {reasons}" if reasons else ""))
 
     def render_overlay_commands(self, commands: list[dict[str, Any]]) -> None:
         if not self.image_view:
@@ -662,6 +706,17 @@ class PreviewPanel:
                 self.image_view.add_marker_line(
                     QPointF(float(p1[0]), float(p1[1])),
                     QPointF(float(p2[0]), float(p2[1])),
+                    color=color,
+                    width=thickness,
+                    tag=tag,
+                    layer=layer,
+                )
+            elif typ == "rectangle":
+                rect = cmd.get("rect")
+                if rect is None:
+                    return
+                self.image_view.add_marker_rect(
+                    QRectF(float(rect[0]), float(rect[1]), float(rect[2]), float(rect[3])),
                     color=color,
                     width=thickness,
                     tag=tag,

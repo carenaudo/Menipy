@@ -110,12 +110,16 @@ class SetupPanelController(QObject):
             QPushButton, "capillaryBtn"
         )
         self.captiveBtn: QPushButton | None = panel.findChild(QPushButton, "captiveBtn")
+        self.dynamicSessileBtn: QPushButton | None = panel.findChild(
+            QPushButton, "dynamicSessileBtn"
+        )
         self._pipeline_button_map: dict[QPushButton | None, str] = {
             self.sessileBtn: "sessile",
             self.pendantBtn: "pendant",
             self.oscillatingBtn: "oscillating",
             self.capillaryBtn: "capillary_rise",
             self.captiveBtn: "captive_bubble",
+            self.dynamicSessileBtn: "sessile_dynamic",
         }
         self._pipeline_labels = {
             "sessile": "Sessile",
@@ -123,6 +127,7 @@ class SetupPanelController(QObject):
             "oscillating": "Osc.",
             "capillary_rise": "Capillary",
             "captive_bubble": "Captive",
+            "sessile_dynamic": "Dynamic",
         }
         self._pipeline_icon_names = {
             "sessile": "sessile",
@@ -130,6 +135,7 @@ class SetupPanelController(QObject):
             "oscillating": "oscillating",
             "capillary_rise": "capillary_rise",
             "captive_bubble": "captive_bubble",
+            "sessile_dynamic": "sessile",
         }
 
         self.singleModeRadio: QRadioButton | None = panel.findChild(
@@ -245,6 +251,10 @@ class SetupPanelController(QObject):
         )
         self.oscillatingAmplitudeSpin: QDoubleSpinBox | None = panel.findChild(
             QDoubleSpinBox, "oscillatingAmplitudeSpin"
+        )
+        self.dynamicFpsLabel: QLabel | None = panel.findChild(QLabel, "dynamicFpsLabel")
+        self.dynamicFpsSpin: QDoubleSpinBox | None = panel.findChild(
+            QDoubleSpinBox, "dynamicFpsSpin"
         )
         self.capillaryTubeDiameterLabel: QLabel | None = panel.findChild(
             QLabel, "capillaryTubeDiameterLabel"
@@ -502,6 +512,8 @@ class SetupPanelController(QObject):
             params["oscillation_frequency_hz"] = self.oscillatingFrequencySpin.value()
         if self.oscillatingAmplitudeSpin:
             params["oscillation_amplitude_mm"] = self.oscillatingAmplitudeSpin.value()
+        if self.dynamicFpsSpin:
+            params["sequence_fps"] = self.dynamicFpsSpin.value()
         if self.capillaryTubeDiameterSpin:
             params["tube_diameter_mm"] = self.capillaryTubeDiameterSpin.value()
         if self.capillaryContactAngleSpin:
@@ -1107,7 +1119,7 @@ class SetupPanelController(QObject):
         self, pipeline_name: str | None = None
     ) -> None:
         pipeline = pipeline_name or self.current_pipeline_name()
-        is_sessile = pipeline == "sessile"
+        is_sessile = pipeline in {"sessile", "sessile_dynamic"}
         for widget in (self.substrateAngleLabel, self.substrateAngleSpin):
             if widget:
                 widget.setVisible(is_sessile)
@@ -1118,6 +1130,7 @@ class SetupPanelController(QObject):
             "oscillating": "Oscillating Settings",
             "capillary_rise": "Capillary Settings",
             "captive_bubble": "Captive Bubble Settings",
+            "sessile_dynamic": "Dynamic Sessile Settings",
         }
         if self.pipelineSettingsGroup:
             self.pipelineSettingsGroup.setTitle(
@@ -1146,6 +1159,7 @@ class SetupPanelController(QObject):
                 self.captiveDetectionLabel,
                 self.captiveDetectionValue,
             ),
+            "sessile_dynamic": (self.dynamicFpsLabel, self.dynamicFpsSpin),
         }
         all_pipeline_widgets: list[QWidget] = []
         for widgets in visibility_sets.values():

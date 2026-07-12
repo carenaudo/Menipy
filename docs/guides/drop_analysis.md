@@ -6,6 +6,24 @@ This document describes the workflow and algorithms used by the Menipy applicati
 
 Menipy uses a flexible, pipeline-driven architecture to perform automated measurements on droplet images. Instead of a fixed interface, the user selects an analysis pipeline (e.g., for pendant or sessile drops), configures its stages, and executes it. The analysis is performed on a selected source, which can be a single image, a batch of images, or a live camera feed.
 
+For dynamic contact-angle work, select **Dynamic Sessile**. A single source is
+a supported video; a batch-folder source is interpreted as one naturally
+ordered image sequence rather than independent measurements. Image sequences
+require the configured sequence FPS. Dynamic analysis fixes the calibration
+scale, follows the substrate, preserves raw per-frame angles and reports
+advancing, receding and hysteresis summaries only when their validity gates
+pass. The preview timeline synchronizes playback, overlays, raw angles,
+contact width/velocity and state.
+
+```powershell
+adsa --pipeline sessile_dynamic --video experiment.mp4 --px-per-mm 42.1 --out out
+adsa --pipeline sessile_dynamic --sequence-dir frames --fps 120 --px-per-mm 42.1 --out out
+```
+
+Video codecs depend on the OpenCV build. Variable-size sequences, missing
+timing/calibration, long tracking gaps and excessive substrate drift are
+scientific rejections rather than partial successes.
+
 ## 2. User Workflow
 
 The main workflow is organized around the top workflow bar, the left setup rail,

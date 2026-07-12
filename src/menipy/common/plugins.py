@@ -28,7 +28,7 @@ def _register_from_module(mod) -> None:
     """
     Protocols supported:
       1) register(module) -> calls registry functions
-      2) EDGE_DETECTORS / SOLVERS / PENDANT_APPROXIMATORS dicts
+      2) EDGE_DETECTORS / SOLVERS / PENDANT_APPROXIMATORS / PENDANT_INITIALIZERS dicts
       3) get_edge_detectors() / get_solvers() / get_pendant_approximators()
          returning name->callable
     """
@@ -43,6 +43,16 @@ def _register_from_module(mod) -> None:
             "PENDANT_APPROXIMATORS",
             "get_pendant_approximators",
             _reg.register_pendant_approximator,
+        ),
+        (
+            "PENDANT_INITIALIZERS",
+            "get_pendant_initializers",
+            getattr(_reg, "register_pendant_initializer", None),
+        ),
+        (
+            "SEGMENTATION_PROVIDERS",
+            "get_segmentation_providers",
+            getattr(_reg, "register_segmentation_provider", None),
         ),
         (
             "ACQUISITIONS",
@@ -62,6 +72,8 @@ def _register_from_module(mod) -> None:
         "register_edge": _reg.register_edge,
         "register_solver": _reg.register_solver,
         "register_pendant_approximator": _reg.register_pendant_approximator,
+        "register_pendant_initializer": getattr(_reg, "register_pendant_initializer", None),
+        "register_segmentation_provider": getattr(_reg, "register_segmentation_provider", None),
         "register_acquisition": getattr(_reg, "register_acquisition", None),
         "register_optimizer": getattr(_reg, "register_optimizer", None),
         "register_physics": getattr(_reg, "register_physics", None),
@@ -105,7 +117,9 @@ def discover_into_db(db: PluginDB, plugin_dirs: Iterable[Path]) -> int:
             name = path.stem
 
             # Detect kind by filename keywords
-            if "approximator" in name or "approximation" in name:
+            if "segmentation" in name and "provider" in name:
+                kind = "segmentation_provider"
+            elif "approximator" in name or "approximation" in name:
                 kind = "pendant_approximator"
             elif "solver" in name or "laplace" in name:
                 kind = "solver"
@@ -246,9 +260,13 @@ def list_plugins_status(db: PluginDB) -> list[dict]:
                     "EDGE_DETECTORS",
                     "SOLVERS",
                     "PENDANT_APPROXIMATORS",
+                    "PENDANT_INITIALIZERS",
+                    "SEGMENTATION_PROVIDERS",
                     "get_edge_detectors",
                     "get_solvers",
                     "get_pendant_approximators",
+                    "get_pendant_initializers",
+                    "get_segmentation_providers",
                 )
             )
             if not ok:

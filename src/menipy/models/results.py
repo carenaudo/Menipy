@@ -22,6 +22,52 @@ class MeasurementResult(BaseModel):
     file_path: str | None = None
     file_name: str | None = None  # Display name
     results: dict[str, Any] = Field(default_factory=dict)  # Raw results from pipeline
+    accepted: bool = True
+    rejection_reasons: list[str] = Field(default_factory=list)
+    diagnostics: dict[str, Any] = Field(default_factory=dict)
+
+
+def _qa_payload(qa: Any) -> dict[str, Any]:
+    if isinstance(qa, dict):
+        return dict(qa)
+    if hasattr(qa, "to_dict"):
+        payload = qa.to_dict()
+        if isinstance(payload, dict):
+            return payload
+    return {}
+
+
+def build_persisted_analysis(ctx: Any) -> dict[str, Any]:
+    """Return a GUI/CLI-safe payload, quarantining rejected physical results."""
+    raw_results = dict(getattr(ctx, "results", {}) or {})
+    diagnostics = dict(raw_results.pop("diagnostics", {}) or {})
+    qa = _qa_payload(getattr(ctx, "qa", {}))
+    accepted = bool(qa.get("ok", True))
+    raw_reasons = qa.get("rejection_reasons", [])
+    reasons = (
+        [str(reason) for reason in raw_reasons]
+        if isinstance(raw_reasons, (list, tuple, set))
+        else []
+    )
+    if not reasons:
+        checks = qa.get("checks", {})
+        if not isinstance(checks, dict):
+            checks = {}
+        reasons = [
+            str(check.get("code", key))
+            for key, check in checks.items()
+            if isinstance(check, dict)
+            and not check.get("passed", False)
+            and check.get("severity", "error") == "error"
+        ]
+    if qa and "validity" not in diagnostics:
+        diagnostics["validity"] = qa
+    return {
+        "accepted": accepted,
+        "rejection_reasons": reasons,
+        "diagnostics": diagnostics,
+        "results": raw_results if accepted else {},
+    }
 
 
 class ResultsHistory:
@@ -76,6 +122,9 @@ class ResultsHistory:
             "file_name",
             "timestamp",
             "pipeline",
+            "status",
+            "rejection_reasons",
+            "diagnostics_json",
             # Common metrics
             "diameter_mm",
             "height_mm",
@@ -88,6 +137,11 @@ class ResultsHistory:
             "contact_surface_mm2",
             "drop_surface_mm2",
             "baseline_tilt_deg",
+            "theta_advancing_deg",
+            "theta_receding_deg",
+            "contact_angle_hysteresis_deg",
+            "n_valid_frames",
+            "valid_fraction",
             # Pendant-specific
             "beta",
             "s1",
@@ -121,6 +175,12 @@ class ResultsHistory:
                     value = measurement.timestamp.strftime("%H:%M:%S")
                 elif col == "pipeline":
                     value = measurement.pipeline.title()
+                elif col == "status":
+                    value = "Accepted" if measurement.accepted else "Rejected"
+                elif col == "rejection_reasons":
+                    value = ";".join(measurement.rejection_reasons)
+                elif col == "diagnostics_json":
+                    value = json.dumps(measurement.diagnostics, separators=(",", ":"))
                 else:
                     value = measurement.results.get(col)
                     if isinstance(value, (int, float)):
