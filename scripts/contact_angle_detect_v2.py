@@ -822,7 +822,27 @@ def extract_drop_region(contour_pts, left_contact, right_contact, shape=None):
 # --------------------------------------------------------------------------- #
 # 8. Full pipeline
 # --------------------------------------------------------------------------- #
-def analyze(path, out_path=None, draw=True):
+def baseline_from_points(p1, p2, width):
+    """Build a baseline dict (same schema as detect_substrate_line) from two
+    user-supplied points, e.g. from a GUI where the operator redraws the
+    substrate line. Points are (x, y) in image pixels."""
+    x1, y1 = float(p1[0]), float(p1[1])
+    x2, y2 = float(p2[0]), float(p2[1])
+    if abs(x2 - x1) < 1e-6:
+        x2 += 1e-6
+    m = (y2 - y1) / (x2 - x1)
+    b = y1 - m * x1
+    return dict(m=float(m), b=float(b),
+                angle_deg=float(np.degrees(np.arctan(m))),
+                y_left=float(b), y_right=float(m * (width - 1) + b),
+                inlier_ratio=1.0, manual=True)
+
+
+def analyze(path, out_path=None, draw=True, baseline_override=None):
+    """Full detection pipeline. If `baseline_override` (a baseline dict, e.g.
+    from baseline_from_points) is given, the automatic substrate detection is
+    skipped and that baseline is used for all downstream steps -- this is the
+    hook the GUI uses when the operator redraws the substrate line."""
     img, gray = load_gray(path)
     h, w = gray.shape
     gray_d = denoise(gray)
@@ -830,14 +850,15 @@ def analyze(path, out_path=None, draw=True):
 
     diag = dict(contrast=contrast_score(gray), clahe_used=False)
 
-    bl = detect_substrate_line(gray_d, flat)
+    bl = baseline_override if baseline_override is not None else detect_substrate_line(gray_d, flat)
     drop_mask, thr_val = _segment_droplet_mask(flat, bl)
 
     # CLAHE retry for very low-contrast frames where Otsu found nothing
     if drop_mask is None or drop_mask.max() == 0:
         clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
         flat = flatten_illumination(clahe.apply(gray_d))
-        bl = detect_substrate_line(gray_d, flat)
+        if baseline_override is None:
+            bl = detect_substrate_line(gray_d, flat)
         drop_mask, thr_val = _segment_droplet_mask(flat, bl)
         diag["clahe_used"] = True
         if drop_mask is None or drop_mask.max() == 0:

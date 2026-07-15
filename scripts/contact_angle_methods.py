@@ -439,9 +439,10 @@ def format_report(res):
     return "\n".join(lines)
 
 
-def visualize_angles(result, res, out_path):
-    """Draw the fitted circle, the contact-point tangent lines and the
-    per-method angle table onto the image and save it."""
+def visualize_angles(result, res, out_path=None):
+    """Draw the fitted circle tangents and the per-method angle table onto the
+    image. Saves to `out_path` if given; always returns the annotated BGR
+    image (so a GUI can display it without writing a file)."""
     import cv2
     img = result["vis"].copy() if result.get("vis") is not None else None
     if img is None:
@@ -490,7 +491,8 @@ def visualize_angles(result, res, out_path):
         cv2.putText(img, txt, (8, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
         cv2.putText(img, txt, (8, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
         y += 20
-    cv2.imwrite(out_path, img)
+    if out_path:
+        cv2.imwrite(out_path, img)
     return img
 
 
