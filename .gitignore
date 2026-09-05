@@ -189,6 +189,10 @@ scripts/playground/
 .cursorindexingignore
 /plot
 /pruebas
-data/samples/gota depositada 1_labeled.png
-data/samples/tileshop.jpg
 src/data/menipy_plugins.sqlite
+
+# External benchmark datasets and video caches
+data/benchmarks/
+data/downloads/
+*.avi
+*.mp4

@@ -1,0 +1,230 @@
+{
+  "schema_version": "1.0",
+  "description": "Menipy benchmark datasets, reference standards, and legacy sample registry.",
+  "datasets": [
+    {
+      "id": "opendrop_pendant_water_reference",
+      "filename": "pendant_water_reference.png",
+      "category": "pendant",
+      "destination_dir": "data/samples",
+      "source_url": "https://raw.githubusercontent.com/jdber1/opendrop/master/example_images/water_in_air001.png",
+      "license": "GPL-3.0",
+      "author": "Berry, J. D. et al.",
+      "institution": "University of Melbourne / Monash University",
+      "citation": "Berry et al., J. Colloid Interface Sci. 454 (2015) 226-237",
+      "doi": "10.1016/j.jcis.2015.05.012",
+      "sha256": "e20a8f0b8a06e62e858b5e9ea5455a2bcb31943706c960c53848ab39e951141c",
+      "is_canonical_fixture": true,
+      "ground_truth": {
+        "fluid": "Milli-Q Water in Air",
+        "temperature_c": 20.0,
+        "density_difference_kg_m3": 998.2,
+        "surface_tension_mN_m": 72.8,
+        "surface_tension_tolerance_mN_m": 1.0,
+        "needle_outer_diameter_mm": 1.65,
+        "needle_tolerance_mm": 0.02
+      }
+    },
+    {
+      "id": "opendrop_sessile_clean_reference",
+      "filename": "sessile_clean_reference.png",
+      "category": "sessile",
+      "destination_dir": "data/samples",
+      "source_url": "https://raw.githubusercontent.com/jdber1/opendrop/master/example_images/drop_on_surface.png",
+      "license": "GPL-3.0",
+      "author": "Berry, J. D. et al.",
+      "institution": "University of Melbourne",
+      "citation": "Berry, J. D. (2015), Journal of Open Research Software 3: e8",
+      "doi": "10.5334/jors.by",
+      "sha256": "289c1ff42e4e972848c8c6203399e991e6987d1b6f7df99f5da25440dfb83398",
+      "is_canonical_fixture": true,
+      "ground_truth": {
+        "description": "Clean sessile drop on flat solid substrate with distinct contact line"
+      }
+    },
+    {
+      "id": "opendrop_sessile_needle_reference",
+      "filename": "sessile_needle_reference.png",
+      "category": "sessile",
+      "destination_dir": "data/samples",
+      "source_url": "https://raw.githubusercontent.com/jdber1/opendrop/master/example_images/drop_on_surface_with_needle.png",
+      "license": "GPL-3.0",
+      "author": "Berry, J. D. et al.",
+      "institution": "University of Melbourne",
+      "citation": "Berry, J. D. (2015), Journal of Open Research Software 3: e8",
+      "doi": "10.5334/jors.by",
+      "sha256": "068ea33baf10296460b6a40072f6fef3a91bdf309f4aedfc633e7a20e5b388a0",
+      "is_canonical_fixture": true,
+      "ground_truth": {
+        "description": "Sessile drop with dispensing needle for needle clipping and baseline benchmark"
+      }
+    },
+    {
+      "id": "menipy_legacy_sessile_3",
+      "filename": "sessile_3.jpeg",
+      "category": "legacy_lab",
+      "destination_dir": "data/samples",
+      "source_url": null,
+      "license": "Menipy-Internal",
+      "author": "Menipy Project Contributors",
+      "citation": "Empirical laboratory capture for sessile baseline and contact angle tests",
+      "sha256": "5168df615e9b765d6c32a6acbfbe9051148f552edf13cc4ebe7cf25d4faf83b3",
+      "is_canonical_fixture": true,
+      "ground_truth": {
+        "description": "Menipy Legacy Lab Capture: Sessile drop with stage lighting"
+      }
+    },
+    {
+      "id": "menipy_legacy_prueba_sesil_2",
+      "filename": "prueba sesil 2.png",
+      "category": "legacy_lab",
+      "destination_dir": "data/samples",
+      "source_url": null,
+      "license": "Menipy-Internal",
+      "author": "Menipy Project Contributors",
+      "citation": "Empirical laboratory capture for sessile geometry and CLI tests",
+      "sha256": "48712336013e8c3b971928d2c8dc3e8b124c3b81f3968460ddbd28dd2331f532",
+      "is_canonical_fixture": true,
+      "ground_truth": {
+        "description": "Menipy Legacy Lab Capture: Deposited sessile drop"
+      }
+    },
+    {
+      "id": "menipy_legacy_gota_depositada_1",
+      "filename": "gota depositada 1.png",
+      "category": "legacy_lab",
+      "destination_dir": "data/samples",
+      "source_url": null,
+      "license": "Menipy-Internal",
+      "author": "Menipy Project Contributors",
+      "citation": "Empirical laboratory capture for ONNX mask and segmentation tests",
+      "sha256": "bf84563a45a1a96abf7e29c4a1203f731689182970a66fe99c341a7ce93f2b64",
+      "is_canonical_fixture": true,
+      "ground_truth": {
+        "description": "Menipy Legacy Lab Capture: Deposited sessile drop with vertical needle shaft"
+      }
+    },
+    {
+      "id": "menipy_legacy_gota_pendiente_1",
+      "filename": "gota pendiente 1.png",
+      "category": "legacy_lab",
+      "destination_dir": "data/samples",
+      "source_url": null,
+      "license": "Menipy-Internal",
+      "author": "Menipy Project Contributors",
+      "citation": "Empirical laboratory capture for pendant drop testing",
+      "sha256": "347e05518338e7a4a8492d46f4771ecb7bd8a5c8cd3dfb5a1980ff9035eb2fb1",
+      "is_canonical_fixture": true,
+      "ground_truth": {
+        "description": "Menipy Legacy Lab Capture: Pendant drop suspended from blunt needle"
+      }
+    },
+    {
+      "id": "menipy_legacy_prueba_pend_1",
+      "filename": "prueba pend 1.png",
+      "category": "legacy_lab",
+      "destination_dir": "data/samples",
+      "source_url": null,
+      "license": "Menipy-Internal",
+      "author": "Menipy Project Contributors",
+      "citation": "Empirical laboratory capture for pendant detection tests",
+      "sha256": "2006b36204ef4610b2db797d23e46c762bfd722a5fbac3aedf455619c1cb16ec",
+      "is_canonical_fixture": true,
+      "ground_truth": {
+        "description": "Menipy Legacy Lab Capture: Small pendant drop"
+      }
+    },
+    {
+      "id": "drop_o_matic_dynamic_sample",
+      "filename": "sample_droplet.avi",
+      "category": "dynamic",
+      "destination_dir": "data/benchmarks/dynamic",
+      "source_url": "https://raw.githubusercontent.com/KrzysztofDorywalski/Drop-O-Matic/main/data/sample_droplet.avi",
+      "license": "MIT",
+      "author": "Dorywalski, Krzysztof",
+      "institution": "Drop-O-Matic Project",
+      "citation": "Dorywalski, K. (2026). Drop-O-Matic: Open-source tool for dynamic contact angle determination",
+      "doi": "10.5281/zenodo.19470985",
+      "is_canonical_fixture": false,
+      "ground_truth": {
+        "description": "Dynamic advancing/receding sessile drop video sequence for hysteresis analysis"
+      }
+    },
+    {
+      "id": "opendrop_pendant_series_002",
+      "filename": "water_in_air002.png",
+      "category": "pendant",
+      "destination_dir": "data/benchmarks/pendant",
+      "source_url": "https://raw.githubusercontent.com/jdber1/opendrop/master/example_images/water_in_air002.png",
+      "license": "GPL-3.0",
+      "author": "Berry, J. D. et al.",
+      "institution": "University of Melbourne",
+      "citation": "Berry et al., J. Colloid Interface Sci. 454 (2015) 226-237",
+      "doi": "10.1016/j.jcis.2015.05.012",
+      "is_canonical_fixture": false,
+      "ground_truth": {
+        "fluid": "Water in Air",
+        "temperature_c": 20.0,
+        "surface_tension_mN_m": 72.8,
+        "needle_outer_diameter_mm": 1.65
+      }
+    },
+    {
+      "id": "opendrop_pendant_series_003",
+      "filename": "water_in_air003.png",
+      "category": "pendant",
+      "destination_dir": "data/benchmarks/pendant",
+      "source_url": "https://raw.githubusercontent.com/jdber1/opendrop/master/example_images/water_in_air003.png",
+      "license": "GPL-3.0",
+      "author": "Berry, J. D. et al.",
+      "institution": "University of Melbourne",
+      "citation": "Berry et al., J. Colloid Interface Sci. 454 (2015) 226-237",
+      "doi": "10.1016/j.jcis.2015.05.012",
+      "is_canonical_fixture": false,
+      "ground_truth": {
+        "fluid": "Water in Air",
+        "temperature_c": 20.0,
+        "surface_tension_mN_m": 72.8,
+        "needle_outer_diameter_mm": 1.65
+      }
+    },
+    {
+      "id": "opendrop_pendant_series_004",
+      "filename": "water_in_air004.png",
+      "category": "pendant",
+      "destination_dir": "data/benchmarks/pendant",
+      "source_url": "https://raw.githubusercontent.com/jdber1/opendrop/master/example_images/water_in_air004.png",
+      "license": "GPL-3.0",
+      "author": "Berry, J. D. et al.",
+      "institution": "University of Melbourne",
+      "citation": "Berry et al., J. Colloid Interface Sci. 454 (2015) 226-237",
+      "doi": "10.1016/j.jcis.2015.05.012",
+      "is_canonical_fixture": false,
+      "ground_truth": {
+        "fluid": "Water in Air",
+        "temperature_c": 20.0,
+        "surface_tension_mN_m": 72.8,
+        "needle_outer_diameter_mm": 1.65
+      }
+    },
+    {
+      "id": "opendrop_pendant_series_005",
+      "filename": "water_in_air005.png",
+      "category": "pendant",
+      "destination_dir": "data/benchmarks/pendant",
+      "source_url": "https://raw.githubusercontent.com/jdber1/opendrop/master/example_images/water_in_air005.png",
+      "license": "GPL-3.0",
+      "author": "Berry, J. D. et al.",
+      "institution": "University of Melbourne",
+      "citation": "Berry et al., J. Colloid Interface Sci. 454 (2015) 226-237",
+      "doi": "10.1016/j.jcis.2015.05.012",
+      "is_canonical_fixture": false,
+      "ground_truth": {
+        "fluid": "Water in Air",
+        "temperature_c": 20.0,
+        "surface_tension_mN_m": 72.8,
+        "needle_outer_diameter_mm": 1.65
+      }
+    }
+  ]
+}
