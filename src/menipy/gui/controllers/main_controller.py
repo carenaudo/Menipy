@@ -96,6 +96,8 @@ class MainController(QObject):
         if self.preview_panel:
             self.preview_panel.set_roi_callback(self._on_roi_selected)
             self.preview_panel.set_line_callback(self._on_contact_line_drawn)
+            if hasattr(self.preview_panel, "set_arc_callback"):
+                self.preview_panel.set_arc_callback(self._on_contact_arc_drawn)
 
         # Listen for edge-detection previews to show overlays on the main preview panel
         try:
@@ -538,6 +540,8 @@ class MainController(QObject):
 
     @Slot(object)
     def _on_contact_line_drawn(self, line) -> None:
+        if self.preview_panel and hasattr(self.preview_panel, "hide_baseline_warning"):
+            self.preview_panel.hide_baseline_warning()
         if self.preprocessing_ctrl is None or line is None:
             return
         try:
@@ -559,6 +563,33 @@ class MainController(QObject):
         except Exception:
             logger.debug(
                 "Failed to forward contact line to edge detection controller",
+                exc_info=True,
+            )
+
+    @Slot(object)
+    def _on_contact_arc_drawn(self, points) -> None:
+        """Handle 3-point curved substrate arc drawn by user."""
+        if self.preview_panel and hasattr(self.preview_panel, "hide_baseline_warning"):
+            self.preview_panel.hide_baseline_warning()
+        if self.preprocessing_ctrl is None or not points or len(points) < 3:
+            return
+        from menipy.models.geometry import SubstrateProfile
+
+        p1, p2, p3 = points
+        prof = SubstrateProfile.from_arc(p1, p2, p3)
+        chord = prof.to_chord()
+        self.preprocessing_ctrl.update_geometry(
+            contact_line=chord,
+            substrate_profile=prof,
+        )
+        if self.preprocessing_ctrl.has_source():
+            self.preprocessing_ctrl.run()
+        try:
+            if self.edge_detection_ctrl is not None:
+                self.edge_detection_ctrl.set_contact_line(chord)
+        except Exception:
+            logger.debug(
+                "Failed to forward contact chord to edge detection controller",
                 exc_info=True,
             )
 

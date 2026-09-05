@@ -4,13 +4,19 @@
 from __future__ import annotations
 
 import logging
-
-logger = logging.getLogger(__name__)
 from typing import Any, Optional, Union
 
 import numpy as np
 from PySide6.QtCore import QLineF, QPointF, QRectF, QSizeF, Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QImage, QPainter, QPen, QPixmap, QTransform
+from PySide6.QtGui import (
+    QColor,
+    QImage,
+    QPainter,
+    QPainterPath,
+    QPen,
+    QPixmap,
+    QTransform,
+)
 from PySide6.QtWidgets import (
     QGraphicsEllipseItem,
     QGraphicsItem,
@@ -23,16 +29,22 @@ from PySide6.QtWidgets import (
     QGraphicsView,
 )
 
+from menipy.models.geometry import SubstrateProfile
+
+logger = logging.getLogger(__name__)
+
 # Drawing modes for overlays
 DRAW_NONE = None
 DRAW_POINT = "point"
 DRAW_LINE = "line"
 DRAW_RECT = "rect"
+DRAW_ARC = "arc"
 
 _TAG_LAYER_DEFAULTS = {
     "roi": "markers",
     "needle": "markers",
     "contact_line": "baseline",
+    "contact_arc": "baseline",
     "detected_contour": "contour",
     "cal_drop": "contour",
     "result_contour": "contour",
@@ -60,6 +72,7 @@ class ImageView(QGraphicsView):
 
     roi_selected = Signal(QRectF)
     line_drawn = Signal(QLineF)
+    arc_drawn = Signal(tuple)
     point_clicked = Signal(QPointF, int, int)
     double_clicked = Signal(QPointF, int, int)
 
@@ -87,6 +100,8 @@ class ImageView(QGraphicsView):
         self._draw_tag: str | None = None
         self._tmp_item = None
         self._press_pos_scene: QPointF | None = None
+        self._arc_points: list[QPointF] = []
+        self._arc_marker_items: list[QGraphicsEllipseItem] = []
         self._overlay_pen = QPen(QColor(255, 0, 0))
         self._overlay_pen.setWidth(2)
         # Ensure mouse tracking so we get move events even without press
@@ -121,6 +136,13 @@ class ImageView(QGraphicsView):
     ) -> None:
         """Update active drawing mode and overlay color."""
 
+        if mode != DRAW_ARC:
+            for marker in self._arc_marker_items:
+                if marker and marker.scene():
+                    marker.scene().removeItem(marker)
+            self._arc_marker_items.clear()
+            self._arc_points.clear()
+
         self._draw_mode = mode
         self._draw_tag = tag if mode else None
         self._overlay_pen.setColor(color)
@@ -130,6 +152,12 @@ class ImageView(QGraphicsView):
 
     def clear_overlays(self) -> None:
         """clear_overlays."""
+        for marker in self._arc_marker_items:
+            if marker and marker.scene():
+                marker.scene().removeItem(marker)
+        self._arc_marker_items.clear()
+        self._arc_points.clear()
+
         for item in list(self._overlays):
             if not item:
                 continue
@@ -803,6 +831,82 @@ class ImageView(QGraphicsView):
                 item.setZValue(10_000)
                 self.scene().addItem(item)
                 self._tmp_item = item
+            elif self._draw_mode == DRAW_ARC:
+                if len(self._arc_points) == 0:
+                    self._arc_points.append(scene_pos)
+                    radius = 4.0
+                    dot = QGraphicsEllipseItem(
+                        QRectF(
+                            scene_pos.x() - radius,
+                            scene_pos.y() - radius,
+                            2 * radius,
+                            2 * radius,
+                        )
+                    )
+                    dot.setPen(self._overlay_pen)
+                    dot.setBrush(self._overlay_pen.color())
+                    dot.setZValue(10_000)
+                    self.scene().addItem(dot)
+                    self._arc_marker_items.append(dot)
+                    line_item = QGraphicsLineItem(
+                        scene_pos.x(), scene_pos.y(), scene_pos.x(), scene_pos.y()
+                    )
+                    line_item.setPen(self._overlay_pen)
+                    line_item.setZValue(10_000)
+                    self.scene().addItem(line_item)
+                    self._tmp_item = line_item
+                elif len(self._arc_points) == 1:
+                    self._arc_points.append(scene_pos)
+                    radius = 4.0
+                    dot = QGraphicsEllipseItem(
+                        QRectF(
+                            scene_pos.x() - radius,
+                            scene_pos.y() - radius,
+                            2 * radius,
+                            2 * radius,
+                        )
+                    )
+                    dot.setPen(self._overlay_pen)
+                    dot.setBrush(self._overlay_pen.color())
+                    dot.setZValue(10_000)
+                    self.scene().addItem(dot)
+                    self._arc_marker_items.append(dot)
+                    if self._tmp_item and self._tmp_item.scene():
+                        self.scene().removeItem(self._tmp_item)
+                    path_item = QGraphicsPathItem()
+                    path_item.setPen(self._overlay_pen)
+                    path_item.setZValue(10_000)
+                    self.scene().addItem(path_item)
+                    self._tmp_item = path_item
+                elif len(self._arc_points) == 2:
+                    p1 = (float(self._arc_points[0].x()), float(self._arc_points[0].y()))
+                    p2 = (float(self._arc_points[1].x()), float(self._arc_points[1].y()))
+                    p3 = (float(scene_pos.x()), float(scene_pos.y()))
+                    for dot in self._arc_marker_items:
+                        if dot and dot.scene():
+                            dot.scene().removeItem(dot)
+                    self._arc_marker_items.clear()
+                    prof = SubstrateProfile.from_arc(p1, p2, p3)
+                    pts = prof.sample_points(num_points=60)
+                    path = QPainterPath()
+                    if len(pts) > 0:
+                        path.moveTo(pts[0][0], pts[0][1])
+                        for pt in pts[1:]:
+                            path.lineTo(pt[0], pt[1])
+                    if isinstance(self._tmp_item, QGraphicsPathItem):
+                        self._tmp_item.setPath(path)
+                    else:
+                        item = QGraphicsPathItem(path)
+                        item.setPen(self._overlay_pen)
+                        item.setZValue(10_000)
+                        self.scene().addItem(item)
+                        self._tmp_item = item
+                    self._overlays.append(self._tmp_item)
+                    self._register_overlay_item(self._tmp_item)
+                    self._tmp_item = None
+                    self._press_pos_scene = None
+                    self._arc_points.clear()
+                    self.arc_drawn.emit((p1, p2, p3))
             # Do not propagate to base if we're drawing
             return
         super().mousePressEvent(event)
@@ -824,6 +928,25 @@ class ImageView(QGraphicsView):
 
     def mouseMoveEvent(self, event):
         """Mouse move event."""
+        if self._draw_mode == DRAW_ARC and self._tmp_item and self.scene():
+            current_pos = self._clamp_to_scene(self.mapToScene(event.pos()))
+            if len(self._arc_points) == 1 and isinstance(self._tmp_item, QGraphicsLineItem):
+                p1 = self._arc_points[0]
+                self._tmp_item.setLine(p1.x(), p1.y(), current_pos.x(), current_pos.y())
+            elif len(self._arc_points) == 2 and isinstance(self._tmp_item, QGraphicsPathItem):
+                p1 = (float(self._arc_points[0].x()), float(self._arc_points[0].y()))
+                p2 = (float(self._arc_points[1].x()), float(self._arc_points[1].y()))
+                p3 = (float(current_pos.x()), float(current_pos.y()))
+                prof = SubstrateProfile.from_arc(p1, p2, p3)
+                pts = prof.sample_points(num_points=40)
+                path = QPainterPath()
+                if len(pts) > 0:
+                    path.moveTo(pts[0][0], pts[0][1])
+                    for pt in pts[1:]:
+                        path.lineTo(pt[0], pt[1])
+                self._tmp_item.setPath(path)
+            return
+
         if (
             self._draw_mode
             and self._tmp_item
@@ -852,6 +975,9 @@ class ImageView(QGraphicsView):
         event : type
         Description.
         """
+        if self._draw_mode == DRAW_ARC:
+            return
+
         if self._draw_mode and event.button() == Qt.LeftButton and self.scene():
             if self._tmp_item:
                 if self._draw_mode == DRAW_RECT and isinstance(

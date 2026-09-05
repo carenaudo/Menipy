@@ -5,10 +5,12 @@ Module implementation."""
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
 from menipy.common.edge_detection import extract_external_contour
+from menipy.common.geometry import cross2d
 from menipy.common.metrics import find_apex_index
 
 from .metrics import compute_sessile_metrics
@@ -24,8 +26,8 @@ def _segment_intersection(
     r = p2 - p1
     s = q2 - q1
     qp = q1 - p1
-    r_x_s = float(np.cross(r, s))
-    qp_x_s = float(np.cross(qp, s))
+    r_x_s = float(cross2d(r, s))
+    qp_x_s = float(cross2d(qp, s))
 
     if abs(r_x_s) < 1e-9:
         return None  # Parallel
@@ -38,17 +40,17 @@ def _segment_intersection(
 
 def clip_contour_to_substrate(
     contour: np.ndarray,
-    substrate_line: tuple[tuple[float, float], tuple[float, float]],
+    substrate_line: tuple[tuple[float, float], tuple[float, float]] | Any,
     apex: tuple[float, float],
 ) -> tuple[np.ndarray, tuple[tuple[float, float], tuple[float, float]] | None]:
     """
     Clip contour points that are below the substrate line (relative to apex).
-    Find precise intersection points with the line.
+    Find precise intersection points with the line or curved SubstrateProfile.
 
     Args:
         contour: (N, 2) array of points
-        substrate_line: ((x1, y1), (x2, y2))
-        apex: (x, y) - used to determine which side of the line is the drop
+        substrate_line: ((x1, y1), (x2, y2)) or SubstrateProfile
+        apex: (x, y) - used to determine which side of the substrate is the drop
 
     Returns:
         refined_contour: (M, 2) array
@@ -58,37 +60,95 @@ def clip_contour_to_substrate(
     if len(contour) < 3:
         return contour, None
 
+    # Curved SubstrateProfile clipping
+    if hasattr(substrate_line, "eval_y") and getattr(substrate_line, "type", "line") != "line":
+        apex_pt = np.array(apex, dtype=float)
+        apex_sub_y = substrate_line.eval_y(float(apex_pt[0]))
+        if apex_sub_y is None:
+            apex_sub_y = float(apex_pt[1]) + 10.0  # assume apex is above
+
+        # In image coords, apex is typically above substrate (apex_y < apex_sub_y, sign = -1)
+        drop_side = float(np.sign(apex_pt[1] - apex_sub_y))
+        if abs(drop_side) < 1e-9:
+            drop_side = -1.0  # default to drop above substrate
+
+        sub_ys = np.array([substrate_line.eval_y(float(pt[0])) for pt in contour], dtype=float)
+        valid_mask = np.isfinite(sub_ys)
+        if not np.any(valid_mask):
+            return contour, None
+
+        # Signed distance along vertical: negative means above substrate
+        h_vals = contour[:, 1] - sub_ys
+        epsilon = 0.5
+
+        def is_point_inside(i: int) -> bool:
+            if not valid_mask[i]:
+                return True
+            return bool((h_vals[i] * drop_side >= -epsilon) if drop_side != 0 else (h_vals[i] <= epsilon))
+
+        inside_mask = np.array([is_point_inside(i) for i in range(len(contour))])
+        if inside_mask.all():
+            return contour, None
+
+        intersections: list[np.ndarray] = []
+        clipped: list[np.ndarray] = []
+        n = len(contour)
+        for i in range(n):
+            curr_i = i
+            next_i = (i + 1) % n
+            prev_in = inside_mask[curr_i]
+            curr_in = inside_mask[next_i]
+
+            if prev_in:
+                clipped.append(contour[curr_i])
+
+            if prev_in != curr_in and valid_mask[curr_i] and valid_mask[next_i]:
+                h0 = h_vals[curr_i]
+                h1 = h_vals[next_i]
+                dh = float(h1 - h0)
+                if abs(dh) > 1e-12:
+                    t = float(-h0 / dh)
+                    if -1e-9 <= t <= 1.0 + 1e-9:
+                        inter = contour[curr_i] + t * (contour[next_i] - contour[curr_i])
+                        y_snap = substrate_line.eval_y(float(inter[0]))
+                        if y_snap is not None:
+                            inter[1] = y_snap
+                        intersections.append(inter)
+                        clipped.append(inter)
+
+        refined_contour = np.asarray(clipped, dtype=float).reshape(-1, 2) if clipped else np.empty((0, 2), dtype=float)
+        contact_pts = None
+        if len(intersections) >= 2:
+            intersections.sort(key=lambda p: float(p[0]))
+            contact_pts = (
+                (float(intersections[0][0]), float(intersections[0][1])),
+                (float(intersections[-1][0]), float(intersections[-1][1])),
+            )
+        return refined_contour, contact_pts
+
+    # Flat line handling
+    if hasattr(substrate_line, "to_chord"):
+        substrate_line = substrate_line.to_chord()
+
     p1 = np.array(substrate_line[0], dtype=float)
     p2 = np.array(substrate_line[1], dtype=float)
     apex_pt = np.array(apex, dtype=float)
     line_vec = p2 - p1
 
     # Keep the half-plane that contains the apex.
-    side = float(np.sign(np.cross(line_vec, apex_pt - p1)))
+    side = float(np.sign(cross2d(line_vec, apex_pt - p1)))
     if abs(side) < 1e-9:
         # Apex exactly on the line; default to keeping the current contour.
         return contour, None
 
-    1e-9 * float(np.linalg.norm(line_vec)) + 1e-9
     # Tolerance scaled with substrate length (helps with pixel-scale geometry)
     epsilon = float(max(1e-9, 1e-6 * float(np.linalg.norm(line_vec))))
 
     def is_inside(pt: np.ndarray) -> bool:
-        """Check if inside.
-
-        Parameters
-        ----------
-        pt : type
-        Description.
-
-        Returns
-        -------
-        type
-        Description.
-        """
+        """Check if inside."""
         # Signed area (cross product) test: positive means same side as apex
         # Keep a small negative tolerance to allow near-collinear points.
-        return np.cross(line_vec, pt - p1) * side >= -epsilon
+        return cross2d(line_vec, pt - p1) * side >= -epsilon
 
     intersections: list[np.ndarray] = []
     clipped: list[np.ndarray] = []
@@ -158,11 +218,11 @@ def _line_line_intersection(
     p: np.ndarray, r: np.ndarray, q: np.ndarray, s: np.ndarray
 ) -> np.ndarray | None:
     """Return intersection between two infinite lines p+t*r and q+u*s."""
-    r_x_s = float(np.cross(r, s))
+    r_x_s = float(cross2d(r, s))
     if abs(r_x_s) < 1e-9:
         return None
     qp = q - p
-    t = float(np.cross(qp, s) / r_x_s)
+    t = float(cross2d(qp, s) / r_x_s)
     return p + t * r
 
 
@@ -222,21 +282,22 @@ def _project_point_to_substrate_line(
 
 def build_sessile_calculation_contour(
     contour: np.ndarray,
-    substrate_line: tuple[tuple[float, float], tuple[float, float]],
+    substrate_line: tuple[tuple[float, float], tuple[float, float]] | Any,
     apex: tuple[float, float],
     contact_points: tuple[tuple[float, float], tuple[float, float]] | None = None,
 ) -> tuple[np.ndarray, tuple[tuple[float, float], tuple[float, float]] | None]:
     """Build calculation contour using side branches projected to substrate.
 
     Returns a synthetic contour that follows droplet side branches and closes with a
-    single substrate segment. Display contour should remain unchanged.
+    single substrate segment or curved arc profile. Display contour should remain unchanged.
     """
     xy = np.asarray(contour, dtype=float).reshape(-1, 2)
     if len(xy) < 3:
         return xy, contact_points
 
-    p1 = np.asarray(substrate_line[0], dtype=float)
-    p2 = np.asarray(substrate_line[1], dtype=float)
+    chord = substrate_line.to_chord() if hasattr(substrate_line, "to_chord") else substrate_line
+    p1 = np.asarray(chord[0], dtype=float)
+    p2 = np.asarray(chord[1], dtype=float)
     line_vec = p2 - p1
     line_len = float(np.linalg.norm(line_vec))
     if line_len < 1e-9:
@@ -290,16 +351,24 @@ def build_sessile_calculation_contour(
     left_tangent = _fit_local_tangent(xy, left_anchor_idx, window=5)
     right_tangent = _fit_local_tangent(xy, right_anchor_idx, window=5)
 
+    is_curved = hasattr(substrate_line, "eval_y") and getattr(substrate_line, "type", "line") != "line"
+
     def line_distance(pt: np.ndarray) -> float:
-        return float(abs(np.cross(line_vec, pt - p1)) / line_len)
+        return float(abs(cross2d(line_vec, pt - p1)) / line_len)
 
     if contact_points is not None and line_distance(cp_left_seed) <= 2.0:
         proj_left = cp_left_seed
+    elif is_curved:
+        y_left = substrate_line.eval_y(float(left_anchor[0]))
+        proj_left = np.array([left_anchor[0], y_left if y_left is not None else left_anchor[1]], dtype=float)
     else:
         proj_left = _project_point_to_substrate_line(left_anchor, left_tangent, p1, p2)
 
     if contact_points is not None and line_distance(cp_right_seed) <= 2.0:
         proj_right = cp_right_seed
+    elif is_curved:
+        y_right = substrate_line.eval_y(float(right_anchor[0]))
+        proj_right = np.array([right_anchor[0], y_right if y_right is not None else right_anchor[1]], dtype=float)
     else:
         proj_right = _project_point_to_substrate_line(right_anchor, right_tangent, p1, p2)
 
@@ -311,14 +380,31 @@ def build_sessile_calculation_contour(
         arc_xy = arc_xy[::-1]
 
     # Build synthetic contour: left contact -> side arc -> right contact -> substrate edge back to left.
-    calc_xy = np.vstack(
-        [
-            proj_left.reshape(1, 2),
-            arc_xy,
-            proj_right.reshape(1, 2),
-            proj_left.reshape(1, 2),
-        ]
-    )
+    if is_curved:
+        xs = np.linspace(proj_right[0], proj_left[0], 25)
+        bottom_pts = []
+        for x_val in xs:
+            y_val = substrate_line.eval_y(float(x_val))
+            if y_val is not None:
+                bottom_pts.append([float(x_val), float(y_val)])
+        bottom_sub = np.asarray(bottom_pts, dtype=float) if bottom_pts else proj_left.reshape(1, 2)
+        calc_xy = np.vstack(
+            [
+                proj_left.reshape(1, 2),
+                arc_xy,
+                proj_right.reshape(1, 2),
+                bottom_sub,
+            ]
+        )
+    else:
+        calc_xy = np.vstack(
+            [
+                proj_left.reshape(1, 2),
+                arc_xy,
+                proj_right.reshape(1, 2),
+                proj_left.reshape(1, 2),
+            ]
+        )
 
     projected_contacts = (
         (float(proj_left[0]), float(proj_left[1])),

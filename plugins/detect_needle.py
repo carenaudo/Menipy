@@ -11,12 +11,12 @@ import logging
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
 
+from menipy.common.geometry_prototypes import detect_bilateral_needle
 from menipy.common.plugin_settings import (
     register_detector_settings,
     resolve_plugin_settings,
 )
 from menipy.common.registry import register_needle_detector
-from menipy.common.geometry_prototypes import detect_bilateral_needle
 
 # NOTE: cv2 import moved inside functions
 

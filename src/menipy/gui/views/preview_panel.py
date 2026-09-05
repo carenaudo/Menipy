@@ -75,6 +75,7 @@ class PreviewPanel:
 
     roi_selected = Signal(QRectF)
     line_drawn = Signal(QLineF)
+    arc_drawn = Signal(tuple)
 
     def __init__(
         self,
@@ -90,6 +91,7 @@ class PreviewPanel:
 
         self._on_roi_selected: Callable[[QRectF], None] | None = None
         self._on_line_drawn: Callable[[QLineF], None] | None = None
+        self._on_arc_drawn: Callable[[tuple], None] | None = None
         self._overlay_buttons: list[QToolButton | QPushButton] = []
         self._layer_actions: dict[str, QAction] = {}
         self._layer_checks: dict[str, QCheckBox] = {}
@@ -109,10 +111,43 @@ class PreviewPanel:
                 "color: #57606A; font-weight: 600; padding: 2px 8px;"
             )
 
+        # Baseline warning banner
+        self._baseline_warning_banner = QWidget(self.panel)
+        self._baseline_warning_banner.setObjectName("baselineWarningBanner")
+        self._baseline_warning_banner.setVisible(False)
+        banner_layout = QHBoxLayout(self._baseline_warning_banner)
+        banner_layout.setContentsMargins(8, 4, 8, 4)
+        banner_layout.setSpacing(8)
+
+        self._warning_label = QLabel(self._baseline_warning_banner)
+        self._warning_label.setText("Substrate baseline uncertain. Please verify or adjust manually.")
+        banner_layout.addWidget(self._warning_label, 1)
+
+        self._draw_baseline_action_btn = QPushButton("✏ Draw Baseline", self._baseline_warning_banner)
+        self._draw_baseline_action_btn.setStyleSheet("padding: 2px 8px; font-weight: 600;")
+        self._draw_baseline_action_btn.clicked.connect(self._trigger_draw_baseline)
+        banner_layout.addWidget(self._draw_baseline_action_btn)
+
+        self._draw_arc_action_btn = QPushButton("⌒ Draw Curved Arc", self._baseline_warning_banner)
+        self._draw_arc_action_btn.setStyleSheet("padding: 2px 8px; font-weight: 600;")
+        self._draw_arc_action_btn.clicked.connect(self._trigger_draw_arc)
+        banner_layout.addWidget(self._draw_arc_action_btn)
+
+        self._dismiss_warning_btn = QPushButton("✕", self._baseline_warning_banner)
+        self._dismiss_warning_btn.setToolTip("Dismiss warning")
+        self._dismiss_warning_btn.setStyleSheet("border: none; font-weight: bold; font-size: 13px;")
+        self._dismiss_warning_btn.clicked.connect(self.hide_baseline_warning)
+        banner_layout.addWidget(self._dismiss_warning_btn)
+
+        if self.panel.layout() is not None:
+            self.panel.layout().insertWidget(0, self._baseline_warning_banner)
+
         if self.image_view:
             self._configure_image_view()
             self.image_view.roi_selected.connect(self.on_roi_selected)
             self.image_view.line_drawn.connect(self.on_line_drawn)
+            if hasattr(self.image_view, "arc_drawn"):
+                self.image_view.arc_drawn.connect(self.on_arc_drawn)
 
         self._install_guided_menus()
         self._apply_control_icons()
@@ -301,6 +336,53 @@ class PreviewPanel:
         if self._on_roi_selected:
             self._on_roi_selected(rect)
 
+    def set_arc_callback(self, handler: Callable[[tuple], None] | None) -> None:
+        """Register callback invoked when a curved contact arc is drawn."""
+        self._on_arc_drawn = handler
+
+    def on_arc_drawn(self, points: tuple):
+        self.arc_drawn.emit(points)
+        if self._on_arc_drawn:
+            self._on_arc_drawn(points)
+
+    def _trigger_draw_baseline(self) -> None:
+        try:
+            from menipy.gui.views.image_view import DRAW_LINE
+            self.set_draw_mode(DRAW_LINE, QColor(173, 216, 230), tag="contact_line")
+        except ImportError:
+            pass
+
+    def _trigger_draw_arc(self) -> None:
+        try:
+            from menipy.gui.views.image_view import DRAW_ARC
+            self.set_draw_mode(DRAW_ARC, QColor(173, 216, 230), tag="contact_arc")
+        except ImportError:
+            pass
+
+    def show_baseline_warning(
+        self, confidence: float = 0.5, status: str = "doubtful", reason: str = ""
+    ) -> None:
+        """Display color-coded warning banner when baseline detection is doubtful or failed."""
+        pct = int(round(confidence * 100))
+        if status == "failed":
+            self._baseline_warning_banner.setStyleSheet(
+                "QWidget#baselineWarningBanner { background-color: #FFEBE9; border: 1px solid #FF8182; border-radius: 6px; } "
+                "QLabel { color: #82071E; font-weight: 600; font-size: 12px; }"
+            )
+            msg = f"⚠️ Substrate baseline detection failed ({pct}%). Please draw the baseline or curved arc manually."
+        else:
+            self._baseline_warning_banner.setStyleSheet(
+                "QWidget#baselineWarningBanner { background-color: #FFF8C5; border: 1px solid #D4A72C; border-radius: 6px; } "
+                "QLabel { color: #573A08; font-weight: 600; font-size: 12px; }"
+            )
+            msg = f"⚠️ Substrate baseline uncertain ({pct}%). Please verify or draw manually."
+        self._warning_label.setText(msg)
+        self._baseline_warning_banner.setVisible(True)
+
+    def hide_baseline_warning(self) -> None:
+        """Dismiss the baseline warning banner."""
+        self._baseline_warning_banner.setVisible(False)
+
     def on_line_drawn(self, line: QLineF):
         if self._on_line_drawn:
             self._on_line_drawn(line)
@@ -421,7 +503,7 @@ class PreviewPanel:
             return
 
         try:
-            from menipy.gui.views.image_view import DRAW_LINE, DRAW_RECT
+            from menipy.gui.views.image_view import DRAW_ARC, DRAW_LINE, DRAW_RECT
         except ImportError:
             return
 
@@ -435,11 +517,14 @@ class PreviewPanel:
             "contactLineBtn": lambda: self.set_draw_mode(
                 DRAW_LINE, QColor(173, 216, 230), tag="contact_line"
             ),  # Light Blue
+            "contactArcBtn": lambda: self.set_draw_mode(
+                DRAW_ARC, QColor(173, 216, 230), tag="contact_arc"
+            ),
             "clearBtn": self.clear_overlays,
             "actualBtn": getattr(self.image_view, "actual_size", None),
             "fitBtn": getattr(self.image_view, "fit_to_window", None),
         }
-        overlay_names = {"roiBtn", "needleBtn", "contactLineBtn"}
+        overlay_names = {"roiBtn", "needleBtn", "contactLineBtn", "contactArcBtn"}
         for name, handler in actions.items():
             if handler is None:
                 continue
@@ -470,6 +555,7 @@ class PreviewPanel:
             ("roiBtn", "roi"),
             ("needleBtn", "pendant"),
             ("contactLineBtn", "sessile"),
+            ("contactArcBtn", "sessile"),
             ("clearBtn", "x"),
         ):
             set_button_icon(_find_button(button_name), icon_name, size=15)
@@ -597,6 +683,13 @@ class PreviewPanel:
             action.triggered.connect(button.click)
             mark_menu.addAction(action)
             button.setVisible(False)
+            if button_name == "contactLineBtn":
+                arc_action = QAction("Curved Substrate", mark_menu)
+                arc_icon = load_icon("sessile")
+                if not arc_icon.isNull():
+                    arc_action.setIcon(arc_icon)
+                arc_action.triggered.connect(self._trigger_draw_arc)
+                mark_menu.addAction(arc_action)
         mark_button.setMenu(mark_menu)
 
     def set_layer_visible(self, layer: str, visible: bool) -> None:

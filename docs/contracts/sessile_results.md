@@ -23,6 +23,13 @@ This document defines the sessile pipeline results contract used by the GUI Resu
   - `timings_ms` (object) — Per‑stage timings populated by the pipeline runner.
   - `image_path` (string) — Source image path (for provenance in exports).
   - `diagnostics` (object) — Optional diagnostics including residuals, fit quality metrics, etc.
+  - `substrate_profile` (object) — Substrate profile geometry model (`type`, `points`, `parameters`, `confidence`).
+  - `substrate_radius_mm` (float | null) — Substrate radius of curvature for curved baselines (positive for convex, negative for concave).
+  - `substrate_curvature_inv_mm` (float | null) — Substrate curvature $\kappa_{\text{sub}} = 1 / R_{\text{sub}}$ in $\text{mm}^{-1}$.
+  - `theta_left_apparent_deg` (float) — Apparent left contact angle before local substrate slope correction.
+  - `theta_right_apparent_deg` (float) — Apparent right contact angle before local substrate slope correction.
+  - `substrate_warning` (bool) — Diagnostic flag indicating doubtful/uncertain baseline detection ($Q < 0.75$).
+  - `substrate_quality` (float) — Baseline detection confidence score $Q \in [0.0, 1.0]$.
 
 ### Common diagnostics envelope
 

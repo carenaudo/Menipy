@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from .config import EdgeDetectionSettings, PreprocessingSettings
 from .fit import Fit
 from .frame import Frame
-from .geometry import Contour, Geometry
+from .geometry import Contour, Geometry, SubstrateProfile
 from .result import Result
 from .state import MarkerSet
 from .temporal import DynamicSessileResult, SequenceMetadata, TemporalFrameResult
@@ -110,6 +110,9 @@ class Context(BaseModel):
     substrate_line: tuple[tuple[float, float], tuple[float, float]] | None = (
         None  # ((x1,y1), (x2,y2))
     )
+    substrate_profile: SubstrateProfile | None = None
+    substrate_warning: bool = False
+    substrate_quality: str | None = None
     roi_mask: np.ndarray | None = None  # Binary mask for ROI
     # Fields populated by preprocessing.run (compatibility)
     preprocessed_state: dict[str, Any] | None = None

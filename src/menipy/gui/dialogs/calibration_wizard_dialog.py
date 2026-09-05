@@ -548,19 +548,35 @@ class CalibrationWizardDialog(QDialog):
         if result is None:
             return overlay
 
-        # Draw substrate line
-        if result.substrate_line and self._region_enabled.get("substrate", True):
-            p1, p2 = result.substrate_line
-            cv2.line(overlay, p1, p2, (255, 0, 255), 2)  # Magenta (BGR)
-            cv2.putText(
-                overlay,
-                "Substrate",
-                (10, p1[1] - 10),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.5,
-                (255, 0, 255),
-                1,
-            )
+        # Draw substrate line or curved arc
+        if self._region_enabled.get("substrate", True):
+            prof = getattr(result, "substrate_profile", None)
+            if prof and prof.type == "circle_arc":
+                pts = prof.sample_points(n_points=100)
+                pts_i = pts.astype(np.int32).reshape((-1, 1, 2))
+                cv2.polylines(overlay, [pts_i], isClosed=False, color=(255, 0, 255), thickness=2)
+                r_val = float(prof.parameters.get("radius", 0.0))
+                cv2.putText(
+                    overlay,
+                    f"Substrate Arc (R={r_val:.1f}px)",
+                    (10, max(20, int(pts[0, 1]) - 10)),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.5,
+                    (255, 0, 255),
+                    1,
+                )
+            elif result.substrate_line:
+                p1, p2 = result.substrate_line
+                cv2.line(overlay, p1, p2, (255, 0, 255), 2)  # Magenta (BGR)
+                cv2.putText(
+                    overlay,
+                    "Substrate",
+                    (10, max(20, p1[1] - 10)),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.5,
+                    (255, 0, 255),
+                    1,
+                )
 
         # Draw needle region
         if result.needle_rect and self._region_enabled.get("needle", True):
@@ -618,10 +634,19 @@ class CalibrationWizardDialog(QDialog):
         if self.result is None:
             return
 
+        sub_conf = self.result.confidence_scores.get("substrate", 0.0)
+        sub_warn = getattr(self.result, "substrate_warning", False)
+        if self.result.substrate_line and not sub_warn:
+            sub_label = "✓ Found"
+        elif self.result.substrate_line and sub_warn:
+            sub_label = "⚠ Doubtful"
+        else:
+            sub_label = "✗ Not found"
+
         statuses = {
             "substrate": (
-                "✓ Found" if self.result.substrate_line else "✗ Not found",
-                self.result.confidence_scores.get("substrate", 0.0),
+                sub_label,
+                sub_conf,
             ),
             "needle": (
                 "✓ Found" if self.result.needle_rect else "✗ Not found",
@@ -649,8 +674,14 @@ class CalibrationWizardDialog(QDialog):
         for region_id, (text, conf) in statuses.items():
             widget = self._region_widgets.get(region_id)
             if widget:
-                conf_text = f"{conf * 100:.0f}%" if conf > 0 else ""
+                conf_text = f"({conf * 100:.0f}%)" if conf > 0 else ""
                 widget.status.setText(f"{text} {conf_text}")
+                if "✓" in text:
+                    widget.status.setStyleSheet("color: #1A7F37; font-weight: 600;")
+                elif "⚠" in text:
+                    widget.status.setStyleSheet("color: #9A6700; font-weight: 600;")
+                else:
+                    widget.status.setStyleSheet("color: #CF222E; font-weight: 600;")
 
     def _on_region_toggled(self, state: int) -> None:
         """Handle region checkbox toggle."""

@@ -89,7 +89,7 @@ consumer that requests a named implementation.
 | `src/menipy/viz/` | Non-Qt plotting helpers | `src/menipy/viz/plots.py` |
 | `plugins/` | Runtime-discovered algorithms and detectors | Match the filename to the registry kind in `src/menipy/common/registry.py` |
 | `tests/` | Behavioral and architectural coverage | Start with the test whose name matches the subsystem |
-| `docs/guides/` | Scientific, pipeline, plugin, GUI, and development explanations | `docs/guides/developer_guide_pipelines.md` |
+| `docs/guides/` | Scientific, pipeline, plugin, GUI, and development explanations | `docs/guides/developer_guide_pipelines.md`, `docs/guides/llm_coding_agent_guide.md` |
 | `docs/contracts/` | Pipeline results and results-panel integration contracts | Open the contract for the affected pipeline |
 | `docs/research/` | Reproducible research plans and evidence-backed external-method assessments | `docs/research/adsa_open_source_evaluation_plan.md` |
 | `scripts/` | Import analysis, documentation generation, legacy analysis, and standalone diagnostics | Treat outputs as reports, not application state |
@@ -108,6 +108,7 @@ consumer that requests a named implementation.
 | Change a specific analysis mode | `src/menipy/pipelines/<mode>/stages.py` and sibling mode modules | `tests/test_<mode>*.py`, `docs/contracts/<mode>_results.md` when present |
 | Change dynamic sessile tracking, video timing, hysteresis, or timeline exports | `src/menipy/common/sequence_acquisition.py` -> `src/menipy/common/temporal_sessile.py` -> `src/menipy/pipelines/sessile_dynamic/` | `tests/test_phase_d_dynamic_sessile.py`, `tests/data/adsa_temporal_manifest.json`, `docs/contracts/sessile_dynamic_results.md` |
 | Change sessile contour or contact-angle behavior | `src/menipy/common/sessile_detection.py` -> `src/menipy/pipelines/sessile/geometry.py` -> `src/menipy/pipelines/sessile/stages.py` | `tests/test_sessile_auto_detection.py`, `tests/test_sessile_geometry.py`, `tests/test_sessile_contact_angles.py` |
+| Change curved substrate baselines, arc drawing, or slope correction | `src/menipy/models/geometry.py` -> `src/menipy/common/sessile_detection.py` -> `src/menipy/pipelines/sessile/` | `tests/test_curved_substrate.py`, `tests/test_substrate_detection_robust.py`, `docs/guides/curved_substrates_and_baseline_detection.md` |
 | Change pendant fitting, surface tension, or Phase-B axis initialization | `src/menipy/pipelines/pendant/` -> `src/menipy/math/young_laplace.py` -> `src/menipy/common/geometry_prototypes.py` | `tests/test_pendant_pipeline.py`, `tests/test_adsa_geometry_phase_b.py`, `docs/contracts/pendant_results.md` |
 | Change calibration or automatic feature detection | `src/menipy/common/auto_calibrator.py`, `src/menipy/common/detection_helpers.py`, detector modules in `plugins/` | `tests/test_auto_calibrator.py`, `tests/test_detection_plugins.py` |
 | Change ADSA diagnostics, rejection, or detector conformance | `src/menipy/common/validation.py` -> `src/menipy/models/results.py` -> results consumers | `tests/test_phase_a_diagnostics.py`, `tests/test_phase_a_results_gui.py`, `tests/test_adsa_detector_conformance.py` |
@@ -118,6 +119,7 @@ consumer that requests a named implementation.
 | Change material or needle database behavior | `src/menipy/common/material_db.py` -> `src/menipy/gui/services/material_catalog_service.py` -> setup/dialog controllers | `tests/test_setup_panel.py`, `tests/test_guided_ui_simplification.py` |
 | Change Qt icons or compiled resources | `src/menipy/gui/resources/` -> `tools/build_resources.py` -> GUI consumers | `tests/test_gui_resources.py`, `.github/workflows/build-gui-resources.yml` |
 | Change packaging, lint, types, or test configuration | `pyproject.toml`, `.pre-commit-config.yaml`, `.github/workflows/` | Run the corresponding local command and relevant workflow-equivalent tests |
+| Understand or update AI agent guidelines and workflows | `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.cursorrules` -> `docs/guides/llm_coding_agent_guide.md` | `docs/guides/llm_coding_agent_guide.md` |
 
 `<mode>` means one of the directories currently discovered under
 `src/menipy/pipelines/`: `sessile`, `sessile_dynamic`, `pendant`, `oscillating`,

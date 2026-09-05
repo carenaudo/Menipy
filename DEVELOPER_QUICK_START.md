@@ -10,12 +10,11 @@ Your project now requires **NumPy-style docstrings** validated automatically thr
 
 ### Step 1: Install Pre-commit Hooks
 ```powershell
-# One-time setup
-pip install pre-commit
-pre-commit install
+# One-time setup with uv
+uv run pre-commit install
 
 # Verify installation
-pre-commit --version
+uv run pre-commit --version
 ```
 
 ### Step 2: Try It Out
@@ -197,8 +196,9 @@ git commit --no-verify
 
 ### In This Project
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - Full docstring standards guide
-- **[DOCUMENTATION_PROJECT_SUMMARY.md](DOCUMENTATION_PROJECT_SUMMARY.md)** - Project overview
-- **[PHASE_1_SUMMARY.md](PHASE_1_SUMMARY.md)** - Detailed detection plugin docs
+- **[docs/CODEBASE_MAP.md](docs/CODEBASE_MAP.md)** - Canonical architecture and task router
+- **[docs/guides/llm_coding_agent_guide.md](docs/guides/llm_coding_agent_guide.md)** - LLM coding agent guide and rules
+- **[docs/guides/developer_guide_plugins.md](docs/guides/developer_guide_plugins.md)** - Detailed plugin documentation
 
 ### External
 - [NumPy Docstring Style](https://numpydoc.readthedocs.io/en/latest/format.html)

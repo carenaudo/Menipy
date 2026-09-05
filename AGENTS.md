@@ -1,8 +1,9 @@
-# Menipy Codex Guide
+# Menipy Codex & Coding Agent Guide
 
 Use [`docs/CODEBASE_MAP.md`](docs/CODEBASE_MAP.md) as the canonical navigation
 guide before making changes. It maps execution paths, subsystem ownership,
-plugins, tests, documentation, and maintenance tooling.
+plugins, tests, documentation, and maintenance tooling. For a complete deep-dive
+into agent workflows, see [`docs/guides/llm_coding_agent_guide.md`](docs/guides/llm_coding_agent_guide.md).
 
 ## Canonical locations
 
@@ -21,19 +22,30 @@ them explicitly.
 
 ## Working rules
 
-1. Start from the task-to-file routes in `docs/CODEBASE_MAP.md`.
-2. Read the nearest tests before changing behavior.
-3. For pipeline output changes, read the matching file in `docs/contracts/`.
-4. Keep GUI work on PySide6 and preserve the controller/service/view boundaries.
-5. Run Python commands through the repository virtual environment.
+1. **Start from the task-to-file routes in [`docs/CODEBASE_MAP.md`](docs/CODEBASE_MAP.md).**
+2. **Read the nearest tests before changing behavior.**
+3. **Respect strict `Context` validation**: `src/menipy/models/context.py` sets `extra="forbid"`. Do not dynamically assign undeclared attributes to `ctx`; declare them on the model.
+4. **For pipeline output changes, read the matching file in `docs/contracts/`.**
+5. **Keep GUI work on PySide6 and preserve controller/service/view boundaries.** Never run blocking computation on the UI thread.
+6. **Use `uv` for all Python, lint, and test execution:**
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest
-.\.venv\Scripts\python.exe -m ruff check .
-.\.venv\Scripts\python.exe -m mypy src/menipy/models --config-file=pyproject.toml
-```
+# Set offscreen platform for Qt GUI tests
+$env:QT_QPA_PLATFORM="offscreen"
 
-Set `QT_QPA_PLATFORM=offscreen` when running GUI tests in a headless environment.
+# Run tests
+uv run --extra test pytest
+
+# Run linter
+uv run --extra dev ruff check .
+
+# Run type checker
+uv run --extra dev mypy src/menipy/models --config-file=pyproject.toml
+
+# Run GUI or CLI
+uv run menipy
+uv run adsa --help
+```
 
 Update `docs/CODEBASE_MAP.md` whenever an entry point, subsystem boundary,
 pipeline or plugin flow, canonical documentation location, or CI/test route

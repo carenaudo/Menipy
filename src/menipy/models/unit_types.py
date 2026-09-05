@@ -6,7 +6,9 @@ from typing import Annotated
 from pint.facets.plain import PlainQuantity as Quantity
 from pydantic_pint import PydanticPintQuantity
 
-Density = Annotated[Quantity, PydanticPintQuantity("kg / m**3")]
-Length = Annotated[Quantity, PydanticPintQuantity("mm")]
-SurfaceTension = Annotated[Quantity, PydanticPintQuantity("N / m")]
-Angle = Annotated[Quantity, PydanticPintQuantity("deg")]
+from menipy.common.units import ureg
+
+Density = Annotated[Quantity, PydanticPintQuantity("kg / m**3", ureg=ureg)]
+Length = Annotated[Quantity, PydanticPintQuantity("mm", ureg=ureg)]
+SurfaceTension = Annotated[Quantity, PydanticPintQuantity("N / m", ureg=ureg)]
+Angle = Annotated[Quantity, PydanticPintQuantity("deg", ureg=ureg)]

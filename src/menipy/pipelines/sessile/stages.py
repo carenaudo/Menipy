@@ -181,8 +181,12 @@ class SessilePipeline(PipelineBase):
 
         xy = ensure_contour(ctx)
 
+        substrate_profile = getattr(ctx, "substrate_profile", None)
         substrate_line = getattr(ctx, "substrate_line", None)
-        if not substrate_line:
+        if substrate_line is None and substrate_profile is not None:
+            substrate_line = substrate_profile.to_chord()
+            ctx.substrate_line = substrate_line
+        if not substrate_line and not substrate_profile:
             return ctx
 
         # Get apex for reference
@@ -202,8 +206,9 @@ class SessilePipeline(PipelineBase):
             clip_contour_to_substrate,
         )
 
+        sub_ref = substrate_profile if substrate_profile is not None else substrate_line
         xy, refined_contact_points = clip_contour_to_substrate(
-            xy, substrate_line, apex_xy
+            xy, sub_ref, apex_xy
         )
 
         # Update contour in context
@@ -236,7 +241,7 @@ class SessilePipeline(PipelineBase):
         else:
             calc_xy, calc_contact_points = build_sessile_calculation_contour(
                 xy,
-                substrate_line,
+                sub_ref,
                 apex_xy,
                 contact_points=None,
             )
@@ -275,8 +280,19 @@ class SessilePipeline(PipelineBase):
             xy_calc = np.asarray(xy_calc, dtype=float).reshape(-1, 2)
 
         # Use substrate line if provided, otherwise auto-detect
+        substrate_profile = getattr(ctx, "substrate_profile", None)
         substrate_line = getattr(ctx, "substrate_line", None)
-        auto_detect_baseline = substrate_line is None
+        if substrate_profile is not None and substrate_line is None:
+            substrate_line = substrate_profile.to_chord()
+            ctx.substrate_line = substrate_line
+        elif substrate_line is not None and substrate_profile is None:
+            if hasattr(substrate_line, "to_chord"):
+                substrate_profile = substrate_line
+                substrate_line = substrate_profile.to_chord()
+                ctx.substrate_profile = substrate_profile
+                ctx.substrate_line = substrate_line
+
+        auto_detect_baseline = (substrate_line is None and substrate_profile is None)
         auto_detect_apex = True  # Always refine apex
 
         if substrate_line:
@@ -331,6 +347,7 @@ class SessilePipeline(PipelineBase):
             auto_detect_apex=auto_detect_apex,
             contact_angle_method=contact_angle_method,
             contact_points=use_contact_points,
+            substrate_profile=substrate_profile,
         )
 
         if getattr(ctx, "experimental_geometry_mode", "off") == "shadow" and contact_angle_method != "auto_residual":
@@ -344,6 +361,7 @@ class SessilePipeline(PipelineBase):
                 auto_detect_apex=auto_detect_apex,
                 contact_angle_method="auto_residual",
                 contact_points=use_contact_points,
+                substrate_profile=substrate_profile,
             )
             shadow_payload = {
                 "accepted": True,
@@ -353,6 +371,14 @@ class SessilePipeline(PipelineBase):
                 "theta_right_deg": shadow_metrics.get("theta_right_deg"),
             }
             metrics.setdefault("experimental_geometry", {})["sessile_contact_selector"] = shadow_payload
+
+        if metrics.get("substrate_warning"):
+            ctx.substrate_warning = True
+        if metrics.get("substrate_quality"):
+            ctx.substrate_quality = metrics.get("substrate_quality")
+        if getattr(ctx, "substrate_profile", None) is None and metrics.get("substrate_profile"):
+            from menipy.models.geometry import SubstrateProfile
+            ctx.substrate_profile = SubstrateProfile(**metrics["substrate_profile"])
 
         # Store metrics temporarily for compute_metrics stage
         ctx._sessile_metrics = metrics

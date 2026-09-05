@@ -13,6 +13,7 @@ from PySide6.QtCore import QObject, Signal
 from menipy.common import preprocessing, registry
 from menipy.models.config import PreprocessingSettings
 from menipy.models.context import Context
+from menipy.models.geometry import SubstrateProfile
 from menipy.models.state import MarkerSet, PreprocessingState
 
 logger = logging.getLogger(__name__)
@@ -38,6 +39,8 @@ class PreprocessingPipelineController(QObject):
         self._image: np.ndarray | None = None
         self._roi: tuple[int, int, int, int] | None = None
         self._roi_mask: np.ndarray | None = None
+        self._contact_line: tuple[tuple[int, int], tuple[int, int]] | None = None
+        self._substrate_profile: SubstrateProfile | None = None
         self._contact_line: tuple[tuple[int, int], tuple[int, int]] | None = None
 
     # ------------------------------------------------------------------
@@ -79,6 +82,7 @@ class PreprocessingPipelineController(QObject):
         roi: tuple[int, int, int, int] | None = None,
         roi_mask: np.ndarray | None = None,
         contact_line: tuple[tuple[int, int], tuple[int, int]] | None = None,
+        substrate_profile: SubstrateProfile | None = None,
     ) -> None:
         if not isinstance(image, np.ndarray):
             raise TypeError("source image must be a numpy array")
@@ -90,6 +94,7 @@ class PreprocessingPipelineController(QObject):
         self._roi = tuple(map(int, roi)) if roi else None
         self._roi_mask = roi_mask.copy() if isinstance(roi_mask, np.ndarray) else None
         self._contact_line = contact_line
+        self._substrate_profile = substrate_profile
         self._history.clear()
         self._redo.clear()
         self._state = None
@@ -100,6 +105,7 @@ class PreprocessingPipelineController(QObject):
         roi: tuple[int, int, int, int] | None = None,
         roi_mask: np.ndarray | None = None,
         contact_line: tuple[tuple[int, int], tuple[int, int]] | None = None,
+        substrate_profile: SubstrateProfile | None = None,
     ) -> None:
         if roi is not None:
             self._roi = tuple(map(int, roi))
@@ -107,7 +113,14 @@ class PreprocessingPipelineController(QObject):
             self._roi_mask = roi_mask.copy()
         if contact_line is not None:
             self._contact_line = contact_line
-        if roi is not None or roi_mask is not None or contact_line is not None:
+        if substrate_profile is not None:
+            self._substrate_profile = substrate_profile
+        if (
+            roi is not None
+            or roi_mask is not None
+            or contact_line is not None
+            or substrate_profile is not None
+        ):
             self._history.clear()
             self._redo.clear()
             self._state = None
@@ -129,8 +142,8 @@ class PreprocessingPipelineController(QObject):
             ctx.roi_mask = self._roi_mask
         if self._contact_line:
             ctx.contact_line = self._contact_line
-        if self._markers:
-            ctx.preprocessing_markers = self._markers.model_copy(deep=True)
+        if self._substrate_profile:
+            ctx.substrate_profile = self._substrate_profile
         if self._markers:
             ctx.preprocessing_markers = self._markers.model_copy(deep=True)
         ctx.preprocessing_settings = self._settings

@@ -20,9 +20,10 @@ from menipy.common.geometry_prototypes import detect_bilateral_needle
 from menipy.common.sessile_detection import (
     detect_sessile_drop_contour,
     detect_sessile_needle_shaft,
-    detect_sessile_substrate_line,
+    detect_sessile_substrate_robust,
     segment_sessile_binary,
 )
+from menipy.models.geometry import SubstrateProfile
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,9 @@ class CalibrationResult:
 
     # Substrate line as ((x1, y1), (x2, y2)) - horizontal baseline
     substrate_line: tuple[tuple[int, int], tuple[int, int]] | None = None
+    substrate_profile: SubstrateProfile | None = None
+    substrate_warning: bool = False
+    substrate_quality: str | None = None
 
     # Needle region as (x, y, width, height) if detected
     needle_rect: tuple[int, int, int, int] | None = None
@@ -164,6 +168,9 @@ class AutoCalibrator:
         result.detector_diagnostics["substrate"] = substrate_outcome.to_diagnostics()
         if substrate_line:
             result.substrate_line = substrate_line
+            result.substrate_profile = getattr(self, "_substrate_profile", None)
+            result.substrate_warning = getattr(self, "_substrate_warning", False)
+            result.substrate_quality = getattr(self, "_substrate_quality", "confident")
             result.confidence_scores["substrate"] = substrate_conf
             logger.info(
                 f"Substrate detected at y={self._substrate_y} (conf={substrate_conf:.2f})"
@@ -369,17 +376,22 @@ class AutoCalibrator:
         self,
     ) -> tuple[tuple[tuple[int, int], tuple[int, int]] | None, float]:
         """Detect substrate baseline using gradient analysis on image margins."""
-        substrate_line, confidence = detect_sessile_substrate_line(
+        substrate_line, confidence, diagnostics, profile = detect_sessile_substrate_robust(
             self.original_image,
             clahe_clip_limit=self.clahe_clip_limit,
             clahe_tile_size=self.clahe_tile_size,
             side_margin_fraction=self.margin_fraction,
         )
+        self._substrate_profile = profile
+        self._substrate_warning = diagnostics.get("warning", False)
+        self._substrate_quality = diagnostics.get("status", "confident")
         if substrate_line is None:
             self._substrate_y = int(self.height * 0.8)
             return ((0, self._substrate_y), (self.width, self._substrate_y)), 0.3
 
-        self._substrate_y = int(substrate_line[0][1])
+        self._substrate_y = int(
+            round((substrate_line[0][1] + substrate_line[1][1]) / 2.0)
+        )
         return substrate_line, confidence
 
     def _find_horizon_median(self, strip_gray: np.ndarray) -> int | None:

@@ -4,88 +4,90 @@ This `GEMINI.md` file provides an overview of the Menipy project, specifically t
 
 ## 1. Project Overview
 
-Menipy is a Python-based toolkit designed for analyzing droplet shapes from images. Its primary goal is to achieve development with minimal human involvement, leveraging an AI agent named CODEX to orchestrate various specialized sub-agents.
+Menipy is a Python-based scientific toolkit designed for analyzing droplet shapes from images (contact angles, surface tension, and axisymmetric drop shape analysis - ADSA).
 
 **Key Features:**
-*   **Image Processing:** Algorithms for segmentation, edge detection, and feature extraction.
-*   **PySide6 GUI:** A graphical user interface for interactive analysis.
-*   **Physical Property Estimation:** Calculation of surface tension, contact angles, and other droplet metrics.
+*   **Image Processing:** Classical CV algorithms and optional ONNX models (MobileSAM) for edge detection, segmentation, and feature extraction.
+*   **PySide6 GUI:** Interactive graphical interface with live preview, auto-calibration wizard, and step-testing sandboxes.
+*   **Physical Property Estimation:** Young-Laplace ODE profile fitting, Bond number optimization, and contact angle calculation.
+*   **Headless CLI:** Batch image processing and temporal video sequence analysis.
 
 ## 2. AI-Driven Development Philosophy
 
-The development of Menipy is driven by an AI agent and its sub-agents. Gemini's role is to understand and contribute within this AI-orchestrated framework.
+The development of Menipy leverages AI agents and specialized sub-agents. Gemini's role is to operate within this architecture with precision and safety.
 
-*   **CODEX:** The primary AI orchestrator.
-*   **Sub-Agents:** Specialized agents (e.g., Documentation, Scaffold, Environment, Processing, Modeling, GUI, Batch, CI & Packaging) whose roles are defined in `AGENTS.md`.
-*   **Development Plan:** High-level plans and desired features are outlined in `PLAN.md`.
-*   **Reference Material:** Detailed technical specifications, equations, and workflow descriptions are provided in the `doc/` directory.
+*   **Canonical Navigation:** Always consult [`docs/CODEBASE_MAP.md`](docs/CODEBASE_MAP.md) before making changes.
+*   **Comprehensive Guide:** Refer to [`docs/guides/llm_coding_agent_guide.md`](docs/guides/llm_coding_agent_guide.md) for detailed agent rules.
+*   **Result Contracts:** When changing analysis outputs, consult [`docs/contracts/`](docs/contracts/).
+*   **Technical Specifications:** Detailed scientific descriptions, equations, and algorithms reside in [`docs/guides/`](docs/guides/) (e.g. `physics_models.md`, `drop_analysis.md`, `image_processing.md`).
 
-## 3. Repository Structure (Relevant for AI Agent)
+## 3. Repository Structure
 
-Understanding the repository structure is crucial for effective navigation and contribution.
+*   **`src/menipy/`**: Application package source.
+    *   `gui/`: PySide6 application (views, controllers, services, dialogs).
+    *   `cli/`: Command-line entry points and batch workflows.
+    *   `pipelines/`: Modular analysis pipelines (`sessile`, `pendant`, `sessile_dynamic`, `captive_bubble`, etc.).
+    *   `models/`: Pydantic data schemas (`context.py`, `config.py`, `results.py`).
+    *   `common/`: Auto-calibration, geometry, edge detection, unit management, and plugin DB.
+    *   `math/`: Young-Laplace numerical solvers and ODE integration.
+*   **`plugins/`**: Custom runtime-discovered extensions (edge detectors, preprocessors, solvers).
+*   **`docs/`**: Canonical documentation, contracts, research benchmarks, and guides.
+*   **`tests/`**: Comprehensive unit, regression, integration, and UI test suite.
+*   **`pyproject.toml`**: Package metadata, tools configuration (Ruff, Black, Mypy, Pytest).
 
-*   **`AGENTS.md`**: Defines the roles and responsibilities of the various AI sub-agents involved in Menipy's development.
-*   **`PLAN.md`**: Contains the high-level development plan, including desired directory layout, technology stack, and feature set.
-*   **`doc/`**: A directory containing supporting Markdown files (e.g., `physics_models.md`, `numerical_methods.md`, `image_processing.md`, `gui_design.md`, `drop_analysis.md`) that provide detailed technical context for the AI agents.
-*   **`src/menipy/pipelines/`**: This directory houses the modular analysis pipelines (e.g., `pendant`, `sessile`). New pipelines are added as subdirectories here.
-*   **`plugins/`**: This directory is for custom plugins that extend Menipy's functionality (e.g., image filters, solvers).
-*   **`requirements.txt`**: Lists all Python dependencies required for the project.
-*   **`tests/`**: Contains unit and integration tests for various components of the application.
-*   **`.venv/`**: The virtual environment directory, which should be used for all Python-related commands.
+## 4. Key Architectural Rules for Gemini
 
-## 4. Key Architectural Concepts
+### 4.1. Strict `Context` Schema (`extra="forbid"`)
+`src/menipy/models/context.py` enforces `model_config = ConfigDict(extra="forbid")`.
+*   **Do NOT** dynamically attach arbitrary new fields to `ctx` without declaring them in `Context`.
+*   If a stage needs new state, add the typed field definition directly to `Context` in `src/menipy/models/context.py`.
 
-### 4.1. Pipelines
+### 4.2. GUI Separation of Concerns
+*   Keep GUI work strictly in PySide6.
+*   Maintain the **View -> Controller -> Service** boundaries.
+*   Never run blocking operations or pipelines on the main GUI thread; use `src/menipy/gui/services/pipeline_runner.py`.
 
-Menipy's analysis capabilities are built on a flexible, stage-based pipeline architecture.
-*   **`PipelineBase`**: The base class (`src/menipy/pipelines/base.py`) defining a series of stages:
-    - Acquisition, Preprocessing, Feature Detection, Contour Extraction, Contour Refinement
-    - Calibration, Geometric Features, Physics, Profile Fitting, Compute Metrics
-    - Overlay, Validation
-*   **`Context` Object**: A central data container passed between pipeline stages, enabling loose coupling.
-*   **Discovery**: Pipelines are automatically discovered from subdirectories within `src/menipy/pipelines/`.
+### 4.3. Pipeline & Plugin Protocol
+*   Pipelines inherit from `PipelineBase` (`src/menipy/pipelines/base.py`) and are discovered dynamically from `src/menipy/pipelines/<mode>/`.
+*   Plugins live in `plugins/` and register with `src/menipy/common/registry.py`. They must remain stateless per frame.
 
-### 4.2. Plugins
+## 5. Getting Started & Commands
 
-The plugin system allows for extending functionality with new algorithms and processing stages.
-*   **Discovery**: Plugins are discovered by scanning designated directories (e.g., `plugins/`) and managed by `PluginDB` (`src/menipy/common/plugin_db.py`).
-*   **Registration**: Plugins register their functionality with a central `registry` (`src/menipy/common/registry.py`).
-*   **Types (Kinds)**: Plugins are categorized by "kind":
-    - `acquisition`, `preprocessors`, `contour_extraction`, `calibration`
-    - `geometric_features`, `physics`, `profile_fitting`, `compute_metrics`
-    - `overlayers`, `validators`
-    - `needle_detectors`, `roi_detectors`, `substrate_detectors`, `drop_detectors`, `apex_detectors`
-    - `utilities` - Image testing and analysis tools (accessible via Utilities menu)
+**Always use `uv` for environment management, dependency resolution, and running scripts.**
 
-## 5. Getting Started (for Gemini)
-
-To interact with and contribute to the Menipy project, follow these guidelines:
-
-1.  **Environment Setup:**
-    *   Ensure a virtual environment exists at `.venv/`.
-    *   Install all dependencies using the virtual environment's pip:
-        ```bash
-        .venv\Scripts\python.exe -m pip install -r requirements.txt
-        ```
+1.  **Environment Sync:**
+    ```powershell
+    uv sync --extra dev --extra test
+    ```
 
 2.  **Running Tests:**
-    *   Execute tests using the virtual environment's pytest:
-        ```bash
-        .venv\Scripts\python.exe -m pytest
+    Always set `QT_QPA_PLATFORM=offscreen` to run GUI and headless tests without display errors:
+    ```powershell
+    $env:QT_QPA_PLATFORM="offscreen"
+    uv run --extra test pytest
+    ```
+    (Or specify a test file: `uv run --extra test pytest tests/test_sessile_geometry.py`)
+
+3.  **Code Quality & Linting:**
+    ```powershell
+    uv run --extra dev ruff check .
+    uv run --extra dev mypy src/menipy/models --config-file=pyproject.toml
+    ```
+
+4.  **Launching the Application:**
+    *   Start the PySide6 GUI:
+        ```powershell
+        uv run menipy
+        # or: uv run python -m menipy
         ```
-        (Or specify a particular test file: `.venv\Scripts\python.exe -m pytest tests/test_your_file.py`)
-
-3.  **Launching the Application:**
-    *   Start the Menipy GUI:
-        ```bash
-        .venv\Scripts\python.exe -m src
+    *   Run headless CLI:
+        ```powershell
+        uv run adsa --help
         ```
 
-## 6. Interaction Guidelines for Gemini
+## 6. Interaction Guidelines
 
-*   **Consult Documentation:** Always refer to `AGENTS.md`, `PLAN.md`, and the `doc/` directory for context, requirements, and technical details before making significant changes.
-*   **Adhere to Conventions:** Mimic existing code style, structure, and architectural patterns.
-*   **Test-Driven Approach:** When implementing new features or fixing bugs, prioritize writing or updating tests to ensure correctness and prevent regressions.
-*   **Virtual Environment:** Always use the Python executable within the `.venv/` directory for all Python-related commands.
-*   **Explain Critical Commands:** Before executing commands that modify the file system or codebase, provide a brief explanation.
-*   **No Assumptions:** Do not make assumptions about file contents; use `read_file` or `read_many_files` to confirm.
+*   **Consult `docs/CODEBASE_MAP.md` First:** Locate the affected subsystems and recommended tests before editing.
+*   **Test-Driven Execution:** Run the nearest tests to verify changes before and after modifying code.
+*   **No Assumptions:** Always confirm file contents using `view_file` or `grep_search` rather than guessing internal APIs.
+*   **Preserve Existing Contracts:** Never break existing output keys in `ctx.results` without updating the matching contract in `docs/contracts/`.

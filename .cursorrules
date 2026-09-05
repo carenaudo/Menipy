@@ -1,0 +1,23 @@
+# Menipy Cursor Rules
+
+You are an AI pair-programmer working on Menipy, a Python toolkit for droplet shape analysis and tensiometry.
+
+## 1. Environment & Tools
+- **Project Manager**: Always use `uv` (never raw `pip` or untracked python commands).
+- **Run Tests**: `$env:QT_QPA_PLATFORM="offscreen"; uv run --extra test pytest [path]`
+- **Run Linter**: `uv run --extra dev ruff check .`
+- **Run GUI**: `uv run menipy` or `uv run python -m menipy`
+- **Run CLI**: `uv run adsa [args]` or `uv run menipy-cli [args]`
+
+## 2. Navigation & Architecture
+- **Canonical Map**: Before modifying unfamiliar code, check `docs/CODEBASE_MAP.md` for ownership and task routing.
+- **State Model (CRITICAL)**: `src/menipy/models/context.py` defines `Context` with `extra="forbid"`. NEVER dynamically attach arbitrary attributes to `ctx`. If a new field is needed across stages, declare it on the `Context` Pydantic model.
+- **GUI Architecture**: Strict separation: `views/` (pure UI/Qt) -> `controllers/` (orchestration/viewmodels) -> `services/` (background workers, headless calls). Never run heavy image processing or solvers on the main GUI thread.
+- **Plugins**: Located in `plugins/`, registered through `src/menipy/common/registry.py`. Must be stateless single-frame processors.
+- **Pipelines**: Located in `src/menipy/pipelines/<mode>/stages.py`, inheriting from `PipelineBase` in `base.py`.
+- **Contracts**: Output schemas and field contracts are documented in `docs/contracts/`.
+
+## 3. Coding Style
+- Follow NumPy docstring standards for all modules, classes, and public functions.
+- Format code according to Black (88 chars) and Ruff.
+- Never import from `archive/`, `build/`, or `.tmp/`.

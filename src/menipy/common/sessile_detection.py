@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 import cv2
 import numpy as np
 
 from menipy.common.geometry import find_contact_points_from_contour
+from menipy.models.geometry import SubstrateProfile
 
 
 @dataclass
@@ -175,6 +177,208 @@ def enhance_sessile_gray(
     return clahe.apply(gray)
 
 
+def detect_sessile_substrate_robust(
+    image: np.ndarray,
+    *,
+    clahe_clip_limit: float = 2.0,
+    clahe_tile_size: tuple[int, int] = (8, 8),
+    lower_fraction: float = 0.55,
+    upper_fraction: float = 0.90,
+    margin_fraction: float = 0.08,
+    side_margin_fraction: float | None = None,
+) -> tuple[
+    tuple[tuple[int, int], tuple[int, int]] | None,
+    float,
+    dict[str, Any],
+    SubstrateProfile | None,
+]:
+    """Detect substrate baseline with robust bilateral sector gradient analysis, tilt recovery, and confidence scoring.
+
+    Parameters
+    ----------
+    image : np.ndarray
+        Input image.
+    clahe_clip_limit : float
+        CLAHE contrast limit.
+    clahe_tile_size : tuple[int, int]
+        CLAHE grid size.
+    lower_fraction : float
+        Lower image fraction to begin searching for baseline.
+    upper_fraction : float
+        Upper image fraction to end searching.
+    margin_fraction : float
+        Fraction of width trimmed at margins for row gradient analysis.
+    side_margin_fraction : float | None
+        Alias for margin_fraction.
+
+    Returns
+    -------
+    substrate_line : tuple[tuple[int, int], tuple[int, int]] | None
+        Line spanning image width ((0, y_left), (width, y_right)).
+    confidence : float
+        Confidence score Q in [0.0, 1.0].
+    diagnostics : dict
+        Detailed diagnostics: status ('confident', 'doubtful', 'failed'), warning (bool), reason (str),
+        tilt_deg (float), inlier_ratio (float), method (str).
+    substrate_profile : SubstrateProfile | None
+        The typed SubstrateProfile model.
+    """
+    if side_margin_fraction is not None:
+        margin_fraction = side_margin_fraction
+    gray = ensure_gray_image(image)
+    height, width = gray.shape[:2]
+    enhanced = enhance_sessile_gray(
+        gray,
+        clahe_clip_limit=clahe_clip_limit,
+        clahe_tile_size=clahe_tile_size,
+    )
+
+    lo = int(np.clip(height * lower_fraction, 0, max(height - 2, 0)))
+    hi = int(np.clip(height * upper_fraction, lo + 1, max(height - 1, 1)))
+    if hi <= lo or width < 10:
+        fallback_y = int(height * 0.8)
+        diag = {
+            "status": "failed",
+            "confidence": 0.2,
+            "warning": True,
+            "reason": "image_too_small_or_invalid_band",
+            "tilt_deg": 0.0,
+            "inlier_ratio": 0.0,
+            "method": "fallback",
+        }
+        line = ((0, fallback_y), (width, fallback_y))
+        prof = SubstrateProfile.from_line(
+            (0.0, float(fallback_y)), (float(width), float(fallback_y)), confidence=0.2
+        )
+        return line, 0.2, diag, prof
+
+    # 1. Row-gradient analysis across central region
+    x0 = int(np.clip(width * margin_fraction, 0, max(width - 2, 0)))
+    x1 = int(np.clip(width * (1.0 - margin_fraction), x0 + 1, width))
+    region = enhanced[:, x0:x1].astype(float)
+    row_sub_y: int | None = None
+    row_strength = 0.0
+    std_grad = 1.0
+    is_positive = False
+
+    if region.size > 0 and hi > lo:
+        profile = region.mean(axis=1)
+        if len(profile) >= 7:
+            profile = np.convolve(profile, np.ones(5, dtype=float) / 5.0, mode="same")
+        grad = np.diff(profile)
+        std_grad = float(np.std(grad)) + 1e-6
+        band = grad[lo:hi]
+        if band.size > 0:
+            pos_i = int(np.argmax(band))
+            neg_i = int(np.argmin(band))
+            pos_strength = float(band[pos_i])
+            neg_strength = float(abs(band[neg_i]))
+            min_strength = max(1.0, float(np.std(band)) * 0.35)
+            if pos_strength >= min_strength and pos_strength >= neg_strength * 0.35:
+                strong_positive = np.where(band >= max(min_strength, pos_strength * 0.70))[0]
+                row_sub_y = lo + int(strong_positive[0] if strong_positive.size else pos_i)
+                row_sub_y = min(row_sub_y + 2, height - 1)
+                row_strength = pos_strength
+                is_positive = True
+            elif neg_strength >= min_strength:
+                row_sub_y = lo + neg_i
+                row_strength = neg_strength
+                is_positive = False
+
+    if row_sub_y is None:
+        fallback_y = int(height * 0.8)
+        diag = {
+            "status": "failed",
+            "confidence": 0.25,
+            "warning": True,
+            "reason": "no_valid_edge_transition_detected",
+            "tilt_deg": 0.0,
+            "inlier_ratio": 0.0,
+            "method": "fallback",
+        }
+        line = ((0, fallback_y), (width, fallback_y))
+        prof = SubstrateProfile.from_line(
+            (0.0, float(fallback_y)), (float(width), float(fallback_y)), confidence=0.25
+        )
+        return line, 0.25, diag, prof
+
+    # 2. Bilateral sector tilt refinement
+    quarter = max(2, (x1 - x0) // 4)
+    x_l0, x_l1 = x0, x0 + quarter
+    x_r0, x_r1 = x1 - quarter, x1
+    x_lc = (x_l0 + x_l1) / 2.0
+    x_rc = (x_r0 + x_r1) / 2.0
+
+    win = 10
+    w_lo = max(lo, row_sub_y - win)
+    w_hi = min(hi, row_sub_y + win + 1)
+
+    prof_l = enhanced[w_lo:w_hi, x_l0:x_l1].mean(axis=1)
+    prof_r = enhanced[w_lo:w_hi, x_r0:x_r1].mean(axis=1)
+    grad_l = np.diff(prof_l)
+    grad_r = np.diff(prof_r)
+
+    if is_positive:
+        y_l = w_lo + int(np.argmax(grad_l)) if grad_l.size else row_sub_y
+        y_r = w_lo + int(np.argmax(grad_r)) if grad_r.size else row_sub_y
+    else:
+        y_l = w_lo + int(np.argmin(grad_l)) if grad_l.size else row_sub_y
+        y_r = w_lo + int(np.argmin(grad_r)) if grad_r.size else row_sub_y
+
+    dx = x_rc - x_lc
+    tilt_rad = np.arctan((y_r - y_l) / dx) if dx > 0 else 0.0
+    tilt_deg = float(np.degrees(tilt_rad))
+    if 0.5 <= abs(tilt_deg) <= 5.0:
+        m = float(np.tan(tilt_rad))
+        c = float(row_sub_y - m * (width / 2.0))
+        used_method = "bilateral_gradient"
+    else:
+        tilt_deg = 0.0
+        m = 0.0
+        c = float(row_sub_y)
+        used_method = "row_gradient"
+
+    y_left = int(round(np.clip(c, 0, height - 1)))
+    y_right = int(round(np.clip(m * width + c, 0, height - 1)))
+    substrate_line = ((0, y_left), (int(width), y_right))
+
+    # Check raw dynamic range in search band to catch low-contrast / ambiguous transitions
+    raw_band = gray[lo:hi, x0:x1]
+    raw_range = float(np.ptp(raw_band)) if raw_band.size > 0 else 0.0
+    raw_contrast_factor = float(np.clip(raw_range / 25.0, 0.25, 1.0))
+
+    q_contrast = float(np.clip((row_strength / std_grad) * raw_contrast_factor, 0.25, 0.98))
+    agreement = abs(y_l - row_sub_y) + abs(y_r - row_sub_y)
+    q_bilateral = 1.0 if agreement <= 4 else (0.7 if agreement <= 10 else 0.4)
+    confidence = float(np.clip((0.65 * q_contrast + 0.35 * q_bilateral) * raw_contrast_factor, 0.25, 0.98))
+    status = "confident" if confidence >= 0.75 else ("doubtful" if confidence >= 0.45 else "failed")
+    warning = confidence < 0.75
+    reason = (
+        "confident"
+        if not warning
+        else (
+            "low_contrast_or_ambiguous_edges"
+            if confidence >= 0.45
+            else "no_valid_edge_transition_detected"
+        )
+    )
+
+    substrate_profile = SubstrateProfile.from_line(
+        (0.0, float(y_left)), (float(width), float(y_right)), confidence=confidence
+    )
+
+    diagnostics = {
+        "status": status,
+        "confidence": confidence,
+        "warning": warning,
+        "reason": reason,
+        "tilt_deg": tilt_deg,
+        "inlier_ratio": 1.0 if agreement <= 4 else 0.5,
+        "method": used_method,
+    }
+    return substrate_line, confidence, diagnostics, substrate_profile
+
+
 def detect_sessile_substrate_line(
     image: np.ndarray,
     *,
@@ -186,59 +390,17 @@ def detect_sessile_substrate_line(
 ) -> tuple[tuple[tuple[int, int], tuple[int, int]] | None, float]:
     """Detect the visible top edge of a sessile substrate band.
 
-    The previous margin-only search could lock onto the bottom of the needle.
-    This detector looks in the lower image band and uses row-gradient support
-    across the useful image width, which is the visual signal for the substrate
-    surface in sessile views.
+    Backwards-compatible wrapper delegating to `detect_sessile_substrate_robust`.
     """
-    gray = ensure_gray_image(image)
-    height, width = gray.shape[:2]
-    enhanced = enhance_sessile_gray(
-        gray,
+    line, conf, _, _ = detect_sessile_substrate_robust(
+        image,
         clahe_clip_limit=clahe_clip_limit,
         clahe_tile_size=clahe_tile_size,
+        lower_fraction=lower_fraction,
+        upper_fraction=upper_fraction,
+        margin_fraction=max(side_margin_fraction, 0.15),
     )
-
-    lo = int(np.clip(height * lower_fraction, 0, max(height - 2, 0)))
-    hi = int(np.clip(height * upper_fraction, lo + 1, max(height - 1, 1)))
-    x0 = int(np.clip(width * side_margin_fraction, 0, max(width - 2, 0)))
-    x1 = int(np.clip(width * (1.0 - side_margin_fraction), x0 + 1, width))
-    region = enhanced[:, x0:x1].astype(float)
-    if region.size == 0 or hi <= lo:
-        return None, 0.0
-
-    profile = region.mean(axis=1)
-    if len(profile) >= 7:
-        kernel = np.ones(5, dtype=float) / 5.0
-        profile = np.convolve(profile, kernel, mode="same")
-    grad = np.diff(profile)
-    band = grad[lo:hi]
-    if band.size == 0:
-        return None, 0.0
-
-    pos_i = int(np.argmax(band))
-    neg_i = int(np.argmin(band))
-    pos_strength = float(band[pos_i])
-    neg_strength = float(abs(band[neg_i]))
-
-    # Bright-to-dark substrate edges have negative polarity, but many sessile
-    # images expose the contact surface as a dark-to-light edge. Prefer the
-    # positive surface edge when it is meaningful; otherwise use the strongest
-    # negative lower-band transition.
-    min_strength = max(1.0, float(np.std(band)) * 0.35)
-    if pos_strength >= min_strength and pos_strength >= neg_strength * 0.35:
-        strong_positive = np.where(band >= max(min_strength, pos_strength * 0.70))[0]
-        substrate_y = lo + int(strong_positive[0] if strong_positive.size else pos_i)
-        substrate_y = min(substrate_y + 2, height - 1)
-        strength = pos_strength
-    elif neg_strength >= min_strength:
-        substrate_y = lo + neg_i
-        strength = neg_strength
-    else:
-        return None, 0.0
-
-    confidence = float(np.clip(strength / (float(np.std(grad)) + 1e-6), 0.25, 1.0))
-    return ((0, int(substrate_y)), (int(width), int(substrate_y))), confidence
+    return line, conf
 
 
 def segment_sessile_binary(

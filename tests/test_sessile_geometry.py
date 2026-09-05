@@ -223,5 +223,7 @@ def test_build_sessile_calculation_contour_handles_tilted_substrate():
     p1 = np.asarray(substrate[0], dtype=float)
     p2 = np.asarray(substrate[1], dtype=float)
     line_vec = p2 - p1
-    assert abs(float(np.cross(line_vec, left - p1))) < 1e-5
-    assert abs(float(np.cross(line_vec, right - p1))) < 1e-5
+    from menipy.common.geometry import cross2d
+
+    assert abs(float(cross2d(line_vec, left - p1))) < 1e-5
+    assert abs(float(cross2d(line_vec, right - p1))) < 1e-5

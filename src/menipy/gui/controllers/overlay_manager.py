@@ -96,8 +96,22 @@ class OverlayManager:
                 tag="needle",
             )
 
-        # Draw substrate line
-        if result.substrate_line:
+        # Draw substrate line or curved arc
+        profile = getattr(result, "substrate_profile", None)
+        if (
+            profile
+            and profile.type == "circle_arc"
+            and hasattr(self.image_view, "add_contour_overlay")
+        ):
+            pts = profile.sample_points(n_points=80)
+            self.image_view.add_contour_overlay(
+                pts,
+                color=QColor(255, 0, 255),
+                closed=False,
+                layer="baseline",
+                tag="contact_line",
+            )
+        elif result.substrate_line:
             p1, p2 = result.substrate_line
             self.image_view.add_marker_line(
                 QPointF(p1[0], p1[1]),

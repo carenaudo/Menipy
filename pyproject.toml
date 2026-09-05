@@ -200,7 +200,7 @@ known-first-party = ["menipy"]
 [tool.mypy]
 explicit_package_bases = true
 mypy_path = "src"
-python_version = "3.10"
+python_version = "3.12"
 ignore_missing_imports = false
 follow_imports = "silent"
 strict_optional = true

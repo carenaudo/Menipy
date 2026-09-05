@@ -5,6 +5,7 @@ from pathlib import Path
 from types import MethodType
 from unittest.mock import Mock
 
+import pytest
 from PySide6.QtCore import QFile
 from PySide6.QtGui import QFontDatabase
 from PySide6.QtUiTools import QUiLoader
@@ -223,7 +224,8 @@ def test_theme_font_resolver_uses_available_candidate(qtbot, monkeypatch):
     from menipy.gui import theme
 
     available = QFontDatabase.families()
-    assert available
+    if not available:
+        pytest.skip("Qt offscreen runtime does not expose system font families")
     fallback_family = available[0]
     monkeypatch.setattr(
         theme,

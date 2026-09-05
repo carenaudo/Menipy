@@ -2,8 +2,20 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 from numpy.linalg import lstsq
+
+
+def cross2d(u: np.ndarray | tuple | list, v: np.ndarray | tuple | list) -> np.ndarray | float:
+    """Compute 2D cross product (determinant u_x*v_y - u_y*v_x) compatible with NumPy 2.x."""
+    u_arr = np.asarray(u, dtype=float)
+    v_arr = np.asarray(v, dtype=float)
+    res = u_arr[..., 0] * v_arr[..., 1] - u_arr[..., 1] * v_arr[..., 0]
+    if res.ndim == 0:
+        return float(res)
+    return res
 
 
 def fit_circle(points: np.ndarray) -> tuple[np.ndarray, float]:
@@ -97,16 +109,17 @@ def curvature_estimates(contour: np.ndarray, window: int = 5) -> np.ndarray:
 
 
 def find_contact_points_from_contour(
-    contour: np.ndarray, contact_line: tuple, tolerance: float = 20.0
+    contour: np.ndarray, contact_line: tuple | Any, tolerance: float = 20.0
 ) -> tuple:
-    """Find left/right contact points on a droplet contour given a user-drawn contact line.
+    """Find left/right contact points on a droplet contour given a contact line or SubstrateProfile.
 
     Parameters
     ----------
     contour : np.ndarray
         Array shape (N,2) of contour points (x,y).
-    contact_line : tuple
-        Pair of points (x1,y1), (x2,y2) describing the user-drawn contact line.
+    contact_line : tuple or SubstrateProfile
+        Pair of points (x1,y1), (x2,y2) describing the user-drawn contact line,
+        or a SubstrateProfile object (line, circle_arc, polynomial).
     tolerance : float
         Maximum distance (in pixels) from the line to consider points as candidates.
 
@@ -120,6 +133,64 @@ def find_contact_points_from_contour(
         raise ValueError("contour must be of shape (N, 2)")
 
     contour = np.asarray(contour, dtype=float)
+
+    # Curved SubstrateProfile support (e.g. circle_arc, polynomial)
+    if hasattr(contact_line, "eval_y") and getattr(contact_line, "type", "line") != "line":
+        sub_ys = np.array([contact_line.eval_y(float(pt[0])) for pt in contour], dtype=float)
+        valid_mask = np.isfinite(sub_ys)
+        if not np.any(valid_mask):
+            return (None, None)
+
+        signed = contour[:, 1] - sub_ys
+        intersections: list[np.ndarray] = []
+        n = len(contour)
+        for i in range(n):
+            next_i = (i + 1) % n
+            if not valid_mask[i] or not valid_mask[next_i]:
+                continue
+            h0 = signed[i]
+            h1 = signed[next_i]
+            dh = float(h1 - h0)
+            if abs(dh) <= 1e-12:
+                continue
+            if h0 == 0.0 or (h0 * h1 < 0.0):
+                t = float(-h0 / dh)
+                if -1e-9 <= t <= 1.0 + 1e-9:
+                    pt_inter = contour[i] + t * (contour[next_i] - contour[i])
+                    snapped_y = contact_line.eval_y(float(pt_inter[0]))
+                    if snapped_y is not None:
+                        pt_inter[1] = snapped_y
+                    intersections.append(pt_inter)
+
+        if len(intersections) >= 2:
+            intersections.sort(key=lambda p: float(p[0]))
+            return (intersections[0], intersections[-1])
+
+        abs_dist = np.abs(signed)
+        abs_dist[~valid_mask] = np.inf
+        candidate_idx = np.where(abs_dist <= tolerance)[0]
+        if candidate_idx.size < 2:
+            candidate_idx = np.argsort(abs_dist)[: max(2, int(0.02 * len(contour)))]
+        if candidate_idx.size < 2:
+            return (None, None)
+
+        candidates = contour[candidate_idx]
+        order = np.argsort(candidates[:, 0])
+        left_pt = np.copy(candidates[order[0]])
+        right_pt = np.copy(candidates[order[-1]])
+        left_y = contact_line.eval_y(float(left_pt[0]))
+        right_y = contact_line.eval_y(float(right_pt[0]))
+        if left_y is not None:
+            left_pt[1] = left_y
+        if right_y is not None:
+            right_pt[1] = right_y
+        if np.linalg.norm(right_pt - left_pt) < 1e-6:
+            return (None, None)
+        return (left_pt, right_pt)
+
+    if hasattr(contact_line, "to_chord"):
+        contact_line = contact_line.to_chord()
+
     a = np.array(contact_line[0], dtype=float)
     b = np.array(contact_line[1], dtype=float)
     line_vec = b - a
@@ -233,7 +304,7 @@ def detect_baseline_ransac(
         else:
             unit_vec = line_vec / line_len
             vec_to_points = candidates - p1
-            dists = np.abs(np.cross(vec_to_points, unit_vec))
+            dists = np.abs(cross2d(vec_to_points, unit_vec))
             inlier_count = int(np.sum(dists <= threshold))
             confidence = (
                 float(inlier_count) / len(candidates) if len(candidates) > 0 else 0.0
@@ -467,17 +538,30 @@ def estimate_contact_angle_tangent(
 def _substrate_frame(
     contour: np.ndarray,
     contact_point: np.ndarray,
-    substrate_line: tuple[tuple[float, float], tuple[float, float]],
+    substrate_line: tuple[tuple[float, float], tuple[float, float]] | Any,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Return substrate tangent and apex-side normal unit vectors."""
-    p1 = np.asarray(substrate_line[0], dtype=float)
-    p2 = np.asarray(substrate_line[1], dtype=float)
-    substrate_vec = p2 - p1
+    if hasattr(substrate_line, "eval_tangent_angle_deg") and getattr(substrate_line, "type", "line") != "line":
+        pt = np.asarray(contact_point, dtype=float)
+        alpha_deg = substrate_line.eval_tangent_angle_deg(float(pt[0]), float(pt[1]))
+        alpha_rad = np.radians(alpha_deg)
+        substrate_vec = np.array([np.cos(alpha_rad), np.sin(alpha_rad)], dtype=float)
+    else:
+        if hasattr(substrate_line, "to_chord"):
+            substrate_line = substrate_line.to_chord()
+        p1 = np.asarray(substrate_line[0], dtype=float)
+        p2 = np.asarray(substrate_line[1], dtype=float)
+        substrate_vec = p2 - p1
+
     norm = np.linalg.norm(substrate_vec)
     if norm <= 0:
         substrate_vec = np.array([1.0, 0.0], dtype=float)
     else:
         substrate_vec = substrate_vec / norm
+
+    # Ensure substrate_vec points towards positive x
+    if substrate_vec[0] < 0:
+        substrate_vec = -substrate_vec
 
     normal_vec = np.array([-substrate_vec[1], substrate_vec[0]], dtype=float)
     rel = np.asarray(contour, dtype=float).reshape(-1, 2) - np.asarray(
