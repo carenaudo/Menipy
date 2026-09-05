@@ -385,3 +385,55 @@ def test_real_sessile_samples_have_stable_contact_angles_and_diagnostic_fit(samp
     assert "fit_beta" in ctx.results
     assert "R0_mm" not in ctx.results
     assert ctx.results["fit_warning"] == "profile_fit_unreliable"
+
+
+@pytest.mark.parametrize(
+    "theta_deg",
+    [15.0, 30.0, 45.0, 60.0, 75.0, 90.0, 105.0, 120.0, 135.0, 150.0, 165.0],
+)
+def test_contact_angle_acute_and_obtuse_full_range(theta_deg: float):
+    """Verify that both acute and obtuse droplets calculate contact angles accurately."""
+    theta_rad = np.radians(theta_deg)
+    R = 100.0
+    r_base = R * np.sin(theta_rad)
+    t = np.linspace(np.pi / 2.0 - theta_rad, np.pi / 2.0 + theta_rad, 200)
+    x = R * np.cos(t)
+    y = R * np.sin(t) - R * np.cos(theta_rad)
+    contour = np.column_stack([x, y])
+    p1 = np.array([-r_base, 0.0])
+    p2 = np.array([r_base, 0.0])
+    substrate_line = ((-r_base - 20.0, 0.0), (r_base + 20.0, 0.0))
+
+    # Circle fit test: exact to within 0.5 degrees across full range
+    angle_c1, rmse_c1 = estimate_contact_angle_circle_fit(
+        contour, p1, substrate_line, window_px=15
+    )
+    angle_c2, rmse_c2 = estimate_contact_angle_circle_fit(
+        contour, p2, substrate_line, window_px=15
+    )
+    assert abs(angle_c1 - theta_deg) < 0.5
+    assert abs(angle_c2 - theta_deg) < 0.5
+    assert rmse_c1 < 1.0
+    assert rmse_c2 < 1.0
+
+    # Tangent test: robust polynomial fit within 3.0 degrees
+    angle_t1, rmse_t1 = estimate_contact_angle_tangent(
+        contour, p1, substrate_line, window_px=15
+    )
+    angle_t2, rmse_t2 = estimate_contact_angle_tangent(
+        contour, p2, substrate_line, window_px=15
+    )
+    assert abs(angle_t1 - theta_deg) < 3.0
+    assert abs(angle_t2 - theta_deg) < 3.0
+
+    # compute_sessile_metrics integration test
+    metrics = compute_sessile_metrics(
+        contour,
+        px_per_mm=1.0,
+        substrate_line=substrate_line,
+        contact_points=(p1, p2),
+        contact_angle_method="circle_fit",
+    )
+    assert abs(metrics["contact_angle_deg"] - theta_deg) < 0.5
+    assert abs(metrics["theta_left_deg"] - theta_deg) < 0.5
+    assert abs(metrics["theta_right_deg"] - theta_deg) < 0.5

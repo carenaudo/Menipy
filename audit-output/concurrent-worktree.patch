@@ -1,0 +1,274 @@
+diff --git a/src/menipy/common/geometry.py b/src/menipy/common/geometry.py
+index afe17f9..881a8e5 100644
+--- a/src/menipy/common/geometry.py
++++ b/src/menipy/common/geometry.py
+@@ -455,7 +455,7 @@ def estimate_contact_angle_tangent(
+ 
+     if method == "poly":
+         try:
+-            local_points, substrate_vec, normal_vec = _contact_branch_points(
++            local_points, inward_sub_vec, normal_vec = _contact_branch_points(
+                 contour, contact_point, substrate_line, window_px
+             )
+             if len(local_points) < 3:
+@@ -467,27 +467,27 @@ def estimate_contact_angle_tangent(
+             _, _, vh = np.linalg.svd(
+                 vectors * np.sqrt(weights[:, None]), full_matrices=False
+             )
+-            tangent = vh[0]
+-            tangent /= np.linalg.norm(tangent) or 1.0
+-            along = abs(float(np.dot(tangent, substrate_vec)))
+-            upward = abs(float(np.dot(tangent, normal_vec)))
++            tangent = vh[0] / (np.linalg.norm(vh[0]) or 1.0)
++            if np.dot(tangent, normal_vec) < 0:
++                tangent = -tangent
++            along = float(np.dot(tangent, inward_sub_vec))
++            upward = float(np.dot(tangent, normal_vec))
+             angle_deg = float(np.degrees(np.arctan2(upward, along)))
+             distances_to_line = np.abs(
+                 vectors[:, 0] * tangent[1] - vectors[:, 1] * tangent[0]
+             )
+             rmse = float(np.sqrt(np.average(distances_to_line**2, weights=weights)))
+-            if angle_deg > 75.0 and len(local_points) >= 3:
++            if (angle_deg > 75.0 or angle_deg < 15.0) and len(local_points) >= 3:
+                 center, radius = fit_circle(local_points)
+-                vec_to_contact = contact_point - center
++                vec_to_contact = np.asarray(contact_point, dtype=float) - center
+                 dist = np.linalg.norm(vec_to_contact)
+                 if dist > max(1e-9, radius * 1e-9):
+                     radial = vec_to_contact / dist
+-                    circle_tangent = np.array([-radial[1], radial[0]], dtype=float)
+-                    circle_along = abs(float(np.dot(circle_tangent, substrate_vec)))
+-                    circle_upward = abs(float(np.dot(circle_tangent, normal_vec)))
+-                    circle_angle = float(
+-                        np.degrees(np.arctan2(circle_upward, circle_along))
+-                    )
++                    r_in = float(np.dot(radial, inward_sub_vec))
++                    r_norm = float(np.dot(radial, normal_vec))
++                    t_norm = abs(r_in)
++                    t_in = r_norm if r_in <= 0 else -r_norm
++                    circle_angle = float(np.degrees(np.arctan2(t_norm, t_in)))
+                     circle_rmse = float(
+                         np.sqrt(
+                             np.mean(
+@@ -504,21 +504,22 @@ def estimate_contact_angle_tangent(
+             rmse = 1.0
+     elif method == "arc":
+         try:
+-            local_points, substrate_vec, _normal_vec = _contact_branch_points(
++            local_points, inward_sub_vec, normal_vec = _contact_branch_points(
+                 contour, contact_point, substrate_line, window_px
+             )
+-            if len(local_points) < 5:
++            if len(local_points) < 3:
+                 return 90.0, 1.0
+ 
+             center, radius = fit_circle(local_points)
+-            vec_to_contact = contact_point - center
++            vec_to_contact = np.asarray(contact_point, dtype=float) - center
+             dist = np.linalg.norm(vec_to_contact)
+             if dist > max(1e-9, radius * 1e-9):
+                 radial = vec_to_contact / dist
+-                tangent = np.array([-radial[1], radial[0]], dtype=float)
+-                along = abs(float(np.dot(tangent, substrate_vec)))
+-                upward = np.sqrt(max(0.0, 1.0 - along**2))
+-                angle_deg = float(np.degrees(np.arctan2(upward, along)))
++                r_in = float(np.dot(radial, inward_sub_vec))
++                r_norm = float(np.dot(radial, normal_vec))
++                t_norm = abs(r_in)
++                t_in = r_norm if r_in <= 0 else -r_norm
++                angle_deg = float(np.degrees(np.arctan2(t_norm, t_in)))
+             else:
+                 angle_deg = 90.0
+             distances_to_circle = np.abs(
+@@ -580,7 +581,17 @@ def _contact_branch_points(
+     substrate_line: tuple[tuple[float, float], tuple[float, float]],
+     window_px: int,
+ ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+-    """Select apex-side inward-branch points near a sessile contact point."""
++    """Select apex-side branch points near a sessile contact point.
++
++    Returns
++    -------
++    local_points : np.ndarray
++        Selected contour points on the drop flank.
++    inward_substrate_vec : np.ndarray
++        Unit vector pointing along the substrate towards the droplet interior.
++    normal_vec : np.ndarray
++        Unit vector normal to the substrate pointing towards the apex side.
++    """
+     contour_2d = np.asarray(contour, dtype=float).reshape(-1, 2)
+     contact = np.asarray(contact_point, dtype=float)
+     substrate_vec, normal_vec = _substrate_frame(contour_2d, contact, substrate_line)
+@@ -593,15 +604,22 @@ def _contact_branch_points(
+         inward_sign = 1.0 if float(np.median(s_all[apex_side])) >= 0 else -1.0
+     else:
+         inward_sign = 1.0
++    inward_substrate_vec = inward_sign * substrate_vec
+ 
+     best_points = np.empty((0, 2), dtype=float)
+     for factor in (1.0, 1.5, 2.0, 3.0):
+         radius = float(window_px) * factor
+         distances = np.linalg.norm(rel_all, axis=1)
+-        mask = (distances <= radius) & (h_all > 0.5) & ((s_all * inward_sign) >= -1.0)
++        s_in = s_all * inward_sign
++        inward_mask = (distances <= radius) & (h_all > 0.5) & (s_in >= -1.0)
++        if np.count_nonzero(inward_mask) >= 3:
++            mask = inward_mask
++        else:
++            outward_ok = (s_in < -1.0) & (h_all > 1.5) & (h_all >= np.abs(s_in) * 0.25)
++            mask = (distances <= radius) & (inward_mask | outward_ok)
+         progress_threshold = max(1.0, radius * 0.08)
+-        branch_mask = mask & ((s_all * inward_sign) > progress_threshold)
+-        near_axis_mask = mask & (np.abs(s_all * inward_sign) <= progress_threshold)
++        branch_mask = mask & (np.abs(s_in) > progress_threshold)
++        near_axis_mask = mask & (np.abs(s_in) <= progress_threshold)
+         near_axis_heights = h_all[near_axis_mask]
+         has_vertical_closure = (
+             near_axis_heights.size >= 3
+@@ -610,12 +628,12 @@ def _contact_branch_points(
+         if has_vertical_closure and np.count_nonzero(branch_mask) >= 3:
+             mask = branch_mask
+         local_points = contour_2d[mask]
+-        if local_points.shape[0] >= 3:
+-            return local_points, substrate_vec, normal_vec
++        if local_points.shape[0] >= 5:
++            return local_points, inward_substrate_vec, normal_vec
+         if local_points.shape[0] > best_points.shape[0]:
+             best_points = local_points
+ 
+-    return best_points, substrate_vec, normal_vec
++    return best_points, inward_substrate_vec, normal_vec
+ 
+ 
+ def estimate_contact_angle_circle_fit(
+@@ -640,7 +658,7 @@ def estimate_contact_angle_circle_fit(
+     Returns
+     -------
+     angle_deg : float
+-        Contact angle in degrees.
++        Contact angle in degrees (0° to 180°).
+     rmse : float
+         Root mean square error of the fit.
+     """
+@@ -648,21 +666,22 @@ def estimate_contact_angle_circle_fit(
+         raise ValueError("contour must be of shape (N, 2)")
+ 
+     try:
+-        local_points, substrate_vec, _normal_vec = _contact_branch_points(
++        local_points, inward_sub_vec, normal_vec = _contact_branch_points(
+             contour, contact_point, substrate_line, window_px
+         )
+-        if len(local_points) < 5:
++        if len(local_points) < 3:
+             return 90.0, 1.0
+ 
+         center, radius = fit_circle(local_points)
+-        vec_to_contact = contact_point - center
++        vec_to_contact = np.asarray(contact_point, dtype=float) - center
+         dist = np.linalg.norm(vec_to_contact)
+         if dist > max(1e-9, radius * 1e-9):
+             radial = vec_to_contact / dist
+-            tangent = np.array([-radial[1], radial[0]], dtype=float)
+-            along = abs(float(np.dot(tangent, substrate_vec)))
+-            upward = np.sqrt(max(0.0, 1.0 - along**2))
+-            angle_deg = float(np.degrees(np.arctan2(upward, along)))
++            r_in = float(np.dot(radial, inward_sub_vec))
++            r_norm = float(np.dot(radial, normal_vec))
++            t_norm = abs(r_in)
++            t_in = r_norm if r_in <= 0 else -r_norm
++            angle_deg = float(np.degrees(np.arctan2(t_norm, t_in)))
+         else:
+             angle_deg = 90.0
+ 
+@@ -670,7 +689,7 @@ def estimate_contact_angle_circle_fit(
+         distances_to_circle = np.abs(
+             np.linalg.norm(local_points - center, axis=1) - radius
+         )
+-        rmse = np.sqrt(np.mean(distances_to_circle**2))
++        rmse = float(np.sqrt(np.mean(distances_to_circle**2)))
+     except Exception:
+         angle_deg = 90.0
+         rmse = 1.0
+@@ -723,7 +742,7 @@ def tangent_angle_at_point_pure(
+     weight_power: float = 4.0,
+ ) -> tuple[float, float]:
+     """Fit only the local tangent, without the legacy circular substitution."""
+-    local_points, substrate_vec, normal_vec = _contact_branch_points(
++    local_points, inward_sub_vec, normal_vec = _contact_branch_points(
+         np.asarray(contour), np.asarray(contact_point), substrate_line, window_px
+     )
+     if len(local_points) < 3:
+@@ -733,8 +752,10 @@ def tangent_angle_at_point_pure(
+     weights = 1.0 / np.maximum(distances, 1.0) ** weight_power
+     _, _, vh = np.linalg.svd(vectors * np.sqrt(weights[:, None]), full_matrices=False)
+     tangent = vh[0] / (np.linalg.norm(vh[0]) or 1.0)
+-    along = abs(float(np.dot(tangent, substrate_vec)))
+-    upward = abs(float(np.dot(tangent, normal_vec)))
++    if np.dot(tangent, normal_vec) < 0:
++        tangent = -tangent
++    along = float(np.dot(tangent, inward_sub_vec))
++    upward = float(np.dot(tangent, normal_vec))
+     angle = float(np.degrees(np.arctan2(upward, along)))
+     line_dist = np.abs(vectors[:, 0] * tangent[1] - vectors[:, 1] * tangent[0])
+     rmse = float(np.sqrt(np.average(line_dist**2, weights=weights)))
+diff --git a/tests/test_sessile_contact_angles.py b/tests/test_sessile_contact_angles.py
+index 30552e4..a73d1f4 100644
+--- a/tests/test_sessile_contact_angles.py
++++ b/tests/test_sessile_contact_angles.py
+@@ -385,3 +385,55 @@ def test_real_sessile_samples_have_stable_contact_angles_and_diagnostic_fit(samp
+     assert "fit_beta" in ctx.results
+     assert "R0_mm" not in ctx.results
+     assert ctx.results["fit_warning"] == "profile_fit_unreliable"
++
++
++@pytest.mark.parametrize(
++    "theta_deg",
++    [15.0, 30.0, 45.0, 60.0, 75.0, 90.0, 105.0, 120.0, 135.0, 150.0, 165.0],
++)
++def test_contact_angle_acute_and_obtuse_full_range(theta_deg: float):
++    """Verify that both acute and obtuse droplets calculate contact angles accurately."""
++    theta_rad = np.radians(theta_deg)
++    R = 100.0
++    r_base = R * np.sin(theta_rad)
++    t = np.linspace(np.pi / 2.0 - theta_rad, np.pi / 2.0 + theta_rad, 200)
++    x = R * np.cos(t)
++    y = R * np.sin(t) - R * np.cos(theta_rad)
++    contour = np.column_stack([x, y])
++    p1 = np.array([-r_base, 0.0])
++    p2 = np.array([r_base, 0.0])
++    substrate_line = ((-r_base - 20.0, 0.0), (r_base + 20.0, 0.0))
++
++    # Circle fit test: exact to within 0.5 degrees across full range
++    angle_c1, rmse_c1 = estimate_contact_angle_circle_fit(
++        contour, p1, substrate_line, window_px=15
++    )
++    angle_c2, rmse_c2 = estimate_contact_angle_circle_fit(
++        contour, p2, substrate_line, window_px=15
++    )
++    assert abs(angle_c1 - theta_deg) < 0.5
++    assert abs(angle_c2 - theta_deg) < 0.5
++    assert rmse_c1 < 1.0
++    assert rmse_c2 < 1.0
++
++    # Tangent test: robust polynomial fit within 3.0 degrees
++    angle_t1, rmse_t1 = estimate_contact_angle_tangent(
++        contour, p1, substrate_line, window_px=15
++    )
++    angle_t2, rmse_t2 = estimate_contact_angle_tangent(
++        contour, p2, substrate_line, window_px=15
++    )
++    assert abs(angle_t1 - theta_deg) < 3.0
++    assert abs(angle_t2 - theta_deg) < 3.0
++
++    # compute_sessile_metrics integration test
++    metrics = compute_sessile_metrics(
++        contour,
++        px_per_mm=1.0,
++        substrate_line=substrate_line,
++        contact_points=(p1, p2),
++        contact_angle_method="circle_fit",
++    )
++    assert abs(metrics["contact_angle_deg"] - theta_deg) < 0.5
++    assert abs(metrics["theta_left_deg"] - theta_deg) < 0.5
++    assert abs(metrics["theta_right_deg"] - theta_deg) < 0.5

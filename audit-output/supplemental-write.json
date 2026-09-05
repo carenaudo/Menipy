@@ -1,0 +1,8 @@
+{
+  "dynamic_button_exists": true,
+  "dynamic_button_visible": false,
+  "dynamic_button_parent_visible": false,
+  "settings_runtime": "<class 'menipy.gui.views.main_window.AppSettings'>",
+  "timer_due_ms": 20,
+  "timer_observed_ms": 253.21759993676096
+}

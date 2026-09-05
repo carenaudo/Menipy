@@ -1,0 +1,20 @@
+{
+  "sessile": {
+    "audit-preset": {
+      "include_stages": [
+        "preprocessing"
+      ],
+      "params": {}
+    },
+    "configured": {
+      "include_stages": [
+        "preprocessing"
+      ],
+      "params": {
+        "preprocessing": {
+          "sentinel": 123
+        }
+      }
+    }
+  }
+}

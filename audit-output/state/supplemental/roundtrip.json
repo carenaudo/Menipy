@@ -1,0 +1,28 @@
+{
+  "selected_pipeline": "sessile",
+  "last_image_path": null,
+  "plugin_dirs": [
+    "./plugins"
+  ],
+  "acquisition_requires_contact_line": false,
+  "overlay_config": {
+    "color": "#abcdef"
+  },
+  "marker_config": {
+    "size": 7
+  },
+  "results_hidden_columns": {
+    "sessile": [
+      "volume_uL"
+    ]
+  },
+  "advanced_ui_visible": false,
+  "compare_methods_visible": false,
+  "diagnostics_visible": false,
+  "guided_splitter_sizes": [
+    350,
+    900
+  ],
+  "guided_vertical_splitter_sizes": null,
+  "unit_system": "CGS"
+}

@@ -1,0 +1,21 @@
+{
+  "frames": 300,
+  "shape": [
+    480,
+    640,
+    3
+  ],
+  "fps": 30.0,
+  "elapsed_ms": 276.4076000312343,
+  "retained_pixel_mib": 263.671875,
+  "before": {
+    "working_set_mib": 139.83984375,
+    "process_peak_working_set_mib": 143.515625
+  },
+  "after": {
+    "working_set_mib": 405.76953125,
+    "process_peak_working_set_mib": 408.578125
+  },
+  "encoded_bytes": 1633724,
+  "note": "Synthetic MJPG; peak is process lifetime, not just decoder allocations."
+}

@@ -1,0 +1,23 @@
+{
+  "real_settings_after_process_restart": {
+    "units": "CGS",
+    "markers": {
+      "size": 7
+    },
+    "overlays": {
+      "color": "#abcdef"
+    },
+    "columns": {
+      "sessile": [
+        "volume_uL"
+      ]
+    },
+    "splitters": [
+      350,
+      900
+    ]
+  },
+  "analysis_dialog_target_width_after_process_restart": 777,
+  "plugin_setting_after_process_restart": "{\"threshold\": 123}",
+  "main_window_units_after_process_restart": "SI"
+}

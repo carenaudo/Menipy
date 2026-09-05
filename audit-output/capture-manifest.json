@@ -1,0 +1,12 @@
+{
+  "screenshots/01-start.png": "8cd9c908e7edd871255fad635081ff1e8d87cb040279fdc3cedb61cda00c7b18",
+  "screenshots/02-source.png": "df935920d04898b3e6db4cb99d5724bfbec1baf6691709005c53f163b5050013",
+  "screenshots/03-calibration.png": "f5384a49f0348d50933dc446ae32514676c08359a66f610bb4d71bfb1017c7a2",
+  "screenshots/04-detected.png": "60630ef6a544764efeacb277838d5d1f876ce3dc4dfe8e012d65565c4f330c15",
+  "screenshots/05-results.png": "617e67b2a1e04c28f334eac4575e738425a8b5c046b5d08303c0db103cf5ad99",
+  "screenshots/06-export-complete.png": "79b45690631470459c17c9d90ff9b372c359238cde8b538e9c85dd6610bc2380",
+  "screenshots/06-export.png": "14bf569791cf6874859b7c253b44828777df665725f7ff19c4868872802457a4",
+  "screenshots/07-advanced.png": "3131c7387ab03a3a816f96423ced7b8915d519371e5b12761e3eb4cfff5e8f13",
+  "screenshots/08-batch.png": "c12ebe822fd432f1424b1236f63c38ccfaff0ca1ea6ab382111851de33c5ba9d",
+  "baseline_commit": "2755e58310db3ae283402f4218506e8e07695c60"
+}

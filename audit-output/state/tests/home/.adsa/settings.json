@@ -1,0 +1,17 @@
+{
+  "selected_pipeline": "sessile",
+  "last_image_path": null,
+  "plugin_dirs": [
+    "./plugins"
+  ],
+  "acquisition_requires_contact_line": false,
+  "overlay_config": null,
+  "marker_config": {},
+  "results_hidden_columns": {},
+  "advanced_ui_visible": false,
+  "compare_methods_visible": false,
+  "diagnostics_visible": false,
+  "guided_splitter_sizes": null,
+  "guided_vertical_splitter_sizes": null,
+  "unit_system": "SI"
+}

@@ -1,0 +1,11 @@
+{
+  "startup_to_event_loop_s": 3.406791300047189,
+  "runner": "None",
+  "run_vm": "None",
+  "sops": "None",
+  "settings_type": "<class 'menipy.gui.views.main_window.AppSettings'>",
+  "window_size": [
+    1344,
+    800
+  ]
+}

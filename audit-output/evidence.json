@@ -1,0 +1,321 @@
+{
+  "environment": {
+    "python": "3.14.7 (tags/v3.14.7:823f032, Aug  5 2026, 10:51:32) [MSC v.1944 64 bit (AMD64)]",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "cpu": "AMD64 Family 23 Model 96 Stepping 1, AuthenticAMD",
+    "logical_cpu_count": 12,
+    "qt": "6.11.2",
+    "opencv": "5.0.0",
+    "numpy": "2.5.2",
+    "qt_platform": "offscreen"
+  },
+  "probes": {
+    "startup_services": {
+      "settings_module": "menipy.gui.views.main_window",
+      "runner": "None",
+      "vm": "None",
+      "sops": "None"
+    },
+    "workflow_controls": {
+      "run_enabled_empty": true,
+      "pipeline_buttons": {
+        "sessile": "Sessile",
+        "pendant": "",
+        "oscillating": "",
+        "capillary_rise": "",
+        "captive_bubble": "",
+        "sessile_dynamic": ""
+      },
+      "dynamic_button_present": true,
+      "window_size": [
+        1475,
+        800
+      ]
+    },
+    "static_batch": {
+      "files": 3,
+      "params": {
+        "name": "sessile",
+        "mode": "batch",
+        "use_camera": false,
+        "frames": 1,
+        "image": "D:\\programacion\\Menipy\\audit-output\\state\\probes\\batch\\frame0.png",
+        "batch_folder": "D:\\programacion\\Menipy\\audit-output\\state\\probes\\batch",
+        "cam_id": null,
+        "calibration_params": {
+          "needle_diameter_mm": 10.0,
+          "drop_density_kg_m3": 1000.0,
+          "fluid_density_kg_m3": 1.2,
+          "gravity_m_s2": 9.81,
+          "g": 9.81
+        },
+        "analysis_params": {
+          "pipeline": "sessile",
+          "substrate_contact_angle_deg": 0.0,
+          "needle_inner_diameter_mm": 0.3,
+          "baseline_mode": "auto",
+          "oscillation_frequency_hz": 0.0,
+          "oscillation_amplitude_mm": 0.0,
+          "sequence_fps": 30.0,
+          "tube_diameter_mm": 1.0,
+          "capillary_contact_angle_deg": 0.0
+        }
+      },
+      "submitted_count": 1,
+      "submitted_sources": [
+        "D:\\programacion\\Menipy\\audit-output\\state\\probes\\batch\\frame0.png"
+      ]
+    },
+    "missing_calibration": {
+      "normal_run_without_regions_allowed": false,
+      "messages": [
+        "Unable to run acquisition. Please define: ROI, needle region."
+      ],
+      "advanced_builder_scale_without_regions": {
+        "px_per_mm": 10.0
+      },
+      "warnings": [
+        "Needle width was unavailable; using fallback scale."
+      ]
+    },
+    "worker_rejection_switch_and_stop": {
+      "submitted_pipeline": "audit (synthetic sessile context)",
+      "selected_at_completion": "pendant",
+      "input_accepted": false,
+      "completed_after_stop": true,
+      "completion_after_stop_ms": 352.1932999137789,
+      "total_ms": 360.55859993211925,
+      "worker_is_background": true,
+      "stored_rows": [
+        {
+          "id": "20260905_114720_0fad19",
+          "timestamp": "2026-09-05T11:47:20.449083",
+          "pipeline": "pendant",
+          "file_path": null,
+          "file_name": null,
+          "results": {
+            "diameter_mm": 2.0
+          },
+          "accepted": true,
+          "rejection_reasons": [],
+          "diagnostics": {}
+        }
+      ]
+    },
+    "history_write_failure": {
+      "call_returned": null,
+      "in_memory_count": 1,
+      "error_propagated": false
+    },
+    "sop_roundtrip": {
+      "created_params_after_reload": {},
+      "included_stages": [
+        "preprocessing"
+      ],
+      "configured_params_retained_by_service": {
+        "preprocessing": {
+          "sentinel": 123
+        }
+      },
+      "apply_calls": [
+        true
+      ],
+      "gui_sop_service": "None"
+    },
+    "settings_roundtrip": {
+      "real_service_roundtrip": {
+        "units": "CGS",
+        "markers": {
+          "radius": 9
+        },
+        "overlay": {
+          "contour_color": "#abcdef"
+        },
+        "columns": {
+          "sessile": [
+            "volume_uL"
+          ]
+        },
+        "layout": [
+          350,
+          900
+        ]
+      },
+      "main_window_fallback_after_save_and_reload": "SI"
+    }
+  },
+  "benchmarks": {
+    "window_after_import_ms": 242.33439995441586,
+    "sessile": {
+      "input": "sessile_needle_reference.png",
+      "shape": [
+        1200,
+        1600,
+        3
+      ],
+      "preview": {
+        "first_ms": 40.25090008508414,
+        "warm_median_ms": 0.44144998537376523,
+        "samples_ms": [
+          40.25090008508414,
+          0.5136999534443021,
+          0.3692000173032284
+        ]
+      },
+      "calibration": {
+        "first_ms": 128.84260003920645,
+        "warm_median_ms": 111.91440001130104,
+        "samples_ms": [
+          128.84260003920645,
+          113.05100005120039,
+          110.77779997140169
+        ]
+      },
+      "pipeline": {
+        "first_ms": 1703.261199989356,
+        "warm_median_ms": 1481.8507000454701,
+        "samples_ms": [
+          1703.261199989356,
+          1457.9210000811145,
+          1505.7804000098258
+        ]
+      },
+      "last_stage_timings_ms": {
+        "acquisition": 46.93000006955117,
+        "preprocessing": 0.7916999747976661,
+        "feature_detection": 0.005399924702942371,
+        "contour_extraction": 0.04880002234131098,
+        "contour_refinement": 39.30979990400374,
+        "calibration": 0.003600027412176132,
+        "geometric_features": 1.7487999284639955,
+        "physics": 0.002500019036233425,
+        "profile_fitting": 1404.2267999611795,
+        "compute_metrics": 0.03730005118995905,
+        "overlay": 9.387499885633588,
+        "validation": 0.11899997480213642
+      },
+      "last_qa": "QAResult(ok=True, score=0.6666666666666666, checks={'convergence': QACheck(name='Convergence', passed=True, value=1.0, threshold=1.0, message='Solver converged successfully', code='solver_not_converged', severity='error', units=None), 'residuals': QACheck(name='Residuals', passed=False, value=486.69304493896647, threshold=5.0, message='RMSE=486.69 px (threshold=5.0)', code='residual_limit_exceeded', severity='warning', units='px'), 'contour': QACheck(name='Contour Quality', passed=True, value=1571.0, threshold=50.0, message='Contour points=1571 (min=50)', code='insufficient_contour_points', severity='error', units='points')})",
+      "calibration_note": "Explicit synthetic 100 px/mm: timings only, not physical accuracy validation."
+    },
+    "pendant": {
+      "input": "pendant_water_reference.png",
+      "shape": [
+        1024,
+        1280,
+        3
+      ],
+      "preview": {
+        "first_ms": 23.8926000893116,
+        "warm_median_ms": 0.5445499555207789,
+        "samples_ms": [
+          23.8926000893116,
+          0.6316999206319451,
+          0.45739999040961266
+        ]
+      },
+      "calibration": {
+        "first_ms": 11.180399917066097,
+        "warm_median_ms": 10.16025006538257,
+        "samples_ms": [
+          11.180399917066097,
+          10.14330005273223,
+          10.17720007803291
+        ]
+      },
+      "pipeline": {
+        "first_ms": 9022.36410009209,
+        "warm_median_ms": 1895.589200023096,
+        "samples_ms": [
+          9022.36410009209,
+          1926.7516999971122,
+          1864.42670004908
+        ]
+      },
+      "last_stage_timings_ms": {
+        "acquisition": 20.864500082097948,
+        "preprocessing": 0.35530002787709236,
+        "feature_detection": 0.002100015990436077,
+        "contour_extraction": 0.019399914890527725,
+        "contour_refinement": 0.001600012183189392,
+        "calibration": 0.005399924702942371,
+        "geometric_features": 16.040700022131205,
+        "physics": 0.006700051017105579,
+        "profile_fitting": 1718.8808000646532,
+        "compute_metrics": 90.64240008592606,
+        "overlay": 14.610700076445937,
+        "validation": 0.1385000068694353
+      },
+      "last_qa": "QAResult(ok=True, score=1.0, checks={'convergence': QACheck(name='Convergence', passed=True, value=1.0, threshold=1.0, message='Solver converged successfully', code='solver_not_converged', severity='error', units=None), 'residuals': QACheck(name='Residuals', passed=True, value=0.4538179417289051, threshold=5.0, message='RMSE=0.45 px (threshold=5.0)', code='residual_limit_exceeded', severity='warning', units='px'), 'contour': QACheck(name='Contour Quality', passed=True, value=3624.0, threshold=50.0, message='Contour points=3624 (min=50)', code='insufficient_contour_points', severity='error', units='points')})",
+      "calibration_note": "Explicit synthetic 100 px/mm: timings only, not physical accuracy validation."
+    },
+    "history_10": {
+      "save": {
+        "first_ms": 2.01339996419847,
+        "warm_median_ms": 3.362649993505329,
+        "samples_ms": [
+          2.01339996419847,
+          4.204600001685321,
+          2.5206999853253365
+        ]
+      },
+      "table_refresh": {
+        "first_ms": 26.30879997741431,
+        "warm_median_ms": 23.17164995474741,
+        "samples_ms": [
+          26.30879997741431,
+          22.620099945925176,
+          23.72319996356964
+        ]
+      },
+      "history_bytes": 4389,
+      "default_limit": 100
+    },
+    "history_100": {
+      "save": {
+        "first_ms": 7.037600036710501,
+        "warm_median_ms": 9.662550000939518,
+        "samples_ms": [
+          7.037600036710501,
+          10.641600005328655,
+          8.683499996550381
+        ]
+      },
+      "table_refresh": {
+        "first_ms": 104.04680005740374,
+        "warm_median_ms": 76.32769999327138,
+        "samples_ms": [
+          104.04680005740374,
+          88.02569995168597,
+          64.6297000348568
+        ]
+      },
+      "history_bytes": 43809,
+      "default_limit": 100
+    },
+    "history_1000": {
+      "save": {
+        "first_ms": 45.186199946329,
+        "warm_median_ms": 48.5238500405103,
+        "samples_ms": [
+          45.186199946329,
+          47.951300046406686,
+          49.09640003461391
+        ]
+      },
+      "table_refresh": {
+        "first_ms": 628.3489000052214,
+        "warm_median_ms": 632.7200999949127,
+        "samples_ms": [
+          628.3489000052214,
+          686.8309000274166,
+          578.6092999624088
+        ]
+      },
+      "history_bytes": 439809,
+      "default_limit": 100
+    }
+  },
+  "dialogs": [
+    "Unable to run acquisition. Please define: ROI, needle region."
+  ]
+}

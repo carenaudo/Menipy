@@ -1,0 +1,8 @@
+{
+  "sample": "2",
+  "startup_to_event_loop_ms": 3180.8096000459045,
+  "imports_and_qt_ms": 2961.1844000173733,
+  "qt_platform": "offscreen",
+  "runner": "None",
+  "note": "Fresh process, existing OS cache; no uv process overhead."
+}
