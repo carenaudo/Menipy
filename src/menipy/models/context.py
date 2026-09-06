@@ -107,8 +107,13 @@ class Context(BaseModel):
     contour_smoothing_settings: ContourSmoothingSettings | None = None
     dynamic_tracking_settings: DynamicTrackingSettings | None = None
     needle_diameter_mm: float | None = None
+    tube_diameter_mm: float | None = None
     fluid_density_kg_m3: float | None = None
     drop_density_kg_m3: float | None = None
+    contact_angle_deg: float | None = None
+    surface_tension_mN_m: float | None = None
+    oscillation_frequency_hz: float | None = None
+    oscillation_phase_deg: float | None = None
 
     # Preprocessing state and markers
     preprocessing_markers: MarkerSet | None = None
@@ -153,6 +158,7 @@ class Context(BaseModel):
     c0_xy: tuple[float, float] | None = None
     h_px: float | None = None
     _sessile_metrics: dict[str, Any] | None = None
+    _captive_diameter_px: float | None = None
     overlay_commands: list | None = None
     smoothing_results: dict[str, Any] | None = None
 

@@ -348,6 +348,9 @@ def fit_pendant_young_laplace_strict(
         }
 
     obs_mm = obs_mm[obs_mm[:, 1] >= -0.5 / float(fit_input.px_per_mm)]
+    refraction_index = float((fit_input.physics or {}).get("refraction_index_liquid", 1.0) or 1.0)
+    if refraction_index > 1.0:
+        obs_mm[:, 0] /= refraction_index
     envelope_mm = build_pendant_profile_envelope_mm(
         fit_input.contour_px,
         axis_x_px=fit_input.axis_x_px,
@@ -453,8 +456,11 @@ def fit_pendant_young_laplace_strict(
     elif not np.isfinite(rmse) or rmse > threshold_mm:
         warning = "residual_gate_failed"
 
+    model_disp_mm = model_mm.copy()
+    if refraction_index > 1.0 and model_disp_mm.size > 0:
+        model_disp_mm[:, 0] *= refraction_index
     model_px = model_mm_to_pendant_px(
-        model_mm,
+        model_disp_mm,
         axis_x_px=fit_input.axis_x_px,
         apex_y_px=fit_input.apex_y_px,
         px_per_mm=fit_input.px_per_mm,

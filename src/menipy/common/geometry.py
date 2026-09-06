@@ -791,3 +791,95 @@ def circle_fit_angle_at_point(
     return estimate_contact_angle_circle_fit(
         contour, contact_point, substrate_line, window_px
     )
+
+
+def detect_baseline_reflection_cusp(
+    contour: np.ndarray,
+    window_y_px: float = 3.0,
+) -> tuple[np.ndarray, np.ndarray, float] | None:
+    """
+    Detect solid substrate baseline by identifying the reflection cusp (necking point).
+
+    When a sessile droplet rests on a reflective or specular substrate (polished
+    silicon, glass, smooth metal), optical mirror reflection forms an hourglass/necking
+    cusp where the true droplet meets its inverted mirror reflection.
+
+    Academic References:
+        1. van der Kooij, H. M., et al. (2016).
+           "Drop-profile analysis for liquid-on-liquid and liquid-on-solid contact angle goniometry."
+           Langmuir, 32(43), 11214-11224. DOI: 10.1021/acs.langmuir.6b02663
+        2. Stalder, A. F., et al. (2006).
+           "A snake-based approach to accurate determination of both contact points and contact angles."
+           Colloids and Surfaces A, 286(1-3), 92-103. DOI: 10.1016/j.colsurfa.2006.03.008
+
+    Args:
+        contour: (N, 2) array of contour coordinates [x, y].
+        window_y_px: Vertical bin height in pixels.
+
+    Returns:
+        tuple (p1, p2, confidence) or None if no reflection cusp is found.
+    """
+    xy = np.asarray(contour, dtype=float).reshape(-1, 2)
+    if xy.shape[0] < 20:
+        return None
+
+    y_min = float(np.min(xy[:, 1]))
+    y_max = float(np.max(xy[:, 1]))
+    total_height = y_max - y_min
+    if total_height < 15.0:
+        return None
+
+    # Reflection candidate region: bottom 60% of vertical span
+    search_y_min = y_min + 0.35 * total_height
+    search_y_max = y_max - 0.05 * total_height
+    if search_y_max <= search_y_min:
+        return None
+
+    bin_step = max(1.0, float(window_y_px))
+    y_bins = np.arange(search_y_min, search_y_max, bin_step)
+    if len(y_bins) < 5:
+        return None
+
+    widths: list[float] = []
+    y_centers: list[float] = []
+
+    for y_b in y_bins:
+        pts = xy[(xy[:, 1] >= y_b) & (xy[:, 1] < (y_b + bin_step))]
+        if pts.shape[0] >= 2:
+            x_min_bin = float(np.min(pts[:, 0]))
+            x_max_bin = float(np.max(pts[:, 0]))
+            w = x_max_bin - x_min_bin
+            widths.append(w)
+            y_centers.append(y_b + 0.5 * bin_step)
+
+    if len(widths) < 5:
+        return None
+
+    widths_arr = np.asarray(widths, dtype=float)
+    y_arr = np.asarray(y_centers, dtype=float)
+
+    # Smooth width profile with moving average
+    kernel_size = min(5, len(widths_arr))
+    kernel = np.ones(kernel_size) / kernel_size
+    smoothed_w = np.convolve(widths_arr, kernel, mode="same")
+
+    # Find interior local minimum
+    min_idx = int(np.argmin(smoothed_w[1:-1])) + 1
+    w_min = smoothed_w[min_idx]
+
+    w_above = np.max(smoothed_w[:min_idx]) if min_idx > 0 else w_min
+    w_below = np.max(smoothed_w[min_idx:]) if min_idx < len(smoothed_w) - 1 else w_min
+
+    prominence_above = (w_above - w_min) / (w_min + 1e-6)
+    prominence_below = (w_below - w_min) / (w_min + 1e-6)
+
+    # Reflection requires prominent pinch (> 3% reduction and expanding below)
+    if prominence_above > 0.03 and prominence_below > 0.03:
+        y_cusp = float(y_arr[min_idx])
+        p1 = np.array([float(np.min(xy[:, 0])), y_cusp])
+        p2 = np.array([float(np.max(xy[:, 0])), y_cusp])
+        confidence = min(0.95, float(0.5 + 5.0 * min(prominence_above, prominence_below)))
+        return p1, p2, confidence
+
+    return None
+

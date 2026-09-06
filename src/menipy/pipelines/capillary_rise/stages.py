@@ -75,8 +75,23 @@ class CapillaryRisePipeline(PipelineBase):
         return ctx
 
     def do_calibration(self, ctx: Context) -> Context | None:
-        """Set up pixel-to-mm scaling."""
-        ctx.scale = ctx.scale or {"px_per_mm": 1.0}
+        """Set up pixel-to-mm scaling from tube diameter or scale settings."""
+        scale = ctx.scale or {}
+        px_per_mm = float(scale.get("px_per_mm", 0.0))
+
+        tube_diameter_mm = getattr(ctx, "tube_diameter_mm", None)
+        if px_per_mm <= 0 and tube_diameter_mm and tube_diameter_mm > 0:
+            # Estimate tube width in pixels from contour extent
+            xy = ensure_contour(ctx)
+            if xy.size > 0:
+                tube_width_px = float(np.max(xy[:, 0]) - np.min(xy[:, 0]))
+                if tube_width_px > 5:
+                    px_per_mm = tube_width_px / float(tube_diameter_mm)
+
+        if px_per_mm <= 0:
+            px_per_mm = float(getattr(ctx, "px_per_mm", 0.0) or 1.0)
+
+        ctx.scale = {"px_per_mm": px_per_mm if px_per_mm > 0 else 1.0}
         return ctx
 
     def do_physics(self, ctx: Context) -> Context | None:
@@ -85,7 +100,6 @@ class CapillaryRisePipeline(PipelineBase):
 
     def do_profile_fitting(self, ctx: Context) -> Context | None:
         """Fit spherical Young-Laplace profile."""
-        # Wiring: toy spherical radius (real model would relate h to curvature & wetting)
         cfg = FitConfig(
             x0=[15.0],
             bounds=([1.0], [2000.0]),
@@ -97,13 +111,70 @@ class CapillaryRisePipeline(PipelineBase):
         return ctx
 
     def do_compute_metrics(self, ctx: Context) -> Context | None:
-        """Aggregate fit results and rise height."""
+        """Aggregate fit results, physical capillary rise height, and surface tension via Jurin's Law."""
+        from menipy.math.jurin import (
+            jurin_surface_tension,
+            rayleigh_corrected_capillary_height,
+        )
+
         fit = ctx.fit or {}
         names = fit.get("param_names") or []
         params = fit.get("params", [])
         res = dict(zip(names, params))
-        res["h_px"] = getattr(ctx, "h_px", None)
+        h_px = float(getattr(ctx, "h_px", 0.0) or 0.0)
+        res["h_px"] = h_px
         res["residuals"] = fit.get("residuals", {})
+
+        scale = ctx.scale or {}
+        px_per_mm = float(scale.get("px_per_mm", 1.0))
+        h_mm = h_px / px_per_mm if px_per_mm > 0 else 0.0
+        res["h_mm"] = h_mm
+
+        # Determine tube radius
+        tube_diam_mm = getattr(ctx, "tube_diameter_mm", None)
+        if tube_diam_mm is not None and tube_diam_mm > 0:
+            r_tube_mm = float(tube_diam_mm) / 2.0
+        else:
+            xy = ensure_contour(ctx)
+            if xy.size > 0 and px_per_mm > 0:
+                width_px = float(np.max(xy[:, 0]) - np.min(xy[:, 0]))
+                r_tube_mm = (width_px / 2.0) / px_per_mm
+            else:
+                r_tube_mm = 0.5  # default 1 mm tube
+
+        res["r_tube_mm"] = r_tube_mm
+
+        # Physics
+        physics = ctx.physics or {}
+        rho1 = float(physics.get("rho1", 1000.0))
+        rho2 = float(physics.get("rho2", 1.2))
+        delta_rho = rho1 - rho2
+        g = float(physics.get("g", 9.80665))
+
+        # Contact angle
+        theta_deg = float(getattr(ctx, "contact_angle_deg", 0.0) or 0.0)
+        theta_rad = np.radians(theta_deg)
+        res["theta_deg"] = theta_deg
+
+        # Apply Lord Rayleigh (1915) meniscus correction
+        h_m = h_mm * 1e-3
+        r_m = r_tube_mm * 1e-3
+        h_eff_m = rayleigh_corrected_capillary_height(h_m, r_m)
+        h_eff_mm = h_eff_m * 1e3
+        res["h_eff_mm"] = h_eff_mm
+
+        # Compute surface tension via Jurin's law
+        if h_eff_m > 0 and r_m > 0 and delta_rho > 0:
+            gamma_n_m = jurin_surface_tension(
+                h_m=h_eff_m,
+                rho_kg_m3=delta_rho,
+                g=g,
+                tube_radius_m=r_m,
+                contact_angle_rad=theta_rad,
+            )
+            res["gamma_mN_m"] = gamma_n_m * 1e3
+            res["surface_tension_mN_m"] = res["gamma_mN_m"]
+
         ctx.results = res
         return ctx
 

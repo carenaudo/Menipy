@@ -105,6 +105,106 @@ def young_laplace_ode(
     return np.column_stack([r_full, z_full])
 
 
+def sessile_young_laplace_ode(
+    params: np.ndarray,
+    physics: dict[str, Any],
+    geometry: dict[str, Any] | None = None,
+) -> np.ndarray:
+    """
+    Integrate the axisymmetric Young-Laplace ODE for a sessile drop.
+
+    Formulation:
+        dr/ds = cos(psi)
+        dz/ds = sin(psi)
+        dpsi/ds = 2/R0 + (Bo / R0^2) * z - sin(psi)/r
+
+    Academic References:
+        1. Rotenberg, Y., Boruvka, L., & Neumann, A. W. (1983).
+           "Determination of surface tension and contact angle from the shapes of axisymmetric fluid interfaces."
+           J. Colloid Interface Sci., 93(1), 169-183. DOI: 10.1016/0021-9797(83)90396-X
+        2. Bateni, A., et al. (2003).
+           "Axisymmetric drop shape analysis-contact diameter (ADSA-CD)."
+           Colloids Surf. A, 219(1-3), 215-231. DOI: 10.1016/S0927-7757(03)00037-7
+
+    Args:
+        params: Array of [R0_mm, Bo]
+        physics: Dictionary with physical properties.
+        geometry: Optional geometry dictionary (may supply 'target_height_mm' or 'height_mm').
+
+    Returns:
+        (N, 2) array of [r, z] profile coordinates in mm (full symmetric silhouette).
+    """
+    if len(params) < 2:
+        R0_mm = float(params[0])
+        Bo = 0.0
+    else:
+        R0_mm = float(params[0])
+        Bo = float(params[1])
+
+    if R0_mm <= 0:
+        return np.array([[0.0, 0.0]])
+
+    target_height_mm = None
+    if geometry and "height_mm" in geometry and geometry["height_mm"] is not None:
+        try:
+            target_height_mm = float(geometry["height_mm"])
+        except (TypeError, ValueError):
+            target_height_mm = None
+
+    def odesys(s, y):
+        check_cancelled()
+        r, z, psi = y
+        if r < 1e-12:
+            sin_psi_r = 1.0 / R0_mm
+        else:
+            sin_psi_r = np.sin(psi) / r
+
+        drds = np.cos(psi)
+        dzds = np.sin(psi)
+        dpsids = (2.0 / R0_mm) + (Bo / (R0_mm**2)) * z - sin_psi_r
+        return [drds, dzds, dpsids]
+
+    events = []
+    if target_height_mm is not None and target_height_mm > 0:
+        def hit_target_h(s, y):
+            return y[1] - target_height_mm
+        hit_target_h.terminal = True
+        hit_target_h.direction = 1
+        events.append(hit_target_h)
+
+    def hit_overhang(s, y):
+        return (np.pi * 175.0 / 180.0) - y[2]
+    hit_overhang.terminal = True
+    hit_overhang.direction = -1
+    events.append(hit_overhang)
+
+    s_max = max(5.0 * R0_mm, (target_height_mm or R0_mm) * 3.5)
+    y0 = [0.0, 0.0, 0.0]
+
+    sol = solve_ivp(
+        odesys,
+        [0.0, s_max],
+        y0,
+        method="RK45",
+        events=events,
+        max_step=s_max / 150.0,
+        rtol=1e-5,
+        atol=1e-6,
+    )
+
+    r_right = sol.y[0]
+    z_right = sol.y[1]
+
+    r_left = -r_right[::-1]
+    z_left = z_right[::-1]
+
+    r_full = np.concatenate([r_left[:-1], r_right])
+    z_full = np.concatenate([z_left[:-1], z_right])
+
+    return np.column_stack([r_full, z_full])
+
+
 from menipy.common.registry import SOLVERS
 
 SOLVERS.register("young_laplace_ode", young_laplace_ode)
+SOLVERS.register("sessile_young_laplace_ode", sessile_young_laplace_ode)
