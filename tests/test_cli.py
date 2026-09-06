@@ -216,3 +216,71 @@ def test_edge_detection_preproc_overrides(tmp_path: Path):
 
     assert code == 0
     assert (out_dir / "results.json").is_file()
+
+
+def test_batch_processing_tracking_controls(tmp_path: Path):
+    """Verify --no-temporal-tracking disables temporal tracking in batch mode."""
+    input_dir = tmp_path / "batch_no_track_in"
+    out_dir = tmp_path / "batch_no_track_out"
+    input_dir.mkdir()
+
+    orig_sample = Path("data/samples/prueba sesil 2.png")
+    assert orig_sample.is_file()
+
+    (input_dir / "frame_1.png").write_bytes(orig_sample.read_bytes())
+    (input_dir / "frame_2.png").write_bytes(orig_sample.read_bytes())
+
+    code = main(
+        [
+            "--pipeline",
+            "sessile",
+            "--input-dir",
+            str(input_dir),
+            "--no-temporal-tracking",
+            "--auto-calibrate",
+            "--out",
+            str(out_dir),
+        ]
+    )
+
+    assert code == 0
+    csv_path = out_dir / "results.csv"
+    assert csv_path.is_file()
+
+    with open(csv_path, newline="", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+
+    assert len(rows) == 2
+    for row in rows:
+        assert row["tracked"] == "False"
+
+
+def test_cli_dynamic_sessile_from_input_dir(tmp_path: Path):
+    """Verify CLI accepts --pipeline sessile_dynamic with --input-dir and --fps."""
+    input_dir = tmp_path / "dynamic_in"
+    out_dir = tmp_path / "dynamic_out"
+    input_dir.mkdir()
+
+    orig_sample = Path("data/samples/prueba sesil 2.png")
+    assert orig_sample.is_file()
+
+    for i in range(3):
+        (input_dir / f"frame_{i:02d}.png").write_bytes(orig_sample.read_bytes())
+
+    code = main(
+        [
+            "--pipeline",
+            "sessile_dynamic",
+            "--input-dir",
+            str(input_dir),
+            "--fps",
+            "10",
+            "--out",
+            str(out_dir),
+        ]
+    )
+
+    assert code in (0, 3)
+    assert (out_dir / "results.json").is_file()
+    assert (out_dir / "results.csv").is_file()
+    assert (out_dir / "results_frames.csv").is_file()

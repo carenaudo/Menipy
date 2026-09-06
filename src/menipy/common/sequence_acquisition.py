@@ -75,6 +75,8 @@ def load_image_sequence(
         image = cv2.imread(str(candidate), cv2.IMREAD_UNCHANGED)
         if image is None:
             raise SequenceAcquisitionError(f"sequence_corrupt_image:{candidate.name}")
+        if image.ndim == 3 and image.shape[2] == 4:
+            image = cv2.cvtColor(image, cv2.COLOR_BGRA2BGR)
         images.append(image)
     width, height = _validate_images(images)
     timestamps = [index / float(fps) for index in range(len(images))]

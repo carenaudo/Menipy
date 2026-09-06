@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from menipy.common import acquisition as acq
+from menipy.common.sequence_acquisition import _natural_key
 from menipy.models.config import EdgeDetectionSettings, PreprocessingSettings
 from menipy.models.context import Context
 from menipy.pipelines.base import PipelineError
@@ -279,6 +280,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     ap.add_argument("--fps", type=float, help="Required FPS for --sequence-dir")
     ap.add_argument("--px-per-mm", type=float, help="Fixed calibrated sequence scale")
+    ap.add_argument(
+        "--no-temporal-tracking",
+        action="store_true",
+        help="Disable temporal tracking and physical invariant locking in batch mode",
+    )
     ap.add_argument(
         "--onnx-proposal-mode",
         choices=["off", "shadow"],
@@ -553,12 +559,19 @@ def main(argv: list[str] | None = None) -> int:
     if args.no_overlay:
         runner.pipeline.do_overlay = lambda ctx: ctx
 
-    if args.video or args.sequence_dir:
+    seq_source = (
+        args.video
+        or args.sequence_dir
+        or (args.input_dir if args.pipeline == "sessile_dynamic" else None)
+    )
+    if seq_source:
         if args.pipeline != "sessile_dynamic":
             ap.error("--video and --sequence-dir require --pipeline sessile_dynamic")
-        if args.sequence_dir and (args.fps is None or args.fps <= 0):
-            ap.error("--sequence-dir requires a positive --fps")
-        source_path = Path(args.video or args.sequence_dir).expanduser().resolve()
+        if (
+            args.sequence_dir or (args.pipeline == "sessile_dynamic" and args.input_dir)
+        ) and (args.fps is None or args.fps <= 0):
+            ap.error("--sequence-dir and dynamic --input-dir require a positive --fps")
+        source_path = Path(seq_source).expanduser().resolve()
         try:
             ctx = runner.run(
                 sequence_path=str(source_path),
@@ -591,8 +604,8 @@ def main(argv: list[str] | None = None) -> int:
         patterns = [p.strip() for p in args.glob.split(",") if p.strip()]
         for pat in patterns:
             files_queue.extend(input_dir_path.glob(pat))
-        # Remove duplicates and sort
-        files_queue = sorted(set(files_queue))
+        # Remove duplicates and sort naturally
+        files_queue = sorted(set(files_queue), key=_natural_key)
         if not files_queue:
             logger.error(
                 f"No matching image files found under {input_dir_path} with glob filter: '{args.glob}'"
@@ -706,59 +719,150 @@ def main(argv: list[str] | None = None) -> int:
             return 2
 
     # File Processing Loops (Batch or Single Image)
+    use_tracking = (
+        len(files_queue) > 1
+        and not getattr(args, "no_temporal_tracking", False)
+        and args.pipeline in ("sessile", "pendant")
+    )
+    tracker = None
+    if use_tracking:
+        from menipy.common.temporal_tracking import TemporalDropletTracker
+
+        tracker = TemporalDropletTracker(pipeline=args.pipeline)
+
+    locked_roi = manual_roi
+    locked_needle = manual_needle
+    locked_substrate = manual_contact
+    locked_scale = args.px_per_mm
+
     for img_path in files_queue:
         logger.info(f"Analyzing: {img_path.name}")
         _patch_acquisition(runner.pipeline, image=img_path, camera=None, frames=1)
 
-        roi_rect = manual_roi
-        needle_rect = manual_needle
-        substrate_line = manual_contact
+        roi_rect = locked_roi
+        needle_rect = locked_needle
+        substrate_line = locked_substrate
+        tracked_contour = None
+        tracked_contacts = None
+        tracked_apex = None
+        is_tracked = False
 
-        # 4. Auto-Calibration Fallback
-        if args.auto_calibrate or (not roi_rect and not needle_rect):
+        # Pre-read image if cv2 is available for tracking / auto-calibration
+        img_bgr = None
+        if cv2 is not None:
+            img_bgr = cv2.imread(str(img_path))
+
+        # Attempt temporal tracking if initialized
+        if tracker is not None and tracker.is_tracking and img_bgr is not None:
+            track_res = tracker.track_frame(img_bgr, dt=0.033)
+            if track_res is not None:
+                is_tracked = True
+                tracked_contour = track_res.get("drop_contour")
+                tracked_contacts = track_res.get("contact_points")
+                tracked_apex = track_res.get("apex_point")
+                roi_rect = track_res.get("roi_rect") or locked_roi
+                substrate_line = track_res.get("substrate_line") or locked_substrate
+                needle_rect = track_res.get("needle_rect") or locked_needle
+            else:
+                logger.debug(
+                    f"Tracking quality gate failed for {img_path.name}, falling back to cold start"
+                )
+
+        # 4. Auto-Calibration / Feature Detection Fallback
+        if not is_tracked and (
+            args.auto_calibrate
+            or (not roi_rect and not needle_rect)
+            or (tracker is not None and not tracker.is_tracking)
+        ):
             try:
-                # Load first frame to run baseline calibrator
-                temp_ctx = Context()
-                temp_ctx = runner.pipeline.do_acquisition(temp_ctx)
-                if temp_ctx.frames:
-                    first_frame = temp_ctx.frames[0]
-                    if hasattr(first_frame, "image"):
-                        first_frame = first_frame.image
+                first_frame = img_bgr
+                if first_frame is None:
+                    temp_ctx = Context()
+                    temp_ctx = runner.pipeline.do_acquisition(temp_ctx)
+                    if temp_ctx.frames:
+                        fr = temp_ctx.frames[0]
+                        first_frame = fr.image if hasattr(fr, "image") else fr
+
+                if first_frame is not None:
                     from menipy.common.auto_calibrator import run_auto_calibration
+                    from menipy.common.detection_helpers import auto_detect_features
 
                     cal_res = run_auto_calibration(first_frame, args.pipeline)
 
-                    # Update parameters if not explicitly provided by user
-                    if not roi_rect:
-                        roi_rect = cal_res.roi_rect
-                    if not needle_rect:
-                        needle_rect = cal_res.needle_rect
-                    if not substrate_line:
-                        substrate_line = cal_res.substrate_line
+                    # Update parameters and lock invariants
+                    if not locked_roi and cal_res.roi_rect:
+                        locked_roi = cal_res.roi_rect
+                    if not locked_needle and cal_res.needle_rect:
+                        locked_needle = cal_res.needle_rect
+                    if not locked_substrate and cal_res.substrate_line:
+                        locked_substrate = cal_res.substrate_line
+
+                    roi_rect = locked_roi
+                    needle_rect = locked_needle
+                    substrate_line = locked_substrate
+
+                    if tracker is not None:
+                        det = auto_detect_features(
+                            first_frame,
+                            args.pipeline,
+                            detect_needle=(locked_needle is None),
+                            detect_substrate=(
+                                args.pipeline == "sessile" and locked_substrate is None
+                            ),
+                        )
+                        if locked_substrate is not None:
+                            det["substrate_line"] = locked_substrate
+                        if locked_needle is not None:
+                            det["needle_rect"] = locked_needle
+                        if (
+                            "drop_contour" in det
+                            and det["drop_contour"] is not None
+                        ):
+                            tracker.initialize(first_frame, det, scale=locked_scale)
+                            tracked_contour = det.get("drop_contour")
+                            tracked_contacts = det.get("contact_points")
+                            tracked_apex = det.get("apex_point")
 
                     logger.debug(
-                        f"Auto-Calibrated ROI: {roi_rect}, Needle: {needle_rect}, Substrate: {substrate_line}"
+                        f"Locked Invariants - ROI: {locked_roi}, Needle: {locked_needle}, Substrate: {substrate_line}"
                     )
             except Exception as e:
                 logger.warning(f"Failed to auto-calibrate image {img_path.name}: {e}")
 
         # Calibration computations (default to 0.72mm outer needle if DB lookup and overrides fail)
         target_needle_diam = needle_diameter_mm or 0.72
-        px_per_mm = 100.0 / max(target_needle_diam, 0.001)
+        if locked_scale is not None:
+            px_per_mm = float(locked_scale)
+        elif needle_rect and needle_rect[2] > 0 and needle_diameter_mm:
+            px_per_mm = float(needle_rect[2]) / needle_diameter_mm
+            locked_scale = px_per_mm
+        else:
+            px_per_mm = 100.0 / max(target_needle_diam, 0.001)
+
         scale_dict = {"px_per_mm": px_per_mm}
 
         try:
-            ctx = runner.run(
-                roi=roi_rect,
-                needle_rect=needle_rect,
-                contact_line=substrate_line,
-                image=str(img_path),
-                scale=scale_dict,
-                needle_diameter_mm=target_needle_diam,
-                physics={"rho1": rho1, "rho2": rho2, "g": 9.80665},
-                onnx_proposal_mode=args.onnx_proposal_mode,
-                segmentation_provider=args.segmentation_provider,
-            )
+            run_kwargs: dict[str, Any] = {
+                "roi": roi_rect,
+                "needle_rect": needle_rect,
+                "contact_line": substrate_line,
+                "substrate_line": substrate_line,
+                "image": str(img_path),
+                "scale": scale_dict,
+                "px_per_mm": px_per_mm,
+                "needle_diameter_mm": target_needle_diam,
+                "physics": {"rho1": rho1, "rho2": rho2, "g": 9.80665},
+                "onnx_proposal_mode": args.onnx_proposal_mode,
+                "segmentation_provider": args.segmentation_provider,
+            }
+            if tracked_contour is not None:
+                run_kwargs["drop_contour"] = tracked_contour
+            if tracked_contacts is not None:
+                run_kwargs["contact_points"] = tracked_contacts
+            if tracked_apex is not None:
+                run_kwargs["apex_point"] = tracked_apex
+
+            ctx = runner.run(**run_kwargs)
 
             # Export individual image visuals
             base_name = img_path.stem
@@ -782,8 +886,12 @@ def main(argv: list[str] | None = None) -> int:
             from menipy.models.results import build_persisted_analysis
 
             persisted = build_persisted_analysis(ctx)
+            if not persisted["accepted"] and tracker is not None:
+                tracker.reset()
+
             results_out = {
                 "pipeline": runner.pipeline.name,
+                "tracked": is_tracked,
                 **persisted,
                 "qa": ctx.qa.to_dict() if hasattr(ctx.qa, "to_dict") else ctx.qa,
                 "timings_ms": ctx.timings_ms,
@@ -802,6 +910,7 @@ def main(argv: list[str] | None = None) -> int:
                     "image_path": str(img_path),
                     "pipeline": runner.pipeline.name,
                     "qa_ok": qa_ok,
+                    "tracked": is_tracked,
                     "rejection_reasons": persisted["rejection_reasons"],
                     "diagnostics": persisted["diagnostics"],
                     "metrics": metrics,
@@ -820,6 +929,7 @@ def main(argv: list[str] | None = None) -> int:
             "image_path",
             "pipeline",
             "qa_ok",
+            "tracked",
             "rejection_reasons",
             "diagnostics_json",
         ]
@@ -839,6 +949,7 @@ def main(argv: list[str] | None = None) -> int:
                         "image_path": rec["image_path"],
                         "pipeline": rec["pipeline"],
                         "qa_ok": rec["qa_ok"],
+                        "tracked": rec["tracked"],
                         "rejection_reasons": ";".join(rec["rejection_reasons"]),
                         "diagnostics_json": json.dumps(
                             rec["diagnostics"], cls=NumpyEncoder, separators=(",", ":")

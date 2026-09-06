@@ -208,6 +208,15 @@ To prevent error drift or corrupted contours when sudden disturbances occur (e.g
 
 If any gate fails, the tracker resets its temporal state and triggers clean cold-start feature detection via `auto_detect_features`. In accordance with Menipy's dynamic analysis contract, frames with tracking anomalies are quarantined without synthetic interpolation, and a new segment ID is initialized upon reacquisition.
 
+### 5.2.6 Temporal Folder Analysis Parity (Image Sequences)
+In laboratory experiments, image directories recorded by high-speed or scientific cameras represent frames divided into individual image files. Menipy's folder analysis engine (`src/menipy/common/folder_analysis.py`) and CLI batch processing (`--input-dir`) operate on these image folders with the exact same foundational principles as continuous video:
+
+1. **Natural Alphanumeric Ordering**: Frame files (e.g. `frame_1.png`, `frame_2.png`, `frame_10.png`) are discovered and sorted using natural alphanumeric ordering (`_natural_key`), preventing lexicographical corruption (such as `1, 10, 2`).
+2. **Frame 1 Invariant Locking**: In stationary experimental rigs, the solid substrate baseline $\mathbf{L}_{\text{sub}}$ (sessile) or dispensing cannula geometry $\mathbf{R}_{\text{needle}}$ and scale factor $\text{px\_per\_mm}$ (pendant) are locked on the first valid frame. Subsequent images in the folder reuse these physical invariants, eliminating redundant whole-frame Hough transforms and needle searches.
+3. **Localized Warm-Started Tracking**: Subsequent frames utilize `TemporalDropletTracker` to bound processing within an adaptive ROI, calculate contact displacement with Lucas-Kanade optical flow, and converge the active contour in 5–15 iterations (< 2 ms/frame).
+4. **Resilient Anomaly Fallback**: If an image in the folder contains an abrupt disturbance (area jump $> 25\%$ or contact displacement $> 10\%$ base width), the quality gate trips, the tracker resets, and the engine cleanly falls back to cold-start detection on that image.
+5. **Tabular Results Export**: Generates per-frame diagnostics (`tracked: bool`, metrics, quality flags) and consolidated CSV exports (`results.csv`).
+
 ---
 
 ## 6. Interface Detection
