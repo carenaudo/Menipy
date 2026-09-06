@@ -9,6 +9,7 @@ from collections.abc import Callable
 
 import numpy as np
 
+from menipy.common.cancellation import check_cancelled
 from menipy.models.fit import FitConfig
 
 try:
@@ -71,6 +72,7 @@ def run(
     integrator: Callable[[np.ndarray, dict, dict | None], np.ndarray],
     # integrator(params, physics, geometry) -> model_xy (Nx2 in same units as ctx.contour.xy)
     config: FitConfig,
+    check_cancelled=check_cancelled,
 ) -> dict:
     """
     Generic nonlinear least-squares fit wrapper.
@@ -122,6 +124,7 @@ def run(
         type
         Description.
         """
+        check_cancelled()
         model_xy = np.asarray(integrator(x, physics, geometry), dtype=float)
         r = residual_fn(obs_xy, model_xy)
         if weights is None:
@@ -166,8 +169,12 @@ def run(
             "rmse": rmse,
             "max_abs": max_abs,
             "mean_abs": float(np.mean(np.abs(r_vec))) if r_vec.size else float("nan"),
-            "median_abs": float(np.median(np.abs(r_vec))) if r_vec.size else float("nan"),
-            "p95_abs": float(np.percentile(np.abs(r_vec), 95)) if r_vec.size else float("nan"),
+            "median_abs": (
+                float(np.median(np.abs(r_vec))) if r_vec.size else float("nan")
+            ),
+            "p95_abs": (
+                float(np.percentile(np.abs(r_vec), 95)) if r_vec.size else float("nan")
+            ),
             "units": getattr(ctx.contour, "units", None),
             "dof": int(r_vec.size - res.x.size),
             "r": r_vec.tolist(),

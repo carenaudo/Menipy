@@ -16,6 +16,7 @@ from menipy.common import edge_detection as edged
 from menipy.common import overlay as ovl
 from menipy.common import solver as common_solver
 from menipy.common._module_loader import load_module_from_path
+from menipy.common.cancellation import cancellation_scope
 from menipy.models.config import EdgeDetectionSettings, PreprocessingSettings
 
 # Core models
@@ -302,7 +303,9 @@ class PipelineBase:
         if "frames" in kwargs and kwargs["frames"] is not None:
             frame_arg = kwargs["frames"]
             if isinstance(frame_arg, (list, tuple, np.ndarray)):
-                ctx.frames = list(frame_arg) if isinstance(frame_arg, tuple) else frame_arg
+                ctx.frames = (
+                    list(frame_arg) if isinstance(frame_arg, tuple) else frame_arg
+                )
                 try:
                     ctx.frames_requested = len(frame_arg)
                 except TypeError:
@@ -455,9 +458,12 @@ class PipelineBase:
                 return "summary_error"
 
         try:
-            maybe_ctx = fn(ctx)
-            if maybe_ctx is not None:
-                ctx = maybe_ctx
+            token = ctx.cancellation_token
+            with cancellation_scope(token):
+                maybe_ctx = fn(ctx)
+                if maybe_ctx is not None:
+                    ctx = maybe_ctx
+                    ctx.cancellation_token = token
         except Exception as exc:
             elapsed_ms = (time.perf_counter() - start) * 1000.0
             # timings/log live in Context (provided by models.datatypes)

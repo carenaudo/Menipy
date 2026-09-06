@@ -45,7 +45,10 @@ The GUI and CLI share the core pipeline model but use different execution
 adapters. The GUI service runs work through Qt's thread pool and emits results
 back to controllers. The headless runner resolves a class from `PIPELINE_MAP`
 and runs it directly. Pipeline stages exchange data through the Pydantic
-`Context` model.
+`Context` model. The GUI owns a single-operation thread pool and routes full
+request/completion envelopes through its view model; calibration and preview
+computations use the same lifecycle. See [GUI execution](guides/gui_execution.md)
+for cancellation, stale-result handling, and isolated regression commands.
 
 ## Plugin graph
 
@@ -85,7 +88,7 @@ consumer that requests a named implementation.
 | `src/menipy/common/` | Shared acquisition, detection, preprocessing, geometry, plugins, material data, units, and validation | Open the module named by the pipeline stage or controller |
 | `models/mobilesam/` | Versioned ONNX-only MobileSAM TinyViT encoder and prompt/mask decoder | `models/mobilesam/README.md`, `src/menipy/common/mobilesam_onnx.py` |
 | `src/menipy/models/` | Pydantic settings, shared context, geometry, fit, frame, state, and result data | `src/menipy/models/context.py`, `src/menipy/models/config.py` |
-| `src/menipy/math/` | Reusable scientific equations and numerical models | `src/menipy/math/young_laplace.py` |
+| `src/menipy/math/` | Reusable scientific equations and numerical models | `src/menipy/math/young_laplace.py`, `src/menipy/math/lbadsa.py` |
 | `src/menipy/viz/` | Non-Qt plotting helpers | `src/menipy/viz/plots.py` |
 | `plugins/` | Runtime-discovered algorithms and detectors | Match the filename to the registry kind in `src/menipy/common/registry.py` |
 | `tests/` | Behavioral and architectural coverage | Start with the test whose name matches the subsystem |
@@ -107,7 +110,8 @@ consumer that requests a named implementation.
 | Change the stage lifecycle or stage selection | `src/menipy/pipelines/base.py` -> `src/menipy/pipelines/discover.py` -> `src/menipy/pipelines/runner.py` | `tests/test_pipeline_runner.py`, `tests/test_alt_workflow.py` |
 | Change a specific analysis mode | `src/menipy/pipelines/<mode>/stages.py` and sibling mode modules | `tests/test_<mode>*.py`, `docs/contracts/<mode>_results.md` when present |
 | Change dynamic sessile tracking, video timing, hysteresis, or timeline exports | `src/menipy/common/sequence_acquisition.py` -> `src/menipy/common/temporal_sessile.py` -> `src/menipy/pipelines/sessile_dynamic/` | `tests/test_phase_d_dynamic_sessile.py`, `tests/data/adsa_temporal_manifest.json`, `docs/contracts/sessile_dynamic_results.md` |
-| Change sessile contour or contact-angle behavior | `src/menipy/common/sessile_detection.py` -> `src/menipy/pipelines/sessile/geometry.py` -> `src/menipy/pipelines/sessile/stages.py` | `tests/test_sessile_auto_detection.py`, `tests/test_sessile_geometry.py`, `tests/test_sessile_contact_angles.py` |
+| Change sessile contour or contact-angle behavior | `src/menipy/common/sessile_detection.py` -> `src/menipy/common/geometry.py` -> `src/menipy/pipelines/sessile/` | `tests/test_sessile_auto_detection.py`, `tests/test_sessile_geometry.py`, `tests/test_sessile_contact_angles.py`, `docs/guides/contact_angle_geometry.md` |
+| Change Low-Bond ADSA (LB-ADSA) perturbation math or solver | `src/menipy/math/lbadsa.py` -> `src/menipy/common/lbadsa_solver.py` -> `src/menipy/pipelines/sessile/` | `tests/test_lbadsa.py`, `docs/contact_angle_methods.md`, `docs/guides/physics_models.md` |
 | Change curved substrate baselines, arc drawing, or slope correction | `src/menipy/models/geometry.py` -> `src/menipy/common/sessile_detection.py` -> `src/menipy/pipelines/sessile/` | `tests/test_curved_substrate.py`, `tests/test_substrate_detection_robust.py`, `docs/guides/curved_substrates_and_baseline_detection.md` |
 | Fetch or verify academic benchmark datasets and author attribution | `data/MANIFEST.json`, `data/ATTRIBUTION.md` -> `tools/fetch_benchmarks.py` | `tests/test_benchmarks.py`, `data/ATTRIBUTION.md` |
 | Change pendant fitting, surface tension, or Phase-B axis initialization | `src/menipy/pipelines/pendant/` -> `src/menipy/math/young_laplace.py` -> `src/menipy/common/geometry_prototypes.py` | `tests/test_pendant_pipeline.py`, `tests/test_adsa_geometry_phase_b.py`, `docs/contracts/pendant_results.md` |

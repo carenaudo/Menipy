@@ -186,9 +186,26 @@ def compute_sessile_metrics(
     uncertainty_right = 0.0
     method_left = method_right = "unavailable"
     selector_diagnostics: dict = {}
+    lbadsa_payload: dict | None = None
 
     if sub_ref is not None and p1 is not None and p2 is not None:
-        if contact_angle_method == "auto_residual":
+        if contact_angle_method == "lbadsa":
+            from menipy.common.lbadsa_solver import fit_lbadsa_drop
+
+            lbadsa_payload = fit_lbadsa_drop(
+                contour_2d,
+                sub_ref,
+                apex_xy=apex,
+                contact_points=((float(p1[0]), float(p1[1])), (float(p2[0]), float(p2[1]))),
+                px_per_mm=px_per_mm,
+                physics={"rho1": delta_rho + 1.2, "rho2": 1.2, "g": g},
+                optimize_bo=True,
+            )
+            theta_left_deg = float(lbadsa_payload["theta_left_deg"])
+            theta_right_deg = float(lbadsa_payload["theta_right_deg"])
+            method_left = method_right = "lbadsa"
+            uncertainty_left = uncertainty_right = float(lbadsa_payload.get("rmse_px", 1.0))
+        elif contact_angle_method == "auto_residual":
             contour_len = len(contour.reshape(-1, 2))
             tangent_window_px = 30 if contour_len > 200 else 15
             tangent_weight_power = 2.0 if contour_len > 200 else 4.0
@@ -332,6 +349,13 @@ def compute_sessile_metrics(
         "method": contact_angle_method,
         **({"method_left": method_left, "method_right": method_right, "contact_angle_selector": selector_diagnostics} if contact_angle_method == "auto_residual" else {}),
         **({"experimental_geometry": {"sessile_contact_selector": {"accepted": method_left != "rejected" and method_right != "rejected", "rejection_reasons": (["left_contact_angle_no_valid_model"] if method_left == "rejected" else []) + (["right_contact_angle_no_valid_model"] if method_right == "rejected" else []), "method_left": method_left, "method_right": method_right}}} if contact_angle_method == "auto_residual" else {}),
+        **({
+            "bond_number": lbadsa_payload.get("bond_number"),
+            "surface_tension_mN_m": lbadsa_payload.get("surface_tension_mN_m"),
+            "R0_mm": lbadsa_payload.get("R0_mm"),
+            "lbadsa_diagnostics": lbadsa_payload.get("diagnostics"),
+            "lbadsa_model_contour_xy": lbadsa_payload.get("model_contour_xy"),
+        } if lbadsa_payload is not None else {}),
         "uncertainty_deg": {"left": uncertainty_left, "right": uncertainty_right},
         "contact_angle_fit_rmse_px": {
             "left": uncertainty_left,

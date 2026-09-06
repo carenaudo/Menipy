@@ -34,6 +34,29 @@ This document provides complete provenance, academic citations, licensing terms,
 - **Benchmark Files**:
   - `data/benchmarks/dynamic/sample_droplet.avi`: Time-resolved video sequence displaying an expanding (advancing) and contracting (receding) sessile droplet on a solid substrate for contact angle hysteresis testing.
 
+### 1.3 Low-Bond Axisymmetric Drop Shape Analysis (LB-ADSA) Perturbation Model
+- **Theoretical Formulation Authors**: Adrien F. Stalder, Grigory Kulik, Daniel Sage, Laure Barbieri, and Patrick Hoffmann
+- **Affiliations**: Biomedical Imaging Group (BIG), École Polytechnique Fédérale de Lausanne (EPFL); Advanced Photonics Laboratory, EPFL, Switzerland.
+- **Academic Publications**:
+  1. Stalder, A. F., Kulik, G., Sage, D., Barbieri, L., & Hoffmann, P. (2010). *A snake-based approach to accurate determination of both contact points and contact angles*. **Colloids and Surfaces A: Physicochemical and Engineering Aspects**, 364(1-3), 72–81. DOI: [10.1016/j.colsurfa.2010.04.040](https://doi.org/10.1016/j.colsurfa.2010.04.040).
+  2. Stalder, A. F., Melchior, T., Müller, M., Sage, D., Blu, T., & Unser, M. (2006). *Low-bond axisymmetric drop shape analysis for surface tension and contact angle measurements of sessile drops*. **Colloids and Surfaces A: Physicochemical and Engineering Aspects**, 286(1-3), 92–103. DOI: [10.1016/j.colsurfa.2006.03.008](https://doi.org/10.1016/j.colsurfa.2006.03.008).
+- **Reference Software**: ImageJ "Drop Shape Analysis" (Drop_Analysis) plugin by Biomedical Imaging Group, EPFL.
+- **Reference Software URL**: [http://bigwww.epfl.ch/demo/dropanalysis/](http://bigwww.epfl.ch/demo/dropanalysis/)
+- **Intellectual Property & Licensing Notice**:
+  - The upstream ImageJ Java plugin is copyright Biomedical Imaging Group (BIG), EPFL. Redistribution of the original Java bytecode, binaries, or plugins is restricted without author consent.
+  - **Menipy Implementation Status**: **Independent Clean-Room Python Re-implementation**. Menipy does not bundle, vendor, or redistribute any Java binaries, JAR files, or source code from the EPFL plugin. The mathematical equations published in the peer-reviewed papers (Stalder et al. 2006, 2010) are implemented from first principles in pure Python/NumPy/SciPy (`src/menipy/math/lbadsa.py` and `src/menipy/common/lbadsa_solver.py`).
+  - This implementation is provided under Menipy's open-source license with full academic attribution to the original authors.
+
+### 1.4 Active Contour (Snake) Mathematical Formulations
+- **Classical Active Contour**:
+  - Kass, M., Witkin, A., & Terzopoulos, D. (1988). *Snakes: Active contour models*. **International Journal of Computer Vision**, 1(4), 321–331. DOI: [10.1007/BF00133570](https://doi.org/10.1007/BF00133570).
+- **Balloon & Pressure Forces**:
+  - Cohen, L. D. (1991). *On active contour models and balloons*. **CVGIP: Image Understanding**, 53(2), 211–218. DOI: [10.1016/1049-9660(91)90028-N](https://doi.org/10.1016/1049-9660(91)90028-N).
+- **Parametric B-Spline Snakes**:
+  - Brigger, P., Hoeg, J., & Unser, M. (2000). *B-spline snakes: A flexible tool for parametric contour detection*. **IEEE Transactions on Image Processing**, 9(9), 1484–1496. DOI: [10.1109/83.862633](https://doi.org/10.1109/83.862633).
+  - Jacob, M., Blu, T., & Unser, M. (2004). *Efficient energies and algorithms for parametric snakes*. **IEEE Transactions on Image Processing**, 13(9), 1231–1244. DOI: [10.1109/TIP.2004.832919](https://doi.org/10.1109/TIP.2004.832919).
+- **Menipy Implementation Status**: **Independent Clean-Room Python Re-implementation**. Authored in `src/menipy/math/active_contour.py` using pure NumPy, SciPy, and OpenCV primitives under Menipy's MIT open-source license.
+
 ---
 
 ## 2. Literature Analytical Standards (Curved Substrates & Fibers)

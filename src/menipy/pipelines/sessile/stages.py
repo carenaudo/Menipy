@@ -326,7 +326,13 @@ class SessilePipeline(PipelineBase):
 
         # Get contact angle method
         contact_angle_method = getattr(ctx, "contact_angle_method", "tangent")
-        if contact_angle_method not in ["tangent", "circle_fit", "spherical_cap", "auto_residual"]:
+        if contact_angle_method not in [
+            "tangent",
+            "circle_fit",
+            "spherical_cap",
+            "auto_residual",
+            "lbadsa",
+        ]:
             contact_angle_method = "tangent"
 
         # Get contact points (may have been set by contour_refinement)
@@ -407,13 +413,22 @@ class SessilePipeline(PipelineBase):
         ), f"Solver {self.solver_name} not found and no fallback available."
 
         # New ODE solver requires [R0_mm, beta]. beta ~ 0.5 for a typical drop
-        cfg = FitConfig(
-            x0=[20.0, 0.1],
-            bounds=([1.0, -10.0], [2000.0, 10.0]),
-            loss="soft_l1",
-            distance="pointwise",
-            param_names=["R0_mm", "beta"],
-        )
+        if self.solver_name == "lbadsa":
+            cfg = FitConfig(
+                x0=[20.0, 0.05],
+                bounds=([0.5, -0.2], [2000.0, 0.5]),
+                loss="soft_l1",
+                distance="pointwise",
+                param_names=["R0_mm", "Bo"],
+            )
+        else:
+            cfg = FitConfig(
+                x0=[20.0, 0.1],
+                bounds=([1.0, -10.0], [2000.0, 10.0]),
+                loss="soft_l1",
+                distance="pointwise",
+                param_names=["R0_mm", "beta"],
+            )
 
         common_solver.run(ctx, integrator=integrator, config=cfg)
         return ctx
@@ -517,20 +532,39 @@ class SessilePipeline(PipelineBase):
 
         if ctx.results:
             y_offset = 30
-            for key in ["diameter_mm", "height_mm", "contact_angle_deg", "volume_uL"]:
+            for key in [
+                "diameter_mm",
+                "height_mm",
+                "contact_angle_deg",
+                "volume_uL",
+                "surface_tension_mN_m",
+                "bond_number",
+            ]:
                 if key in ctx.results:
                     val = ctx.results[key]
-                    if isinstance(val, (int, float)):
+                    if isinstance(val, (int, float)) and np.isfinite(val):
                         cmds.append(
                             {
-                                "type": "text",
-                                "p": (10, y_offset),
-                                "text": f"{key.replace('_', ' ').title()}: {val:.2f}",
-                                "color": "white",
-                                "scale": 0.6,
-                                "thickness": 2,
+                                 "type": "text",
+                                 "p": (10, y_offset),
+                                 "text": f"{key.replace('_', ' ').title()}: {val:.2f}",
+                                 "color": "white",
+                                 "scale": 0.6,
+                                 "thickness": 2,
                             }
                         )
                         y_offset += 25
+
+            model_pts = ctx.results.get("lbadsa_model_contour_xy")
+            if model_pts is not None and len(model_pts) > 1:
+                cmds.append(
+                    {
+                        "type": "polyline",
+                        "points": np.asarray(model_pts).tolist(),
+                        "closed": False,
+                        "color": "cyan",
+                        "thickness": 1,
+                    }
+                )
 
         return ovl.run(ctx, commands=cmds, alpha=0.6)

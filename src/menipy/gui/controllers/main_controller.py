@@ -124,7 +124,7 @@ class MainController(QObject):
             self.image_manager.browse_batch_folder
         )
         self.setup_ctrl.preview_requested.connect(self.on_preview_requested)
-        self.setup_ctrl.run_all_requested.connect(self.run_full_pipeline)
+        self.setup_ctrl.run_all_requested.connect(self.pipeline_ctrl.run_all)
         self.setup_ctrl.play_stage_requested.connect(self.pipeline_ctrl.run_stage)
         self.setup_ctrl.analyze_requested.connect(self.analyze_current_view)
         self.setup_ctrl.config_stage_requested.connect(
@@ -147,21 +147,10 @@ class MainController(QObject):
             self.camera_manager.on_camera_config_changed
         )
 
-        # Pipeline Runner VM
-        run_vm = getattr(self.window, "run_vm", None)
-        if run_vm:
-            if hasattr(run_vm, "context_ready"):
-                run_vm.context_ready.connect(self.pipeline_ctrl.on_context_ready)
-            if hasattr(run_vm, "preview_ready"):
-                run_vm.preview_ready.connect(self.pipeline_ctrl.on_preview_ready)
-            if hasattr(run_vm, "results_ready"):
-                run_vm.results_ready.connect(self.pipeline_ctrl.on_results_ready)
-            if hasattr(run_vm, "logs_ready"):
-                run_vm.logs_ready.connect(self.pipeline_ctrl.append_logs)
-            if hasattr(run_vm, "error"):
-                run_vm.error.connect(self.pipeline_ctrl.on_pipeline_error)
-            elif hasattr(run_vm, "error_occurred"):
-                run_vm.error_occurred.connect(self.pipeline_ctrl.on_pipeline_error)
+        run_vm = self.window.run_vm
+        run_vm.completed.connect(self.pipeline_ctrl.on_completed)
+        run_vm.state_changed.connect(self.pipeline_ctrl.on_state_changed)
+        self.pipeline_ctrl.install_execution_controls()
 
     @Slot()
     def analyze_current_view(self):
@@ -252,14 +241,15 @@ class MainController(QObject):
     @Slot()
     def on_auto_calibrate_requested(self) -> None:
         """Launch auto-calibration wizard."""
-        image = self.image_manager.load_preprocessing_image()
+        if self.window.runner.busy:
+            self.window.statusBar().showMessage("An operation is already running.")
+            return
+        image = self.setup_ctrl.gather_run_params().get("image")
+        if not image:
+            item = getattr(self.preview_panel, "image_item", None)
+            image = item.get_original_image() if item is not None else None
         if image is None:
             self.window.statusBar().showMessage("No image loaded for calibration", 2000)
-            QMessageBox.warning(
-                self.window,
-                "Auto-Calibrate",
-                "Please load an image before running auto-calibration.",
-            )
             return
 
         pipeline_name = self.setup_ctrl.current_pipeline_name() or "sessile"
@@ -332,9 +322,7 @@ class MainController(QObject):
     def stop_pipeline(self):
         """Stops any active pipeline run."""
         if self.window.runner:
-            self.window.runner.pool.clear()
-            logger.info("Cleared pending tasks in the thread pool.")
-            self.window.statusBar().showMessage("Stop request sent.", 2000)
+            self.window.runner.cancel()
 
     @Slot()
     def open_overlay(self) -> None:
@@ -621,4 +609,5 @@ class MainController(QObject):
         """Saves settings and performs cleanup before the application closes."""
         logger.info("MainController shutting down...")
         self.layout_manager.save_layout()
+        self.window.runner.shutdown()
         self.camera_manager.shutdown()

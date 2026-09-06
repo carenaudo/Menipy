@@ -15,24 +15,48 @@ This document describes the mathematical models used to analyze pendant and sess
 - **Bashforth–Adams Equation**  
   Dimensionless form of the Young–Laplace ODE, solved via numerical integration from the drop apex. :contentReference[oaicite:1]{index=1}
 
-## 2. Simple Geometric Models
+## 2. Geometric Contact Angle Models
 
-- **Circular (Spherical Cap) Fit**  
-  Approximates small sessile drops as spherical caps. Contact angle:  
-  [\n    \theta = 2\,\arctan\!\bigl(\tfrac{h}{r}\bigr)
-  ]  
-  where \(h\) is height and \(r\) half the base width. :contentReference[oaicite:2]{index=2}
-- **Ellipse Fit** *(not yet implemented)*  
-  Fits an ellipse to the sessile drop profile (useful for contact angles up to ~130°). :contentReference[oaicite:3]{index=3}
-- **Spline (Tangent) Fit**  
-  A local spline is fitted near the contact point to estimate the tangent slope and hence \(\theta\). This is more robust than a simple polynomial fit.
+Menipy provides three primary geometric contact angle models, all generalized to compute both acute ($\theta \le 90^\circ$) and obtuse ($\theta > 90^\circ$) angles seamlessly:
+
+- **Spherical Cap Method (`spherical_cap`)**  
+  Approximates small, capillary-dominated sessile drops ($\text{Bo} \ll 1$) as spherical caps:  
+  $$\theta = 2 \arctan\left(\frac{h}{r}\right)$$  
+  where $h$ is the drop height above the substrate and $r$ is half the base footprint width. Valid for $0^\circ \le \theta \le 180^\circ$.
+
+- **Circle Fit Method (`circle_fit`)**  
+  Fits a circle $(C, R)$ to contour points along the drop flank. The signed contact angle is computed via radial projection onto the inward substrate unit vector $\hat{\mathbf{u}}$ and apex-normal unit vector $\hat{\mathbf{n}}$:  
+  $$\theta = \text{arctan2}(-r_u, r_n)$$  
+  where $r_u = \hat{\mathbf{r}} \cdot \hat{\mathbf{u}}$ and $r_n = \hat{\mathbf{r}} \cdot \hat{\mathbf{n}}$. Because the circle center height relative to the substrate determines $r_n = -h_C/R$, the formulation naturally yields acute angles when the center is below the substrate ($h_C < 0$), exactly $90^\circ$ when the center is on the substrate ($h_C = 0$), and obtuse angles when the center is above the substrate ($h_C > 0$).
+
+- **Tangent Polynomial / SVD Method (`tangent`)**  
+  Fits a local tangent line near the contact point using weighted SVD without spherical curvature assumptions. The tangent is oriented upward into the droplet phase ($\hat{\mathbf{t}} \cdot \hat{\mathbf{n}} \ge 0$), and the angle is evaluated as $\theta = \text{arctan2}(\hat{\mathbf{t}} \cdot \hat{\mathbf{n}}, \, \hat{\mathbf{t}} \cdot \hat{\mathbf{u}})$.
+
+- **Curved Substrate Slope Correction**  
+  When drops reside on non-planar surfaces (e.g. fibers, lenses, cavities), the apparent angle measured against the chord is corrected for local substrate slope $\alpha_{\text{sub}}$:  
+  $$\theta_{\text{intrinsic}} = \theta_{\text{apparent}} - \alpha_{\text{sub}}$$  
+  See [`docs/guides/curved_substrates_and_baseline_detection.md`](curved_substrates_and_baseline_detection.md) and [`docs/guides/contact_angle_geometry.md`](contact_angle_geometry.md) for full derivations.
 
 ## 3. Axisymmetric Drop Shape Analysis (ADSA)
 
-- **Full ADSA**  
-  Combines Young–Laplace numerical solution with optimization to fit \(\gamma\) (and contact angle for sessile drops) to the detected contour.  
-- **Low-Bond ADSA** *(not yet implemented)*  
-  Perturbation-based approximation for small Bond numbers, fitting both the drop and its reflection to extract contact angle without manual contact-point selection. :contentReference[oaicite:5]{index=5}
+- **Full ADSA (Numerical Young–Laplace ODE)**  
+  Integrates the non-linear Bashforth–Adams ODE system using numerical Runge–Kutta integration (`solve_ivp`, RK45) from the drop apex. Standard ADSA fits apex radius $R_0$ and shape parameter $\beta$ to minimize pointwise or normal-projection residuals against the drop silhouette.
+
+- **Low-Bond Axisymmetric Drop Shape Analysis (LB-ADSA)**  
+  For sessile drops under weak-to-moderate gravity ($\text{Bo} \in [0.001, 0.25]$), Menipy implements the first-order analytical perturbation theory of the Young–Laplace equation (Stalder et al., EPFL, 2010; *Colloids and Surfaces A*, 364, 72–81).  
+  In polar coordinates centered at the apex center of curvature $(0, R_0)$:
+  $$R(\alpha, R_0, \text{Bo}) = R_0 \left( 1 + \frac{1}{3} \text{Bo} \cdot \left[ \cos\alpha \left( \frac{1}{2} + \ln\left(\frac{2}{1 + \cos\alpha}\right) \right) - \frac{1}{2} \right] \right)$$
+  where $\alpha \in [0, \pi)$ is the polar angle measured from the downward apex normal.  
+  
+  **Key Analytical Properties:**
+  1. *Closed-form radial residuals*: Every experimental point $(X_i, Z_i)$ projects directly along the ray $\alpha_i = \arctan2(|X_i|, R_0 - Z_i)$ with distance $D_i = \sqrt{X_i^2 + (R_0 - Z_i)^2}$, yielding residuals $\rho_i = D_i - R(\alpha_i, R_0, \text{Bo})$ in $\mathcal{O}(1)$ time without ODE integration.
+  2. *Analytical profile tangents*: The local tangent angle with the horizontal substrate is:
+     $$\theta(\alpha) = \arctan2\left(R \sin\alpha - R' \cos\alpha, \, R \cos\alpha + R' \sin\alpha\right)$$
+     where $R'(\alpha) = \frac{1}{3} \text{Bo} R_0 \sin\alpha \left( \frac{\cos\alpha}{1 + \cos\alpha} + \ln(1 + \cos\alpha) - \frac{1}{2} - \ln 2 \right)$.
+  3. *Full angular range*: Supports both acute ($\theta \le 90^\circ$) and obtuse ($\theta > 90^\circ$) droplets seamlessly.
+  4. *Simultaneous surface tension recovery*: When fluid density difference $\Delta\rho$ is known:
+     $$\gamma = \frac{\Delta\rho \, g \, R_0^2}{\text{Bo}} \quad [\text{mN/m}]$$
+     converging in $< 10\text{ ms}$ with guaranteed numerical stability.
 
 
 ## 4. Contour-Based Young–Laplace Fitting

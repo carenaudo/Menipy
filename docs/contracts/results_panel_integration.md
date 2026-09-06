@@ -9,6 +9,14 @@ This guide standardizes how the GUI Results Panel renders results for each pipel
 - Show diagnostics when available (residuals, timings, method tags).
 - Export CSV/JSON with provenance and schema metadata.
 
+GUI completion uses the submitted job's pipeline and source, never the current
+selection. `MeasurementResult.id` is the job UUID; optional `run_metadata`
+contains its submission settings and effective calibration. Older records need
+no migration. Rejected contexts pass through `build_persisted_analysis` and
+retain reasons/diagnostics with empty metrics. Cancelled and failed jobs are not
+measurements. History-only insertion must preserve the current selection and
+metric cards. See [GUI execution](../guides/gui_execution.md).
+
 ## Prerequisites
 
 - Schema docs present for all pipelines:

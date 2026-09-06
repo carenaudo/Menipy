@@ -3,6 +3,8 @@ from typing import Any
 import numpy as np
 from scipy.integrate import solve_ivp
 
+from menipy.common.cancellation import check_cancelled
+
 
 def young_laplace_ode(
     params: np.ndarray,
@@ -35,6 +37,7 @@ def young_laplace_ode(
         return np.array([[0.0, 0.0]])
 
     def odesys(s, y):
+        check_cancelled()
         # y = [r, z, psi]
         r, z, psi = y
 

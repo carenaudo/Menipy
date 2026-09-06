@@ -72,7 +72,23 @@ class CalibrationWizardDialog(QDialog):
         self.setMinimumSize(800, 600)
         self.setModal(True)
 
-        self.original_image = image.copy()
+        from PySide6.QtWidgets import QApplication
+
+        from menipy.gui.services.pipeline_runner import PipelineRunner
+
+        self._runner = getattr(parent, "runner", None) or PipelineRunner(
+            QApplication.instance()
+        )
+        self._runner.finished.connect(self._on_detection_finished)
+        self._detection_job = None
+        self._manual_revision = 0
+        self._closed = False
+        self._input_image = image
+        self.original_image = (
+            image.copy()
+            if isinstance(image, np.ndarray)
+            else np.zeros((1, 1, 3), dtype=np.uint8)
+        )
         self.pipeline_name = pipeline_name.lower()
         self.result: CalibrationResult | None = None
 
@@ -353,173 +369,67 @@ class CalibrationWizardDialog(QDialog):
         if hasattr(self, "_current_pixmap"):
             self._preview_label.setPixmap(self._current_pixmap)
 
-    def run_detection(self) -> None:
-        """Run automatic detection on the image.
+    def run_detection(self):
+        from menipy.gui.services.calibration_service import calibration_task
+        from menipy.gui.services.pipeline_runner import RunRequest
 
-        Preserves manually drawn regions (substrate, ROI, needle) and only
-        auto-detects regions that weren't manually specified.
-        """
-        self._progress.show()
+        if self._runner.busy:
+            self._confidence_label.setText("Another operation is running.")
+            return
+        request = RunRequest.create(
+            self.pipeline_name,
+            {
+                "image": self._input_image,
+                "pipeline": self.pipeline_name,
+                "manual_result": self.result,
+            },
+            operation="calibration",
+            revision=str(self._manual_revision),
+        )
         self._detect_btn.setEnabled(False)
-
-        # Preserve manually set values before auto-detection
-        manual_substrate = None
-        manual_roi = None
-        manual_needle = None
-
-        if self.result:
-            # Check if these were manually set (confidence = 1.0 indicates manual)
-            if (
-                self.result.substrate_line
-                and self.result.confidence_scores.get("substrate", 0) >= 1.0
-            ):
-                manual_substrate = self.result.substrate_line
-                logger.info("Preserving manual substrate line")
-            if (
-                self.result.roi_rect
-                and self.result.confidence_scores.get("roi", 0) >= 1.0
-            ):
-                manual_roi = self.result.roi_rect
-                logger.info("Preserving manual ROI")
-            if (
-                self.result.needle_rect
-                and self.result.confidence_scores.get("needle", 0) >= 1.0
-            ):
-                manual_needle = self.result.needle_rect
-                logger.info("Preserving manual needle")
-
-        # Import here to avoid circular imports
-        from menipy.common.auto_calibrator import AutoCalibrator, run_auto_calibration
-
+        self._apply_btn.setEnabled(False)
+        self._progress.show()
+        self._detection_job = request.job_id
         try:
-            logger.info(f"Running auto-calibration for {self.pipeline_name}...")
-            self.result = self._run_best_auto_calibration(
-                run_auto_calibration,
-                allow_fallback=not (manual_substrate or manual_roi or manual_needle),
-            )
-
-            # Restore manually set values
-            need_redetect_drop = False
-
-            if manual_substrate:
-                self.result.substrate_line = manual_substrate
-                self.result.confidence_scores["substrate"] = 1.0
-                need_redetect_drop = (
-                    True  # Need to re-detect drop with correct substrate
-                )
-            if manual_roi:
-                self.result.roi_rect = manual_roi
-                self.result.confidence_scores["roi"] = 1.0
-            if manual_needle:
-                self.result.needle_rect = manual_needle
-                self.result.confidence_scores["needle"] = 1.0
-                need_redetect_drop = (
-                    True  # Need to re-detect drop with correct needle filter
-                )
-
-            # Re-run drop detection if manual substrate/needle was set
-            # This ensures drop is detected relative to correct substrate line
-            if need_redetect_drop and manual_substrate:
-                logger.info("Re-running drop detection with manual substrate line...")
-                calibrator = AutoCalibrator(self.original_image, self.pipeline_name)
-                # Set the correct substrate_y from manual line
-                p1, p2 = manual_substrate
-                calibrator._substrate_y = (p1[1] + p2[1]) // 2
-                # Set needle rect if available
-                if manual_needle:
-                    calibrator._needle_rect = manual_needle
-                elif self.result.needle_rect:
-                    calibrator._needle_rect = self.result.needle_rect
-                # Segment and detect drop
-                calibrator._segment_image_adaptive()
-                drop_contour, contact_pts, drop_conf = calibrator._detect_drop_sessile()
-                if drop_contour is not None and len(drop_contour) > 0:
-                    self.result.drop_contour = drop_contour
-                    self.result.contact_points = contact_pts
-                    self.result.confidence_scores["drop"] = drop_conf
-                    logger.info(f"Drop re-detected with {len(drop_contour)} points")
-
-            self._show_results()
-        except Exception as e:
-            logger.exception("Auto-calibration failed")
-            self._confidence_label.setText(f"Error: {e}")
-        finally:
+            self._runner.submit(request, calibration_task)
+        except Exception as exc:
+            self._detection_job = None
             self._progress.hide()
             self._detect_btn.setEnabled(True)
+            self._confidence_label.setText(f"Could not submit calibration: {exc}")
 
-    def _run_best_auto_calibration(self, runner, *, allow_fallback: bool = True):
-        """Run requested calibration, then try supported detector branches if needed."""
-        primary = runner(self.original_image, self.pipeline_name)
-        if not allow_fallback:
-            return primary
-
-        supported_detectors = {"pendant", "sessile"}
-        candidates = (
-            [(self.pipeline_name, primary)]
-            if self.pipeline_name in supported_detectors
-            else []
-        )
-        for detector_name in ("pendant", "sessile"):
-            if detector_name == self.pipeline_name:
-                continue
-            try:
-                candidates.append(
-                    (detector_name, runner(self.original_image, detector_name))
-                )
-            except Exception:
-                logger.debug(
-                    "Fallback auto-calibration failed for %s",
-                    detector_name,
-                    exc_info=True,
-                )
-
-        preferred_fallback = {"captive_bubble": "pendant"}.get(self.pipeline_name)
-        if preferred_fallback is not None:
-            for detector_name, candidate in candidates:
-                if detector_name == preferred_fallback and self._calibration_score(candidate) > 0:
-                    candidate.confidence_scores["detector_pipeline"] = detector_name
-                    return candidate
-
-        best_name, best = max(
-            candidates, key=lambda item: self._calibration_score(item[1])
-        )
-        primary_score = self._calibration_score(primary)
-        best_score = self._calibration_score(best)
-        if self.pipeline_name not in supported_detectors or (
-            best is not primary and best_score > primary_score + 0.15
-        ):
-            best.confidence_scores["detector_pipeline"] = best_name
-            logger.info(
-                "Auto-calibration used %s detector instead of %s (score %.2f > %.2f)",
-                best_name,
-                self.pipeline_name,
-                best_score,
-                primary_score,
+    def _on_detection_finished(self, completion):
+        if completion.request.job_id != self._detection_job:
+            return
+        self._detection_job = None
+        if self._closed:
+            return
+        self._progress.hide()
+        self._detect_btn.setEnabled(True)
+        if completion.state != "completed":
+            self._confidence_label.setText(completion.error or "Calibration cancelled.")
+            return
+        if completion.request.revision != str(self._manual_revision):
+            self._confidence_label.setText(
+                "Calibration discarded; manual regions changed."
             )
-            return best
-        primary.confidence_scores.setdefault("detector_pipeline", self.pipeline_name)
-        return primary
+            return
+        self.original_image, self.result = completion.value
+        self._input_image = self.original_image
+        self._show_results()
 
-    def _calibration_score(self, result) -> float:
-        """Score a calibration result by useful detected geometry."""
-        if result is None:
-            return 0.0
-        score = float(result.confidence_scores.get("overall", 0.0) or 0.0)
-        if result.drop_contour is not None:
-            try:
-                if len(result.drop_contour) > 0:
-                    score += 0.35
-            except Exception:
-                score += 0.2
-        if result.needle_rect:
-            score += 0.12
-        if result.contact_points:
-            score += 0.1
-        if result.roi_rect:
-            score += 0.08
-        if result.substrate_line:
-            score += 0.06
-        return score
+    def done(self, result):
+        self._closed = True
+        if self._detection_job is not None:
+            self._runner.cancel(self._detection_job)
+        super().done(result)
+
+    def _run_best_auto_calibration(self, runner, *, allow_fallback=True):
+        from menipy.gui.services.calibration_service import CalibrationComputation
+
+        return CalibrationComputation(
+            self.original_image, self.pipeline_name
+        )._run_best_auto_calibration(runner, allow_fallback=allow_fallback)
 
     def _show_results(self) -> None:
         """Display detection results with overlays."""
@@ -554,7 +464,9 @@ class CalibrationWizardDialog(QDialog):
             if prof and prof.type == "circle_arc":
                 pts = prof.sample_points(n_points=100)
                 pts_i = pts.astype(np.int32).reshape((-1, 1, 2))
-                cv2.polylines(overlay, [pts_i], isClosed=False, color=(255, 0, 255), thickness=2)
+                cv2.polylines(
+                    overlay, [pts_i], isClosed=False, color=(255, 0, 255), thickness=2
+                )
                 r_val = float(prof.parameters.get("radius", 0.0))
                 cv2.putText(
                     overlay,
@@ -776,6 +688,7 @@ class CalibrationWizardDialog(QDialog):
             self._draw_region_preview()
 
     def _on_preview_mouse_release(self, event) -> None:
+        self._manual_revision += 1
         """Handle mouse release - finalize region."""
         if not self._drawing_mode or self._draw_start_point is None:
             return

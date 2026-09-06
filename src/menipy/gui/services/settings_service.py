@@ -27,6 +27,9 @@ class AppSettings:
     compare_methods_visible: bool = False
     diagnostics_visible: bool = False
     guided_splitter_sizes: list[int] | None = None
+    main_window_geom_b64: str | None = None
+    main_window_state_b64: str | None = None
+    splitter_sizes: list[int] | None = None
     guided_vertical_splitter_sizes: list[int] | None = None
     unit_system: str = "SI"  # "SI" or "CGS"
     path: Path = field(default_factory=_default_path, repr=False)
@@ -57,6 +60,9 @@ class AppSettings:
                 ),
                 diagnostics_visible=bool(data.get("diagnostics_visible", False)),
                 guided_splitter_sizes=data.get("guided_splitter_sizes"),
+                main_window_geom_b64=data.get("main_window_geom_b64"),
+                main_window_state_b64=data.get("main_window_state_b64"),
+                splitter_sizes=data.get("splitter_sizes"),
                 guided_vertical_splitter_sizes=data.get(
                     "guided_vertical_splitter_sizes"
                 ),

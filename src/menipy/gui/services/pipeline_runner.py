@@ -1,194 +1,270 @@
-"""Service for running pipelines in the GUI context."""
+"""Owned, cancellable GUI execution with immutable submission identity."""
 
-# src/adsa/gui/services/pipeline_runner.py
 from __future__ import annotations
 
-from typing import Optional
+from copy import deepcopy
+from dataclasses import dataclass, field, replace
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Callable, Literal
+from uuid import uuid4
 
-from PySide6.QtCore import QObject, QRunnable, QThreadPool, Signal
+import numpy as np
+from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, QTimer, Signal, Slot
 
-from menipy.common import acquisition as acq
-from menipy.pipelines.base import PipelineBase, PipelineError
+from menipy.common.cancellation import (
+    AnalysisCancelled,
+    CancellationToken,
+    cancellation_scope,
+)
+from menipy.pipelines.base import PipelineError
+from menipy.pipelines.discover import PIPELINE_MAP
 
-# Import the same map the GUI uses to ensure consistency
-try:
-    from menipy.pipelines.discover import PIPELINE_MAP
-except ImportError:
-    PIPELINE_MAP = {}
+RunState = Literal["queued", "running", "stopping", "completed", "failed", "cancelled"]
+RunOperation = Literal[
+    "analysis", "quick_analysis", "sop", "stage", "stage_test", "calibration", "preview"
+]
+
+
+def json_settings(value):
+    """Serialize configuration only; never persist images or runtime objects."""
+    if value is None or isinstance(value, (str, bool, int, float)):
+        return value
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, np.ndarray):
+        return value.tolist()
+    if isinstance(value, np.generic):
+        return value.item()
+    if hasattr(value, "model_dump"):
+        return json_settings(value.model_dump(mode="python"))
+    if isinstance(value, dict):
+        return {
+            str(k): json_settings(v)
+            for k, v in value.items()
+            if not isinstance(v, CancellationToken)
+            and not (
+                k in {"image", "frames", "original_image"}
+                and isinstance(v, (np.ndarray, list))
+            )
+        }
+    if isinstance(value, (list, tuple)):
+        return [json_settings(v) for v in value if not isinstance(v, np.ndarray)]
+    return None
+
+
+@dataclass(frozen=True)
+class RunRequest:
+    pipeline: str
+    source: str | None
+    operation: RunOperation
+    parameters: dict[str, Any] = field(repr=False)
+    stages: tuple[str, ...] = ()
+    revision: str = ""
+    job_id: str = field(default_factory=lambda: uuid4().hex)
+    submitted_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    warnings: tuple[str, ...] = ()
+
+    @classmethod
+    def create(
+        cls,
+        pipeline,
+        parameters,
+        *,
+        operation="analysis",
+        stages=(),
+        revision="",
+        warnings=(),
+    ):
+        params = deepcopy(parameters)
+        job_id = uuid4().hex
+        source = params.get("sequence_path") or params.get("image_path")
+        if source is None and isinstance(params.get("image"), (str, Path)):
+            source = str(params["image"])
+        if source is None and params.get("camera") is not None:
+            source = f"camera:{params['camera']}"
+        if source is None and isinstance(params.get("image"), np.ndarray):
+            source = f"memory:{job_id}"
+        return cls(
+            pipeline.lower(),
+            str(source) if source is not None else None,
+            operation,
+            params,
+            tuple(stages or ()),
+            revision,
+            job_id=job_id,
+            warnings=tuple(warnings),
+        )
+
+    def metadata(self):
+        return {
+            "job_id": self.job_id,
+            "pipeline": self.pipeline,
+            "submitted_at": self.submitted_at.isoformat(),
+            "operation": self.operation,
+            "source": self.source,
+            "stages": list(self.stages),
+            "settings": json_settings(self.parameters),
+        }
+
+
+@dataclass(frozen=True)
+class RunCompletion:
+    request: RunRequest
+    state: RunState
+    ctx: Any = None
+    error: str | None = None
+    value: Any = None
+    warnings: tuple[str, ...] = ()
 
 
 class _Job(QRunnable):
-    def __init__(
-        self,
-        pipeline_cls: type[PipelineBase],
-        image: str | None,
-        camera: int | None,
-        frames: int,
-        callback,
-        *,
-        roi=None,
-        roi_rect=None,
-        detected_roi=None,
-        needle_rect=None,
-        contact_line=None,
-        substrate_line=None,
-        drop_contour=None,
-        detected_contour=None,
-        contact_points=None,
-        apex_point=None,
-        auto_detect_features=None,
-        preprocessing_settings=None,
-        preprocessing_markers=None,
-        edge_detection_settings=None,
-        calibration_params=None,
-        scale=None,
-        physics=None,
-        sequence_path=None,
-        sequence_fps=None,
-        analysis_params=None,
-        stages: list[str] | None = None,
-    ) -> None:
+    def __init__(self, request, token, started, finished, task=None):
         super().__init__()
-        self.pipeline_cls = pipeline_cls
-        self.image = image
-        self.camera = camera
-        self.frames = frames
-        self.callback = callback
-        self.roi = roi
-        self.roi_rect = roi_rect
-        self.detected_roi = detected_roi
-        self.needle_rect = needle_rect
-        self.contact_line = contact_line
-        self.substrate_line = substrate_line
-        self.drop_contour = drop_contour
-        self.detected_contour = detected_contour
-        self.contact_points = contact_points
-        self.apex_point = apex_point
-        self.auto_detect_features = auto_detect_features
-        self.preprocessing_settings = preprocessing_settings
-        self.preprocessing_markers = preprocessing_markers
-        self.edge_detection_settings = edge_detection_settings
-        self.calibration_params = calibration_params
-        self.scale = scale
-        self.physics = physics
-        self.sequence_path = sequence_path
-        self.sequence_fps = sequence_fps
-        self.analysis_params = analysis_params
-        self.stages = stages
+        self.request, self.token = request, token
+        self.started, self.finished, self.task = started, finished, task
 
     def run(self):
+        request = self.request
         try:
-            # Instantiate the pipeline with the provided settings.
-            p = self.pipeline_cls(
-                preprocessing_settings=self.preprocessing_settings,
-                edge_detection_settings=self.edge_detection_settings,
-            )
+            with cancellation_scope(self.token):
+                self.started.emit(request.job_id)
+                parameters = deepcopy(request.parameters)
+                if self.task is not None:
+                    value = self.task(parameters, self.token)
+                    completion = RunCompletion(request, "completed", value=value)
+                else:
+                    warnings = list(request.warnings)
+                    if parameters.pop("auto_calibrate", False):
+                        from menipy.gui.services.calibration_service import (
+                            prepare_stage_calibration,
+                        )
 
-            # patch acquisition - DISABLED to allow pipeline class method to run (and use logging)
-            # if self.image:
-            #     p.do_acquisition = (lambda ctx: setattr(ctx, "frames", acq.from_file([self.image])) or ctx)  # type: ignore
-            # else:
-            #     p.do_acquisition = (lambda ctx: setattr(ctx, "frames", acq.from_camera(device=self.camera or 0, n_frames=self.frames)) or ctx)  # type: ignore
-            run_kwargs = {
-                "roi": self.roi,
-                "roi_rect": self.roi_rect,
-                "detected_roi": self.detected_roi,
-                "needle_rect": self.needle_rect,
-                "contact_line": self.contact_line,
-                "substrate_line": self.substrate_line,
-                "drop_contour": self.drop_contour,
-                "detected_contour": self.detected_contour,
-                "contact_points": self.contact_points,
-                "apex_point": self.apex_point,
-                "auto_detect_features": self.auto_detect_features,
-                "preprocessing_markers": self.preprocessing_markers,
-                "calibration_params": self.calibration_params,
-                "scale": self.scale,
-                "physics": self.physics,
-                "sequence_path": self.sequence_path,
-                "sequence_fps": self.sequence_fps,
-                "analysis_params": self.analysis_params,
-                "image": self.image,
-                "camera": self.camera,
-                "frames": self.frames,
-            }
-            run_kwargs = {k: v for k, v in run_kwargs.items() if v is not None}
-            if self.stages:
-                ctx = p.run_with_plan(
-                    only=self.stages, include_prereqs=True, **run_kwargs
-                )
-            else:
-                ctx = p.run(**run_kwargs)
-            self.callback(success=True, ctx=ctx, err=None)
-        except Exception as e:
-            self.callback(success=False, ctx=None, err=str(e))
+                        parameters, auto_warnings = prepare_stage_calibration(
+                            request.pipeline, parameters
+                        )
+                        warnings.extend(auto_warnings)
+                    pipeline = _pick(request.pipeline)(
+                        preprocessing_settings=parameters.get("preprocessing_settings"),
+                        edge_detection_settings=parameters.get(
+                            "edge_detection_settings"
+                        ),
+                    )
+                    parameters["cancellation_token"] = self.token
+                    parameters["measurement_id"] = request.job_id
+                    if request.stages:
+                        ctx = pipeline.run_with_plan(
+                            only=list(request.stages),
+                            include_prereqs=True,
+                            **parameters,
+                        )
+                    else:
+                        ctx = pipeline.run(**parameters)
+                    completion = RunCompletion(
+                        request, "completed", ctx=ctx, warnings=tuple(warnings)
+                    )
+            self.token.check()
+        except AnalysisCancelled:
+            completion = RunCompletion(request, "cancelled")
+        except Exception as exc:
+            completion = RunCompletion(request, "failed", error=str(exc))
+        self.finished.emit(completion)
 
 
-def _pick(name: str):
-    """Look up the pipeline class from the central map."""
-    p_cls = PIPELINE_MAP.get(name.lower())
-    if p_cls is None:
+def _pick(name):
+    pipeline = PIPELINE_MAP.get(name.lower())
+    if pipeline is None:
         raise PipelineError(f"Unknown pipeline '{name}'")
-    return p_cls
+    return pipeline
 
 
 class PipelineRunner(QObject):
-    finished = Signal(object)  # ctx or error dict
+    finished = Signal(object)
+    state_changed = Signal(str, str)
+    _started = Signal(str)
+    _finished = Signal(object)
 
-    def __init__(self):
-        super().__init__()
-        self.pool = QThreadPool.globalInstance()
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.pool = QThreadPool(self)
+        self.pool.setMaxThreadCount(1)
+        self._active = None
+        self._token = None
+        self._closing = False
+        self._started.connect(self._on_started, Qt.QueuedConnection)
+        self._finished.connect(self._on_finished, Qt.QueuedConnection)
 
-    def run(
-        self,
-        pipeline: str,
-        image: str | None,
-        camera: int | None,
-        frames: int = 1,
-        **overlays,
-    ):
-        pipeline_cls = _pick(pipeline)
-        job = _Job(pipeline_cls, image, camera, frames, callback=self._emit, **overlays)
-        self.pool.start(job)
+    @property
+    def busy(self):
+        return self._active is not None
+
+    def submit(self, request: RunRequest, task: Callable | None = None):
+        if self.busy or self._closing:
+            raise PipelineError(
+                "An operation is already running or the window is closing."
+            )
+        if task is None:
+            _pick(request.pipeline)
+        request = deepcopy(request)
+        self._active, self._token = request, CancellationToken()
+        job = _Job(request, self._token, self._started, self._finished, task)
+        self.state_changed.emit(request.job_id, "queued")
+        try:
+            self.pool.start(job)
+        except Exception as exc:
+            completion = RunCompletion(
+                request, "failed", error=f"Submission failed: {exc}"
+            )
+            QTimer.singleShot(0, lambda: self._on_finished(completion))
+        return request.job_id
+
+    def run(self, pipeline, image=None, camera=None, frames=1, **parameters):
+        return self.submit(
+            RunRequest.create(
+                pipeline, dict(parameters, image=image, camera=camera, frames=frames)
+            )
+        )
 
     def run_subset(
-        self,
-        pipeline: str,
-        *,
-        only: list[str],
-        image: str | None,
-        camera: int | None,
-        frames: int = 1,
-        **overlays,
-    ) -> None:
-        """Run subset of pipeline.
-
-        Parameters
-        ----------
-        pipeline : str
-            Pipeline name.
-        only : list[str]
-            List of stage names to run.
-        image : str, optional
-            Image path.
-        camera : int, optional
-            Camera index.
-        frames : int, optional
-            Number of frames. Default is 1.
-        **overlays
-            Additional overlay settings.
-        """
-        pipeline_cls = _pick(pipeline)
-        job = _Job(
-            pipeline_cls,
-            image,
-            camera,
-            frames,
-            callback=self._emit,
-            stages=only,
-            **overlays,
+        self, pipeline, *, only, image=None, camera=None, frames=1, **parameters
+    ):
+        return self.submit(
+            RunRequest.create(
+                pipeline,
+                dict(parameters, image=image, camera=camera, frames=frames),
+                stages=only,
+            )
         )
-        self.pool.start(job)
 
-    def _emit(self, success: bool, ctx, err: str | None):
-        self.finished.emit({"ok": success, "ctx": ctx, "err": err})
+    def cancel(self, job_id=None):
+        if self._active is None or (
+            job_id is not None and self._active.job_id != job_id
+        ):
+            return
+        if not self._token.cancelled:
+            self._token.cancel()
+            self.state_changed.emit(self._active.job_id, "stopping")
+
+    def shutdown(self):
+        self._closing = True
+        self.cancel()
+
+    @Slot(str)
+    def _on_started(self, job_id):
+        if self._active and self._active.job_id == job_id and not self._token.cancelled:
+            self.state_changed.emit(job_id, "running")
+
+    @Slot(object)
+    def _on_finished(self, completion):
+        if self._active is None or completion.request.job_id != self._active.job_id:
+            return
+        if self.pool.activeThreadCount():
+            QTimer.singleShot(5, lambda: self._on_finished(completion))
+            return
+        if self._token.cancelled:
+            completion = replace(
+                completion, state="cancelled", ctx=None, value=None, error=None
+            )
+        self._active = self._token = None
+        self.state_changed.emit(completion.request.job_id, completion.state)
+        self.finished.emit(completion)

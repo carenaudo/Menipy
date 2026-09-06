@@ -134,6 +134,45 @@ Auto-calibration currently uses pipeline-specific strategies:
 The core implementation is in `src/menipy/common/auto_calibrator.py`, with
 coverage in `tests/test_auto_calibrator.py`.
 
+## Contact Angle Estimation and Substrate Handling
+
+Menipy provides high-precision contact angle measurement across both wetting (acute, $\theta \le 90^\circ$) and non-wetting (obtuse, $\theta > 90^\circ$) regimes on flat or curved surfaces.
+
+### Contact Angle Estimation Methods
+
+Configured via the GUI Sessile Settings or CLI `--contact-angle-method`:
+
+- **`auto_residual` (Default):** Evaluates both local polynomial/SVD tangent and circle fit residuals for each contact point, automatically choosing the model with lower error.
+- **`circle_fit`:** Fits a circle $(C, R)$ to flank points. Uses exact signed radial projections $\theta = \text{arctan2}(-r_u, r_n)$ to compute contact angles continuously from $0^\circ$ to $180^\circ$ without folding obtuse angles.
+- **`tangent`:** Weighted SVD fit to local flank points near the contact line, capturing non-spherical drop shapes without curvature assumptions.
+- **`spherical_cap`:** Closed-form formula $\theta = 2 \arctan(h/r)$ for small capillary drops dominated by surface tension.
+
+### Substrate Detection, Confidence Scoring, and Doubtful Banners
+
+Baseline detection (`src/menipy/common/sessile_detection.py`) uses a physically bounded bilateral gradient analysis:
+
+- Computes confidence score $Q \in [0.0, 1.0]$.
+- **$Q \ge 0.75$ ("Confident"):** Baseline is clear and analysis proceeds automatically.
+- **$Q < 0.75$ ("Doubtful" or "Failed"):** An interactive warning banner appears on the Preview Panel with color-coded confidence indicators and quick-draw action buttons (`[✏ Draw Baseline]` and `[⌒ Draw Curved Arc]`).
+
+### Curved Substrates and Interactive 3-Point Arc Drawing
+
+When droplets reside on curved surfaces (cylindrical wires, fibers, spherical lenses, curved coatings):
+
+1. Click **`[⌒ Draw Curved Arc]`** on the warning banner or select **Mark -> Curved Substrate (Arc)** in the GUI.
+2. Click the left contact anchor, then the right contact anchor, and drag the center handle to define the curvature.
+3. Menipy calculates the radius of curvature $R_{\text{sub}}$ and evaluates the local substrate tangent angle $\alpha_{\text{sub}}$ at each contact point.
+4. Corrects the apparent angle to recover the true thermodynamic intrinsic contact angle:
+   $$\theta_{\text{intrinsic}} = \theta_{\text{apparent}} - \alpha_{\text{sub}}$$
+
+### Academic Benchmarks and Datasets
+
+Menipy includes peer-reviewed benchmark datasets registered in [`data/MANIFEST.json`](data/MANIFEST.json) and documented in [`data/ATTRIBUTION.md`](data/ATTRIBUTION.md):
+- **OpenDrop Reference Series** (Berry et al. 2015): Clean sessile, needle-dispensed, and pendant water benchmarks.
+- **Drop-O-Matic Sequence** (Dorywalski 2026): High-speed dynamic advancing/receding wetting video.
+- **Automated Fetch Tool**: Run `uv run python tools/fetch_benchmarks.py --all` to download and verify benchmark files with SHA-256 integrity checks.
+
+
 ## Preprocessing and Preview Overlays
 
 Preprocessing options clean and transform the image before contour detection.

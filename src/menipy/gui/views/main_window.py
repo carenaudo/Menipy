@@ -106,40 +106,11 @@ try:
 except Exception:
     StepItemWidget = None  # type: ignore
 
-try:
-    from menipy.gui.services.pipeline_runner import PipelineRunner
-    from menipy.gui.viewmodels.run_vm import RunViewModel
-
-    from .services.settings_service import AppSettings
-    from .services.sop_service import SopService
-except Exception:
-    SopService = None  # type: ignore
-
-    # tiny fallback so file still runs
-    class AppSettings:  # type: ignore
-        selected_pipeline: str | None = None
-        last_image_path: str | None = None
-        plugin_dirs: list[str] = []
-        main_window_state_b64: str | None = None
-        main_window_geom_b64: str | None = None
-        splitter_sizes: list[int] | None = None
-        guided_splitter_sizes: list[int] | None = None
-        guided_vertical_splitter_sizes: list[int] | None = None
-        overlay_config: dict | None = None
-        marker_config: dict = {}
-        unit_system: str = "SI"
-
-        @classmethod
-        def load(cls):
-            return cls()
-
-        def save(self):
-            pass
-
-    RunViewModel = None  # type: ignore
-    PipelineRunner = None  # type: ignore
-
 from menipy.gui.controllers.main_controller import MainController
+from menipy.gui.services.pipeline_runner import PipelineRunner
+from menipy.gui.services.settings_service import AppSettings
+from menipy.gui.services.sop_service import SopService
+from menipy.gui.viewmodels.run_vm import RunViewModel
 
 # default stage order for SOPs / step list
 STAGE_ORDER: list[str] = [
@@ -169,7 +140,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.settings = AppSettings.load()
 
         # restore geometry/state if present (pre-split or split—it’s fine)
-        self._restore_window_layout()
+        self.resize(1200, 800)
 
         # ---------- loader that knows our custom widgets ----------
         loader = QUiLoader()
@@ -205,6 +176,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.results_panel,
             getattr(self, "keyResultsHost", None),
             getattr(self, "residualsHostLayout", None),
+            settings=self.settings,
         )
 
         self.preprocessing_ctrl = PreprocessingPipelineController(self)
@@ -236,15 +208,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.plugins_controller = PluginsController(self, self.settings)
 
         # ---------- services / VMs ----------
-        if PipelineRunner and RunViewModel:
-            self.runner = PipelineRunner()
-            self.run_vm = RunViewModel(self.runner)
-        else:
-            self.runner = None
-            self.run_vm = None
-
-        # SOP service
-        self.sops = SopService() if SopService else None
+        self.runner = PipelineRunner(self)
+        self.run_vm = RunViewModel(self.runner)
+        self.sops = SopService()
 
         self.setup_panel_ctrl = SetupPanelController(
             self,
@@ -275,6 +241,24 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             run_vm=self.run_vm,
             log_view=self.logView,
         )
+        from menipy.gui.services.preview_execution import (
+            PreviewExecution,
+            edge_preview,
+            preprocessing_preview,
+        )
+
+        self.preprocessing_ctrl.preview_execution = PreviewExecution(
+            self,
+            self.preprocessing_ctrl,
+            preprocessing_preview,
+            self.preprocessing_ctrl._publish_context,
+        )
+        self.edge_detection_ctrl.preview_execution = PreviewExecution(
+            self,
+            self.edge_detection_ctrl,
+            edge_preview,
+            self.edge_detection_ctrl._publish_preview,
+        )
         self._install_pipeline_step_test_panel()
 
         if self.preview_panel.has_view():
@@ -282,6 +266,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.preview_panel.set_draw_mode(DRAW_NONE)
             except Exception:
                 pass
+
+        self._restore_window_layout()
 
         # Restore only preview-dominant saved sizes; migrate older layouts where
         # the image canvas was smaller than setup/results.
@@ -1499,6 +1485,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def closeEvent(self, event: QCloseEvent) -> None:
         """Delegate shutdown logic to the controller."""
+        if getattr(self, "runner", None) and self.runner.busy:
+            event.ignore()
+            if not getattr(self, "_closing_after_run", False):
+                self._closing_after_run = True
+                self.runner.finished.connect(lambda _: self.close())
+            self.runner.shutdown()
+            self.statusBar().showMessage("Stopping analysis before closing…")
+            return
         if hasattr(self, "main_controller") and self.main_controller:
             self.main_controller.shutdown()
         super().closeEvent(event)

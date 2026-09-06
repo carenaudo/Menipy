@@ -7,6 +7,8 @@ from typing import Any, cast
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
 
+from menipy.common.cancellation import CancellationToken
+
 from .config import EdgeDetectionSettings, PreprocessingSettings
 from .fit import Fit
 from .frame import Frame
@@ -19,10 +21,14 @@ from .temporal import DynamicSessileResult, SequenceMetadata, TemporalFrameResul
 class Context(BaseModel):
     """
     Mutable bag of state shared across pipeline stages.
-    Pipelines freely attach fields here. Commonly used keys are predeclared.
+    Pipeline fields must be declared here; unknown attributes are forbidden.
     """
 
     model_config = ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
+    cancellation_token: CancellationToken | None = Field(
+        default=None, exclude=True, repr=False
+    )
 
     # Acquisition / images
     frames: np.ndarray | list[np.ndarray] | list[Frame] | None = (

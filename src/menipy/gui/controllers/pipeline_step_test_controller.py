@@ -58,6 +58,9 @@ class PipelineStepTestController(QObject):
         self._geometry_config: dict[str, Any] = {}
         self._overlay_config: dict[str, Any] = {}
         self._dirty = False
+        self._test_job = None
+        if getattr(pipeline_ctrl, "run_vm", None) is not None:
+            pipeline_ctrl.run_vm.completed.connect(self._on_test_completed)
 
         self._wire_signals()
         self.refresh_from_live()
@@ -205,9 +208,22 @@ class PipelineStepTestController(QObject):
             return
         self.panel.set_status(f"Running {stage.replace('_', ' ').title()}...")
         self.panel.set_output("")
-        result = self.pipeline_ctrl.test_stage(stage, self.sandbox_config())
-        ctx = result.get("ctx") if isinstance(result, dict) else None
-        warnings = result.get("warnings", []) if isinstance(result, dict) else []
+        self._test_stage = stage
+        self._test_job = self.pipeline_ctrl.test_stage(stage, self.sandbox_config())
+        if self._test_job is None:
+            self.panel.set_status("Stage test was not submitted.")
+
+    def _on_test_completed(self, completion):
+        if completion.request.job_id != self._test_job:
+            return
+        self._test_job = None
+        stage = self._test_stage
+        ctx = completion.ctx
+        warnings = completion.warnings
+        if completion.state != "completed":
+            self.panel.set_status(f"Stage test {completion.state}.")
+            self.panel.set_output(completion.error or "")
+            return
 
         lines: list[str] = []
         if warnings:

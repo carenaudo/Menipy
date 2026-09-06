@@ -196,3 +196,5 @@ data/benchmarks/
 data/downloads/
 *.avi
 *.mp4
+scratch/
+

@@ -15,6 +15,7 @@ from types import SimpleNamespace
 import cv2
 import numpy as np
 
+from menipy.common.cancellation import check_cancelled
 from menipy.common.detection_result import normalize_detection_result
 from menipy.common.geometry_prototypes import detect_bilateral_needle
 from menipy.common.sessile_detection import (
@@ -150,6 +151,7 @@ class AutoCalibrator:
         Returns:
             CalibrationResult with all detected regions and confidence scores.
         """
+        check_cancelled()
         if self.pipeline_name == "pendant":
             return self._detect_pendant()
         else:
@@ -184,10 +186,18 @@ class AutoCalibrator:
 
         # Step 3: Detect needle
         needle_rect, needle_conf = self._detect_needle_sessile()
-        if self.needle_geometry_method == "bilateral_robust" or self.experimental_geometry_mode == "shadow":
+        if (
+            self.needle_geometry_method == "bilateral_robust"
+            or self.experimental_geometry_mode == "shadow"
+        ):
             experimental = detect_bilateral_needle(self.original_image)
-            result.detector_diagnostics["needle_bilateral"] = experimental.to_diagnostics()
-            if self.needle_geometry_method == "bilateral_robust" and experimental.accepted:
+            result.detector_diagnostics["needle_bilateral"] = (
+                experimental.to_diagnostics()
+            )
+            if (
+                self.needle_geometry_method == "bilateral_robust"
+                and experimental.accepted
+            ):
                 needle_rect = experimental.value["needle_rect"]
                 needle_conf = experimental.confidence
             elif self.needle_geometry_method == "bilateral_robust":
@@ -271,10 +281,18 @@ class AutoCalibrator:
 
         # Step 3: Detect needle and contact points
         needle_rect, contact_pts, needle_conf = self._detect_needle_pendant(drop_cnt)
-        if self.needle_geometry_method == "bilateral_robust" or self.experimental_geometry_mode == "shadow":
+        if (
+            self.needle_geometry_method == "bilateral_robust"
+            or self.experimental_geometry_mode == "shadow"
+        ):
             experimental = detect_bilateral_needle(self.original_image, drop_cnt)
-            result.detector_diagnostics["needle_bilateral"] = experimental.to_diagnostics()
-            if self.needle_geometry_method == "bilateral_robust" and experimental.accepted:
+            result.detector_diagnostics["needle_bilateral"] = (
+                experimental.to_diagnostics()
+            )
+            if (
+                self.needle_geometry_method == "bilateral_robust"
+                and experimental.accepted
+            ):
                 needle_rect = experimental.value["needle_rect"]
                 contact_pts = experimental.value["contact_points"]
                 needle_conf = experimental.confidence
@@ -376,11 +394,13 @@ class AutoCalibrator:
         self,
     ) -> tuple[tuple[tuple[int, int], tuple[int, int]] | None, float]:
         """Detect substrate baseline using gradient analysis on image margins."""
-        substrate_line, confidence, diagnostics, profile = detect_sessile_substrate_robust(
-            self.original_image,
-            clahe_clip_limit=self.clahe_clip_limit,
-            clahe_tile_size=self.clahe_tile_size,
-            side_margin_fraction=self.margin_fraction,
+        substrate_line, confidence, diagnostics, profile = (
+            detect_sessile_substrate_robust(
+                self.original_image,
+                clahe_clip_limit=self.clahe_clip_limit,
+                clahe_tile_size=self.clahe_tile_size,
+                side_margin_fraction=self.margin_fraction,
+            )
         )
         self._substrate_profile = profile
         self._substrate_warning = diagnostics.get("warning", False)
@@ -401,6 +421,7 @@ class AutoCalibrator:
         min_limit, max_limit = int(h * 0.05), int(h * 0.95)
 
         for col in range(w):
+            check_cancelled()
             col_data = strip_gray[:, col].astype(float)
             grad = np.diff(col_data)
             valid_grad = grad[min_limit:max_limit]
@@ -440,6 +461,7 @@ class AutoCalibrator:
 
         candidates = []
         for cnt in contours:
+            check_cancelled()
             x, y, w, h = cv2.boundingRect(cnt)
             if y >= 5 or x <= 2 or x + w >= self.width - 2 or w > self.width * 0.2:
                 continue
@@ -500,6 +522,7 @@ class AutoCalibrator:
 
         valid_contours = []
         for cnt in contours:
+            check_cancelled()
             area = cv2.contourArea(cnt)
             if area < min_area:
                 continue
@@ -568,6 +591,7 @@ class AutoCalibrator:
         contact_x_left = int(ref_x_left)
 
         for cy in range(y, y + h):
+            check_cancelled()
             row = mask[cy, 0 : int(x + w / 2)]  # Left half
             indices = np.where(row > 0)[0]
             if len(indices) > 0:
@@ -582,6 +606,7 @@ class AutoCalibrator:
         contact_x_right = int(ref_x_right)
 
         for cy in range(y, y + h):
+            check_cancelled()
             row = mask[cy, int(x + w / 2) : self.width]  # Right half
             indices = np.where(row > 0)[0]
             if len(indices) > 0:

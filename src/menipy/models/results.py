@@ -25,6 +25,7 @@ class MeasurementResult(BaseModel):
     accepted: bool = True
     rejection_reasons: list[str] = Field(default_factory=list)
     diagnostics: dict[str, Any] = Field(default_factory=dict)
+    run_metadata: dict[str, Any] | None = None
 
 
 def _qa_payload(qa: Any) -> dict[str, Any]:
@@ -125,6 +126,8 @@ class ResultsHistory:
             "status",
             "rejection_reasons",
             "diagnostics_json",
+            "file_path",
+            "run_metadata_json",
             # Common metrics
             "diameter_mm",
             "height_mm",
@@ -181,6 +184,12 @@ class ResultsHistory:
                     value = ";".join(measurement.rejection_reasons)
                 elif col == "diagnostics_json":
                     value = json.dumps(measurement.diagnostics, separators=(",", ":"))
+                elif col == "file_path":
+                    value = measurement.file_path or ""
+                elif col == "run_metadata_json":
+                    value = json.dumps(
+                        measurement.run_metadata or {}, separators=(",", ":")
+                    )
                 else:
                     value = measurement.results.get(col)
                     if isinstance(value, (int, float)):

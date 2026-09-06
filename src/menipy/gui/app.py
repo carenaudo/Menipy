@@ -129,10 +129,22 @@ def main(argv: list[str] | None = None) -> int:
     _configure_qt(app)
 
     # Import here so resources (:/views/...) are registered first
-    from .views.main_window import MainWindow
+    try:
+        from .views.main_window import MainWindow
 
-    w = MainWindow()
-    w.resize(1200, 800)
+        w = MainWindow()
+    except Exception as exc:
+        import logging
+
+        logging.getLogger(__name__).exception(
+            "Required GUI service initialization failed"
+        )
+        QMessageBox.critical(
+            None,
+            "Menipy startup failed",
+            f"Could not initialize required application services.\n{exc}",
+        )
+        return 1
     w.show()
 
     # Ensure controllers can clean up background threads before Qt shuts down

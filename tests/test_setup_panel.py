@@ -264,39 +264,33 @@ def test_pipeline_test_sandbox_does_not_mutate_live_settings_until_apply(main_wi
 
 
 def test_pipeline_test_stage_runs_with_prereqs_and_auto_payload(
-    main_window, monkeypatch
+    main_window, monkeypatch, qtbot
 ):
+    from menipy.gui.services import calibration_service, pipeline_runner
+
     calls = {}
 
     class FakePipeline:
-        def build_plan(self):
-            return [("acquisition", object()), ("preprocessing", object())]
+        def __init__(self, **kwargs):
+            pass
 
         def run_with_plan(self, *, only=None, include_prereqs=True, **kwargs):
-            calls["only"] = only
-            calls["include_prereqs"] = include_prereqs
-            calls["kwargs"] = kwargs
-            ctx = Context()
-            ctx.timings_ms = {"preprocessing": 1.0}
-            return ctx
+            calls.update(only=only, include_prereqs=include_prereqs, kwargs=kwargs)
+            return Context(timings_ms={"preprocessing": 1.0})
 
-    monkeypatch.setitem(main_window.pipeline_ctrl.pipeline_map, "sessile", FakePipeline)
-    monkeypatch.setattr(
-        main_window.pipeline_ctrl,
-        "_auto_calibration_payload",
-        lambda pipeline, image: (
-            {
-                "roi": (1, 2, 3, 4),
-                "needle_rect": (5, 6, 7, 8),
-                "drop_contour": object(),
-            },
-            [],
-        ),
-    )
+    monkeypatch.setitem(pipeline_runner.PIPELINE_MAP, "sessile", FakePipeline)
 
-    result = main_window.pipeline_ctrl.test_stage("preprocessing", {})
+    def prepare(pipeline, parameters):
+        parameters.update(roi=(1, 2, 3, 4), needle_rect=(5, 6, 7, 8))
+        return parameters, []
 
-    assert result["ok"] is True
+    monkeypatch.setattr(calibration_service, "prepare_stage_calibration", prepare)
+    finished = []
+    main_window.runner.finished.connect(finished.append)
+    job_id = main_window.pipeline_ctrl.test_stage("preprocessing", {})
+    assert isinstance(job_id, str)
+    qtbot.waitUntil(lambda: bool(finished))
+    assert finished[0].state == "completed"
     assert calls["only"] == ["preprocessing"]
     assert calls["include_prereqs"] is True
     assert calls["kwargs"]["roi"] == (1, 2, 3, 4)

@@ -134,6 +134,20 @@ class PreprocessingPipelineController(QObject):
         if self._image is None:
             self.errorOccurred.emit("No source image available for preprocessing")
             return None
+        execution = getattr(self, "preview_execution", None)
+        if execution is not None:
+            execution.submit(
+                {
+                    "image": self._image,
+                    "roi": self._roi,
+                    "roi_mask": self._roi_mask,
+                    "contact_line": self._contact_line,
+                    "substrate_profile": self._substrate_profile,
+                    "preprocessing_markers": self._markers,
+                    "preprocessing_settings": self._settings,
+                }
+            )
+            return None
         ctx = Context()
         ctx.current_frame = self._image
         if self._roi:
@@ -168,6 +182,9 @@ class PreprocessingPipelineController(QObject):
             self.errorOccurred.emit(str(exc))
             return None
 
+        return self._publish_context(ctx)
+
+    def _publish_context(self, ctx):
         fresh_state = ctx.preprocessed_state.clone()
         self._state = fresh_state
         self._history.append(fresh_state.clone())

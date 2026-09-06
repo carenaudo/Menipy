@@ -7,6 +7,8 @@ from collections.abc import Sequence
 
 import numpy as np
 
+from menipy.common.cancellation import check_cancelled
+
 try:
     import cv2  # type: ignore
 except Exception:  # pragma: no cover - optional dependency
@@ -37,6 +39,7 @@ def from_file(paths: Sequence[str]) -> Sequence[np.ndarray]:
     """Load images from disk into grayscale numpy arrays."""
     frames = []
     for p in paths:
+        check_cancelled()
         frames.append(_load_image(str(p)))
     return frames
 

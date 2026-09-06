@@ -10,6 +10,7 @@ from scipy.integrate import solve_ivp
 from scipy.optimize import least_squares
 from scipy.spatial import cKDTree
 
+from menipy.common.cancellation import check_cancelled
 from menipy.models.surface_tension import surface_tension
 
 
@@ -30,7 +31,9 @@ class PendantStrictFitInput:
 
 
 def _axis_frame(
-    *, axis_x_px: float, apex_y_px: float,
+    *,
+    axis_x_px: float,
+    apex_y_px: float,
     axis_origin_px: tuple[float, float] | None,
     axis_direction_xy: tuple[float, float] | None,
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -65,11 +68,17 @@ def build_pendant_profile_envelope_mm(
         return np.empty((0, 2), dtype=float)
 
     bin_px = max(float(bin_px), 1.0)
-    origin, basis = _axis_frame(axis_x_px=axis_x_px, apex_y_px=apex_y_px, axis_origin_px=axis_origin_px, axis_direction_xy=axis_direction_xy)
+    origin, basis = _axis_frame(
+        axis_x_px=axis_x_px,
+        apex_y_px=apex_y_px,
+        axis_origin_px=axis_origin_px,
+        axis_direction_xy=axis_direction_xy,
+    )
     local = (xy - origin) @ basis
     row_keys = np.rint(local[:, 1] * px_per_mm / bin_px).astype(int)
     rows: list[tuple[float, float]] = []
     for row in np.unique(row_keys):
+        check_cancelled()
         pts = xy[row_keys == row]
         if pts.size == 0:
             continue
@@ -92,6 +101,7 @@ def build_pendant_profile_envelope_mm(
     arr = arr[np.argsort(arr[:, 1])]
     merged: list[tuple[float, float]] = []
     for z in np.unique(arr[:, 1]):
+        check_cancelled()
         r = float(np.max(arr[arr[:, 1] == z, 0]))
         merged.append((r, float(z)))
     profile = np.asarray(merged, dtype=float)
@@ -121,7 +131,12 @@ def pendant_contour_to_model_mm(
     xy = np.asarray(contour_px, dtype=float).reshape(-1, 2)
     if px_per_mm <= 0:
         raise ValueError("px_per_mm must be positive")
-    origin, basis = _axis_frame(axis_x_px=axis_x_px, apex_y_px=apex_y_px, axis_origin_px=axis_origin_px, axis_direction_xy=axis_direction_xy)
+    origin, basis = _axis_frame(
+        axis_x_px=axis_x_px,
+        apex_y_px=apex_y_px,
+        axis_origin_px=axis_origin_px,
+        axis_direction_xy=axis_direction_xy,
+    )
     return (xy - origin) @ basis / float(px_per_mm)
 
 
@@ -136,7 +151,12 @@ def model_mm_to_pendant_px(
 ) -> np.ndarray:
     """Convert apex-centered strict model coordinates back to image pixels."""
     xy = np.asarray(model_mm, dtype=float).reshape(-1, 2)
-    origin, basis = _axis_frame(axis_x_px=axis_x_px, apex_y_px=apex_y_px, axis_origin_px=axis_origin_px, axis_direction_xy=axis_direction_xy)
+    origin, basis = _axis_frame(
+        axis_x_px=axis_x_px,
+        apex_y_px=apex_y_px,
+        axis_origin_px=axis_origin_px,
+        axis_direction_xy=axis_direction_xy,
+    )
     return xy * float(px_per_mm) @ basis.T + origin
 
 
@@ -167,6 +187,7 @@ def integrate_young_laplace_profile_mm(
         r_needle_target = float(needle_radius_mm) / r0_mm
 
     def ode(_s: float, y: np.ndarray) -> list[float]:
+        check_cancelled()
         r, z, psi = y
         if abs(r) < 1e-10:
             sin_psi_over_r = 1.0
@@ -232,6 +253,7 @@ def integrate_young_laplace_profile_mm(
         if r_needle_target is not None:
             event_names.append("needle_radius")
         for name, events_for_name in zip(event_names, sol.t_events):
+            check_cancelled()
             if len(events_for_name) > 0:
                 stop_reason = name
                 break
@@ -292,6 +314,8 @@ def _is_pinned(params: np.ndarray, lower: np.ndarray, upper: np.ndarray) -> bool
 
 def fit_pendant_young_laplace_strict(
     fit_input: PendantStrictFitInput,
+    *,
+    check_cancelled=check_cancelled,
 ) -> dict[str, Any]:
     """Fit a calibrated pendant contour to a strict Young-Laplace profile."""
     obs_mm = pendant_contour_to_model_mm(
@@ -345,6 +369,7 @@ def fit_pendant_young_laplace_strict(
     )
 
     def model_from_params(params: np.ndarray) -> np.ndarray:
+        check_cancelled()
         r0_mm, beta, x_offset_mm, z_offset_mm = params
         model = integrate_young_laplace_profile_mm(
             r0_mm,
@@ -356,6 +381,7 @@ def fit_pendant_young_laplace_strict(
         return model + np.array([x_offset_mm, z_offset_mm])
 
     def residuals(params: np.ndarray) -> np.ndarray:
+        check_cancelled()
         model = model_from_params(params)
         r = _normal_projection_residuals_mm(obs_mm, model)
         # Keep small offset freedom, but discourage using offsets as a full shape fit.

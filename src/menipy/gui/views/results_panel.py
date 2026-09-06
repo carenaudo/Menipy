@@ -130,6 +130,8 @@ class ResultsPanel:
         metric_host: QWidget | None = None,
         residuals_host: QWidget | QLayout | None = None,
         residuals_table: QTableWidget | None = None,
+        *,
+        settings: AppSettings | None = None,
     ) -> None:
         """Initialize.
 
@@ -144,7 +146,7 @@ class ResultsPanel:
         self.table: QTableWidget | None = panel.findChild(QTableWidget, "resultsTable")
         self.summary_label: QLabel | None = panel.findChild(QLabel, "summaryLabel")
         self.history = get_results_history()
-        self.settings = AppSettings.load()
+        self.settings = settings if settings is not None else AppSettings.load()
         self.unit_system = getattr(self.settings, "unit_system", "SI")
         self.current_pipeline_filter = VALID_PIPELINES_FILTER
         self.pipeline_ui_manager = PipelineUIManager()
@@ -445,7 +447,14 @@ class ResultsPanel:
                 # Write headers
                 headers = []
                 for col in range(self.table.columnCount()):
-                    if self.table.isColumnHidden(col):
+                    if self.table.isColumnHidden(col) and self._raw_headers[
+                        col
+                    ] not in {
+                        "status",
+                        "rejection_reasons",
+                        "file_path",
+                        "run_metadata_json",
+                    }:
                         continue
                     header_item = self.table.horizontalHeaderItem(col)
                     headers.append(
@@ -457,7 +466,14 @@ class ResultsPanel:
                 for row in range(self.table.rowCount()):
                     row_data = []
                     for col in range(self.table.columnCount()):
-                        if self.table.isColumnHidden(col):
+                        if self.table.isColumnHidden(col) and self._raw_headers[
+                            col
+                        ] not in {
+                            "status",
+                            "rejection_reasons",
+                            "file_path",
+                            "run_metadata_json",
+                        }:
                             continue
                         item = self.table.item(row, col)
                         row_data.append(item.text() if item else "")
@@ -479,7 +495,7 @@ class ResultsPanel:
         if results:
             self.update_history()
 
-    def update_history(self) -> None:
+    def update_history(self, *, activate=True, selected_id=None) -> None:
         """Update table with measurement history."""
         if not self.table:
             return
@@ -556,13 +572,25 @@ class ResultsPanel:
             )
 
         self._rebuild_recent_results(measurements=self._filtered_measurements())
-        self._update_summary()
+        self._update_summary(update_cards=activate)
         self._rebuild_columns_menu()
         self._apply_column_visibility()
         self.table.resizeColumnsToContents()
-        if rows and self.table.currentRow() < 0:
-            self.table.selectRow(0)
-        self._update_residuals_for_current_selection()
+        if activate:
+            if rows:
+                self.table.selectRow(0)
+            self._update_residuals_for_current_selection()
+        else:
+            self.table.clearSelection()
+            self.table.setCurrentCell(-1, -1)
+            for index, measurement in enumerate(self._filtered_measurements()):
+                if measurement.id == selected_id:
+                    self.table.selectRow(index)
+                    break
+            if self.recent_results_list:
+                self.recent_results_list.blockSignals(True)
+                self.recent_results_list.setCurrentRow(self.table.currentRow())
+                self.recent_results_list.blockSignals(False)
 
     def _rebuild_recent_results(
         self, measurements: list[MeasurementResult] | None = None
@@ -933,6 +961,8 @@ class ResultsPanel:
             "contact_angle_fit_rmse_px",
             "rejection_reasons",
             "diagnostics_json",
+            "file_path",
+            "run_metadata_json",
         }
         return key.startswith(diagnostic_prefixes) or key in diagnostic_names
 
@@ -964,6 +994,8 @@ class ResultsPanel:
             "status",
             "rejection_reasons",
             "diagnostics_json",
+            "file_path",
+            "run_metadata_json",
             "diameter_mm",
             "height_mm",
             "volume_uL",
@@ -1007,6 +1039,12 @@ class ResultsPanel:
                     value = ";".join(measurement.rejection_reasons)
                 elif col == "diagnostics_json":
                     value = json.dumps(measurement.diagnostics, separators=(",", ":"))
+                elif col == "file_path":
+                    value = measurement.file_path or ""
+                elif col == "run_metadata_json":
+                    value = json.dumps(
+                        measurement.run_metadata or {}, separators=(",", ":")
+                    )
                 else:
                     value = measurement.results.get(col)
                     if isinstance(value, (int, float)):
@@ -1103,7 +1141,7 @@ class ResultsPanel:
             return "Diagnostics JSON"
         return LABEL_MAP.get(header, header.replace("_", " ").title())
 
-    def _update_summary(self) -> None:
+    def _update_summary(self, *, update_cards=True) -> None:
         measurements = self._filtered_measurements()
         count = len(measurements)
         last_run = (
@@ -1128,7 +1166,8 @@ class ResultsPanel:
                 parts.append(f"{label}: {text}")
         if self.summary_label:
             self.summary_label.setText(" | ".join(parts))
-        self._update_metric_cards(latest)
+        if update_cards:
+            self._update_metric_cards(latest)
 
     def _update_metric_cards(self, results: Mapping[str, Any]) -> None:
         metrics = {
@@ -1181,12 +1220,29 @@ class ResultsPanel:
                 break
         self.update_history()
 
-    def add_measurement(self, measurement: MeasurementResult) -> None:
-        """Add a new measurement to history and update display."""
-        if measurement is None:
+    def add_measurement(self, measurement: MeasurementResult, *, activate=True) -> None:
+        """Insert a completed job, optionally preserving the active result view."""
+        if measurement is None or any(
+            m.id == measurement.id for m in self.history.measurements
+        ):
             return
+        selected = (
+            self._measurement_for_row(self.table.currentRow()) if self.table else None
+        )
         self.history.add_measurement(measurement)
-        self.update_history()
+        if not activate:
+            self._syncing_selection = True
+            if self.table:
+                self.table.blockSignals(True)
+        try:
+            self.update_history(
+                activate=activate, selected_id=selected.id if selected else None
+            )
+        finally:
+            if not activate:
+                self._syncing_selection = False
+                if self.table:
+                    self.table.blockSignals(False)
 
     def update_single_measurement(
         self,

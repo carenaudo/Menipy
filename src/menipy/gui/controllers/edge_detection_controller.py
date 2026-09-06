@@ -63,6 +63,16 @@ class EdgeDetectionPipelineController(QObject):
             self.errorOccurred.emit("No source image available for edge detection")
             return
 
+        execution = getattr(self, "preview_execution", None)
+        if execution is not None:
+            execution.submit(
+                {
+                    "image": self._source_image,
+                    "contact_line": self._contact_line,
+                    "edge_detection_settings": self._settings,
+                }
+            )
+            return
         ctx = Context()
         ctx.frame = self._source_image
         ctx.edge_detection_settings = self._settings
@@ -111,6 +121,11 @@ class EdgeDetectionPipelineController(QObject):
             "contour_xy": np.asarray(contour_xy, dtype=float),
         }
         self.previewRequested.emit(preview_image, metadata)
+
+    def _publish_preview(self, payload):
+        image, metadata = payload
+        self._last_contact_points = metadata.get("contact_points")
+        self.previewRequested.emit(image, metadata)
 
     def reset(self) -> None:
         """reset."""
