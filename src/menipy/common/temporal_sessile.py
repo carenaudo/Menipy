@@ -14,6 +14,10 @@ import numpy as np
 from menipy.common.cancellation import check_cancelled
 from menipy.common.detection_helpers import auto_detect_features
 from menipy.common.temporal_tracking import TemporalDropletTracker
+from menipy.math.hydrodynamics import (
+    analyze_tilting_plate,
+    cox_voinov_extrapolation,
+)
 from menipy.models.frame import Frame
 from menipy.models.temporal import (
     DynamicSessileResult,
@@ -242,10 +246,57 @@ def _summarize(frames: list[TemporalFrameResult], fps: float) -> dict[str, Any]:
             stats = _bootstrap_stats(combined)
             summary[f"theta_{state}"] = stats
             summary[f"theta_{state}_deg"] = stats["median_deg"]
+
+            # Cox-Voinov hydrodynamic extrapolation if velocity variation exists
+            valid_vel_angles = [
+                (
+                    float(frame.contact_velocity_mm_s),
+                    (float(frame.theta_left_deg) + float(frame.theta_right_deg)) / 2.0,
+                )
+                for frame in selected
+                if frame.contact_velocity_mm_s is not None
+                and frame.theta_left_deg is not None
+                and frame.theta_right_deg is not None
+            ]
+            if len(valid_vel_angles) >= 5:
+                vels = [p[0] for p in valid_vel_angles]
+                angs = [p[1] for p in valid_vel_angles]
+                if float(np.ptp(vels)) > 1e-4:
+                    cv_res = cox_voinov_extrapolation(vels, angs)
+                    if cv_res["r_squared"] > 0.01:
+                        summary[f"cox_voinov_theta_{state}_deg"] = cv_res["theta_0_deg"]
+                        summary[f"cox_voinov_{state}"] = cv_res
+
     if "theta_advancing_deg" in summary and "theta_receding_deg" in summary:
         summary["contact_angle_hysteresis_deg"] = float(
             summary["theta_advancing_deg"]
         ) - float(summary["theta_receding_deg"])
+
+    if (
+        "cox_voinov_theta_advancing_deg" in summary
+        and "cox_voinov_theta_receding_deg" in summary
+    ):
+        summary["cox_voinov_theta_equilibrium_deg"] = float(
+            (
+                summary["cox_voinov_theta_advancing_deg"]
+                + summary["cox_voinov_theta_receding_deg"]
+            )
+            / 2.0
+        )
+        summary["cox_voinov_hysteresis_deg"] = float(
+            summary["cox_voinov_theta_advancing_deg"]
+            - summary["cox_voinov_theta_receding_deg"]
+        )
+
+    # Substrate inclination and tilting plate analysis
+    tilting_data = analyze_tilting_plate(frames)
+    if tilting_data.get("is_tilting", False):
+        summary["tilting_plate"] = tilting_data
+        if tilting_data.get("critical_sliding_angle_deg") is not None:
+            summary["critical_sliding_angle_deg"] = tilting_data[
+                "critical_sliding_angle_deg"
+            ]
+
     return summary
 
 
@@ -287,11 +338,16 @@ def analyze_dynamic_sessile(
 
     for frame_index, frame in enumerate(frames):
         check_cancelled()
-        dt = (
-            metadata.timestamps_s[frame_index] - metadata.timestamps_s[frame_index - 1]
-            if frame_index > 0
-            else (1.0 / max(1.0, metadata.fps))
-        )
+        if (
+            metadata is not None
+            and frame_index > 0
+            and len(metadata.timestamps_s) > frame_index
+        ):
+            dt = metadata.timestamps_s[frame_index] - metadata.timestamps_s[frame_index - 1]
+        elif metadata is not None:
+            dt = 1.0 / max(1.0, metadata.fps)
+        else:
+            dt = 0.1
 
         detection = None
         if tracker is not None and tracker.is_tracking:
@@ -301,20 +357,26 @@ def analyze_dynamic_sessile(
             detection = auto_detect_features(frame.image, "sessile")
             if (
                 tracker is not None
+                and detection is not None
                 and "drop_contour" in detection
                 and "contact_points" in detection
             ):
                 tracker.initialize(frame.image, detection, scale=px_per_mm)
         check_cancelled()
+        ts = (
+            metadata.timestamps_s[frame_index]
+            if metadata is not None and len(metadata.timestamps_s) > frame_index
+            else frame_index * dt
+        )
         result = TemporalFrameResult(
             frame_index=frame_index,
-            timestamp_s=metadata.timestamps_s[frame_index],
+            timestamp_s=ts,
             segment_id=segment,
         )
         reasons: list[str] = []
-        contour_value = detection.get("drop_contour")
-        contacts_value = detection.get("contact_points")
-        line_value = detection.get("substrate_line")
+        contour_value = detection.get("drop_contour") if detection else None
+        contacts_value = detection.get("contact_points") if detection else None
+        line_value = detection.get("substrate_line") if detection else None
         if px_per_mm is None or px_per_mm <= 0:
             reasons.append("dynamic_missing_calibration")
         if contour_value is None:
@@ -327,7 +389,9 @@ def analyze_dynamic_sessile(
             if tracker is not None:
                 tracker.reset()
             result.rejection_reasons = reasons
-            result.diagnostics["detectors"] = detection.get("detector_diagnostics", {})
+            result.diagnostics["detectors"] = (
+                detection.get("detector_diagnostics", {}) if detection else {}
+            )
             output.append(result)
             lost += 1
             continue

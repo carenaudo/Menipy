@@ -2,6 +2,8 @@
 
 import numpy as np
 
+from menipy.math.apex import detect_apex
+
 
 def compute_drop_metrics(
     contour: np.ndarray,
@@ -26,14 +28,28 @@ def compute_drop_metrics(
 
 
 def find_apex_index(contour: np.ndarray, mode: str) -> int:
-    """
-    Find the index of the apex point in the contour.
+    """Find the index of the apex point in the contour.
 
     Args:
         contour: (N, 2) array of contour points.
-        mode: 'sessile' (top) or 'pendant' (bottom).
+        mode: 'sessile' (top), 'pendant' (bottom), or 'captive_bubble'.
 
     Returns:
-        Index of the apex point. Defaults to 0 for placeholder.
+        Index of the contour vertex closest to the detected apex.
     """
-    return 0
+    pts = np.asarray(contour, dtype=float)
+    if pts.ndim == 3:
+        pts = pts.reshape(-1, 2)
+    if pts.shape[0] == 0:
+        return 0
+
+    try:
+        res = detect_apex(pts, mode=mode, refine=False)
+        target = np.array(res.point, dtype=float)
+        dists = np.sum((pts - target) ** 2, axis=1)
+        return int(np.argmin(dists))
+    except Exception:
+        if mode.lower() in ("pendant", "captive_bubble"):
+            return int(np.argmax(pts[:, 1]))
+        return int(np.argmin(pts[:, 1]))
+

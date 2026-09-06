@@ -285,12 +285,13 @@ def test_pipeline_test_stage_runs_with_prereqs_and_auto_payload(
         return parameters, []
 
     monkeypatch.setattr(calibration_service, "prepare_stage_calibration", prepare)
+    main_window.setup_panel_ctrl.sessileBtn.click()
     finished = []
     main_window.runner.finished.connect(finished.append)
     job_id = main_window.pipeline_ctrl.test_stage("preprocessing", {})
-    assert isinstance(job_id, str)
-    qtbot.waitUntil(lambda: bool(finished))
-    assert finished[0].state == "completed"
+    qtbot.waitUntil(lambda: any(res.request.job_id == job_id for res in finished))
+    matching = [res for res in finished if res.request.job_id == job_id][0]
+    assert matching.state == "completed"
     assert calls["only"] == ["preprocessing"]
     assert calls["include_prereqs"] is True
     assert calls["kwargs"]["roi"] == (1, 2, 3, 4)
@@ -618,6 +619,8 @@ def test_material_catalog_service_seeds_empty_catalog():
 
 def test_database_buttons_apply_selected_catalog_values(main_window, qtbot):
     controller = main_window.setup_panel_ctrl
+    controller.settings.unit_system = "SI"
+    controller.refresh_ui_labels()
 
     class FakeCatalogService:
         def __init__(self):

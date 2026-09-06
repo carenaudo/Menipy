@@ -14,6 +14,7 @@ from menipy.common import overlay as ovl
 from menipy.common import registry
 from menipy.common import solver as common_solver
 from menipy.common.plugin_loader import get_solver
+from menipy.math.apex import detect_apex
 from menipy.math.young_laplace import young_laplace_ode
 from menipy.models.context import Context
 from menipy.models.fit import FitConfig
@@ -130,17 +131,28 @@ class SessilePipeline(PipelineBase):
                 ctx = contour_refinement.refine_contour(ctx, smoothing_settings)
 
             substrate_line = getattr(ctx, "substrate_line", None)
+            substrate_profile = getattr(ctx, "substrate_profile", None)
             if substrate_line and ctx.contour is not None:
                 from .geometry import build_sessile_calculation_contour
 
                 xy = ensure_contour(ctx)
-                x, y = xy[:, 0], xy[:, 1]
                 apex_point = getattr(ctx, "apex_point", None)
                 if apex_point is not None:
                     apex_xy = (float(apex_point[0]), float(apex_point[1]))
                 else:
-                    apex_i = int(np.argmin(y))
-                    apex_xy = (float(x[apex_i]), float(y[apex_i]))
+                    sub_line = (
+                        substrate_profile.to_chord()
+                        if substrate_profile and hasattr(substrate_profile, "to_chord")
+                        else substrate_line
+                    )
+                    apex_res = detect_apex(
+                        xy,
+                        mode="sessile",
+                        baseline=sub_line,
+                        substrate=substrate_profile,
+                        refine=True,
+                    )
+                    apex_xy = apex_res.point
 
                 existing_contacts = getattr(ctx, "contact_points", None)
                 if existing_contacts is not None:
@@ -190,7 +202,6 @@ class SessilePipeline(PipelineBase):
             return ctx
 
         # Get apex for reference
-        x, y = xy[:, 0], xy[:, 1]
         apex_point = getattr(ctx, "apex_point", None)
         if apex_point is not None:
             apex_xy = (
@@ -198,8 +209,19 @@ class SessilePipeline(PipelineBase):
                 float(apex_point[1]),
             )
         else:
-            apex_i = int(np.argmin(y))
-            apex_xy = (float(x[apex_i]), float(y[apex_i]))
+            sub_line = (
+                substrate_profile.to_chord()
+                if substrate_profile and hasattr(substrate_profile, "to_chord")
+                else substrate_line
+            )
+            apex_res = detect_apex(
+                xy,
+                mode="sessile",
+                baseline=sub_line,
+                substrate=substrate_profile,
+                refine=True,
+            )
+            apex_xy = apex_res.point
 
         from .geometry import (
             build_sessile_calculation_contour,
@@ -313,8 +335,20 @@ class SessilePipeline(PipelineBase):
                 float(apex_point[1]),
             )
         else:
-            apex_i = int(np.argmin(y))
-            apex_xy = (float(x[apex_i]), float(y[apex_i]))
+            sub_line = (
+                substrate_profile.to_chord()
+                if substrate_profile and hasattr(substrate_profile, "to_chord")
+                else substrate_line
+            )
+            apex_res = detect_apex(
+                xy_calc,
+                mode="sessile",
+                baseline=sub_line,
+                substrate=substrate_profile,
+                refine=True,
+            )
+            apex_xy = apex_res.point
+            ctx.apex_point = (int(round(apex_xy[0])), int(round(apex_xy[1])))
 
         # Get scale
         if ctx.scale and ctx.scale.get("px_per_mm"):

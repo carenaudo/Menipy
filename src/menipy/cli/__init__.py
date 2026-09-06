@@ -152,6 +152,245 @@ def _patch_acquisition(p, *, image: Path | None, camera: int | None, frames: int
     p.do_acquisition = do_acq_from_camera
 
 
+def _run_sfe(args, out_dir: Path) -> int:
+    """Execute the Surface Free Energy analysis pipeline.
+
+    Supports three input modes:
+    1. ``--liquid water:65.3 --liquid diiodomethane:42.1`` (inline pairs)
+    2. ``--sfe-input measurements.json`` (structured JSON)
+    3. ``--sfe-csv batch.csv`` (multi-substrate batch)
+
+    Returns 0 on success, non-zero on error.
+    """
+    from menipy.common.liquid_db import get_liquid, list_liquid_names
+    from menipy.math.surface_energy import compute_surface_energy
+
+    temperature = getattr(args, "sfe_temperature", 20.0)
+    method = getattr(args, "sfe_method", "both")
+    generate_plot = getattr(args, "plot", False)
+
+    # ── Collect substrate measurement groups ──
+    # Each entry: (substrate_name, [(liquid_name, angle), ...])
+    substrate_groups: list[tuple[str | None, list[tuple[str, float]]]] = []
+
+    # Mode 1: --liquid pairs
+    if args.liquid:
+        pairs: list[tuple[str, float]] = []
+        for spec in args.liquid:
+            if ":" not in spec:
+                logger.error(
+                    f"Invalid --liquid format '{spec}'. Expected 'liquid_name:angle_deg'"
+                )
+                return 1
+            name_part, angle_part = spec.rsplit(":", 1)
+            try:
+                angle = float(angle_part)
+            except ValueError:
+                logger.error(f"Invalid angle value in --liquid '{spec}'")
+                return 1
+            pairs.append((name_part.strip(), angle))
+        substrate_groups.append((None, pairs))
+
+    # Mode 2: --sfe-input JSON
+    elif args.sfe_input:
+        sfe_path = Path(args.sfe_input).expanduser().resolve()
+        if not sfe_path.is_file():
+            logger.error(f"SFE input file not found: {sfe_path}")
+            return 1
+        try:
+            with open(sfe_path, encoding="utf-8") as f:
+                sfe_data = json.load(f)
+        except (json.JSONDecodeError, OSError) as exc:
+            logger.error(f"Failed to read SFE input JSON: {exc}")
+            return 1
+
+        substrate_name = sfe_data.get("substrate")
+        if sfe_data.get("temperature_c") is not None:
+            temperature = sfe_data["temperature_c"]
+        measurements = sfe_data.get("measurements", [])
+        if not measurements:
+            logger.error("SFE input JSON contains no measurements")
+            return 1
+        pairs = [
+            (m["liquid"], m["contact_angle_deg"]) for m in measurements
+        ]
+        substrate_groups.append((substrate_name, pairs))
+
+    # Mode 3: --sfe-csv batch
+    elif args.sfe_csv:
+        csv_path = Path(args.sfe_csv).expanduser().resolve()
+        if not csv_path.is_file():
+            logger.error(f"SFE CSV file not found: {csv_path}")
+            return 1
+        try:
+            with open(csv_path, encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                rows = list(reader)
+        except (csv.Error, OSError) as exc:
+            logger.error(f"Failed to read SFE CSV: {exc}")
+            return 1
+
+        # Group rows by substrate
+        from collections import OrderedDict
+
+        grouped: dict[str, list[tuple[str, float]]] = OrderedDict()
+        for row in rows:
+            sub = row.get("substrate", "unknown").strip()
+            liq_name = row.get("liquid", "").strip()
+            try:
+                angle = float(row.get("contact_angle_deg", ""))
+            except (ValueError, TypeError):
+                logger.warning(f"Skipping invalid row: {row}")
+                continue
+            grouped.setdefault(sub, []).append((liq_name, angle))
+        for sub_name, sub_pairs in grouped.items():
+            substrate_groups.append((sub_name, sub_pairs))
+
+    else:
+        logger.error(
+            "Surface energy pipeline requires one of: --liquid, --sfe-input, or --sfe-csv"
+        )
+        return 1
+
+    # ── Process each substrate group ──
+    from dataclasses import asdict
+
+    from menipy.common.liquid_db import ProbeLiquid
+
+    if generate_plot:
+        try:
+            import matplotlib.pyplot as plt
+
+            from menipy.viz.owrk_plot import plot_owrk
+        except ImportError:
+            plot_owrk = None
+            plt = None
+    else:
+        plot_owrk = None
+        plt = None
+
+    all_results: list[dict] = []
+    available_names = list_liquid_names()
+
+    for substrate_name, pairs in substrate_groups:
+
+        liquids = []
+        angles = []
+        for liq_name, angle in pairs:
+            liq = get_liquid(liq_name, temperature_c=temperature)
+            if liq is None:
+                logger.error(
+                    f"Unknown liquid '{liq_name}'. Available: {', '.join(available_names)}"
+                )
+                return 1
+            liquids.append(liq)
+            angles.append(angle)
+
+        label = substrate_name or "sample"
+        logger.info(
+            f"Computing SFE for '{label}' with {len(liquids)} liquids "
+            f"({method}) at {temperature} C"
+        )
+
+        sfe_result = compute_surface_energy(
+            liquids, angles, method=method, substrate_name=substrate_name
+        )
+        result_dict = {
+            "pipeline": "surface_energy",
+            "schema_version": "1.0",
+            **sfe_result.to_dict(),
+        }
+        all_results.append(result_dict)
+
+        # Print summary to stdout
+        if sfe_result.owrk is not None:
+            o = sfe_result.owrk
+            r2_str = f"  R2 = {o.r_squared:.4f}" if o.r_squared is not None else ""
+            print(
+                f"[adsa] OWRK ({label}): gS_d = {o.gamma_s_d:.1f}, "
+                f"gS_p = {o.gamma_s_p:.1f}, gS = {o.gamma_s_total:.1f} mN/m{r2_str}"
+            )
+        if sfe_result.wu is not None:
+            w = sfe_result.wu
+            print(
+                f"[adsa]   Wu ({label}): gS_d = {w.gamma_s_d:.1f}, "
+                f"gS_p = {w.gamma_s_p:.1f}, gS = {w.gamma_s_total:.1f} mN/m"
+            )
+        for warn in sfe_result.warnings:
+            logger.warning(warn)
+
+        # Generate OWRK plot if requested
+        if generate_plot and sfe_result.owrk is not None and plot_owrk is not None and plt is not None:
+            try:
+                plot_name = f"owrk_plot_{label}.png" if substrate_name else "owrk_plot.png"
+                plot_path = out_dir / plot_name
+                title = f"OWRK — {label}" if substrate_name else "OWRK Surface Energy Analysis"
+                fig = plot_owrk(sfe_result.owrk, output_path=plot_path, title=title)
+                plt.close(fig)
+                logger.info(f"OWRK plot saved: {plot_path}")
+            except Exception as exc:
+                logger.warning(f"Failed to generate OWRK plot: {exc}")
+
+    # ── Write output files ──
+    if len(all_results) == 1:
+        # Single substrate — write results.json
+        results_path = out_dir / "results.json"
+        with open(results_path, "w", encoding="utf-8") as f:
+            json.dump(all_results[0], f, indent=2, cls=NumpyEncoder)
+        logger.info(f"SFE results written to {results_path}")
+    else:
+        # Multi-substrate batch — write individual JSONs + consolidated CSV
+        for i, result_dict in enumerate(all_results):
+            sub = result_dict.get("substrate") or f"substrate_{i + 1}"
+            safe_name = sub.replace(" ", "_").replace("/", "_")
+            results_path = out_dir / f"{safe_name}_results.json"
+            with open(results_path, "w", encoding="utf-8") as f:
+                json.dump(result_dict, f, indent=2, cls=NumpyEncoder)
+
+        # Consolidated CSV
+        csv_path = out_dir / "results.csv"
+        csv_headers = [
+            "substrate",
+            "method",
+            "gamma_s_dispersive_mN_m",
+            "gamma_s_polar_mN_m",
+            "gamma_s_total_mN_m",
+            "r_squared",
+            "warnings",
+        ]
+        with open(csv_path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=csv_headers)
+            writer.writeheader()
+            for result_dict in all_results:
+                sub = result_dict.get("substrate", "")
+                owrk = result_dict.get("owrk")
+                wu = result_dict.get("wu")
+                if owrk:
+                    writer.writerow({
+                        "substrate": sub,
+                        "method": "owrk",
+                        "gamma_s_dispersive_mN_m": owrk.get("gamma_s_dispersive_mN_m"),
+                        "gamma_s_polar_mN_m": owrk.get("gamma_s_polar_mN_m"),
+                        "gamma_s_total_mN_m": owrk.get("gamma_s_total_mN_m"),
+                        "r_squared": owrk.get("r_squared"),
+                        "warnings": ";".join(owrk.get("warnings", [])),
+                    })
+                if wu:
+                    writer.writerow({
+                        "substrate": sub,
+                        "method": "wu",
+                        "gamma_s_dispersive_mN_m": wu.get("gamma_s_dispersive_mN_m"),
+                        "gamma_s_polar_mN_m": wu.get("gamma_s_polar_mN_m"),
+                        "gamma_s_total_mN_m": wu.get("gamma_s_total_mN_m"),
+                        "r_squared": None,
+                        "warnings": ";".join(wu.get("warnings", [])),
+                    })
+        logger.info(f"Batch SFE results written to {csv_path}")
+
+    logger.info(f"SFE analysis complete. Outputs saved in: {out_dir}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     """Consolidated main CLI runner."""
     ap = argparse.ArgumentParser(
@@ -169,6 +408,8 @@ def main(argv: list[str] | None = None) -> int:
             "pendant",
             "captive_bubble",
             "sessile_dynamic",
+            "surface_energy",
+            "needle_hysteresis",
         ],
         help="Droplet shape analysis pipeline to run (default: sessile)",
     )
@@ -285,6 +526,53 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Disable temporal tracking and physical invariant locking in batch mode",
     )
+
+    # Surface Free Energy arguments
+    ap.add_argument(
+        "--liquid",
+        action="append",
+        default=[],
+        help="Liquid:angle pair for SFE, e.g. 'water:65.3' (repeatable)",
+    )
+    ap.add_argument(
+        "--sfe-input",
+        type=str,
+        help="JSON file with SFE measurements (see docs for schema)",
+    )
+    ap.add_argument(
+        "--sfe-csv",
+        type=str,
+        help="CSV with columns substrate,liquid,contact_angle_deg for batch SFE",
+    )
+    ap.add_argument(
+        "--sfe-method",
+        choices=["owrk", "wu", "both"],
+        default="both",
+        help="SFE calculation method (default: both)",
+    )
+    ap.add_argument(
+        "--sfe-temperature",
+        type=float,
+        default=20.0,
+        help="Temperature for liquid property lookup in degrees C (default: 20.0)",
+    )
+    ap.add_argument(
+        "--plot",
+        action="store_true",
+        help="Generate OWRK regression plot (saved as PNG alongside results)",
+    )
+    ap.add_argument(
+        "--list-liquids",
+        action="store_true",
+        help="List available probe liquids in the built-in database and exit",
+    )
+    ap.add_argument(
+        "--needle-fit-method",
+        choices=["tangent", "cdf", "auto"],
+        default="auto",
+        help="Contact angle fitting method for needle_hysteresis (default: auto)",
+    )
+
     ap.add_argument(
         "--onnx-proposal-mode",
         choices=["off", "shadow"],
@@ -412,11 +700,22 @@ def main(argv: list[str] | None = None) -> int:
         print(f"[adsa] YOLO conversion complete: {summary['label_files']} label files")
         return 0
 
+    # --list-liquids: print the built-in probe liquid table and exit
+    if getattr(args, "list_liquids", False):
+        from menipy.common.liquid_db import format_liquid_table
+
+        print(format_liquid_table(temperature_c=args.sfe_temperature))
+        return 0
+
     # Resolve Output Folder (supporting user-specified --output-dir and --out)
     out_dir = (
         Path(args.output_dir if args.output_dir else args.out).expanduser().resolve()
     )
     out_dir.mkdir(parents=True, exist_ok=True)
+
+    # Surface Free Energy pipeline — bypass the standard image pipeline path
+    if args.pipeline == "surface_energy":
+        return _run_sfe(args, out_dir)
 
     # Initialize SQLite Plugin system if active
     if _PLUGINS_OK:
@@ -562,17 +861,67 @@ def main(argv: list[str] | None = None) -> int:
     seq_source = (
         args.video
         or args.sequence_dir
-        or (args.input_dir if args.pipeline == "sessile_dynamic" else None)
+        or (args.input_dir if args.pipeline in ("sessile_dynamic", "needle_hysteresis") else None)
     )
     if seq_source:
-        if args.pipeline != "sessile_dynamic":
-            ap.error("--video and --sequence-dir require --pipeline sessile_dynamic")
+        if args.pipeline not in ("sessile_dynamic", "needle_hysteresis"):
+            ap.error(
+                "--video and --sequence-dir require --pipeline sessile_dynamic or needle_hysteresis"
+            )
         if (
-            args.sequence_dir or (args.pipeline == "sessile_dynamic" and args.input_dir)
+            args.sequence_dir or (args.pipeline in ("sessile_dynamic", "needle_hysteresis") and args.input_dir)
         ) and (args.fps is None or args.fps <= 0):
             ap.error("--sequence-dir and dynamic --input-dir require a positive --fps")
         source_path = Path(seq_source).expanduser().resolve()
         try:
+            if args.pipeline == "needle_hysteresis":
+                ctx = runner.run(
+                    sequence_path=str(source_path),
+                    sequence_fps=args.fps,
+                    px_per_mm=args.px_per_mm,
+                    needle_diameter_mm=needle_diameter_mm,
+                    needle_fit_method=args.needle_fit_method,
+                )
+                if ctx.needle_hysteresis_result is None:
+                    raise PipelineError("needle_hysteresis_result_missing")
+                from menipy.common.needle_hysteresis import (
+                    export_needle_hysteresis_results,
+                )
+
+                export_needle_hysteresis_results(ctx.needle_hysteresis_result, out_dir)
+
+                if getattr(args, "plot", False):
+                    import matplotlib.pyplot as plt
+
+                    from menipy.viz.hysteresis_plot import (
+                        plot_hysteresis_loop,
+                        plot_hysteresis_timeline,
+                    )
+
+                    fig1 = plot_hysteresis_timeline(
+                        ctx.needle_hysteresis_result,
+                        output_path=out_dir / "hysteresis_timeline.png",
+                    )
+                    plt.close(fig1)
+                    fig2 = plot_hysteresis_loop(
+                        ctx.needle_hysteresis_result,
+                        output_path=out_dir / "hysteresis_loop.png",
+                    )
+                    plt.close(fig2)
+
+                s = ctx.needle_hysteresis_result.summary
+                adv = s.get("theta_advancing_deg", "N/A")
+                rec = s.get("theta_receding_deg", "N/A")
+                cah = s.get("contact_angle_hysteresis_deg", "N/A")
+                print(
+                    f"[adsa] Needle Hysteresis: theta_A = {adv} deg, "
+                    f"theta_R = {rec} deg, CAH = {cah} deg"
+                )
+                logger.info(
+                    f"Needle hysteresis analysis complete. Outputs written to {out_dir}"
+                )
+                return 0 if ctx.needle_hysteresis_result.accepted else 3
+
             ctx = runner.run(
                 sequence_path=str(source_path),
                 sequence_fps=args.fps,
@@ -735,6 +1084,10 @@ def main(argv: list[str] | None = None) -> int:
     locked_substrate = manual_contact
     locked_scale = args.px_per_mm
 
+    from menipy.common.auto_calibrator import run_auto_calibration
+    from menipy.common.detection_helpers import auto_detect_features
+    from menipy.models.results import build_persisted_analysis
+
     for img_path in files_queue:
         logger.info(f"Analyzing: {img_path.name}")
         _patch_acquisition(runner.pipeline, image=img_path, camera=None, frames=1)
@@ -784,9 +1137,6 @@ def main(argv: list[str] | None = None) -> int:
                         first_frame = fr.image if hasattr(fr, "image") else fr
 
                 if first_frame is not None:
-                    from menipy.common.auto_calibrator import run_auto_calibration
-                    from menipy.common.detection_helpers import auto_detect_features
-
                     cal_res = run_auto_calibration(first_frame, args.pipeline)
 
                     # Update parameters and lock invariants
@@ -883,8 +1233,6 @@ def main(argv: list[str] | None = None) -> int:
                 _save_image_bgr(out_dir / overlay_name, ctx.overlay)
 
             # Write standard results dictionary
-            from menipy.models.results import build_persisted_analysis
-
             persisted = build_persisted_analysis(ctx)
             if not persisted["accepted"] and tracker is not None:
                 tracker.reset()

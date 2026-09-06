@@ -197,4 +197,10 @@ data/downloads/
 *.avi
 *.mp4
 scratch/
+out_sfe_test/
+out_hyst/
+out_hysteresis/
 
+# Local research documents and notes
+evaporation_research_report.md
+*research_report.md

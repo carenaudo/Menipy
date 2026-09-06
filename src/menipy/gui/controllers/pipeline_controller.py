@@ -453,6 +453,7 @@ class PipelineController:
         if request.pipeline == "sessile_dynamic":
             persisted["results"].pop("series", None)
         current = request.revision == self._revision()
+        measurement = None
         if ctx.results or not persisted["accepted"]:
             metadata = request.metadata()
             metadata["warnings"] = list(completion.warnings)
@@ -482,6 +483,8 @@ class PipelineController:
             ),
             4000,
         )
+
+        return measurement
 
     def _display_context(self, ctx):
         display = getattr(self.preview_panel, "display_context", None)

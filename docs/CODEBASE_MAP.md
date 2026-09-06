@@ -88,11 +88,11 @@ consumer that requests a named implementation.
 | `src/menipy/common/` | Shared acquisition, detection, preprocessing, geometry, plugins, material data, units, and validation | Open the module named by the pipeline stage or controller |
 | `models/mobilesam/` | Versioned ONNX-only MobileSAM TinyViT encoder and prompt/mask decoder | `models/mobilesam/README.md`, `src/menipy/common/mobilesam_onnx.py` |
 | `src/menipy/models/` | Pydantic settings, shared context, geometry, fit, frame, state, and result data | `src/menipy/models/context.py`, `src/menipy/models/config.py` |
-| `src/menipy/math/` | Reusable scientific equations and numerical models | `src/menipy/math/young_laplace.py`, `src/menipy/math/lbadsa.py` |
+| `src/menipy/math/` | Reusable scientific equations and numerical models | `src/menipy/math/young_laplace.py`, `src/menipy/math/lbadsa.py`, `src/menipy/math/rheology.py`, `src/menipy/math/hydrodynamics.py`, `src/menipy/math/jurin.py`, `src/menipy/math/apex.py` |
 | `src/menipy/viz/` | Non-Qt plotting helpers | `src/menipy/viz/plots.py` |
 | `plugins/` | Runtime-discovered algorithms and detectors | Match the filename to the registry kind in `src/menipy/common/registry.py` |
 | `tests/` | Behavioral and architectural coverage | Start with the test whose name matches the subsystem |
-| `docs/guides/` | Scientific, pipeline, plugin, GUI, and development explanations | `docs/guides/developer_guide_pipelines.md`, `docs/guides/llm_coding_agent_guide.md` |
+| `docs/guides/` | Scientific, pipeline, plugin, GUI, and development explanations | `docs/guides/numerical_methods.md`, `docs/guides/physics_models.md`, `docs/guides/developer_guide_pipelines.md`, `docs/guides/llm_coding_agent_guide.md` |
 | `docs/contracts/` | Pipeline results and results-panel integration contracts | Open the contract for the affected pipeline |
 | `docs/research/` | Reproducible research plans and evidence-backed external-method assessments | `docs/research/adsa_open_source_evaluation_plan.md` |
 | `scripts/` | Import analysis, documentation generation, legacy analysis, and standalone diagnostics | Treat outputs as reports, not application state |
@@ -109,13 +109,19 @@ consumer that requests a named implementation.
 | Change CLI arguments, batch execution, or exports | `src/menipy/cli/__init__.py` -> `src/menipy/pipelines/runner.py` | `tests/test_cli.py`, the affected pipeline contract |
 | Change the stage lifecycle or stage selection | `src/menipy/pipelines/base.py` -> `src/menipy/pipelines/discover.py` -> `src/menipy/pipelines/runner.py` | `tests/test_pipeline_runner.py`, `tests/test_alt_workflow.py` |
 | Change a specific analysis mode | `src/menipy/pipelines/<mode>/stages.py` and sibling mode modules | `tests/test_<mode>*.py`, `docs/contracts/<mode>_results.md` when present |
-| Change dynamic sessile tracking, video timing, hysteresis, or timeline exports | `src/menipy/common/sequence_acquisition.py` -> `src/menipy/common/temporal_sessile.py` -> `src/menipy/pipelines/sessile_dynamic/` | `tests/test_phase_d_dynamic_sessile.py`, `tests/data/adsa_temporal_manifest.json`, `docs/contracts/sessile_dynamic_results.md` |
+| Change dynamic sessile tracking, video timing, hysteresis, hydrodynamic extrapolation, or timeline exports | `src/menipy/common/sequence_acquisition.py` -> `src/menipy/common/temporal_sessile.py` -> `src/menipy/math/hydrodynamics.py` -> `src/menipy/pipelines/sessile_dynamic/` | `tests/test_phase_d_dynamic_sessile.py`, `tests/test_hydrodynamics.py`, `tests/data/adsa_temporal_manifest.json`, `docs/contracts/sessile_dynamic_results.md` |
+| Change oscillating dilational rheology or Rayleigh-Lamb tension | `src/menipy/math/rheology.py` -> `src/menipy/pipelines/oscillating/` | `tests/test_oscillating_pipeline.py`, `docs/contracts/oscillating_results.md` |
+| Change capillary rise or captive bubble physics | `src/menipy/math/jurin.py` -> `src/menipy/pipelines/capillary_rise/` -> `src/menipy/pipelines/captive_bubble/` | `tests/test_capillary_rise_pipeline.py`, `tests/test_captive_bubble.py` |
+| Change solid surface free energy (OWRK / Wu) or probe liquid library | `src/menipy/common/liquid_db.py` -> `src/menipy/math/surface_energy.py` -> `src/menipy/pipelines/surface_energy/` -> `src/menipy/viz/owrk_plot.py` | `tests/test_liquid_db.py`, `tests/test_surface_energy.py`, `tests/test_sfe_cli.py`, `docs/contracts/surface_energy_results.md`, `docs/guides/probe_liquid_reference.md` |
+| Change needle-in-sessile-drop contact angle hysteresis | `src/menipy/common/needle_drop_detection.py` -> `src/menipy/math/needle_profile_fit.py` -> `src/menipy/common/needle_hysteresis.py` -> `src/menipy/pipelines/needle_hysteresis/` | `tests/test_needle_profile_fit.py`, `tests/test_needle_hysteresis.py`, `tests/test_needle_hysteresis_cli.py`, `docs/contracts/needle_hysteresis_results.md` |
+| Change sub-pixel edge detection or curvilinear profiling | `plugins/auto_subpixel_edge.py` -> `src/menipy/common/registry.py` | `tests/test_subpixel_edge_plugin.py` |
 | Change sessile contour or contact-angle behavior | `src/menipy/common/sessile_detection.py` -> `src/menipy/common/geometry.py` -> `src/menipy/pipelines/sessile/` | `tests/test_sessile_auto_detection.py`, `tests/test_sessile_geometry.py`, `tests/test_sessile_contact_angles.py`, `docs/guides/contact_angle_geometry.md` |
 | Change Low-Bond ADSA (LB-ADSA) perturbation math or solver | `src/menipy/math/lbadsa.py` -> `src/menipy/common/lbadsa_solver.py` -> `src/menipy/pipelines/sessile/` | `tests/test_lbadsa.py`, `docs/contact_angle_methods.md`, `docs/guides/physics_models.md` |
 | Change curved substrate baselines, arc drawing, or slope correction | `src/menipy/models/geometry.py` -> `src/menipy/common/sessile_detection.py` -> `src/menipy/pipelines/sessile/` | `tests/test_curved_substrate.py`, `tests/test_substrate_detection_robust.py`, `docs/guides/curved_substrates_and_baseline_detection.md` |
 | Fetch or verify academic benchmark datasets and author attribution | `data/MANIFEST.json`, `data/ATTRIBUTION.md` -> `tools/fetch_benchmarks.py` | `tests/test_benchmarks.py`, `data/ATTRIBUTION.md` |
 | Change pendant fitting, surface tension, or Phase-B axis initialization | `src/menipy/pipelines/pendant/` -> `src/menipy/math/young_laplace.py` -> `src/menipy/common/geometry_prototypes.py` | `tests/test_pendant_pipeline.py`, `tests/test_adsa_geometry_phase_b.py`, `docs/contracts/pendant_results.md` |
 | Change calibration or automatic feature detection | `src/menipy/common/auto_calibrator.py`, `src/menipy/common/detection_helpers.py`, detector modules in `plugins/` | `tests/test_auto_calibrator.py`, `tests/test_detection_plugins.py` |
+| Change droplet apex detection, flat crest averaging, normal projection, or sub-pixel polynomial refinement | `src/menipy/math/apex.py` -> `plugins/detect_apex.py` -> `src/menipy/pipelines/<mode>/stages.py` | `tests/test_apex_detection.py`, `tests/test_detection_plugins.py` |
 | Change ADSA diagnostics, rejection, or detector conformance | `src/menipy/common/validation.py` -> `src/menipy/models/results.py` -> results consumers | `tests/test_phase_a_diagnostics.py`, `tests/test_phase_a_results_gui.py`, `tests/test_adsa_detector_conformance.py` |
 | Change MobileSAM inference or regenerate its ONNX graphs | `src/menipy/common/mobilesam_onnx.py` -> `models/mobilesam/`; build with `scripts/export_mobilesam_onnx.py` | `tests/test_mobilesam_onnx.py`, `models/mobilesam/README.md` |
 | Change ONNX proposal providers or annotation datasets | `src/menipy/common/segmentation_providers.py` -> `src/menipy/common/onnx_shadow.py` -> `src/menipy/common/annotation_dataset.py` | `tests/test_phase_c_onnx_providers.py`, `docs/contracts/onnx_segmentation_providers.md`, `docs/contracts/adsa_annotation_dataset.md` |
@@ -128,7 +134,7 @@ consumer that requests a named implementation.
 
 `<mode>` means one of the directories currently discovered under
 `src/menipy/pipelines/`: `sessile`, `sessile_dynamic`, `pendant`, `oscillating`,
-`capillary_rise`, or `captive_bubble`.
+`capillary_rise`, `captive_bubble`, `surface_energy`, or `needle_hysteresis`.
 
 ## Tooling and generated information
 

@@ -13,6 +13,8 @@ from typing import Any
 import numpy as np
 from scipy.optimize import least_squares
 
+from menipy.math.apex import detect_apex
+
 from .detection_result import DetectionResult
 
 
@@ -219,7 +221,8 @@ def robust_pendant_initializer(contour_px: np.ndarray, px_per_mm: float = 1.0, *
     reasons: list[str] = []
     if xy.shape[0] < 12:
         return PendantInitialization((0.0, 0.0), (0.0, -1.0), (0.0, 0.0), 0.0, 0.3, 0.0, 1.0, float("inf"), False, ["pendant_insufficient_contour"])
-    apex = xy[int(np.argmax(xy[:, 1]))]
+    apex_res = detect_apex(xy, mode="pendant", refine=True)
+    apex = np.asarray(apex_res.point, dtype=float)
     y_min, y_max = float(np.min(xy[:, 1])), float(np.max(xy[:, 1]))
     ys: list[float] = []
     mids: list[float] = []

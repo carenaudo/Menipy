@@ -29,18 +29,38 @@ results panels.
 
 ## Status and Disclaimer
 
-Menipy is under active development and is not production-ready. Results may be
-incorrect or inaccurate, and this software is not intended to replace validated
-commercial or non-commercial measurement tools. Use it at your own risk and
-verify measurements independently before relying on them.
+Menipy is an alpha-stage project under active development and is not
+production-ready. Most of the implemented methods have not yet been tested or
+validated against standard measurement methods, so results may be incorrect or
+inaccurate. This software is not intended to replace validated commercial or
+non-commercial measurement tools. Use it at your own risk and verify
+measurements independently before relying on them.
 
-Package metadata currently marks the project as alpha.
+Documentation and references may also contain errors because parts of them
+were generated with AI assistance. They require human curation and should be
+independently checked before being relied upon.
+
+Package metadata also marks the project as alpha.
 
 ## Install
 
 Menipy requires Python 3.10 or newer.
 
-For local development or testing from a source checkout:
+For local development or testing from a source checkout, `uv` is the
+preferred method:
+
+```bash
+uv sync --extra dev --extra test
+```
+
+Run commands in the managed environment with `uv run`, for example:
+
+```bash
+uv run menipy
+uv run adsa --help
+```
+
+As an alternative, install with Python's built-in virtual environment and pip:
 
 ```bash
 python -m venv .venv

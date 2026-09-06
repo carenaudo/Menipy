@@ -267,6 +267,8 @@ class EdgeDetectionSettings(BaseModel):
         "adaptive",
         "log",
         "improved_snake",
+        "subpixel",
+        "auto_adaptive",
     ] = Field(default="otsu", description="Edge detection algorithm to use")
     # Common preprocessing for edge detection
     gaussian_blur_before: bool = Field(

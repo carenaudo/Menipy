@@ -15,6 +15,7 @@ from menipy.common.geometry import (
     tangent_angle_at_point,
     tangent_angle_at_point_pure,
 )
+from menipy.math.apex import detect_apex
 from menipy.models.drop_extras import surface_area_mm2
 from menipy.models.geometry import SubstrateProfile
 from menipy.models.surface_tension import volume_from_contour
@@ -106,8 +107,14 @@ def compute_sessile_metrics(
             )
             candidates = contour_2d[mask]
             if candidates.size > 0:
-                min_idx = int(np.argmin(candidates[:, 1]))
-                fallback_apex = candidates[min_idx]
+                fallback_res = detect_apex(
+                    candidates,
+                    mode="sessile",
+                    baseline=contact_line,
+                    substrate=substrate_profile,
+                    refine=True,
+                )
+                fallback_apex = fallback_res.point
                 if fallback_apex[1] < apex[1] - 1e-6:
                     apex = (float(fallback_apex[0]), float(fallback_apex[1]))
                     apex_confidence = min(apex_confidence, 0.6)

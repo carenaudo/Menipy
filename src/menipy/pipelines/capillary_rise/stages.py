@@ -9,6 +9,7 @@ import numpy as np
 from menipy.common import overlay as ovl
 from menipy.common import solver as common_solver
 from menipy.common.plugin_loader import get_solver
+from menipy.math.apex import detect_apex
 from menipy.models.context import Context
 from menipy.models.fit import FitConfig
 from menipy.models.geometry import Geometry
@@ -59,8 +60,9 @@ class CapillaryRisePipeline(PipelineBase):
         xy = ensure_contour(ctx)
         x, y = xy[:, 0], xy[:, 1]
         baseline_y = float(np.max(y))  # assume tube base at bottom of image
-        apex_i = int(np.argmin(y))  # meniscus apex (highest point)
-        apex_xy = (float(x[apex_i]), float(y[apex_i]))
+        apex_res = detect_apex(xy, mode="capillary_rise", refine=True)
+        apex_xy = apex_res.point
+        ctx.apex_point = (int(round(apex_xy[0])), int(round(apex_xy[1])))
         h_px = float(baseline_y - apex_xy[1])  # rise height in pixels
 
         # axis by median x (tube centerline)

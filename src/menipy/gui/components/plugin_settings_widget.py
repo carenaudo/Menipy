@@ -6,6 +6,7 @@ Reuses logic from PluginConfigDialog but as a dockable/embeddable widget.
 from __future__ import annotations
 
 import json
+from enum import Enum
 from typing import Any, Dict, Optional, Type
 
 from pydantic import BaseModel
@@ -289,8 +290,6 @@ class PluginSettingsWidget(QWidget):
                         widget.setText(str(val))
                 elif isinstance(widget, QComboBox):
                     # Handle enum default
-                    from enum import Enum
-
                     if isinstance(val, Enum):
                         widget.setCurrentText(val.name)
                     elif val is not None:

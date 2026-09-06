@@ -229,13 +229,19 @@ class AutoCalibrator:
             logger.info(
                 f"Drop detected with {len(drop_contour)} points (conf={drop_conf:.2f})"
             )
-            apex_y = float(np.min(drop_contour[:, 1]))
-            apex_band = drop_contour[np.abs(drop_contour[:, 1] - apex_y) <= 1.0]
-            apex_x = float(np.median(apex_band[:, 0]))
-            result.apex_point = (int(round(apex_x)), int(round(apex_y)))
-            result.confidence_scores["apex"] = 0.95
+            from menipy.math.apex import detect_apex
+
+            apex_res = detect_apex(
+                drop_contour,
+                mode="sessile",
+                baseline=result.substrate_line,
+                contact_points=result.contact_points,
+                refine=True,
+            )
+            result.apex_point = apex_res.to_int_tuple()
+            result.confidence_scores["apex"] = float(apex_res.confidence)
             result.detector_diagnostics["apex"] = normalize_detection_result(
-                result.apex_point, feature="apex", confidence=0.95
+                result.apex_point, feature="apex", confidence=float(apex_res.confidence)
             ).to_diagnostics()
 
         # Step 5: Compute ROI from detected regions
@@ -644,15 +650,17 @@ class AutoCalibrator:
         self, drop_cnt: np.ndarray
     ) -> tuple[tuple[int, int] | None, float]:
         """Detect apex point (bottom of pendant drop)."""
-        pts = drop_cnt.reshape(-1, 2)
+        from menipy.math.apex import detect_apex
 
-        # Apex is the point with maximum Y (bottom of drop)
-        apex_y = int(np.max(pts[:, 1]))
-        apex_band = pts[np.abs(pts[:, 1] - apex_y) <= 1]
-        apex = (int(round(float(np.median(apex_band[:, 0])))), apex_y)
-
-        # High confidence - apex is straightforward to find
-        return apex, 0.95
+        try:
+            res = detect_apex(drop_cnt, mode="pendant", refine=True)
+            return res.to_int_tuple(), float(res.confidence)
+        except Exception:
+            pts = drop_cnt.reshape(-1, 2)
+            apex_y = int(np.max(pts[:, 1]))
+            apex_band = pts[np.abs(pts[:, 1] - apex_y) <= 1]
+            apex = (int(round(float(np.median(apex_band[:, 0])))), apex_y)
+            return apex, 0.95
 
     def _compute_roi_pendant(
         self, result: CalibrationResult

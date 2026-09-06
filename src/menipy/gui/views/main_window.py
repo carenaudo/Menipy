@@ -535,6 +535,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._add_workflow_label(analysis_layout, "Analysis")
         for button in (
             setup_ctrl.sessileBtn,
+            setup_ctrl.dynamicSessileBtn,
             setup_ctrl.pendantBtn,
             setup_ctrl.oscillatingBtn,
             setup_ctrl.capillaryBtn,
@@ -547,6 +548,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             button.setMaximumHeight(32)
             button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
             analysis_layout.addWidget(button)
+            button.show()
 
         self.workflowTestPipelineBtn = QToolButton(self.workflowBar)
         self.workflowTestPipelineBtn.setObjectName("workflowTestPipelineBtn")
@@ -697,6 +699,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._sync_workflow_source_mode(setup_ctrl.current_mode())
         self._sync_workflow_source_mode_buttons(setup_ctrl.current_mode())
         setup_ctrl._update_widget_states()
+        from menipy.gui.controllers.folder_controller import FolderController
+
+        self.folder_ctrl = FolderController(self)
         self._workflow_setup_controls_installed = True
 
     def _install_pipeline_step_test_panel(self) -> None:

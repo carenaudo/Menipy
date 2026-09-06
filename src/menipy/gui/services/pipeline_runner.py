@@ -22,7 +22,14 @@ from menipy.pipelines.discover import PIPELINE_MAP
 
 RunState = Literal["queued", "running", "stopping", "completed", "failed", "cancelled"]
 RunOperation = Literal[
-    "analysis", "quick_analysis", "sop", "stage", "stage_test", "calibration", "preview"
+    "analysis",
+    "quick_analysis",
+    "sop",
+    "stage",
+    "stage_test",
+    "calibration",
+    "preview",
+    "batch",
 ]
 
 
@@ -134,41 +141,44 @@ class _Job(QRunnable):
                     value = self.task(parameters, self.token)
                     completion = RunCompletion(request, "completed", value=value)
                 else:
-                    warnings = list(request.warnings)
-                    if parameters.pop("auto_calibrate", False):
-                        from menipy.gui.services.calibration_service import (
-                            prepare_stage_calibration,
-                        )
-
-                        parameters, auto_warnings = prepare_stage_calibration(
-                            request.pipeline, parameters
-                        )
-                        warnings.extend(auto_warnings)
-                    pipeline = _pick(request.pipeline)(
-                        preprocessing_settings=parameters.get("preprocessing_settings"),
-                        edge_detection_settings=parameters.get(
-                            "edge_detection_settings"
-                        ),
-                    )
-                    parameters["cancellation_token"] = self.token
-                    parameters["measurement_id"] = request.job_id
-                    if request.stages:
-                        ctx = pipeline.run_with_plan(
-                            only=list(request.stages),
-                            include_prereqs=True,
-                            **parameters,
-                        )
-                    else:
-                        ctx = pipeline.run(**parameters)
-                    completion = RunCompletion(
-                        request, "completed", ctx=ctx, warnings=tuple(warnings)
-                    )
+                    completion = execute_request(request, self.token)
             self.token.check()
         except AnalysisCancelled:
             completion = RunCompletion(request, "cancelled")
         except Exception as exc:
             completion = RunCompletion(request, "failed", error=str(exc))
         self.finished.emit(completion)
+
+
+def execute_request(request, token):
+    """Execute one owned analysis inside the caller cancellation scope."""
+    token.check()
+    parameters = deepcopy(request.parameters)
+    warnings = list(request.warnings)
+    if parameters.pop("auto_calibrate", False):
+        from menipy.gui.services.calibration_service import (
+            prepare_stage_calibration,
+        )
+
+        parameters, auto_warnings = prepare_stage_calibration(
+            request.pipeline, parameters
+        )
+        warnings.extend(auto_warnings)
+    pipeline = _pick(request.pipeline)(
+        preprocessing_settings=parameters.get("preprocessing_settings"),
+        edge_detection_settings=parameters.get("edge_detection_settings"),
+    )
+    parameters["cancellation_token"] = token
+    parameters["measurement_id"] = request.job_id
+    if request.stages:
+        ctx = pipeline.run_with_plan(
+            only=list(request.stages),
+            include_prereqs=True,
+            **parameters,
+        )
+    else:
+        ctx = pipeline.run(**parameters)
+    return RunCompletion(request, "completed", ctx=ctx, warnings=tuple(warnings))
 
 
 def _pick(name):

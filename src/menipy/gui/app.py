@@ -65,8 +65,6 @@ def _register_qrc():
     for fname in ("app.rcc", "icons.rcc"):
         rcc = base / fname
         if rcc.exists():
-            from PySide6.QtCore import QResource
-
             QResource.registerResource(str(rcc))
 
 

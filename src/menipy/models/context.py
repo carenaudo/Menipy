@@ -87,6 +87,16 @@ class Context(BaseModel):
     temporal_frame_results: list[TemporalFrameResult] = Field(default_factory=list)
     dynamic_sessile_result: DynamicSessileResult | None = None
 
+    # Surface Free Energy (SFE) analysis.  Additive, unused by image pipelines.
+    sfe_liquids: list[dict[str, Any]] = Field(default_factory=list)
+    sfe_contact_angles_deg: list[float] = Field(default_factory=list)
+    sfe_method: str = "both"  # "owrk", "wu", or "both"
+    sfe_substrate_name: str | None = None
+
+    # Needle-in-sessile-drop hysteresis analysis
+    needle_hysteresis_result: Any | None = None
+    needle_fit_method: str = "auto"  # "tangent", "cdf", or "auto"
+
     # Overlay rendering (optional)
     overlay: np.ndarray | None = None  # overlay-only image (BGR)
     preview: np.ndarray | None = None  # base + overlay composited (BGR)

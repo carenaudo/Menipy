@@ -13,6 +13,7 @@ from menipy.common import edge_detection as edged
 from menipy.common import overlay as ovl
 from menipy.common import solver as common_solver
 from menipy.common._module_loader import load_module_from_path
+from menipy.math.apex import detect_apex
 from menipy.models.context import Context
 from menipy.models.fit import FitConfig
 from menipy.models.geometry import Contour, Geometry
@@ -139,10 +140,9 @@ class OscillatingPipeline(PipelineBase):
             else:
                 xy0 = np.empty((0, 2), dtype=float)
 
-        x0, y0 = xy0[:, 0], xy0[:, 1]
-        axis_x = float(np.median(x0))
-        apex_i = int(np.argmin(y0))  # top-most point (visual guide only)
-        apex_xy = (float(x0[apex_i]), float(y0[apex_i]))
+        x0 = xy0[:, 0] if xy0.shape[0] > 0 else np.empty(0)
+        axis_x = float(np.median(x0)) if x0.size > 0 else 0.0
+        apex_xy = detect_apex(xy0, mode="sessile", refine=True).point if xy0.shape[0] >= 3 else (0.0, 0.0)
 
         # Store frame-0 equivalent radius/center for overlay
         r0, (c0x, c0y) = _area_equiv_radius(xy0)

@@ -7,8 +7,7 @@ from __future__ import annotations
 import numpy as np
 
 from menipy.common.plugin_loader import get_solver
-
-# Get solver from registry (loaded at startup)
+from menipy.math.apex import detect_apex
 from menipy.math.young_laplace import young_laplace_ode as yl_ode
 from menipy.models.geometry import CaptiveBubbleGeometry
 from menipy.pipelines.base import Context, PipelineBase, ovl
@@ -67,8 +66,9 @@ class CaptiveBubblePipeline(PipelineBase):
 
         ceiling_y = float(np.min(y))  # ceiling at image top
         axis_x = float(np.median(x))
-        bottom_i = int(np.argmax(y))  # lowest bubble point (apex)
-        apex_xy = (float(x[bottom_i]), float(y[bottom_i]))
+        apex_res = detect_apex(xy, mode="captive_bubble", refine=True)
+        apex_xy = apex_res.point
+        ctx.apex_point = (int(round(apex_xy[0])), int(round(apex_xy[1])))
         cap_depth_px = float(np.max(y) - ceiling_y)
         diameter_px = float(np.max(x) - np.min(x))
 

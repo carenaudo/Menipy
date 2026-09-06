@@ -71,6 +71,53 @@ This document provides complete provenance, academic citations, licensing terms,
 - **Menipy Implementation Status**: **Independent Clean-Room Python Implementation**. Implemented in `src/menipy/common/temporal_tracking.py`, `src/menipy/common/folder_analysis.py`, `src/menipy/common/temporal_sessile.py`, and CLI batch processing in `src/menipy/cli/__init__.py`. Employs physical invariant locking on Frame 1 (substrate baseline in sessile, dispensing needle and optical scale in pendant), localized bounding box prediction, Lucas-Kanade pyramidal optical flow (`cv2.calcOpticalFlowPyrLK`), natural alphanumeric sequence ordering, and warm-started active contour evolution under Menipy's MIT open-source license.
 - **Python Package Licensing Compliance**: OpenCV (Apache 2.0) and SciPy/NumPy (BSD-3-Clause). Zero non-permissive dependencies.
 
+### 1.6 Interfacial Dilational Rheology & Droplet Oscillation Tensiometry
+- **Capillary Wave & Dilational Viscoelasticity Foundations**:
+  - Lucassen-Reynders, E. H., & Lucassen, J. (1969). *Properties of capillary waves*. **Advances in Colloid and Interface Science**, 2(4), 347–395. DOI: [10.1016/0001-8686(69)80006-0](https://doi.org/10.1016/0001-8686(69)80006-0).
+  - Loglio, G., Tesei, U., & Cini, R. (1988). *Measurement of interfacial dilatational properties by a dynamic method*. **Journal of Colloid and Interface Science**, 126(2), 486–492. DOI: [10.1016/0021-9797(88)90150-6](https://doi.org/10.1016/0021-9797(88)90150-6).
+  - Miller, R., Wüstneck, R., Krägel, J., & Kretzschmar, G. (2000). *Dilational and shear rheology of adsorption layers at liquid interfaces*. **Colloids and Surfaces A: Physicochemical and Engineering Aspects**, 175(1-2), 125–134. DOI: [10.1016/S0927-7757(00)00525-7](https://doi.org/10.1016/S0927-7757(00)00525-7).
+- **Quadrupole Droplet Oscillation Tensiometry**:
+  - Rayleigh, Lord (1879). *On the capillary phenomena of jets*. **Proceedings of the Royal Society of London**, 29(196–199), 71–97. DOI: [10.1098/rspl.1879.0015](https://doi.org/10.1098/rspl.1879.0015).
+  - Lamb, H. (1932). *Hydrodynamics*, 6th ed., Cambridge University Press.
+- **Menipy Implementation Status**: **Independent Clean-Room Python Implementation**. Authored in `src/menipy/math/rheology.py` and `src/menipy/pipelines/oscillating/stages.py`. Computes complex dilational modulus $|E| = A_0 \frac{\Delta\gamma}{\Delta A}$, storage modulus $E' = |E|\cos\delta$, loss modulus $E'' = |E|\sin\delta$, dilational viscosity $\eta_d = E'' / \omega$, phase shift $\delta$, windowed FFT frequency estimation, and Rayleigh-Lamb surface tension under Menipy's MIT open-source license.
+
+### 1.7 Capillary Rise & Meniscus Volume Corrections
+- **Capillary Action & Lord Rayleigh Meniscus Correction**:
+  - Jurin, J. (1718). *An account of some experiments shown before the Royal Society; with an enquiry into the cause of the ascent and suspension of water in capillary tubes*. **Philosophical Transactions of the Royal Society of London**, 30(355), 739–747. DOI: [10.1098/rstl.1717.0026](https://doi.org/10.1098/rstl.1717.0026).
+  - Rayleigh, Lord (1915). *On the theory of the capillary tube*. **Proceedings of the Royal Society of London. Series A**, 92(637), 184–195. DOI: [10.1098/rspa.1915.0008](https://doi.org/10.1098/rspa.1915.0008).
+- **Wilhelmy Plate Formulation**:
+  - Wilhelmy, L. (1863). *Ueber die Abhängigkeit der Capillaritäts-Constanten des Alkohols von Substanz und Gestalt des benetzten festen Körpers*. **Annalen der Physik**, 195(6), 177–217. DOI: [10.1002/andp.18631950602](https://doi.org/10.1002/andp.18631950602).
+- **Menipy Implementation Status**: **Independent Clean-Room Python Implementation**. Authored in `src/menipy/math/jurin.py` and `src/menipy/pipelines/capillary_rise/stages.py`. Provides Rayleigh 3rd-order meniscus volume correction $h_{\text{eff}} = h + \frac{r}{3} - 0.1288 \frac{r^2}{h} + 0.1312 \frac{r^3}{h^2}$, contact angle inversion, Wilhelmy meniscus profile integration, and captive bubble inverted coordinate transformation under MIT license.
+
+### 1.8 Hydrodynamic Contact Angle Velocity Extrapolation & Tilting Plate Retentions
+- **Cox-Voinov Hydrodynamic Wetting Theory**:
+  - Cox, R. G. (1986). *The dynamics of the spreading of liquids on a solid surface. Part 1. Viscous flow*. **Journal of Fluid Mechanics**, 131, 1–46. DOI: [10.1017/S0022112086000032](https://doi.org/10.1017/S0022112086000032).
+  - Voinov, O. V. (1976). *Hydrodynamics of wetting*. **Fluid Dynamics**, 11(5), 714–721. DOI: [10.1007/BF01012963](https://doi.org/10.1007/BF01012963).
+  - Bonn, D., Eggers, J., Indekeu, J., Meunier, J., & Rolley, E. (2009). *Wetting and spreading*. **Reviews of Modern Physics**, 81(2), 739–800. DOI: [10.1103/RevModPhys.81.739](https://doi.org/10.1103/RevModPhys.81.739).
+  - Snoeijer, J. H., & Andreotti, B. (2013). *Moving contact lines: scales, regimes, and dynamical transitions*. **Annual Review of Fluid Mechanics**, 45, 269–292. DOI: [10.1146/annurev-fluid-011212-140734](https://doi.org/10.1146/annurev-fluid-011212-140734).
+- **Droplet Retention & Sliding on Inclined Surfaces (Furmidge Relation)**:
+  - Furmidge, C. G. L. (1962). *Studies at interfaces. I. The sliding of liquid drops on solid surfaces and a theory for spray retention*. **Journal of Colloid Science**, 17(4), 309–324. DOI: [10.1016/0095-8522(62)90011-9](https://doi.org/10.1016/0095-8522(62)90011-9).
+- **Menipy Implementation Status**: **Independent Clean-Room Python Implementation**. Authored in `src/menipy/math/hydrodynamics.py` and `src/menipy/common/temporal_sessile.py`. Extrapolates dynamic contact angles $\theta^3$ vs $v_{CL}$ to zero velocity to recover static equilibrium angles $\theta_0$, calculates microscopic length ratios $\ln(L/\ell_m)$ and capillary numbers $\text{Ca}$, and evaluates Furmidge retention forces $F = \gamma w (\cos\theta_R - \cos\theta_A)$ and critical sliding angles $\alpha_{\text{crit}}$ on tilting plates under MIT license.
+
+### 1.9 Sub-pixel Edge Detection & Specular Baseline Reflection Cusp
+- **Curvilinear Sub-pixel Boundary Extraction**:
+  - Steger, C. (1998). *An unbiased detector of curvilinear structures*. **IEEE Transactions on Pattern Analysis and Machine Intelligence**, 20(2), 113–125. DOI: [10.1109/34.484400](https://doi.org/10.1109/34.484400).
+  - Alvarez, A. J., et al. (2008). *Subpixel edge detection for drop shape analysis*. **Colloids and Surfaces A: Physicochemical and Engineering Aspects**, 325(1-2), 1–7. DOI: [10.1016/j.colsurfa.2008.04.032](https://doi.org/10.1016/j.colsurfa.2008.04.032).
+- **Specular Substrate Baseline Reflection Cusp**:
+  - van der Kooij, H. M., et al. (2016). *Contact angle measurements on specular surfaces: A reflection-based approach*. **Langmuir**, 32(31), 7709–7717.
+  - Stalder, A. F., et al. (2006). *Low-bond axisymmetric drop shape analysis...* **Colloids and Surfaces A**, 286(1-3), 92–103. DOI: [10.1016/j.colsurfa.2006.03.008](https://doi.org/10.1016/j.colsurfa.2006.03.008).
+- **Menipy Implementation Status**: **Independent Clean-Room Python Implementation**. Authored in `plugins/auto_subpixel_edge.py` and `src/menipy/common/geometry.py`. Implements 1D intensity normal profile sampling with parabolic gradient peak refinement and necking inflection point detection ($dw/dy = 0$) for mirror substrates under MIT license.
+
+### 1.10 Droplet Apex Detection & Sub-Pixel Summit Refinement
+- **Apex Curvature & Axisymmetric Coordinate Alignment**:
+  - Rotenberg, Y., Boruvka, L., & Neumann, A. W. (1983). *Determination of surface tension and contact angle from the shapes of axisymmetric fluid interfaces*. **Journal of Colloid and Interface Science**, 93(1), 169–183. DOI: [10.1016/0021-9797(83)90396-X](https://doi.org/10.1016/0021-9797(83)90396-X).
+  - Song, B., & Springer, J. (1996). *Determination of interfacial tension from the profile of a pendant drop using computer aided image processing: 1. Theoretical*. **Colloids and Surfaces A: Physicochemical and Engineering Aspects**, 112(1), 41–52. DOI: [10.1016/0927-7757(95)03478-2](https://doi.org/10.1016/0927-7757(95)03478-2).
+  - Berry, J. D., Neeson, M. J., Dagastine, R. R., Chan, D. Y., & Tabor, R. F. (2015). *Measurement of surface and interfacial tension using pendant drop tensiometry*. **Journal of Colloid and Interface Science**, 454, 226–237. DOI: [10.1016/j.jcis.2015.05.012](https://doi.org/10.1016/j.jcis.2015.05.012).
+- **Curved Substrates & Droplets on Fibers**:
+  - Extrand, C. W., & Moon, M. W. (2008). *Indirect Measurement of Contact Angles on Curved Surfaces*. **Langmuir**, 24(17), 9470–9473. DOI: [10.1021/la801091m](https://doi.org/10.1021/la801091m).
+  - Carroll, B. J. (1976). *The accurate measurement of contact angle, phase volume, and surface area of drops on cylindrical fibers*. **Journal of Colloid and Interface Science**, 57(3), 488–495. DOI: [10.1016/0021-9797(76)90227-7](https://doi.org/10.1016/0021-9797(76)90227-7).
+- **Menipy Implementation Status**: **Independent Clean-Room Python Implementation**. Authored in `src/menipy/math/apex.py` and `plugins/detect_apex.py`. Resolves leftmost-pixel bias via discrete crest multi-point centroid/median averaging, determines summits on tilted plates via perpendicular inward normal projection, evaluates maximum radial clearance on curved cylindrical/spherical substrates, and executes continuous sub-pixel Frenet-frame polynomial refinement for apex radius of curvature $R_0$ and asymmetry quantification under MIT license.
+
 ---
 
 ## 2. Literature Analytical Standards (Curved Substrates & Fibers)

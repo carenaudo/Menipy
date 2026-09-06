@@ -7,6 +7,8 @@ from typing import Any
 import numpy as np
 from numpy.linalg import lstsq
 
+from menipy.math.apex import detect_apex
+
 
 def cross2d(u: np.ndarray | tuple | list, v: np.ndarray | tuple | list) -> np.ndarray | float:
     """Compute 2D cross product (determinant u_x*v_y - u_y*v_x) compatible with NumPy 2.x."""
@@ -316,108 +318,38 @@ def detect_baseline_ransac(
 def refine_apex_curvature(
     contour: np.ndarray, window: int = 5, subpixel_steps: int = 10
 ) -> tuple[np.ndarray, float]:
-    """Refine apex detection using curvature-based subpixel refinement.
+    """Refine apex detection using curvature and polynomial subpixel refinement.
 
     Parameters
     ----------
     contour : np.ndarray
         Array shape (N,2) of contour points (x,y).
     window : int
-        Window size for curvature estimation.
+        Window size for curvature / local profile estimation.
     subpixel_steps : int
-        Number of subpixel steps for refinement.
+        Number of subpixel steps (ignored, kept for API compatibility).
 
     Returns
     -------
     apex : np.ndarray
         Refined apex point (x,y).
     confidence : float
-        Confidence score (0-1) based on curvature peak strength.
+        Confidence score (0-1).
     """
     if contour.ndim != 2 or contour.shape[1] != 2:
         raise ValueError("contour must be of shape (N, 2)")
 
-    kappa = curvature_estimates(contour, window=window)
-
-    # Find initial apex candidate (highest curvature point). For near-constant
-    # curvature (e.g., circular arc) choose the middle index among the maxima so
-    # the apex lands near the geometric center of the arc rather than an edge.
-    max_kappa = float(np.max(kappa))
-    if max_kappa <= 0:
-        # Fallback to lowest y
+    try:
+        res = detect_apex(
+            contour,
+            mode="sessile",
+            refine=True,
+            window_px=max(10.0, float(window * 2)),
+        )
+        return np.array(res.point, dtype=float), float(res.confidence)
+    except Exception:
         apex_idx = int(np.argmin(contour[:, 1]))
-    else:
-        candidates = np.where(kappa >= max_kappa - 1e-12)[0]
-        apex_idx = int(np.median(candidates))
-
-    # Subpixel refinement around apex
-    start_idx = max(0, apex_idx - window)
-    end_idx = min(len(contour), apex_idx + window + 1)
-    local_contour = contour[start_idx:end_idx]
-    local_kappa = kappa[start_idx:end_idx]
-
-    if len(local_contour) < 3:
-        apex = contour[apex_idx]
-        confidence = 0.5
-    else:
-        # If curvature is nearly constant (e.g., circular arc), prefer a
-        # circle fit to obtain the geometric center which is the expected
-        # apex in synthetic tests. Conversely, if curvature magnitudes are
-        # essentially zero (flat contour), do a conservative fallback with
-        # low confidence instead of fitting a degenerate circle.
-        max_local_kappa = float(np.max(local_kappa))
-        if max_local_kappa < 1e-6:
-            # Flat contour: pick the midpoint as a safe fallback
-            apex = local_contour[len(local_contour) // 2]
-            confidence = 0.4
-        elif np.std(local_kappa) < 1e-6:
-            try:
-                center, _radius = fit_circle(contour)
-                apex = center
-                confidence = 0.9
-            except Exception:
-                apex = contour[apex_idx]
-                confidence = 0.5
-        else:
-            # Fit quadratic to curvature around peak
-            indices = np.arange(len(local_contour))
-            try:
-                coeffs = np.polyfit(indices, local_kappa, 2)
-                # Find maximum of quadratic
-                peak_idx = (
-                    -coeffs[1] / (2 * coeffs[0])
-                    if coeffs[0] != 0
-                    else len(local_contour) // 2
-                )
-                peak_idx = np.clip(peak_idx, 0, len(local_contour) - 1)
-
-                # Interpolate position
-                idx_floor = int(np.floor(peak_idx))
-                idx_ceil = int(np.ceil(peak_idx))
-                if idx_floor == idx_ceil:
-                    apex = local_contour[idx_floor]
-                else:
-                    frac = peak_idx - idx_floor
-                    apex = (
-                        local_contour[idx_floor] * (1 - frac)
-                        + local_contour[idx_ceil] * frac
-                    )
-
-            except np.linalg.LinAlgError:
-                apex = contour[apex_idx]
-
-            # Confidence based on curvature peak relative to mean
-            mean_kappa = np.mean(kappa)
-            peak_kappa = float(kappa[apex_idx])
-            if mean_kappa <= 0:
-                confidence = 0.5
-            else:
-                ratio = peak_kappa / (mean_kappa + 1e-6)
-                # Scale ratio conservatively so flat contours yield moderate confidence
-                # and strong curvature peaks yield higher confidence up to ~0.99.
-                confidence = float(min(0.99, 0.5 + 0.5 * min(ratio / 5.0, 1.0)))
-
-    return apex, confidence
+        return np.asarray(contour[apex_idx], dtype=float), 0.5
 
 
 def estimate_contact_angle_tangent(
