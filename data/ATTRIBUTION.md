@@ -55,8 +55,21 @@ This document provides complete provenance, academic citations, licensing terms,
 - **Parametric B-Spline Snakes**:
   - Brigger, P., Hoeg, J., & Unser, M. (2000). *B-spline snakes: A flexible tool for parametric contour detection*. **IEEE Transactions on Image Processing**, 9(9), 1484–1496. DOI: [10.1109/83.862633](https://doi.org/10.1109/83.862633).
   - Jacob, M., Blu, T., & Unser, M. (2004). *Efficient energies and algorithms for parametric snakes*. **IEEE Transactions on Image Processing**, 13(9), 1231–1244. DOI: [10.1109/TIP.2004.832919](https://doi.org/10.1109/TIP.2004.832919).
-- **Menipy Implementation Status**: **Independent Clean-Room Python Re-implementation**. Authored in `src/menipy/math/active_contour.py` and `src/menipy/common/contour_refinement.py` using pure NumPy, SciPy, and OpenCV primitives under Menipy's MIT open-source license.
-- **Python Package Licensing Compliance**: Composes 3-Clause BSD (`scipy.interpolate.splprep`, `scipy.linalg.solve_banded`) and Apache 2.0 (`cv2.Sobel`, `cv2.GaussianBlur`) components. Zero non-permissive or viral licensed code.
+- **Menipy Implementation Status**: **Independent Clean-Room Python Re-implementation**. Authored in `src/menipy/math/active_contour.py`, `src/menipy/common/contour_refinement.py`, and `plugins/edge_detectors.py` using pure NumPy, SciPy, and OpenCV primitives under Menipy's MIT open-source license. Eliminates previous third-party `scikit-image` runtime dependencies.
+- **Python Package Licensing Compliance**: Composes 3-Clause BSD (`scipy.interpolate.splprep`, `scipy.linalg.solve_banded`, `scipy.ndimage.map_coordinates`) and Apache 2.0 (`cv2.Sobel`, `cv2.GaussianBlur`) components. Zero non-permissive or viral licensed code.
+
+### 1.5 Temporal Video Tracking & Dynamic Deformable Models
+- **Temporal Deformable Models & Tracking**:
+  - Terzopoulos, D., & Szeliski, R. (1992). *Tracking with dynamic deformable models*. In **Active Vision**, MIT Press, Cambridge, MA, pp. 3–20.
+  - Kass, M., Witkin, A., & Terzopoulos, D. (1988). *Snakes: Active contour models*. **International Journal of Computer Vision**, 1(4), 321–331. DOI: [10.1007/BF00133570](https://doi.org/10.1007/BF00133570).
+- **Differential Optical Flow**:
+  - Lucas, B. D., & Kanade, T. (1981). *An iterative image registration technique with an application to stereo vision*. **Proceedings of Imaging Understanding Workshop**, pp. 121–130.
+  - Shi, J., & Tomasi, C. (1994). *Good features to track*. **IEEE Conference on Computer Vision and Pattern Recognition (CVPR)**, pp. 593–600.
+- **Dynamic Contact Angle Tensiometry**:
+  - Dorywalski, K. (2026). *Drop-O-Matic: Open-source tool for dynamic contact angle determination*. Zenodo. DOI: [10.5281/zenodo.19470985](https://doi.org/10.5281/zenodo.19470985).
+  - Berry, J. D., Neeson, M. J., Dagastine, R. R., Chan, D. Y., & Tabor, R. F. (2015). *Measurement of surface and interfacial tension using pendant drop tensiometry*. **Journal of Colloid and Interface Science**, 454, 226–237. DOI: [10.1016/j.jcis.2015.05.012](https://doi.org/10.1016/j.jcis.2015.05.012).
+- **Menipy Implementation Status**: **Independent Clean-Room Python Implementation**. Implemented in `src/menipy/common/temporal_tracking.py` and integrated into `src/menipy/common/temporal_sessile.py`. Employs physical invariant locking (substrate baseline in sessile, dispensing needle in pendant), localized bounding box prediction, Lucas-Kanade pyramidal optical flow (`cv2.calcOpticalFlowPyrLK`), and warm-started active contour evolution under Menipy's MIT open-source license.
+- **Python Package Licensing Compliance**: OpenCV (Apache 2.0) and SciPy/NumPy (BSD-3-Clause). Zero non-permissive dependencies.
 
 ---
 

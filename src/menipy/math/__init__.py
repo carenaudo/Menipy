@@ -9,6 +9,7 @@ from .active_contour import (
     compute_substrate_angle,
     evolve_active_contour,
     fit_bspline_snake,
+    precompute_image_gradients,
     project_point_to_line,
     resample_contour_arclength,
 )
@@ -44,6 +45,7 @@ __all__ = [
     "compute_substrate_angle",
     "evolve_active_contour",
     "fit_bspline_snake",
+    "precompute_image_gradients",
     "project_point_to_line",
     "resample_contour_arclength",
 ]

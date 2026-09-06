@@ -11,6 +11,7 @@ from menipy.common.cancellation import CancellationToken
 
 from .config import (
     ContourSmoothingSettings,
+    DynamicTrackingSettings,
     EdgeDetectionSettings,
     PreprocessingSettings,
 )
@@ -104,6 +105,7 @@ class Context(BaseModel):
     preprocessing_settings: PreprocessingSettings | None = None
     edge_detection_settings: EdgeDetectionSettings | None = None
     contour_smoothing_settings: ContourSmoothingSettings | None = None
+    dynamic_tracking_settings: DynamicTrackingSettings | None = None
     needle_diameter_mm: float | None = None
     fluid_density_kg_m3: float | None = None
     drop_density_kg_m3: float | None = None

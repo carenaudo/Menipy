@@ -199,7 +199,7 @@ class TestImprovedSnakeDetector:
 
     def test_with_substrate_masking(self):
         """Test that substrate masking works (contour should stay above substrate)."""
-        image = create_synthetic_drop_image(drop_center=(160, 180))
+        image = create_synthetic_drop_image(drop_center=(160, 150))
 
         settings = EdgeDetectionSettings(
             method="improved_snake",
@@ -207,11 +207,68 @@ class TestImprovedSnakeDetector:
         )
 
         detector = EDGE_DETECTORS["improved_snake"]
-        # Note: substrate_y is passed as extra kwarg (not in settings)
-        # The detector will gracefully handle this
+        substrate_y = 180
+        result = detector(image, settings, substrate_y=substrate_y)
+
+        assert result is not None
+        assert len(result) > 0
+        assert np.all(result[:, 1] < substrate_y)
+
+    def test_return_debug_info(self):
+        """Test that return_debug=True yields debug info for candidate contours."""
+        image = create_synthetic_drop_image()
+        settings = EdgeDetectionSettings(
+            method="improved_snake",
+            snake_iterations=20,
+        )
+
+        detector = EDGE_DETECTORS["improved_snake"]
+        result, debug_info = detector(image, settings, return_debug=True)
+
+        assert result is not None
+        assert len(result) > 0
+        assert isinstance(debug_info, list)
+        assert len(debug_info) > 0
+
+        # Check debug items format: (xy, score, label)
+        for item in debug_info:
+            assert len(item) == 3
+            assert isinstance(item[0], np.ndarray)
+            assert isinstance(item[2], str)
+
+    def test_custom_node_count(self):
+        """Test that num_nodes parameter correctly controls contour node count."""
+        image = create_synthetic_drop_image()
+        target_nodes = 64
+        settings = EdgeDetectionSettings(
+            method="improved_snake",
+            snake_iterations=20,
+            plugin_settings={"num_nodes": target_nodes},
+        )
+
+        detector = EDGE_DETECTORS["improved_snake"]
         result = detector(image, settings)
 
         assert result is not None
+        assert len(result) == target_nodes
+
+    def test_without_skimage(self, monkeypatch):
+        """Test that improved_snake executes successfully with no skimage dependency."""
+        import sys
+        monkeypatch.setitem(sys.modules, "skimage", None)
+        monkeypatch.setitem(sys.modules, "skimage.segmentation", None)
+        monkeypatch.setitem(sys.modules, "skimage.filters", None)
+
+        image = create_synthetic_drop_image()
+        settings = EdgeDetectionSettings(
+            method="improved_snake",
+            snake_iterations=15,
+        )
+
+        detector = EDGE_DETECTORS["improved_snake"]
+        result = detector(image, settings)
+        assert result is not None
+        assert len(result) > 10
 
 
 class TestContourValidity:
@@ -290,3 +347,20 @@ class TestEdgeDetectionSettings:
         model = AdaptiveModel(adaptive_block_size=20)
         # Should be auto-corrected in post_init
         assert model.adaptive_block_size == 21
+
+    def test_improved_snake_settings_defaults(self):
+        from menipy.common.plugin_settings import get_detector_settings_model
+
+        SnakeModel = get_detector_settings_model("improved_snake")
+        assert SnakeModel is not None
+
+        defaults = SnakeModel()
+        assert defaults.iterations == 500
+        assert defaults.alpha == 0.015
+        assert defaults.beta == 10.0
+        assert defaults.gamma == 0.001
+        assert defaults.w_edge == 1.0
+        assert defaults.w_line == 0.0
+        assert defaults.w_balloon == 0.0
+        assert defaults.gaussian_sigma == 2.0
+        assert defaults.num_nodes == 100

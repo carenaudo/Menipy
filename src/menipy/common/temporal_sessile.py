@@ -13,6 +13,7 @@ import numpy as np
 
 from menipy.common.cancellation import check_cancelled
 from menipy.common.detection_helpers import auto_detect_features
+from menipy.common.temporal_tracking import TemporalDropletTracker
 from menipy.models.frame import Frame
 from menipy.models.temporal import (
     DynamicSessileResult,
@@ -255,24 +256,24 @@ def analyze_dynamic_sessile(
     px_per_mm: float | None,
     needle_diameter_mm: float | None,
     contact_angle_method: str = "auto_residual",
+    use_temporal_tracking: bool = True,
     check_cancelled=check_cancelled,
 ) -> DynamicSessileResult:
     """Analyze a complete sequence while quarantining invalid frame measurements."""
-    detections = []
-    for frame in frames:
-        check_cancelled()
-        detections.append(auto_detect_features(frame.image, "sessile"))
     scale_samples: list[float] = []
     if px_per_mm is None and needle_diameter_mm and needle_diameter_mm > 0:
-        for detection in detections:
+        for f in frames[:5]:
             check_cancelled()
-            rect = detection.get("needle_rect")
+            det = auto_detect_features(f.image, "sessile")
+            rect = det.get("needle_rect")
             if rect and float(rect[2]) > 0:
                 scale_samples.append(float(rect[2]) / needle_diameter_mm)
             if len(scale_samples) == 5:
                 break
         if scale_samples:
             px_per_mm = float(np.median(scale_samples))
+
+    tracker = TemporalDropletTracker(pipeline="sessile") if use_temporal_tracking else None
 
     output: list[TemporalFrameResult] = []
     reference_line: tuple[tuple[float, float], tuple[float, float]] | None = None
@@ -284,7 +285,26 @@ def analyze_dynamic_sessile(
     lost = 0
     segment = 0
 
-    for frame_index, (frame, detection) in enumerate(zip(frames, detections)):
+    for frame_index, frame in enumerate(frames):
+        check_cancelled()
+        dt = (
+            metadata.timestamps_s[frame_index] - metadata.timestamps_s[frame_index - 1]
+            if frame_index > 0
+            else (1.0 / max(1.0, metadata.fps))
+        )
+
+        detection = None
+        if tracker is not None and tracker.is_tracking:
+            detection = tracker.track_frame(frame.image, dt=dt)
+
+        if detection is None:
+            detection = auto_detect_features(frame.image, "sessile")
+            if (
+                tracker is not None
+                and "drop_contour" in detection
+                and "contact_points" in detection
+            ):
+                tracker.initialize(frame.image, detection, scale=px_per_mm)
         check_cancelled()
         result = TemporalFrameResult(
             frame_index=frame_index,
@@ -304,6 +324,8 @@ def analyze_dynamic_sessile(
         if line_value is None:
             reasons.append("dynamic_baseline_not_detected")
         if reasons:
+            if tracker is not None:
+                tracker.reset()
             result.rejection_reasons = reasons
             result.diagnostics["detectors"] = detection.get("detector_diagnostics", {})
             output.append(result)
@@ -379,6 +401,8 @@ def analyze_dynamic_sessile(
             reasons.append("dynamic_contact_angle_invalid")
 
         if reasons:
+            if tracker is not None:
+                tracker.reset()
             result.rejection_reasons = reasons
             result.diagnostics["detectors"] = detection.get("detector_diagnostics", {})
             output.append(result)

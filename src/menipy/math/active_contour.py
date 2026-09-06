@@ -437,30 +437,20 @@ def resample_contour_arclength(
 # -----------------------------------------------------------------------------
 
 
-def compute_external_forces(
-    image: np.ndarray,
-    xy: np.ndarray,
-    normals: np.ndarray,
-    config: ActiveContourConfig,
-) -> np.ndarray:
-    """Compute sub-pixel external image forces acting on contour vertices.
-
-    Combines:
-        1. Ridge-seeking gradient magnitude forces: w_edge * grad(|grad(I)|)
-        2. Intensity attraction/repulsion: w_line * grad(I)
-        3. Directional outward normal flux: w_flux * (grad(I) . n) * n
-        4. Balloon pressure force: w_balloon * n
+def precompute_image_gradients(
+    image: np.ndarray, config: ActiveContourConfig
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Precompute static spatial image gradient fields for active contour evolution.
 
     Args:
         image: Grayscale image (2D uint8 or float array).
-        xy: (N, 2) array of vertex coordinates (x, y).
-        normals: (N, 2) unit normal vectors.
-        config: ActiveContourConfig containing force weights and smoothing sigma.
+        config: ActiveContourConfig containing gaussian_sigma and edge weights.
 
     Returns:
-        (N, 2) external force vectors (fx, fy) at each vertex.
+        (egx, egy, gx, gy) derivative arrays where:
+            egx, egy: Spatial derivatives of normalized gradient magnitude (for w_edge).
+            gx, gy: Spatial derivatives of smoothed image intensity (for w_line / w_flux).
     """
-    h, w = image.shape[:2]
     img = image.astype(np.float64)
     if img.max() > 1.0:
         img /= 255.0
@@ -485,6 +475,42 @@ def compute_external_forces(
     # Gradient of gradient magnitude (attracts snake to edges)
     egx = cv2.Sobel(grad_mag, cv2.CV_64F, 1, 0, ksize=3)
     egy = cv2.Sobel(grad_mag, cv2.CV_64F, 0, 1, ksize=3)
+
+    return egx, egy, gx, gy
+
+
+def compute_external_forces(
+    image: np.ndarray,
+    xy: np.ndarray,
+    normals: np.ndarray,
+    config: ActiveContourConfig,
+    precomputed_gradients: tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray] | None = None,
+) -> np.ndarray:
+    """Compute external potential force vectors at each contour vertex.
+
+    Calculates:
+        - Gradient magnitude edge attraction: -grad(|grad(I)|)
+        - Intensity line attraction: grad(I)
+        - Gradient normal flux: (grad(I) . n) * n
+        - Balloon normal expansion/contraction: w_balloon * n
+
+    Args:
+        image: Grayscale image (2D uint8 or float array).
+        xy: (N, 2) array of vertex coordinates (x, y).
+        normals: (N, 2) unit normal vectors.
+        config: ActiveContourConfig containing force weights and smoothing sigma.
+        precomputed_gradients: Optional precomputed (egx, egy, gx, gy) tuple from
+            precompute_image_gradients to avoid redundant recomputations in loops.
+
+    Returns:
+        (N, 2) external force vectors (fx, fy) at each vertex.
+    """
+    h, w = image.shape[:2]
+
+    if precomputed_gradients is not None:
+        egx, egy, gx, gy = precomputed_gradients
+    else:
+        egx, egy, gx, gy = precompute_image_gradients(image, config)
 
     # Sub-pixel bilinear sampling at contour vertices
     px = np.clip(xy[:, 0], 0.0, w - 1.0)
@@ -571,6 +597,9 @@ def evolve_active_contour(
     M = A + config.gamma * np.eye(n, dtype=float)
     inv_M = np.linalg.inv(M)
 
+    # Precompute static spatial image gradient fields once
+    gradients = precompute_image_gradients(image, config)
+
     h, w = image.shape[:2]
     converged = False
     iterations_run = 0
@@ -590,8 +619,10 @@ def evolve_active_contour(
         # 1. Compute geometry (tangents, normals)
         tangents, normals, _ = compute_contour_normals(curr_xy, closed=closed)
 
-        # 2. Compute external forces
-        f_ext = compute_external_forces(image, curr_xy, normals, config)
+        # 2. Compute external forces using precomputed gradient fields
+        f_ext = compute_external_forces(
+            image, curr_xy, normals, config, precomputed_gradients=gradients
+        )
         fx, fy = f_ext[:, 0], f_ext[:, 1]
 
         # 3. Boundary force damping

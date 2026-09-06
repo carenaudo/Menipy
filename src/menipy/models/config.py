@@ -381,3 +381,26 @@ class EdgeDetectionSettings(BaseModel):
         if v % 2 == 0:
             raise ValueError("Kernel size must be an odd number.")
         return v
+
+
+class DynamicTrackingSettings(BaseModel):
+    """Configuration for temporal video sequence tracking."""
+
+    enabled: bool = Field(
+        default=True, description="Enable temporal tracking for video sequences"
+    )
+    tracking_mode: Literal["temporal", "full_detection"] = Field(
+        default="temporal",
+        description="Tracking mode: temporal ROI active contour vs unconstrained full detection",
+    )
+    use_optical_flow: bool = Field(
+        default=True,
+        description="Use Lucas-Kanade optical flow for contact velocity estimation",
+    )
+    snake_iterations: int = Field(
+        default=15,
+        ge=1,
+        le=100,
+        description="Active contour iterations per tracked frame",
+    )
+

@@ -556,10 +556,15 @@ class LoGEdgeDetector:
 
 class ImprovedSnakeSettings(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    iterations: int = Field(500, ge=1)
-    alpha: float = Field(0.015, ge=0.0)
-    beta: float = Field(10.0, ge=0.0)
-    gamma: float = Field(0.001, ge=0.0)
+    iterations: int = Field(500, ge=1, description="Number of active contour optimization iterations")
+    alpha: float = Field(0.015, ge=0.0, description="Snake length/elasticity energy weight")
+    beta: float = Field(10.0, ge=0.0, description="Snake rigidity/smoothness energy weight")
+    gamma: float = Field(0.001, ge=0.0, description="Snake time step viscosity")
+    w_edge: float = Field(1.0, description="Edge gradient attraction weight")
+    w_line: float = Field(0.0, description="Intensity line weight")
+    w_balloon: float = Field(0.0, description="Balloon normal pressure weight")
+    gaussian_sigma: float = Field(2.0, ge=0.1, description="Gaussian blur scale")
+    num_nodes: int = Field(100, ge=10, le=500, description="Number of contour nodes after resampling")
 
 
 register_detector_settings("improved_snake", ImprovedSnakeSettings)
@@ -568,6 +573,10 @@ register_detector_settings("improved_snake", ImprovedSnakeSettings)
 class ImprovedSnakeDetector:
     """
     Enhanced active contour (snake) edge detection.
+
+    Uses multi-source candidate generation (Otsu + Canny), geometric droplet scoring,
+    arc-length resampling, and Menipy's native mathematical active contour solver
+    with substrate masking.
     """
 
     def detect(
@@ -591,26 +600,26 @@ class ImprovedSnakeDetector:
 
         import cv2
 
-        try:
-            from skimage.filters import gaussian as skimage_gaussian
-            from skimage.segmentation import active_contour
-        except ImportError:
-            logger.error("ImprovedSnakeDetector requires scikit-image.")
-            res = OtsuEdgeDetector().detect(img, settings)
-            return (res, []) if return_debug else res
+        from menipy.math.active_contour import (
+            ActiveContourConfig,
+            SnakeBoundaryCondition,
+            evolve_active_contour,
+            resample_contour_arclength,
+        )
 
-        h, w = img.shape[:2]
+        gray = ensure_gray(img)
+        h, w = gray.shape[:2]
 
         # Source 1: Otsu
         _, otsu_mask = cv2.threshold(
-            img, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU
+            gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU
         )
         otsu_contours, _ = cv2.findContours(
             otsu_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
         )
 
         # Source 2: Canny
-        enhanced = cv2.GaussianBlur(img, (5, 5), 0)
+        enhanced = cv2.GaussianBlur(gray, (5, 5), 0)
         canny_edges = cv2.Canny(enhanced, 30, 100)
         canny_contours, _ = cv2.findContours(
             canny_edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
@@ -652,28 +661,43 @@ class ImprovedSnakeDetector:
         best_cnt = scored[0][0]
         initial_xy = best_cnt.reshape(-1, 2).astype(float)
 
-        snake_img = img.copy()
+        if len(initial_xy) < 4:
+            res = np.empty((0, 2), float)
+            return (res, debug_info) if return_debug else res
+
+        # Resample initial contour to uniform equidistant nodes
+        target_nodes = min(max(cfg.num_nodes, 10), 500)
+        initial_xy = resample_contour_arclength(
+            initial_xy, n_points=target_nodes, closed=True
+        )
+
+        snake_img = gray.copy()
         if substrate_y is not None and 0 <= substrate_y < h:
-            initial_xy[:, 1] = np.minimum(initial_xy[:, 1], substrate_y - 1)
+            initial_xy[:, 1] = np.minimum(initial_xy[:, 1], substrate_y - 1.0)
             snake_img[substrate_y:, :] = 255
 
-        img_smooth = skimage_gaussian(snake_img.astype(np.float64) / 255.0, sigma=2.0)
-        init_rc = initial_xy[:, ::-1]
-
-        snake_rc = active_contour(
-            img_smooth,
-            init_rc,
+        act_cfg = ActiveContourConfig(
             alpha=cfg.alpha,
             beta=cfg.beta,
             gamma=cfg.gamma,
-            w_line=-1.0,
-            w_edge=1.0,
-            max_px_move=1.0,
-            max_num_iter=cfg.iterations,
+            w_line=cfg.w_line,
+            w_edge=cfg.w_edge,
+            w_balloon=cfg.w_balloon,
+            max_iterations=cfg.iterations,
+            gaussian_sigma=cfg.gaussian_sigma,
             convergence=0.01,
         )
 
-        result_xy = snake_rc[:, ::-1]
+        snake_res = evolve_active_contour(
+            snake_img,
+            initial_xy,
+            config=act_cfg,
+            boundary_condition=SnakeBoundaryCondition.PERIODIC,
+        )
+
+        result_xy = snake_res.xy
+        if substrate_y is not None and 0 <= substrate_y < h:
+            result_xy[:, 1] = np.minimum(result_xy[:, 1], substrate_y - 1.0)
 
         if return_debug:
             return result_xy, debug_info
