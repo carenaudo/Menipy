@@ -95,20 +95,72 @@ class ContactLineSettings(BaseModel):
 
 
 class ContourSmoothingSettings(BaseModel):
-    """Configuration for optional Savitzky-Golay contour smoothing.
+    """Configuration for contour refinement and smoothing.
 
-    When enabled, applies smoothing to the extracted contour to reduce noise
-    and computes tangent-based contact angles from the smoothed curve.
+    Supports:
+    - "active_contour": Energy-minimizing snake with substrate sliding boundary condition.
+    - "bspline": Parametric continuous cubic B-spline curve fitting and analytical derivatives.
+    - "savgol": Classical 1D Savitzky-Golay polynomial smoothing.
     """
 
     enabled: bool = Field(
         default=False,
-        description="Enable Savitzky-Golay contour smoothing",
+        description="Enable contour refinement and smoothing",
     )
-    method: Literal["savgol"] = Field(
-        default="savgol",
-        description="Smoothing method (currently only savgol supported)",
+    method: Literal["active_contour", "bspline", "savgol"] = Field(
+        default="active_contour",
+        description="Refinement method: 'active_contour' (snake on image gradients), 'bspline' (continuous spline), or 'savgol' (legacy polynomial)",
     )
+    # Active contour (Snake) parameters
+    snake_alpha: float = Field(
+        default=0.2,
+        ge=0.0,
+        description="Snake elasticity / membrane tension weight (alpha)",
+    )
+    snake_beta: float = Field(
+        default=0.4,
+        ge=0.0,
+        description="Snake rigidity / bending stiffness weight (beta)",
+    )
+    snake_gamma: float = Field(
+        default=1.0,
+        gt=0.0,
+        description="Snake time-step / damping factor (gamma)",
+    )
+    snake_w_edge: float = Field(
+        default=1.0,
+        description="Weight for image gradient edge attraction force",
+    )
+    snake_w_line: float = Field(
+        default=0.0,
+        description="Weight for image intensity line attraction force",
+    )
+    snake_w_balloon: float = Field(
+        default=0.0,
+        description="Weight for balloon / inflation outward pressure force",
+    )
+    snake_max_iterations: int = Field(
+        default=150,
+        ge=1,
+        description="Maximum iterations for active contour evolution",
+    )
+    snake_convergence: float = Field(
+        default=1e-4,
+        ge=0.0,
+        description="Convergence threshold for snake average vertex displacement",
+    )
+    # B-spline parameters
+    spline_eval_points: int = Field(
+        default=200,
+        ge=10,
+        description="Number of equidistant points to evaluate along the continuous B-spline curve",
+    )
+    spline_smoothing: float = Field(
+        default=0.0,
+        ge=0.0,
+        description="Smoothing parameter s for B-spline approximation (0 for interpolation)",
+    )
+    # Savitzky-Golay parameters (legacy compatibility)
     window_length: int = Field(
         default=21,
         ge=5,
@@ -129,7 +181,7 @@ class ContourSmoothingSettings(BaseModel):
     )
     extrapolate_contact_points: bool = Field(
         default=True,
-        description="Linearly extrapolate contact points to fix rounded corners (common in snake/active contours)",
+        description="Linearly extrapolate contact points to fix rounded corners",
     )
 
     @field_validator("window_length")

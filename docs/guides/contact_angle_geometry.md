@@ -123,3 +123,48 @@ On curved substrates (cylinders, spheres, fibers, lenses), the contact angle mea
 $$\theta_{\text{intrinsic}} = \theta_{\text{apparent}} - \alpha_{\text{sub}}$$
 
 where $\alpha_{\text{sub}}$ is evaluated via `SubstrateProfile.eval_tangent_angle_deg(x, y)` at each contact point.
+
+---
+
+## 8. Parametric B-Spline Tangent Contact Angles (`fit_bspline_snake`)
+
+Following the DropSnake methodology established by Stalder et al. (2006, 2010) and Brigger et al. (2000), Menipy provides continuous parametric cubic B-spline fitting for sub-pixel droplet profile smoothing and contact angle evaluation ([`src/menipy/math/active_contour.py`](file:///d:/programacion/Menipy/src/menipy/math/active_contour.py)).
+
+### 8.1 Continuous Parametric Curve Formulation
+An open droplet interface with $N$ vertices is represented as a cubic B-spline curve $\mathbf{C}(u) = (x(u), y(u))^\top$ with normalized curve parameter $u \in [0, 1]$:
+
+$$\mathbf{C}(u) = \sum_{i=0}^{m} N_{i, 3}(u) \, \mathbf{P}_i$$
+
+where $N_{i, 3}(u)$ are the cubic B-spline basis functions evaluated via the Cox-de Boor recursion algorithm over the knot vector $\mathbf{U}$, and $\mathbf{P}_i \in \mathbb{R}^2$ are the control points fitted via SciPy's FITPACK algorithms (`scipy.interpolate.splprep`).
+
+### 8.2 Analytical Tangents and Local Curvature
+Because the B-spline basis possesses $C^2$ continuity everywhere along the profile, exact analytical derivatives of any order are computed directly from the spline coefficients:
+
+$$\mathbf{C}'(u) = \left( \frac{dx}{du}, \frac{dy}{du} \right)^\top, \quad \mathbf{C}''(u) = \left( \frac{d^2 x}{du^2}, \frac{d^2 y}{du^2} \right)^\top$$
+
+The signed local curvature $\kappa(u)$ along the droplet interface is analytically:
+
+$$\kappa(u) = \frac{x'(u) y''(u) - y'(u) x''(u)}{\left( x'(u)^2 + y'(u)^2 \right)^{3/2}}$$
+
+### 8.3 Coordinate-Invariant Vector Dot Product Contact Angles
+Let $\hat{\mathbf{u}}_{\text{sub}}$ be the unit direction vector along the substrate line, oriented from the left contact point toward the right contact point (pointing along $+x$ in standard horizontal geometry).
+
+At the three-phase contact lines, the unit interface tangents ascending into the liquid droplet phase are:
+
+$$\hat{\mathbf{t}}_{\text{left}} = \frac{\mathbf{C}'(0)}{\|\mathbf{C}'(0)\|}, \quad \hat{\mathbf{t}}_{\text{right}} = -\frac{\mathbf{C}'(1)}{\|\mathbf{C}'(1)\|}$$
+
+Using signed vector projections onto the inward substrate vectors ($\hat{\mathbf{u}}_{\text{sub}}$ at left, $-\hat{\mathbf{u}}_{\text{sub}}$ at right):
+
+$$\theta_{\text{left}} = \arccos\left( \hat{\mathbf{u}}_{\text{sub}} \cdot \hat{\mathbf{t}}_{\text{left}} \right)$$
+
+$$\theta_{\text{right}} = \arccos\left( -\hat{\mathbf{u}}_{\text{sub}} \cdot \hat{\mathbf{t}}_{\text{right}} \right)$$
+
+### 8.4 Invariance Across All Wetting Regimes
+Unlike naive slope-based formulations $\theta = \arctan(dy/dx)$ that collapse obtuse angles into acute angles, the vector dot product formulation is continuous, signed, and exact across all geometric regimes:
+- **Acute Droplets ($\theta < 90^\circ$):** $\hat{\mathbf{u}}_{\text{sub}} \cdot \hat{\mathbf{t}}_{\text{left}} > 0 \implies \theta \in (0^\circ, 90^\circ)$.
+- **Hemispherical Droplets ($\theta = 90^\circ$):** $\hat{\mathbf{u}}_{\text{sub}} \cdot \hat{\mathbf{t}}_{\text{left}} = 0 \implies \theta = 90^\circ$.
+- **Obtuse / Superhydrophobic Droplets ($\theta > 90^\circ$):** $\hat{\mathbf{u}}_{\text{sub}} \cdot \hat{\mathbf{t}}_{\text{left}} < 0 \implies \theta \in (90^\circ, 180^\circ)$.
+- **Tilted Substrates:** Rotational invariance holds automatically because $\hat{\mathbf{u}}_{\text{sub}}$ reflects the true inclination vector of the tilted solid plate.
+
+### 8.5 Addressing Active Contour Corner Blunting Near Substrates
+When active contours evolve against discrete image gradients, symmetric 2D Gaussian scale-space blurring at the three-phase contact line corner can pull the immediate endpoint slightly inward. To ensure rigorous experimental contact angle measurement, Menipy's contour refinement stage ([`src/menipy/common/contour_refinement.py`](file:///d:/programacion/Menipy/src/menipy/common/contour_refinement.py)) combines B-spline sub-pixel profile evolution with weighted polynomial flank projection (`estimate_contact_angle_tangent`), sampling the unblurred droplet flank ($h > 1.0\text{ px}$) to yield sub-degree accuracy.

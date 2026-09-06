@@ -9,7 +9,11 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from menipy.common.cancellation import CancellationToken
 
-from .config import EdgeDetectionSettings, PreprocessingSettings
+from .config import (
+    ContourSmoothingSettings,
+    EdgeDetectionSettings,
+    PreprocessingSettings,
+)
 from .fit import Fit
 from .frame import Frame
 from .geometry import Contour, Geometry, SubstrateProfile
@@ -99,6 +103,7 @@ class Context(BaseModel):
     # Settings for pipeline stages
     preprocessing_settings: PreprocessingSettings | None = None
     edge_detection_settings: EdgeDetectionSettings | None = None
+    contour_smoothing_settings: ContourSmoothingSettings | None = None
     needle_diameter_mm: float | None = None
     fluid_density_kg_m3: float | None = None
     drop_density_kg_m3: float | None = None

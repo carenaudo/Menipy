@@ -55,7 +55,8 @@ This document provides complete provenance, academic citations, licensing terms,
 - **Parametric B-Spline Snakes**:
   - Brigger, P., Hoeg, J., & Unser, M. (2000). *B-spline snakes: A flexible tool for parametric contour detection*. **IEEE Transactions on Image Processing**, 9(9), 1484–1496. DOI: [10.1109/83.862633](https://doi.org/10.1109/83.862633).
   - Jacob, M., Blu, T., & Unser, M. (2004). *Efficient energies and algorithms for parametric snakes*. **IEEE Transactions on Image Processing**, 13(9), 1231–1244. DOI: [10.1109/TIP.2004.832919](https://doi.org/10.1109/TIP.2004.832919).
-- **Menipy Implementation Status**: **Independent Clean-Room Python Re-implementation**. Authored in `src/menipy/math/active_contour.py` using pure NumPy, SciPy, and OpenCV primitives under Menipy's MIT open-source license.
+- **Menipy Implementation Status**: **Independent Clean-Room Python Re-implementation**. Authored in `src/menipy/math/active_contour.py` and `src/menipy/common/contour_refinement.py` using pure NumPy, SciPy, and OpenCV primitives under Menipy's MIT open-source license.
+- **Python Package Licensing Compliance**: Composes 3-Clause BSD (`scipy.interpolate.splprep`, `scipy.linalg.solve_banded`) and Apache 2.0 (`cv2.Sobel`, `cv2.GaussianBlur`) components. Zero non-permissive or viral licensed code.
 
 ---
 

@@ -122,12 +122,12 @@ class SessilePipeline(PipelineBase):
 
         # If using pre-detected contour, skip clipping to preserve the closed polygon
         if getattr(ctx, "drop_contour", None) is not None:
-            # Still apply smoothing if enabled
+            # Still apply refinement if enabled
             smoothing_settings = getattr(ctx, "contour_smoothing_settings", None)
             if smoothing_settings and smoothing_settings.enabled:
-                from menipy.common import contour_smoothing
+                from menipy.common import contour_refinement
 
-                ctx = contour_smoothing.run(ctx, smoothing_settings)
+                ctx = contour_refinement.refine_contour(ctx, smoothing_settings)
 
             substrate_line = getattr(ctx, "substrate_line", None)
             if substrate_line and ctx.contour is not None:
@@ -259,12 +259,12 @@ class SessilePipeline(PipelineBase):
                     ),
                 )
 
-        # Apply optional contour smoothing
+        # Apply optional contour refinement / smoothing
         smoothing_settings = getattr(ctx, "contour_smoothing_settings", None)
         if smoothing_settings and smoothing_settings.enabled:
-            from menipy.common import contour_smoothing
+            from menipy.common import contour_refinement
 
-            ctx = contour_smoothing.run(ctx, smoothing_settings)
+            ctx = contour_refinement.refine_contour(ctx, smoothing_settings)
 
         return ctx
 
@@ -442,8 +442,9 @@ class SessilePipeline(PipelineBase):
         res.update({"residuals": fit.get("residuals", {})})
 
         residuals = fit.get("residuals") or {}
+        rmse_val = residuals.get("rmse")
         try:
-            rmse = float(residuals.get("rmse"))
+            rmse = float(rmse_val) if rmse_val is not None else float("nan")
         except (TypeError, ValueError):
             rmse = float("nan")
         if np.isfinite(rmse) and rmse > 25.0:

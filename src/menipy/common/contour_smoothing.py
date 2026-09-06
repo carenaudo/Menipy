@@ -160,6 +160,18 @@ def smooth_contour(
     if window_length % 2 == 0:
         window_length += 1
 
+    # Check for overhanging geometry (obtuse droplets where x is multi-valued)
+    if len(dome_points) >= 5:
+        dx_consec = np.diff(dome_points[:, 0])
+        sign_changes = int(np.sum(dx_consec[:-1] * dx_consec[1:] < 0))
+        if sign_changes > 2:
+            logger.warning(
+                "Contour appears non-monotonic in X (direction reversals=%d). "
+                "Savitzky-Golay sorting by X may scramble points for obtuse droplets (theta > 90 deg). "
+                "Consider method='active_contour' or 'bspline'.",
+                sign_changes,
+            )
+
     # Sort by x for monotonic curve
     order = np.argsort(dome_points[:, 0])
     x = dome_points[order, 0].astype(float)
