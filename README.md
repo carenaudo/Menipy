@@ -22,7 +22,7 @@ drop analysis, with additional experimental pipelines under active development.
 - Keep the project accessible for scientific review by documenting assumptions,
   limitations, result contracts, and implementation details.
 
-![Menipy GUI screenshot](https://github.com/user-attachments/assets/45fd8f53-98cc-4c6d-bf59-0e0687c5c7fe)
+![Menipy GUI screenshot](docs/screnshoots/sessile_main.png)
 
 Screenshot: Menipy GUI with image preview, analysis controls, overlays, and
 results panels.
