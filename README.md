@@ -8,6 +8,23 @@ directories.
 The project currently focuses on image-based workflows for sessile and pendant
 drop analysis, with additional experimental pipelines under active development.
 
+> [!WARNING]
+> **Current intended use and known reliability issues:** Menipy began as an early
+> exploration of how far a "vibe coding" workflow in Codex could take the
+> project, and it is now moving toward a more deliberate stage with stronger
+> human review, validation, and scientific scrutiny. At the moment, the project
+> is meant mainly to explore image-processing techniques and to prototype a
+> graphical workbench for work/science and educational software. It is not yet a
+> reliable tool for production work or scientific measurements. In educational
+> contexts it can be useful to show where the methods fail, but it should not be
+> used as a trusted source of quantitative results. Fully automatic values for
+> contact angle, surface tension, and contour detection can be inaccurate and
+> should not be treated as definitive measurements. Even with manual selection,
+> errors can still occur—for example, incorrect contact-point detection or
+> incorrect droplet/meniscus contour detection below the substrate. These results
+> should be reviewed critically and validated before using them for quantitative
+> analysis.
+
 ## Goals
 
 - Provide a clear, extensible foundation for droplet and meniscus shape analysis
