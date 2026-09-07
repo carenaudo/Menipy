@@ -75,7 +75,7 @@ def build_pendant_profile_envelope_mm(
         axis_direction_xy=axis_direction_xy,
     )
     local = (xy - origin) @ basis
-    row_keys = np.rint(local[:, 1] * px_per_mm / bin_px).astype(int)
+    row_keys = np.rint(local[:, 1] / bin_px).astype(int)
     rows: list[tuple[float, float]] = []
     for row in np.unique(row_keys):
         check_cancelled()

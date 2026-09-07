@@ -118,6 +118,104 @@ This document provides complete provenance, academic citations, licensing terms,
   - Carroll, B. J. (1976). *The accurate measurement of contact angle, phase volume, and surface area of drops on cylindrical fibers*. **Journal of Colloid and Interface Science**, 57(3), 488–495. DOI: [10.1016/0021-9797(76)90227-7](https://doi.org/10.1016/0021-9797(76)90227-7).
 - **Menipy Implementation Status**: **Independent Clean-Room Python Implementation**. Authored in `src/menipy/math/apex.py` and `plugins/detect_apex.py`. Resolves leftmost-pixel bias via discrete crest multi-point centroid/median averaging, determines summits on tilted plates via perpendicular inward normal projection, evaluates maximum radial clearance on curved cylindrical/spherical substrates, and executes continuous sub-pixel Frenet-frame polynomial refinement for apex radius of curvature $R_0$ and asymmetry quantification under MIT license.
 
+
+### 1.11 Conan-ML Experimental Contact Angle Benchmark Dataset
+- **Domain**: High-precision sessile drop contact angle ground truth (hydrophobic and superhydrophobic range).
+- **Authors**: Daniel G. Shaw, Matthew J. Neeson, Raymond F. Tabor, and Joseph D. Berry
+- **Affiliations**: Department of Chemical and Biomolecular Engineering, The University of Melbourne; School of Chemistry, Monash University, Australia.
+- **Author Contact**:
+  - Dr. Joseph D. Berry: `joeb@unimelb.edu.au`
+  - Daniel G. Shaw: `shawd1@student.unimelb.edu.au`
+- **Academic Publication**:
+  - Shaw, D. G., Neeson, M. J., Tabor, R. F., & Berry, J. D. (2024). *Accurate and Robust Static Hydrophobic Contact Angle Measurements Using Machine Learning*. **Langmuir**, 40(24), 12642–12651. DOI: [10.1021/acs.langmuir.4c01050](https://doi.org/10.1021/acs.langmuir.4c01050).
+- **Source Repository**: [https://github.com/jdber1/conan-ml](https://github.com/jdber1/conan-ml)
+- **Upstream License**: Creative Commons Attribution 4.0 International (CC-BY-4.0)
+- **Benchmark Files**: `data/benchmarks/conan_ml/`
+  - `111.031693.bmp` ($\theta = 111.03^\circ$)
+  - `113.66.bmp` ($\theta = 113.66^\circ$)
+  - `113.98.bmp` ($\theta = 113.98^\circ$)
+  - `114.47.bmp` ($\theta = 114.47^\circ$)
+  - `115.00.bmp` ($\theta = 115.00^\circ$)
+  - `115.553909.bmp` ($\theta = 115.55^\circ$)
+  - `115.714851.bmp` ($\theta = 115.71^\circ$)
+  - `118.174171.bmp` ($\theta = 118.17^\circ$)
+  - `2-s@M@Z-120.321945190429.bmp` ($\theta = 120.32^\circ$)
+  - `2-s@M@Z-121.057571411132.bmp` ($\theta = 121.06^\circ$)
+  - `2-s@M@Z-122.639770507812.bmp` ($\theta = 122.64^\circ$)
+  - `359 CA162.BMP` ($\theta = 162.00^\circ$, superhydrophobic test)
+  - `steelball.jpg` (Optical calibration sphere)
+  - `TEF1.png` to `TEF4.BMP` (Teflon substrate baseline reflection)
+
+### 1.12 EPFL Drop Analysis Calibration & Verification Suite
+- **Domain**: Low-Bond Axisymmetric Drop Shape Analysis (LB-ADSA) & B-spline Snakes.
+- **Authors**: Adrien F. Stalder, Grigory Kulik, Daniel Sage, Laure Barbieri, Patrick Hoffmann, and Michael Unser
+- **Affiliations**: Biomedical Imaging Group (BIG), École Polytechnique Fédérale de Lausanne (EPFL); Advanced Photonics Laboratory, EPFL, Switzerland.
+- **Author Contact**:
+  - Dr. Daniel Sage: `daniel.sage@epfl.ch`
+  - BIG Webmaster: `webmaster.big@epfl.ch`
+- **Academic Publications**:
+  1. Stalder, A. F., Kulik, G., Sage, D., Barbieri, L., & Hoffmann, P. (2010). *A snake-based approach to accurate determination of both contact points and contact angles*. **Colloids and Surfaces A**, 364(1-3), 72–81. DOI: [10.1016/j.colsurfa.2010.04.040](https://doi.org/10.1016/j.colsurfa.2010.04.040).
+  2. Stalder, A. F., Melchior, T., Müller, M., Sage, D., Blu, T., & Unser, M. (2006). *Low-bond axisymmetric drop shape analysis for surface tension and contact angle measurements of sessile drops*. **Colloids and Surfaces A**, 286(1-3), 92–103. DOI: [10.1016/j.colsurfa.2006.03.008](https://doi.org/10.1016/j.colsurfa.2006.03.008).
+- **Source URL**: [http://bigwww.epfl.ch/demo/dropanalysis/](http://bigwww.epfl.ch/demo/dropanalysis/)
+- **Benchmark Files**: `data/benchmarks/epfl_drop_analysis/`
+  - `sample.jpg`: Reference sessile droplet image.
+  - `prefsLBADSA.txt`, `prefsSnake.txt`, `prefsliquids.txt`: Standard reference parameters.
+  - `drop_analysis.pdf`: Theoretical and procedural manual.
+- **Physical Ground Truth**:
+  - Optical scale: $191.82\,\text{pixels/mm}$
+  - Liquid capillary parameter $c = \Delta\rho g / \gamma = 13.4752\,\text{mm}^{-2}$ (Milli-Q water)
+
+### 1.13 UCLA Pendant Drop Tensiometry Dataset
+- **Domain**: Pendant drop interfacial tension and needle outer-diameter calibration.
+- **Author**: J. T. Van Lew
+- **Affiliation**: Mechanical & Aerospace Engineering Department, University of California, Los Angeles (UCLA), USA.
+- **Author Contact**:
+  - J. T. Van Lew: `jtvanlew@ucla.edu` / GitHub: [`jtvanlew`](https://github.com/jtvanlew)
+- **Source Repository**: [https://github.com/jtvanlew/ucla-pendant-drop](https://github.com/jtvanlew/ucla-pendant-drop)
+- **License**: MIT / Open Source
+- **Benchmark Files**: `data/benchmarks/ucla_pendant/`
+  - `H2O_PendantDrop.png`: Water in air, needle outer diameter $d = 0.51\,\text{mm}$, $\Delta\rho = 998.7\,\text{kg/m}^3$, $\gamma_{\text{lit}} = 72.80\,\text{mN/m}$.
+  - `Hexadecane_PendantDrop.png` & `Hexadecane.bmp`: Hexadecane in air, needle $d = 1.95\,\text{mm}$, $\Delta\rho = 768.76\,\text{kg/m}^3$, $\gamma_{\text{lit}} \approx 27.5\,\text{mN/m}$.
+
+### 1.14 pyDSA Dynamic Droplet & Wetting Ridge Suite
+- **Domain**: Dynamic contact line tracking, viscoelastic wetting ridge deformation, and video processing.
+- **Author**: Gaby Launay
+- **Affiliation**: Université de Lyon, CNRS, INSA-Lyon, MATEIS, France.
+- **Author Contact**:
+  - Gaby Launay: `gaby.launay@tutanota.com` / GitHub: [`galaunay`](https://github.com/galaunay)
+- **Source Repository**: [https://github.com/galaunay/pyDSA_gui](https://github.com/galaunay/pyDSA_gui)
+- **Upstream License**: GNU General Public License v3.0 (GPL-3.0)
+- **Benchmark Files**: `data/benchmarks/pydsa/`
+  - `test.avi`: Dynamic sessile drop video (baseline $[100, 200] \to [1500, 200]$, scale $0.44\,\text{mm}$, $\Delta t = 0.34\,\text{s}$).
+  - `wetting_ridge.mp4`: Substrate wetting ridge dynamics under moving contact line.
+  - `test1.png` to `test8.png`: High-resolution sequence of sessile droplet deformation.
+
+### 1.15 Aalto University Contact Angle Baseline & Error Analysis Standard
+- **Domain**: Precision contact angle measurement, 1-pixel baseline perturbation error analysis, and spherical cap validation.
+- **Authors**: Maja Vučkovac and Robin H. A. Ras
+- **Affiliation**: Department of Applied Physics, Aalto University School of Science, P.O. Box 15100, FI-00076 Aalto, Espoo, Finland.
+- **Author Contact**:
+  - Dr. Maja Vučkovac: `maja.vuckovac@aalto.fi`
+  - Prof. Robin H. A. Ras: `robin.ras@aalto.fi`
+- **Academic Publication & Zenodo Record**:
+  - Vučkovac, M., & Ras, R. H. A. (2019). *Computation of errors in contact angle measurements produced by shifting the baseline by one pixel up or down*. **Zenodo**, DOI: [10.5281/zenodo.2573078](https://doi.org/10.5281/zenodo.2573078).
+  - Associated with: Vučkovac, M., Latikka, M., Liu, K., & Ras, R. H. A. (2019). *Improving surface-wetting characterization*. **Science**, 363(6432), 1159–1160. DOI: [10.1126/science.aav7384](https://doi.org/10.1126/science.aav7384).
+- **License**: Creative Commons Attribution 4.0 International (CC-BY-4.0)
+- **Benchmark Files**: `data/benchmarks/aalto_ca_error/`
+  - `test1.png`, `ScaleImage.jpg`, `ScaleFactor.mat`, `fluid_prop.m`, `README.txt`, MATLAB reference algorithms.
+  - Fluid properties: $\rho_w = 0.998\,\text{g/cm}^3$, $\rho_a = 0.0012\,\text{g/cm}^3$, $\gamma = 72.0\,\text{mN/m}$, $g = 981.7\,\text{cm/s}^2$.
+
+### 1.16 Droplet Evaporation Kinetics & Fabric Wetting Suites
+- **Droplet Evaporation Series**:
+  - **Author**: Soeren Brandt (GitHub: [`@soerenbrandt`](https://github.com/soerenbrandt))
+  - **Source Repository**: [https://github.com/soerenbrandt/Sessile-Droplet-analysis](https://github.com/soerenbrandt/Sessile-Droplet-analysis)
+  - **Benchmark Files**: `data/benchmarks/evaporation/` (`Video.mp4` at $1\,\text{FPS}$ and `Droplet-analysis-results.png`).
+  - **Ground Truth**: Continuous transition from constant contact radius (pinned) to constant contact angle (depinned) regimes.
+- **University of Borås Textile Wetting Dataset**:
+  - **Author**: Xi Wang (`xi.wang@hb.se`), Department of Textile Technology, University of Borås, Sweden.
+  - **Zenodo Record**: DOI: [10.5281/zenodo.17691567](https://doi.org/10.5281/zenodo.17691567).
+  - **Benchmark Files**: `data/benchmarks/boras_textiles/` (`blackfabric-1.png`, `whitefabricbacknotsilky-1.png`, `MXeneecoflexMXenefabricwhite-1.png` with corresponding `.xls` dynamic measurement tables, droplet volume $5\text{--}6\,\mu\text{L}$).
+
 ---
 
 ## 2. Literature Analytical Standards (Curved Substrates & Fibers)

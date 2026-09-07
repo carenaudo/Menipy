@@ -77,8 +77,11 @@ def _clip_contour_at_pendant_contacts(
     if contacts.shape[0] < 2 or xy.size == 0:
         return xy
 
-    contact_y = float(np.min(contacts[:2, 1]))
+    contact_y = float(np.max(contacts[:2, 1]))
     clipped = xy[xy[:, 1] >= contact_y]
+    if clipped.shape[0] < 3:
+        contact_y = float(np.min(contacts[:2, 1]))
+        clipped = xy[xy[:, 1] >= contact_y]
     if clipped.shape[0] < 3:
         return xy
 
@@ -97,8 +100,11 @@ def _pendant_max_width(
         try:
             contacts = np.asarray(contact_points, dtype=float).reshape(-1, 2)
             if contacts.shape[0] >= 2:
-                contact_y = float(np.min(contacts[:2, 1]))
+                contact_y = float(np.max(contacts[:2, 1]))
                 candidate = xy[xy[:, 1] >= contact_y]
+                if candidate.shape[0] < 2:
+                    contact_y = float(np.min(contacts[:2, 1]))
+                    candidate = xy[xy[:, 1] >= contact_y]
                 if candidate.shape[0] >= 2:
                     measured = candidate
         except Exception:
@@ -336,11 +342,49 @@ class PendantPipeline(PipelineBase):
 
         return do_preprocessing(ctx)
 
+    def do_feature_detection(self, ctx: Context) -> Context | None:
+        """Automatically detect needle, contact points, and drop contour if not provided."""
+        image = getattr(ctx, "image", None)
+        if image is None and getattr(ctx, "frames", None):
+            f = ctx.frames[0]
+            image = getattr(f, "image", f)
+        if image is None or not isinstance(image, np.ndarray):
+            return ctx
+
+        has_needle = getattr(ctx, "needle_rect", None) is not None
+        has_contour = (
+            getattr(ctx, "drop_contour", None) is not None
+            or getattr(ctx, "detected_contour", None) is not None
+            or getattr(ctx, "contour", None) is not None
+        )
+        if not (has_needle and has_contour):
+            from menipy.common.auto_calibrator import AutoCalibrator
+
+            calib = AutoCalibrator(image, "pendant").detect_all()
+            if getattr(ctx, "needle_rect", None) is None and calib.needle_rect is not None:
+                ctx.needle_rect = calib.needle_rect
+            if getattr(ctx, "contact_points", None) is None and calib.contact_points is not None:
+                ctx.contact_points = calib.contact_points
+            if getattr(ctx, "apex_point", None) is None and calib.apex_point is not None:
+                ctx.apex_point = calib.apex_point
+            if getattr(ctx, "drop_contour", None) is None and calib.drop_contour is not None:
+                ctx.drop_contour = calib.drop_contour
+            if getattr(ctx, "roi_rect", None) is None and calib.roi_rect is not None:
+                ctx.roi_rect = calib.roi_rect
+
+        return ctx
+
     def do_contour_extraction(self, ctx: Context) -> Context | None:
         """Extract droplet contour using edge detection."""
         detected = getattr(ctx, "drop_contour", None)
         if detected is None:
             detected = getattr(ctx, "detected_contour", None)
+        if detected is None and getattr(ctx, "contour", None) is None:
+            self.do_feature_detection(ctx)
+            detected = getattr(ctx, "drop_contour", None)
+            if detected is None:
+                detected = getattr(ctx, "detected_contour", None)
+
         if detected is not None:
             from menipy.models.geometry import Contour
 
@@ -396,25 +440,27 @@ class PendantPipeline(PipelineBase):
 
         needle_diameter_mm = getattr(ctx, "needle_diameter_mm", None)
         needle_rect = getattr(ctx, "needle_rect", None)
-
         px_per_mm = float(getattr(ctx, "px_per_mm", 0.0) or 0.0)
 
-        if px_per_mm <= 0 and needle_diameter_mm and needle_rect:
-            # needle_rect is typically (x, y, width, height) in pixels
-            try:
-                if hasattr(needle_rect, "__iter__") and len(needle_rect) >= 3:
-                    needle_width_px = needle_rect[2]  # width in pixels
-                    if needle_width_px > 0 and needle_diameter_mm > 0:
-                        px_per_mm = float(needle_width_px) / float(needle_diameter_mm)
-                        self.logger.info(
-                            f"Calibration: needle {needle_width_px}px = {needle_diameter_mm}mm → {px_per_mm:.2f} px/mm"
-                        )
-            except Exception as e:
-                self.logger.warning(f"Could not calculate scale from needle: {e}")
-        elif px_per_mm <= 0 and needle_diameter_mm:
-            self.logger.warning(
-                f"needle_diameter_mm={needle_diameter_mm} but no needle_rect provided for calibration"
-            )
+        if px_per_mm <= 0 and needle_diameter_mm:
+            if not needle_rect:
+                self.do_feature_detection(ctx)
+                needle_rect = getattr(ctx, "needle_rect", None)
+            if needle_rect:
+                try:
+                    if hasattr(needle_rect, "__iter__") and len(needle_rect) >= 3:
+                        needle_width_px = needle_rect[2]  # width in pixels
+                        if needle_width_px > 0 and needle_diameter_mm > 0:
+                            px_per_mm = float(needle_width_px) / float(needle_diameter_mm)
+                            self.logger.info(
+                                f"Calibration: needle {needle_width_px}px = {needle_diameter_mm}mm → {px_per_mm:.2f} px/mm"
+                            )
+                except Exception as e:
+                    self.logger.warning(f"Could not calculate scale from needle: {e}")
+            else:
+                self.logger.warning(
+                    f"needle_diameter_mm={needle_diameter_mm} but no needle_rect detected for calibration"
+                )
 
         ctx.scale = {"px_per_mm": px_per_mm if px_per_mm > 0 else 1.0}
         return ctx

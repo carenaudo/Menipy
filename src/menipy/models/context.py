@@ -131,6 +131,7 @@ class Context(BaseModel):
     # Geometric regions and overlays
     roi: tuple[int, int, int, int] | None = None  # (x, y, width, height)
     detected_roi: tuple[int, int, int, int] | None = None
+    roi_rect: tuple[int, int, int, int] | None = None
     needle_rect: tuple[int, int, int, int] | None = None  # (x, y, width, height)
     contact_line: tuple[tuple[int, int], tuple[int, int]] | None = (
         None  # ((x1,y1), (x2,y2))

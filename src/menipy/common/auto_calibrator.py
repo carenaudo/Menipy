@@ -524,7 +524,7 @@ class AutoCalibrator:
             return None, 0.0
 
         img_center_x = self.width // 2
-        min_area = self.image_area * 0.05  # At least 5% of image
+        min_area = self.image_area * self.min_area_fraction
 
         valid_contours = []
         for cnt in contours:
@@ -585,8 +585,12 @@ class AutoCalibrator:
             return None, None, 0.0
         ref_x_right = np.median(right_shaft_pts[:, 0])
 
-        # Tolerance: how many pixels "out" counts as drop starting?
-        tolerance = 0
+        needle_w = float(ref_x_right - ref_x_left)
+        if needle_w <= 0:
+            return None, None, 0.0
+
+        # Tolerance: adaptive to needle diameter to reject edge antialiasing/noise
+        tolerance = max(2.5, 0.02 * needle_w)
 
         # Create mask for precise scanning
         mask = np.zeros((self.height, self.width), dtype=np.uint8)
@@ -622,8 +626,12 @@ class AutoCalibrator:
                     contact_x_right = current_x
                     break
 
-        # Needle bottom is the higher of the two contact points
-        needle_bottom = min(contact_y_left, contact_y_right)
+        # Needle bottom: use the lower contact point (higher y) when both sides are close,
+        # ensuring the entire needle shaft is encapsulated.
+        if abs(contact_y_left - contact_y_right) <= max(25, int(0.15 * h)):
+            needle_bottom = max(contact_y_left, contact_y_right)
+        else:
+            needle_bottom = min(contact_y_left, contact_y_right)
 
         # Build needle rectangle
         needle_x = int(ref_x_left)
