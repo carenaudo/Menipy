@@ -208,6 +208,20 @@ class PipelineController:
         run_kwargs = dict(overlays)
         run_kwargs["calibration_params"] = calibration_params
         run_kwargs["scale"] = {"px_per_mm": px_per_mm}
+        calibration_result = getattr(self.window, "_last_calibration_result", None)
+        run_kwargs["calibration_provenance"] = {
+            "origin": "measured"
+            if needle_rect
+            and calibration_result is not None
+            and "needle" not in getattr(calibration_result, "manual_regions", [])
+            else "manual"
+            if needle_rect
+            else "estimated",
+            "warnings": list(warnings),
+            "component_confidence": dict(
+                getattr(calibration_result, "confidence_scores", {}) or {}
+            ),
+        }
         run_kwargs["physics"] = {
             "rho1": calibration_params.get("drop_density_kg_m3", 1000.0),
             "rho2": calibration_params.get("fluid_density_kg_m3", 1.2),
@@ -254,6 +268,7 @@ class PipelineController:
             )
             if not needle_rect:
                 run_kwargs.pop("scale", None)
+                run_kwargs["calibration_provenance"]["origin"] = "missing"
         if image is None and cam_id is None:
             item = getattr(self.preview_panel, "image_item", None)
             if item is not None and hasattr(item, "get_original_image"):
@@ -461,6 +476,9 @@ class PipelineController:
             metadata["effective_calibration"] = {
                 "scale": ctx.scale,
                 "needle_diameter_mm": ctx.needle_diameter_mm,
+                "provenance": ctx.calibration_provenance.model_dump(mode="json")
+                if ctx.calibration_provenance
+                else None,
             }
             measurement = MeasurementResult(
                 id=request.job_id,
@@ -477,7 +495,11 @@ class PipelineController:
         self.append_logs(getattr(ctx, "log", []))
         self.window.statusBar().showMessage(
             (
-                "Analysis complete."
+                "Result kept in memory; history is unsaved."
+                if getattr(
+                    getattr(self.results_panel, "history", None), "unsaved", False
+                )
+                else "Analysis complete."
                 if current
                 else "Result saved to history; setup has changed."
             ),

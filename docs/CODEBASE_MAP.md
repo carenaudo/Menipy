@@ -49,6 +49,20 @@ and runs it directly. Pipeline stages exchange data through the Pydantic
 request/completion envelopes through its view model; calibration and preview
 computations use the same lifecycle. See [GUI execution](guides/gui_execution.md)
 for cancellation, stale-result handling, and isolated regression commands.
+The primary GUI selector exposes `sessile_dynamic` video/frame sequences.
+Independent-image folders use `gui/controllers/folder_controller.py` and
+`gui/services/folder_execution.py` to stream per-file outcomes through the same
+window pool; CLI temporal tracking remains in the CLI adapter.
+`models/results.py` owns atomic history writes and retry/recovery state.
+`models/calibration.py` defines calibration provenance; GUI execution annotates
+contexts through `gui/services/calibration_provenance.py` before persistence.
+See [history recovery and calibration](guides/history_recovery_calibration.md)
+and `tests/test_history_recovery_calibration.py` for publication and fault tests.
+Versioned analysis presets use `models/preset.py` and
+`gui/controllers/preset_controller.py`, stored through the existing SOP service.
+`readiness_controller.py` owns source readiness, calibration invalidation and
+accessible workflow labels. See [presets and workflow UX](guides/presets_workflow_ux.md),
+`tests/test_presets_readiness_layout.py`, and `tools/smoke_presets_layout.py`.
 
 ## Plugin graph
 

@@ -33,6 +33,8 @@ logger = logging.getLogger(__name__)
 class CalibrationResult:
     """Results from automatic calibration detection."""
 
+    manual_regions: list[str] = field(default_factory=list, kw_only=True)
+
     # Substrate line as ((x1, y1), (x2, y2)) - horizontal baseline
     substrate_line: tuple[tuple[int, int], tuple[int, int]] | None = None
     substrate_profile: SubstrateProfile | None = None
@@ -554,7 +556,9 @@ class AutoCalibrator:
 
         return drop_cnt, confidence
 
-    def _detect_needle_pendant(self, drop_cnt: np.ndarray) -> tuple[
+    def _detect_needle_pendant(
+        self, drop_cnt: np.ndarray
+    ) -> tuple[
         tuple[int, int, int, int] | None,
         tuple[tuple[int, int], tuple[int, int]] | None,
         float,

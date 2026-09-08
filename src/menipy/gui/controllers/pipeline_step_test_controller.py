@@ -238,6 +238,11 @@ class PipelineStepTestController(QObject):
                     f"- {name}: {value:.2f} ms" for name, value in timings.items()
                 )
             results = getattr(ctx, "results", None)
+            provenance = getattr(ctx, "calibration_provenance", None)
+            if provenance is not None:
+                lines.append(f"Scale origin: {provenance.origin}")
+                if not provenance.physical_values_enabled:
+                    results = {}
             if isinstance(results, dict) and results:
                 lines.append("Results:")
                 lines.extend(

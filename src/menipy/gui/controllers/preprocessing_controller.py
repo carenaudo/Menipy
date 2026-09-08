@@ -125,6 +125,12 @@ class PreprocessingPipelineController(QObject):
             self._redo.clear()
             self._state = None
 
+    def clear_geometry(self) -> None:
+        self._roi = self._roi_mask = self._contact_line = self._substrate_profile = None
+        self._history.clear()
+        self._redo.clear()
+        self._state = None
+
     def has_source(self) -> bool:
         """Has_source."""
         return self._image is not None

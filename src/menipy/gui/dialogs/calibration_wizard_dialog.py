@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Optional
 
 import cv2
 import numpy as np
-from PySide6.QtCore import QSize, Qt, Signal
+from PySide6.QtCore import QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QImage, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -113,6 +113,31 @@ class CalibrationWizardDialog(QDialog):
 
         self._build_ui()
         self._wire_signals()
+        if not isinstance(image, np.ndarray):
+            QTimer.singleShot(0, self._load_initial_preview)
+
+    def _load_initial_preview(self):
+        if self._closed:
+            return
+        from menipy.gui.services.calibration_service import calibration_preview_task
+        from menipy.gui.services.pipeline_runner import RunRequest
+
+        request = RunRequest.create(
+            self.pipeline_name,
+            {"image": self._input_image},
+            operation="calibration",
+            revision=str(self._manual_revision),
+        )
+        self._detection_job = request.job_id
+        self._detect_btn.setEnabled(False)
+        self._progress.show()
+        try:
+            self._runner.submit(request, calibration_preview_task)
+        except Exception as exc:
+            self._detection_job = None
+            self._progress.hide()
+            self._detect_btn.setEnabled(True)
+            self._confidence_label.setText(f"Could not load preview: {exc}")
 
     def _build_ui(self) -> None:
         """Build the dialog UI."""
@@ -142,12 +167,14 @@ class CalibrationWizardDialog(QDialog):
 
         # Scroll area for large images
         scroll = QScrollArea()
+        self._preview_scroll = scroll
+        self._fit_mode = True
         scroll.setWidgetResizable(True)
-        scroll.setMinimumSize(500, 400)
+        scroll.setMinimumSize(320, 260)
 
         self._preview_label = QLabel()
         self._preview_label.setAlignment(Qt.AlignCenter)
-        self._preview_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self._preview_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
         scroll.setWidget(self._preview_label)
         preview_layout.addWidget(scroll)
 
@@ -169,6 +196,7 @@ class CalibrationWizardDialog(QDialog):
 
         # Right: Detection results
         results_group = QGroupBox("Detected Regions")
+        results_group.setMinimumWidth(255)
         results_layout = QVBoxLayout(results_group)
 
         # Region checkboxes with status
@@ -252,7 +280,9 @@ class CalibrationWizardDialog(QDialog):
         """Create a widget for a single region with checkbox and status."""
         widget = QFrame()
         widget.setFrameShape(QFrame.StyledPanel)
-        layout = QHBoxLayout(widget)
+        outer = QVBoxLayout(widget)
+        layout = QHBoxLayout()
+        outer.addLayout(layout)
         layout.setContentsMargins(5, 5, 5, 5)
 
         # Color indicator
@@ -273,7 +303,8 @@ class CalibrationWizardDialog(QDialog):
         status = QLabel("--")
         status.setAlignment(Qt.AlignRight)
         status.setMinimumWidth(60)
-        layout.addWidget(status)
+        status.setWordWrap(True)
+        outer.addWidget(status)
 
         widget.checkbox = checkbox
         widget.status = status
@@ -309,7 +340,7 @@ class CalibrationWizardDialog(QDialog):
             draw_btn.setCheckable(True)
             draw_btn.setProperty("region_id", region_id)
             draw_btn.clicked.connect(self._on_draw_region_clicked)
-            layout.insertWidget(3, draw_btn)  # Insert before status
+            layout.addWidget(draw_btn)
             widget.draw_btn = draw_btn
 
         return widget
@@ -325,6 +356,16 @@ class CalibrationWizardDialog(QDialog):
         # Connect region checkboxes
         for _region_id, widget in self._region_widgets.items():
             widget.checkbox.stateChanged.connect(self._on_region_toggled)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        if self._fit_mode:
+            QTimer.singleShot(0, self._fit_preview)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if getattr(self, "_fit_mode", False):
+            QTimer.singleShot(0, self._fit_preview)
 
     def _show_original_image(self) -> None:
         """Display the original image in the preview."""
@@ -358,15 +399,22 @@ class CalibrationWizardDialog(QDialog):
 
     def _fit_preview(self) -> None:
         """Scale image to fit in preview area."""
+        self._fit_mode = True
+        self._preview_scroll.setWidgetResizable(True)
         if hasattr(self, "_current_pixmap"):
             scaled = self._current_pixmap.scaled(
-                self._preview_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation
+                self._preview_scroll.viewport().size(),
+                Qt.KeepAspectRatio,
+                Qt.SmoothTransformation,
             )
             self._preview_label.setPixmap(scaled)
 
     def _actual_preview(self) -> None:
         """Show image at 100% scale."""
+        self._fit_mode = False
+        self._preview_scroll.setWidgetResizable(False)
         if hasattr(self, "_current_pixmap"):
+            self._preview_label.resize(self._current_pixmap.size())
             self._preview_label.setPixmap(self._current_pixmap)
 
     def run_detection(self):
@@ -416,7 +464,10 @@ class CalibrationWizardDialog(QDialog):
             return
         self.original_image, self.result = completion.value
         self._input_image = self.original_image
-        self._show_results()
+        if self.result is None:
+            self._show_original_image()
+        else:
+            self._show_results()
 
     def done(self, result):
         self._closed = True
@@ -523,7 +574,11 @@ class CalibrationWizardDialog(QDialog):
         if result.roi_rect and self._region_enabled.get("roi", True):
             x, y, w, h = result.roi_rect
             cv2.rectangle(
-                overlay, (x, y), (x + w, y + h), (0, 255, 255), 2  # Yellow (BGR)
+                overlay,
+                (x, y),
+                (x + w, y + h),
+                (0, 255, 255),
+                2,  # Yellow (BGR)
             )
             cv2.putText(
                 overlay,
@@ -547,7 +602,7 @@ class CalibrationWizardDialog(QDialog):
             return
 
         sub_conf = self.result.confidence_scores.get("substrate", 0.0)
-        sub_warn = getattr(self.result, "substrate_warning", False)
+        sub_warn = getattr(self.result, "substrate_warning", False) or sub_conf < 0.75
         if self.result.substrate_line and not sub_warn:
             sub_label = "✓ Found"
         elif self.result.substrate_line and sub_warn:
@@ -707,12 +762,15 @@ class CalibrationWizardDialog(QDialog):
 
             if self.result is None:
                 self.result = CalibrationResult(confidence_scores={"overall": 0.5})
+            if self._drawing_mode not in self.result.manual_regions:
+                self.result.manual_regions.append(self._drawing_mode)
 
             if self._drawing_mode == "substrate":
                 # Ensure left-to-right order for substrate line
                 if p1[0] > p2[0]:
                     p1, p2 = p2, p1
                 self.result.substrate_line = (p1, p2)
+                self.result.substrate_warning = False
                 self.result.confidence_scores["substrate"] = 1.0
                 logger.info(f"Manual substrate line set: {p1} -> {p2}")
 

@@ -211,9 +211,7 @@ def _run_sfe(args, out_dir: Path) -> int:
         if not measurements:
             logger.error("SFE input JSON contains no measurements")
             return 1
-        pairs = [
-            (m["liquid"], m["contact_angle_deg"]) for m in measurements
-        ]
+        pairs = [(m["liquid"], m["contact_angle_deg"]) for m in measurements]
         substrate_groups.append((substrate_name, pairs))
 
     # Mode 3: --sfe-csv batch
@@ -273,7 +271,6 @@ def _run_sfe(args, out_dir: Path) -> int:
     available_names = list_liquid_names()
 
     for substrate_name, pairs in substrate_groups:
-
         liquids = []
         angles = []
         for liq_name, angle in pairs:
@@ -320,11 +317,22 @@ def _run_sfe(args, out_dir: Path) -> int:
             logger.warning(warn)
 
         # Generate OWRK plot if requested
-        if generate_plot and sfe_result.owrk is not None and plot_owrk is not None and plt is not None:
+        if (
+            generate_plot
+            and sfe_result.owrk is not None
+            and plot_owrk is not None
+            and plt is not None
+        ):
             try:
-                plot_name = f"owrk_plot_{label}.png" if substrate_name else "owrk_plot.png"
+                plot_name = (
+                    f"owrk_plot_{label}.png" if substrate_name else "owrk_plot.png"
+                )
                 plot_path = out_dir / plot_name
-                title = f"OWRK — {label}" if substrate_name else "OWRK Surface Energy Analysis"
+                title = (
+                    f"OWRK — {label}"
+                    if substrate_name
+                    else "OWRK Surface Energy Analysis"
+                )
                 fig = plot_owrk(sfe_result.owrk, output_path=plot_path, title=title)
                 plt.close(fig)
                 logger.info(f"OWRK plot saved: {plot_path}")
@@ -366,25 +374,33 @@ def _run_sfe(args, out_dir: Path) -> int:
                 owrk = result_dict.get("owrk")
                 wu = result_dict.get("wu")
                 if owrk:
-                    writer.writerow({
-                        "substrate": sub,
-                        "method": "owrk",
-                        "gamma_s_dispersive_mN_m": owrk.get("gamma_s_dispersive_mN_m"),
-                        "gamma_s_polar_mN_m": owrk.get("gamma_s_polar_mN_m"),
-                        "gamma_s_total_mN_m": owrk.get("gamma_s_total_mN_m"),
-                        "r_squared": owrk.get("r_squared"),
-                        "warnings": ";".join(owrk.get("warnings", [])),
-                    })
+                    writer.writerow(
+                        {
+                            "substrate": sub,
+                            "method": "owrk",
+                            "gamma_s_dispersive_mN_m": owrk.get(
+                                "gamma_s_dispersive_mN_m"
+                            ),
+                            "gamma_s_polar_mN_m": owrk.get("gamma_s_polar_mN_m"),
+                            "gamma_s_total_mN_m": owrk.get("gamma_s_total_mN_m"),
+                            "r_squared": owrk.get("r_squared"),
+                            "warnings": ";".join(owrk.get("warnings", [])),
+                        }
+                    )
                 if wu:
-                    writer.writerow({
-                        "substrate": sub,
-                        "method": "wu",
-                        "gamma_s_dispersive_mN_m": wu.get("gamma_s_dispersive_mN_m"),
-                        "gamma_s_polar_mN_m": wu.get("gamma_s_polar_mN_m"),
-                        "gamma_s_total_mN_m": wu.get("gamma_s_total_mN_m"),
-                        "r_squared": None,
-                        "warnings": ";".join(wu.get("warnings", [])),
-                    })
+                    writer.writerow(
+                        {
+                            "substrate": sub,
+                            "method": "wu",
+                            "gamma_s_dispersive_mN_m": wu.get(
+                                "gamma_s_dispersive_mN_m"
+                            ),
+                            "gamma_s_polar_mN_m": wu.get("gamma_s_polar_mN_m"),
+                            "gamma_s_total_mN_m": wu.get("gamma_s_total_mN_m"),
+                            "r_squared": None,
+                            "warnings": ";".join(wu.get("warnings", [])),
+                        }
+                    )
         logger.info(f"Batch SFE results written to {csv_path}")
 
     logger.info(f"SFE analysis complete. Outputs saved in: {out_dir}")
@@ -861,7 +877,11 @@ def main(argv: list[str] | None = None) -> int:
     seq_source = (
         args.video
         or args.sequence_dir
-        or (args.input_dir if args.pipeline in ("sessile_dynamic", "needle_hysteresis") else None)
+        or (
+            args.input_dir
+            if args.pipeline in ("sessile_dynamic", "needle_hysteresis")
+            else None
+        )
     )
     if seq_source:
         if args.pipeline not in ("sessile_dynamic", "needle_hysteresis"):
@@ -869,7 +889,11 @@ def main(argv: list[str] | None = None) -> int:
                 "--video and --sequence-dir require --pipeline sessile_dynamic or needle_hysteresis"
             )
         if (
-            args.sequence_dir or (args.pipeline in ("sessile_dynamic", "needle_hysteresis") and args.input_dir)
+            args.sequence_dir
+            or (
+                args.pipeline in ("sessile_dynamic", "needle_hysteresis")
+                and args.input_dir
+            )
         ) and (args.fps is None or args.fps <= 0):
             ap.error("--sequence-dir and dynamic --input-dir require a positive --fps")
         source_path = Path(seq_source).expanduser().resolve()
@@ -1022,7 +1046,12 @@ def main(argv: list[str] | None = None) -> int:
                 )
 
         # Compute calibration metrics
-        px_per_mm = 100.0 / max(needle_diameter_mm or 0.72, 0.001)
+        px_per_mm = (
+            args.px_per_mm
+            if args.px_per_mm is not None
+            else 100.0 / max(needle_diameter_mm or 0.72, 0.001)
+        )
+        scale_origin = "manual" if args.px_per_mm is not None else "estimated"
         scale_dict = {"px_per_mm": px_per_mm}
 
         # Run pipeline
@@ -1046,8 +1075,18 @@ def main(argv: list[str] | None = None) -> int:
             if getattr(ctx, "overlay", None) is not None:
                 _save_image_bgr(out_dir / "overlay.png", ctx.overlay)
 
+            from menipy.models.calibration import CalibrationProvenance
             from menipy.models.results import build_persisted_analysis
 
+            ctx.calibration_provenance = CalibrationProvenance(
+                origin=scale_origin,
+                px_per_mm=px_per_mm,
+                warnings=[
+                    "Estimated scale; physical values withheld. Supply --px-per-mm or needle calibration."
+                ]
+                if scale_origin == "estimated"
+                else [],
+            )
             persisted = build_persisted_analysis(ctx)
             results_out = {
                 "pipeline": runner.pipeline.name,
@@ -1083,6 +1122,7 @@ def main(argv: list[str] | None = None) -> int:
     locked_needle = manual_needle
     locked_substrate = manual_contact
     locked_scale = args.px_per_mm
+    locked_scale_origin = "manual" if locked_scale is not None else "missing"
 
     from menipy.common.auto_calibrator import run_auto_calibration
     from menipy.common.detection_helpers import auto_detect_features
@@ -1164,10 +1204,7 @@ def main(argv: list[str] | None = None) -> int:
                             det["substrate_line"] = locked_substrate
                         if locked_needle is not None:
                             det["needle_rect"] = locked_needle
-                        if (
-                            "drop_contour" in det
-                            and det["drop_contour"] is not None
-                        ):
+                        if "drop_contour" in det and det["drop_contour"] is not None:
                             tracker.initialize(first_frame, det, scale=locked_scale)
                             tracked_contour = det.get("drop_contour")
                             tracked_contacts = det.get("contact_points")
@@ -1183,11 +1220,15 @@ def main(argv: list[str] | None = None) -> int:
         target_needle_diam = needle_diameter_mm or 0.72
         if locked_scale is not None:
             px_per_mm = float(locked_scale)
+            scale_origin = locked_scale_origin
         elif needle_rect and needle_rect[2] > 0 and needle_diameter_mm:
             px_per_mm = float(needle_rect[2]) / needle_diameter_mm
             locked_scale = px_per_mm
+            scale_origin = "manual" if manual_needle else "measured"
+            locked_scale_origin = scale_origin
         else:
             px_per_mm = 100.0 / max(target_needle_diam, 0.001)
+            scale_origin = "estimated"
 
         scale_dict = {"px_per_mm": px_per_mm}
 
@@ -1233,6 +1274,17 @@ def main(argv: list[str] | None = None) -> int:
                 _save_image_bgr(out_dir / overlay_name, ctx.overlay)
 
             # Write standard results dictionary
+            from menipy.models.calibration import CalibrationProvenance
+
+            ctx.calibration_provenance = CalibrationProvenance(
+                origin=scale_origin,
+                px_per_mm=px_per_mm,
+                warnings=[
+                    "Estimated scale; physical values withheld. Supply --px-per-mm or needle calibration."
+                ]
+                if scale_origin == "estimated"
+                else [],
+            )
             persisted = build_persisted_analysis(ctx)
             if not persisted["accepted"] and tracker is not None:
                 tracker.reset()

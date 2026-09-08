@@ -17,6 +17,13 @@ retain reasons/diagnostics with empty metrics. Cancelled and failed jobs are not
 measurements. History-only insertion must preserve the current selection and
 metric cards. See [GUI execution](../guides/gui_execution.md).
 
+Calibration diagnostics are additive. A context with explicit estimated/missing
+provenance has empty published metrics and an Uncalibrated presentation status;
+its scientific QA acceptance flag is unchanged. Calibration summaries and
+warnings are always retained in CSV. History persistence failures are separately
+reported as unsaved, with retry and complete JSON recovery export. See
+[recovery and calibration](../guides/history_recovery_calibration.md).
+
 ## Prerequisites
 
 - Schema docs present for all pipelines:

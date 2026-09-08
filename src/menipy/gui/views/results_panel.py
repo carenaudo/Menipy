@@ -158,6 +158,9 @@ class ResultsPanel:
 
         # Add controls for history management
         self._setup_controls()
+        if self.table:
+            self.table.setMinimumHeight(75 if self.history.measurements else 0)
+        self._setup_persistence_notice()
         self._setup_metric_cards()
         self.install_residuals_table(residuals_host, residuals_table)
 
@@ -169,6 +172,63 @@ class ResultsPanel:
 
         # Load and display existing history
         self.update_history()
+
+    def _setup_persistence_notice(self):
+        self.calibration_notice = QLabel(self.panel)
+        self.calibration_notice.setWordWrap(True)
+        self.panel.layout().insertWidget(0, self.calibration_notice)
+        self.persistence_notice = QWidget(self.panel)
+        self.persistence_notice.setMinimumHeight(64)
+        layout = QHBoxLayout(self.persistence_notice)
+        self.persistence_label = QLabel()
+        self.persistence_label.setWordWrap(True)
+        layout.addWidget(self.persistence_label, 1)
+        retry = QPushButton("Retry save")
+        retry.clicked.connect(lambda: self.history.retry_save())
+        layout.addWidget(retry)
+        recovery = QPushButton("Save recovery copy…")
+        recovery.clicked.connect(self._export_recovery)
+        layout.addWidget(recovery)
+        self.panel.layout().insertWidget(0, self.persistence_notice)
+        if hasattr(self.history, "observe_persistence"):
+            self.history.observe_persistence(self._refresh_persistence_notice)
+        self._refresh_persistence_notice()
+
+    def _refresh_persistence_notice(self):
+        from shiboken6 import isValid
+
+        if not isValid(self.panel):
+            return
+        unsaved = getattr(self.history, "unsaved", False)
+        self.persistence_notice.setVisible(unsaved)
+        from PySide6.QtWidgets import QTabWidget
+
+        host = self.panel.parentWidget()
+        while host is not None and not isinstance(host, QTabWidget):
+            host = host.parentWidget()
+        if host is not None:
+            host.setMinimumHeight(
+                400 if unsaved else 300 if self.history.measurements else 220
+            )
+        self.persistence_label.setText(
+            "History is unsaved. Keep this window open and retry or save a recovery copy. "
+            + str(getattr(self.history, "save_error", "") or "")
+        )
+
+    def _export_recovery(self):
+        from PySide6.QtWidgets import QFileDialog, QMessageBox
+
+        path, _ = QFileDialog.getSaveFileName(
+            self.panel,
+            "Save all in-memory measurements",
+            "measurement_history_recovery.json",
+            "JSON (*.json)",
+        )
+        if path:
+            try:
+                self.history.export_recovery(path)
+            except Exception as exc:
+                QMessageBox.warning(self.panel, "Recovery export failed", str(exc))
 
     def install_residuals_table(
         self,
@@ -203,6 +263,7 @@ class ResultsPanel:
 
         # Create controls layout
         controls_layout = QHBoxLayout()
+        actions_layout = QHBoxLayout()
 
         # Pipeline filter
         self.pipeline_combo = QComboBox()
@@ -238,7 +299,7 @@ class ResultsPanel:
         self.key_results_button = QPushButton("Key Results")
         set_button_icon(self.key_results_button, "info", size=14)
         self.key_results_button.clicked.connect(self.show_key_results)
-        controls_layout.addWidget(self.key_results_button)
+        actions_layout.addWidget(self.key_results_button)
 
         self.compare_button = QPushButton("Compare")
         set_button_icon(self.compare_button, "layout-table", size=14)
@@ -247,7 +308,7 @@ class ResultsPanel:
             bool(getattr(self.settings, "compare_methods_visible", False))
         )
         self.compare_button.toggled.connect(self.set_compare_methods_visible)
-        controls_layout.addWidget(self.compare_button)
+        actions_layout.addWidget(self.compare_button)
 
         self.diagnostics_button = QPushButton("Diagnostics")
         set_button_icon(self.diagnostics_button, "list", size=14)
@@ -256,29 +317,29 @@ class ResultsPanel:
             bool(getattr(self.settings, "diagnostics_visible", False))
         )
         self.diagnostics_button.toggled.connect(self.set_diagnostics_visible)
-        controls_layout.addWidget(self.diagnostics_button)
+        actions_layout.addWidget(self.diagnostics_button)
 
         self.clear_button = QPushButton("Clear")
         set_button_icon(self.clear_button, "x", size=14)
         self.clear_button.clicked.connect(self._clear_history)
-        controls_layout.addWidget(self.clear_button)
+        actions_layout.addWidget(self.clear_button)
 
         self.export_button = QPushButton("Export")
         set_button_icon(self.export_button, "download", size=14)
         self.export_button.clicked.connect(self._export_csv)
-        controls_layout.addWidget(self.export_button)
+        actions_layout.addWidget(self.export_button)
 
         self.columns_button = QPushButton("Columns")
         set_button_icon(self.columns_button, "layout-table", size=14)
         self.columns_menu = QMenu(self.columns_button)
         self.columns_button.setMenu(self.columns_menu)
-        controls_layout.addWidget(self.columns_button)
-
+        actions_layout.addWidget(self.columns_button)
         # Add controls to main layout (keep summary label above controls if present)
         insert_index = 0
         if self.summary_label and layout.indexOf(self.summary_label) != -1:
             insert_index = 1
         layout.insertLayout(insert_index, controls_layout)
+        layout.insertLayout(insert_index + 1, actions_layout)
 
     def _setup_metric_cards(self) -> None:
         """Create compact key metric cards above the full results table."""
@@ -451,6 +512,7 @@ class ResultsPanel:
                         col
                     ] not in {
                         "status",
+                        "calibration",
                         "rejection_reasons",
                         "file_path",
                         "run_metadata_json",
@@ -470,6 +532,7 @@ class ResultsPanel:
                             col
                         ] not in {
                             "status",
+                            "calibration",
                             "rejection_reasons",
                             "file_path",
                             "run_metadata_json",
@@ -499,6 +562,7 @@ class ResultsPanel:
         """Update table with measurement history."""
         if not self.table:
             return
+        self.table.setMinimumHeight(75 if self.history.measurements else 0)
 
         unit_system = self.unit_system
         headers, rows = self._get_table_data()
@@ -694,6 +758,9 @@ class ResultsPanel:
         )
 
     def _update_residuals_table(self, measurement: MeasurementResult | None) -> None:
+        self.calibration_notice.setText(
+            measurement.calibration_summary if measurement else ""
+        )
         table = self.residuals_table
         if table is None:
             return
@@ -992,6 +1059,7 @@ class ResultsPanel:
             "timestamp",
             "pipeline",
             "status",
+            "calibration",
             "rejection_reasons",
             "diagnostics_json",
             "file_path",
@@ -1034,7 +1102,9 @@ class ResultsPanel:
                 elif col == "pipeline":
                     value = measurement.pipeline.title()
                 elif col == "status":
-                    value = "Accepted" if measurement.accepted else "Rejected"
+                    value = measurement.display_status
+                elif col == "calibration":
+                    value = measurement.calibration_summary
                 elif col == "rejection_reasons":
                     value = ";".join(measurement.rejection_reasons)
                 elif col == "diagnostics_json":

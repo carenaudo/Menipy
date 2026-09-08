@@ -330,7 +330,10 @@ def test_submission_warnings_survive_worker_completion(runner, qtbot, monkeypatc
     runner.finished.connect(outcomes.append)
     runner.submit(RunRequest.create("sessile", {}, warnings=["fallback scale"]))
     qtbot.waitUntil(lambda: bool(outcomes))
-    assert outcomes[0].warnings == ("fallback scale",)
+    assert "fallback scale" in outcomes[0].warnings
+    assert any(
+        "physical values are withheld" in warning for warning in outcomes[0].warnings
+    )
 
 
 def test_stage_calibration_keeps_fallback_warning_when_source_is_missing():

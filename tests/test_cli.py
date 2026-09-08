@@ -156,6 +156,8 @@ def test_batch_processing_execution(tmp_path: Path):
             str(input_dir),
             "--glob",
             "*.png, *.jpg",
+            "--px-per-mm",
+            "20",
             "--auto-calibrate",
             "--out",
             str(out_dir),

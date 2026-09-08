@@ -260,7 +260,17 @@ class MainController(QObject):
             )
 
             wizard = CalibrationWizardDialog(image, pipeline_name, self.window)
-            wizard.calibration_complete.connect(self._on_calibration_complete)
+            readiness = getattr(self.window, "readiness_ctrl", None)
+            source_key = readiness.key() if readiness else None
+            wizard.calibration_complete.connect(
+                lambda result: (
+                    self._on_calibration_complete(result)
+                    if readiness is None or readiness.key() == source_key
+                    else self.window.statusBar().showMessage(
+                        "Calibration discarded because the source changed.", 4000
+                    )
+                )
+            )
             wizard.exec()
         except Exception as exc:
             logger.exception("Failed to open calibration wizard")
@@ -308,7 +318,7 @@ class MainController(QObject):
             # Report success
             conf = result.confidence_scores.get("overall", 0.0)
             self.window.statusBar().showMessage(
-                f"Calibration complete (confidence: {conf*100:.0f}%)", 3000
+                f"Calibration complete (confidence: {conf * 100:.0f}%)", 3000
             )
             logger.info(
                 f"Calibration applied: ROI={result.roi_rect}, needle={result.needle_rect}, substrate={result.substrate_line is not None}"

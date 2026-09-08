@@ -89,5 +89,48 @@ These are execution-control checks, not scientific throughput benchmarks.
 Initial screenshot capture took 1.6 seconds and is excluded from the active-run
 heartbeat interval; no application-startup timing claim is made.
 
-Folder batching, calibration acceptance policy, preset expansion, streaming
-memory redesign, and recovery from failed history writes remain separate work.
+Preset expansion and streaming memory redesign remain separate work.
+History recovery and calibration publication are described in
+[A06–A07](history_recovery_calibration.md).
+
+## Dynamic Sessile and independent-image folders (A04–A05)
+
+Dynamic Sessile is available in the primary analysis selector. Choose File for
+a video or Folder for a frame sequence, set Sequence FPS for frame folders,
+then choose Run sequence. The existing temporal pipeline produces one summary
+with its full context for the timeline and scientific exports. Camera input is
+disabled for this mode. Static folder actions are hidden in Dynamic Sessile.
+
+For static pipelines, Folder offers Run selected and Run folder (file count).
+Run selected preserves the existing selected-image workflow. Run folder snapshots
+all supported image paths, pipeline and settings, then analyzes each image
+independently with automatic calibration. Selected-preview geometry, markers,
+and detected scale are not carried to unrelated images. This does not alter CLI
+folder tracking or the evolving scientific methodologies.
+
+`folder_execution.folder_task` uses `pipeline_runner.execute_request`, the same
+execution function as individual GUI runs. A parent job owns the window pool
+throughout the folder; each file has its own immutable request and UUID.
+`FolderEvent` streams running and terminal outcomes to `FolderController` on the
+GUI thread. Accepted and rejected contexts pass through the existing idempotent
+history builder exactly once. Folder records never replace the selected preview.
+
+The Folder results dialog reports per-file errors and rejection reasons. Closing
+it leaves computation running; Folder results reopens it. Stop requests cooperative
+cancellation and preserves file outcomes committed before that request. The active
+file and remaining queue become cancelled. Window closure follows the shared
+deferred shutdown lifecycle. Corrupt files fail individually; later files continue.
+Retry failures creates new UUIDs with the original settings and retains prior
+attempt rows, marked retried. Scientific rejections are not execution failures.
+
+Export CSV writes the current folder's attempts, source paths, pipeline, statuses,
+error/rejection details, diagnostics, run metadata and union of analytical metrics.
+It includes failed/cancelled rows without invented metrics. Completed measurements
+also remain available in normal history. The per-attempt panel itself is session
+state; a new folder run replaces it, and history persistence behavior is unchanged.
+
+Run `uv run --extra test python tools/check_gui_execution.py
+tests/test_gui_folder_execution.py` for deterministic GUI tests covering keyboard
+access, one-sequence submission, independent folder identities, corrupt-file
+continuation, retry, cancellation, heartbeat and consolidated CSV. These tests
+exercise execution contracts without asserting numerical methodology results.

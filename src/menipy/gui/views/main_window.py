@@ -281,7 +281,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.setupHost.setMinimumWidth(300)  # type: ignore[attr-defined]
             self.setupHost.setMaximumWidth(360)  # type: ignore[attr-defined]
             self.workbenchHost.setMinimumWidth(520)  # type: ignore[attr-defined]
-            self.previewHost.setMinimumHeight(320)  # type: ignore[attr-defined]
+            self.previewHost.setMinimumHeight(220)  # type: ignore[attr-defined]
             self.inspectTabs.setMinimumHeight(190)  # type: ignore[attr-defined]
             self.rootSplitter.setStretchFactor(0, 0)  # type: ignore[attr-defined]
             self.rootSplitter.setStretchFactor(1, 1)  # type: ignore[attr-defined]
@@ -319,6 +319,38 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.main_controller.load_startup_preview()
         except Exception:
             logger.debug("Startup preview load failed", exc_info=True)
+        from menipy.gui.controllers.preset_controller import PresetController
+        from menipy.gui.controllers.readiness_controller import ReadinessController
+
+        self.preset_ctrl = PresetController(self)
+        self.readiness_ctrl = ReadinessController(self)
+        from PySide6.QtWidgets import QScrollArea
+
+        self.setupHostLayout.removeWidget(self.setup_panel)
+        self.setup_scroll = QScrollArea(self.setupHost)
+        self.setup_scroll.setWidgetResizable(True)
+        self.setup_scroll.setFrameShape(QScrollArea.NoFrame)
+        self.setup_scroll.setWidget(self.setup_panel)
+        self.setupHostLayout.insertWidget(0, self.setup_scroll)
+        # Two compact rows keep source and action controls reachable at 1200 px.
+        while self.workflowBarLayout.count():
+            self.workflowBarLayout.takeAt(0)
+        rows = QVBoxLayout()
+        top = QHBoxLayout()
+        top.addWidget(self.workflowAnalysisHost)
+        top.addStretch()
+        top.addWidget(self.actionExportCsvBtn)
+        top.addWidget(self.workflowPanelToggleHost)
+        rows.addLayout(top)
+        source_row = QHBoxLayout()
+        source_row.addWidget(self.workflowSourceHost)
+        source_row.addStretch()
+        rows.addLayout(source_row)
+        self.workflowBarLayout.addLayout(rows)
+        self.workflowBar.setMaximumHeight(96)
+        self.inspectTabs.setMinimumHeight(
+            300 if self.results_panel_ctrl.history.measurements else 190
+        )
 
     def _setup_units_menu(self):
         """Create a Config > Units submenu to toggle between SI and CGS."""
@@ -383,7 +415,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def _apply_workbench_polish(self) -> None:
         """Apply proposal-inspired styling to the current generated workbench."""
-        self.setStyleSheet(theme.get_stylesheet() + f"""
+        self.setStyleSheet(
+            theme.get_stylesheet()
+            + f"""
             QWidget#centralwidget {{
                 background-color: {theme.BG_PRIMARY};
             }}
@@ -499,7 +533,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             QTabWidget#inspectTabs {{
                 background-color: {theme.BG_PRIMARY};
             }}
-            """)
+            """
+        )
 
     def _apply_workbench_icons(self) -> None:
         """Apply resource-backed icons to the top workflow controls."""
@@ -1174,9 +1209,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def _cache_splitter_sizes(self) -> None:
         if not hasattr(self, "rootSplitter"):
             return
-        setup_visible = bool(getattr(self, "setupHost", None)) and self.setupHost.isVisible()  # type: ignore[attr-defined]
-        inspect_visible = bool(getattr(self, "inspectTabs", None)) and self.inspectTabs.isVisible()  # type: ignore[attr-defined]
-        key_results_visible = bool(getattr(self, "keyResultsHost", None)) and self.keyResultsHost.isVisible()  # type: ignore[attr-defined]
+        setup_visible = (
+            bool(getattr(self, "setupHost", None)) and self.setupHost.isVisible()
+        )  # type: ignore[attr-defined]
+        inspect_visible = (
+            bool(getattr(self, "inspectTabs", None)) and self.inspectTabs.isVisible()
+        )  # type: ignore[attr-defined]
+        key_results_visible = (
+            bool(getattr(self, "keyResultsHost", None))
+            and self.keyResultsHost.isVisible()
+        )  # type: ignore[attr-defined]
         if setup_visible and inspect_visible and key_results_visible:
             try:
                 self._splitter_sizes_full = list(self.rootSplitter.sizes())  # type: ignore[attr-defined]
@@ -1498,6 +1540,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.runner.shutdown()
             self.statusBar().showMessage("Stopping analysis before closing…")
             return
+        history = getattr(getattr(self, "results_panel_ctrl", None), "history", None)
+        if history is not None and getattr(history, "unsaved", False):
+            from PySide6.QtWidgets import QMessageBox
+
+            choice = QMessageBox.warning(
+                self,
+                "History is unsaved",
+                "History could not be saved. Cancel to retry or save a recovery copy, "
+                "or discard the unsaved in-memory changes and close.",
+                QMessageBox.Cancel | QMessageBox.Discard,
+                QMessageBox.Cancel,
+            )
+            if choice != QMessageBox.Discard:
+                event.ignore()
+                return
         if hasattr(self, "main_controller") and self.main_controller:
             self.main_controller.shutdown()
         super().closeEvent(event)

@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+import tempfile
+import weakref
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -26,6 +29,25 @@ class MeasurementResult(BaseModel):
     rejection_reasons: list[str] = Field(default_factory=list)
     diagnostics: dict[str, Any] = Field(default_factory=dict)
     run_metadata: dict[str, Any] | None = None
+
+    @property
+    def display_status(self) -> str:
+        if not self.accepted:
+            return "Rejected"
+        if self.diagnostics.get("calibration", {}).get("physical_values_withheld"):
+            return "Uncalibrated"
+        return "Accepted"
+
+    @property
+    def calibration_summary(self) -> str:
+        calibration = self.diagnostics.get("calibration", {})
+        if not calibration:
+            return "Not recorded (legacy)"
+        parts = [f"Scale: {calibration.get('origin', 'missing')}"]
+        if calibration.get("px_per_mm") is not None:
+            parts.append(f"{calibration['px_per_mm']:g} px/mm")
+        parts.extend(calibration.get("warnings", []))
+        return "; ".join(parts)
 
 
 def _qa_payload(qa: Any) -> dict[str, Any]:
@@ -63,6 +85,14 @@ def build_persisted_analysis(ctx: Any) -> dict[str, Any]:
         ]
     if qa and "validity" not in diagnostics:
         diagnostics["validity"] = qa
+    calibration = getattr(ctx, "calibration_provenance", None)
+    if calibration is not None:
+        diagnostics["calibration"] = dict(
+            calibration.model_dump(mode="json"),
+            physical_values_withheld=not calibration.physical_values_enabled,
+        )
+        if not calibration.physical_values_enabled:
+            raw_results = {}
     return {
         "accepted": accepted,
         "rejection_reasons": reasons,
@@ -84,6 +114,9 @@ class ResultsHistory:
         """
         self.measurements: list[MeasurementResult] = []
         self.max_history = max_history
+        self.unsaved = False
+        self.save_error: str | None = None
+        self._save_observers: list[weakref.WeakMethod] = []
         self._data_dir = Path.home() / ".menipy"
         self._history_file = self._data_dir / "measurement_history.json"
         self._load_history()
@@ -91,8 +124,8 @@ class ResultsHistory:
     def add_measurement(self, measurement: MeasurementResult) -> None:
         """Add a new measurement to history."""
         self.measurements.insert(0, measurement)  # Most recent first
-        if len(self.measurements) > self.max_history:
-            self.measurements.pop()
+        if not self.unsaved:
+            del self.measurements[self.max_history :]
         self._save_history()
 
     def clear_history(self) -> None:
@@ -124,6 +157,7 @@ class ResultsHistory:
             "timestamp",
             "pipeline",
             "status",
+            "calibration",
             "rejection_reasons",
             "diagnostics_json",
             "file_path",
@@ -179,7 +213,9 @@ class ResultsHistory:
                 elif col == "pipeline":
                     value = measurement.pipeline.title()
                 elif col == "status":
-                    value = "Accepted" if measurement.accepted else "Rejected"
+                    value = measurement.display_status
+                elif col == "calibration":
+                    value = measurement.calibration_summary
                 elif col == "rejection_reasons":
                     value = ";".join(measurement.rejection_reasons)
                 elif col == "diagnostics_json":
@@ -230,7 +266,7 @@ class ResultsHistory:
         """Load measurement history from disk."""
         try:
             if self._history_file.exists():
-                with open(self._history_file) as f:
+                with open(self._history_file, encoding="utf-8") as f:
                     data = json.load(f)
                     for item in data.get("measurements", []):
                         # Convert timestamp string back to datetime
@@ -241,21 +277,66 @@ class ResultsHistory:
             # If loading fails, start with empty history
             self.measurements = []
 
-    def _save_history(self) -> None:
-        """Save measurement history to disk."""
+    def observe_persistence(self, callback) -> None:
+        """Subscribe without retaining a closed results panel."""
+        self._save_observers.append(weakref.WeakMethod(callback))
+
+    def _notify_persistence(self) -> None:
+        self._save_observers = [
+            ref for ref in self._save_observers if ref() is not None
+        ]
+        for ref in self._save_observers:
+            callback = ref()
+            if callback is not None:
+                try:
+                    callback()
+                except Exception:
+                    logger.exception("Could not update history persistence notice")
+
+    def export_recovery(self, destination: str | Path) -> None:
+        """Write every in-memory record to a separate, reloadable history file."""
+        self._write_atomic(Path(destination))
+
+    def _write_atomic(self, destination: Path) -> None:
+        payload = json.dumps(
+            {"measurements": [m.model_dump(mode="json") for m in self.measurements]},
+            ensure_ascii=False,
+            indent=2,
+        )
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        temporary = None
         try:
-            self._data_dir.mkdir(exist_ok=True)
-            data = {
-                "measurements": [
-                    {**m.model_dump(), "timestamp": m.timestamp.isoformat()}
-                    for m in self.measurements
-                ]
-            }
-            with open(self._history_file, "w") as f:
-                json.dump(data, f, indent=2)
-        except Exception:
-            # If saving fails, continue without persistence
-            pass
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                encoding="utf-8",
+                dir=destination.parent,
+                prefix=f".{destination.name}.",
+                suffix=".tmp",
+                delete=False,
+            ) as stream:
+                temporary = Path(stream.name)
+                stream.write(payload)
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.replace(temporary, destination)
+        finally:
+            if temporary is not None:
+                temporary.unlink(missing_ok=True)
+
+    def retry_save(self) -> bool:
+        return self._save_history()
+
+    def _save_history(self) -> bool:
+        """Replace history only after a complete flushed write; retain failed data."""
+        try:
+            self._write_atomic(self._history_file)
+        except Exception as exc:
+            self.unsaved, self.save_error = True, str(exc)
+            logger.exception("History is unsaved: %s", self._history_file)
+        else:
+            self.unsaved, self.save_error = False, None
+        self._notify_persistence()
+        return not self.unsaved
 
 
 # Global results history instance

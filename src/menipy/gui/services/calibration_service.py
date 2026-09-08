@@ -62,13 +62,17 @@ class CalibrationComputation:
         need_redetect_drop = False
 
         if manual_substrate:
+            self.result.manual_regions.append("substrate")
+            self.result.substrate_warning = False
             self.result.substrate_line = manual_substrate
             self.result.confidence_scores["substrate"] = 1.0
             need_redetect_drop = True  # Need to re-detect drop with correct substrate
         if manual_roi:
+            self.result.manual_regions.append("roi")
             self.result.roi_rect = manual_roi
             self.result.confidence_scores["roi"] = 1.0
         if manual_needle:
+            self.result.manual_regions.append("needle")
             self.result.needle_rect = manual_needle
             self.result.confidence_scores["needle"] = 1.0
             need_redetect_drop = (
@@ -186,8 +190,22 @@ def calibration_task(parameters, token):
     ).run()
 
 
+def calibration_preview_task(parameters, token):
+    token.check()
+    image = cv2.imread(str(parameters["image"]), cv2.IMREAD_COLOR)
+    token.check()
+    if image is None:
+        raise ValueError("Could not load the calibration image.")
+    return image, None
+
+
 def prepare_stage_calibration(pipeline, parameters):
     from menipy.common.auto_calibrator import AutoCalibrator
+
+    supplied = parameters.get("calibration_provenance") or {}
+    manual_scale = supplied.get("origin") == "manual" or (
+        not supplied and bool(parameters.get("scale"))
+    )
 
     fallback_warnings = (
         []
@@ -221,12 +239,23 @@ def prepare_stage_calibration(pipeline, parameters):
         value = getattr(result, attribute, None)
         if value is not None:
             for key in keys:
-                parameters[key] = value
+                if parameters.get(key) is None:
+                    parameters[key] = value
     diameter = float(
         (parameters.get("calibration_params") or {}).get("needle_diameter_mm", 0.54)
     )
-    if result.needle_rect and diameter > 0:
+    if result.needle_rect and diameter > 0 and not manual_scale:
         parameters["scale"] = {"px_per_mm": result.needle_rect[2] / diameter}
+    parameters["calibration_provenance"] = {
+        "origin": "manual"
+        if manual_scale
+        else "measured"
+        if result.needle_rect and diameter > 0
+        else "estimated"
+        if parameters.get("scale")
+        else "missing",
+        "component_confidence": dict(result.confidence_scores or {}),
+    }
     warnings = [
         f"Auto-calibration did not detect {label}."
         for label, value in (
@@ -238,4 +267,6 @@ def prepare_stage_calibration(pipeline, parameters):
     ]
     if not parameters.get("needle_rect"):
         warnings.extend(fallback_warnings)
+    if getattr(result, "substrate_warning", False):
+        warnings.append("Substrate detection is doubtful; review the baseline.")
     return parameters, warnings

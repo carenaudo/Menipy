@@ -695,7 +695,8 @@ class SetupPanelController(QObject):
                 continue
             label = self._pipeline_labels.get(pipeline_name, pipeline_name)
             button.setToolTip(label)
-            if button.isChecked():
+            button.setAccessibleName(label)
+            if button.isChecked() or getattr(self.settings, "show_mode_labels", False):
                 button.setText(label)
                 button.setIcon(QIcon())
                 button.setMinimumWidth(76)
@@ -783,8 +784,8 @@ class SetupPanelController(QObject):
         for button, pipeline_name in self._pipeline_button_map.items():
             if button:
                 button.clicked.connect(
-                    lambda _checked=False, name=pipeline_name: self._on_pipeline_button_clicked(
-                        name
+                    lambda _checked=False, name=pipeline_name: (
+                        self._on_pipeline_button_clicked(name)
                     )
                 )
 

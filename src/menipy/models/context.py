@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from menipy.common.cancellation import CancellationToken
 
+from .calibration import CalibrationProvenance
 from .config import (
     ContourSmoothingSettings,
     DynamicTrackingSettings,
@@ -58,6 +59,7 @@ class Context(BaseModel):
     geometry: Geometry | None = None  # Current geometric analysis results
     scale: dict[str, float] = Field(default_factory=dict)
     px_per_mm: float | None = None
+    calibration_provenance: CalibrationProvenance | None = None
 
     # Solver / optimization / outputs
     fit_results: Fit | None = None

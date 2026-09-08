@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import builtins
 import json
+import os
+import tempfile
+from copy import deepcopy
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -41,7 +44,19 @@ class SopService:
             self._data = {}
 
     def save(self) -> None:
-        self.path.write_text(json.dumps(self._data, indent=2), encoding="utf-8")
+        temporary = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w", encoding="utf-8", dir=self.path.parent, delete=False
+            ) as stream:
+                temporary = Path(stream.name)
+                json.dump(self._data, stream, indent=2)
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.replace(temporary, self.path)
+        finally:
+            if temporary is not None:
+                temporary.unlink(missing_ok=True)
 
     # ---------- SOP CRUD ----------
     def list(self, pipeline: str) -> builtins.list[str]:
@@ -58,11 +73,16 @@ class SopService:
         )
 
     def upsert(self, pipeline: str, sop: Sop) -> None:
+        previous = deepcopy(self._data)
         self._data.setdefault(pipeline, {})[sop.name] = {
             "include_stages": sop.include_stages,
             "params": sop.params or {},
         }
-        self.save()
+        try:
+            self.save()
+        except Exception:
+            self._data = previous
+            raise
 
     def delete(self, pipeline: str, name: str) -> None:
         if pipeline in self._data and name in self._data[pipeline]:

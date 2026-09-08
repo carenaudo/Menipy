@@ -105,6 +105,14 @@ class SopController:
         include = self.collect_included_stages()
         pipeline_key = self.pipeline_getter() or "sessile"
         try:
+            preset_controller = getattr(self.window, "preset_ctrl", None)
+            if preset_controller is not None:
+                if self.sops.get(pipeline_key, name):
+                    raise ValueError(
+                        "This name already exists. Select it and use Update."
+                    )
+                preset_controller.save(preset_controller.capture(name))
+                return
             if Sop is not None:
                 sop_obj = Sop(name=name, include_stages=include, params={})
                 self.sops.upsert(pipeline_key, sop_obj)
@@ -205,6 +213,8 @@ class SopController:
         pipeline = self.pipeline_getter() or "sessile"
         try:
             sop = self.sops.get(pipeline, self._selected_sop_key())
+            if sop and "__preset__" in (sop.params or {}):
+                return  # Complete presets apply only after the explicit review action.
             include = set(sop.include_stages if sop else self.stage_order)
         except Exception:
             include = set(self.stage_order)

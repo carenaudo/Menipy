@@ -36,6 +36,10 @@ def set_button_icon(
     """Apply a named icon to a button when the icon can be loaded."""
     if button is None:
         return
+    if not button.accessibleName():
+        button.setAccessibleName(
+            button.toolTip() or button.text() or name.replace("-", " ")
+        )
     button.setIconSize(QSize(size, size))
     icon = load_icon(name)
     if icon.isNull():

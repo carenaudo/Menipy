@@ -22,8 +22,10 @@ class AppSettings:
     # Overlay appearance configuration (serialized as a simple dict)
     overlay_config: dict | None = None
     marker_config: dict = field(default_factory=dict)
+    pipeline_settings: dict = field(default_factory=dict)
     results_hidden_columns: dict = field(default_factory=dict)
     advanced_ui_visible: bool = False
+    show_mode_labels: bool = False
     compare_methods_visible: bool = False
     diagnostics_visible: bool = False
     guided_splitter_sizes: list[int] | None = None
@@ -53,8 +55,10 @@ class AppSettings:
                 ),
                 overlay_config=data.get("overlay_config"),
                 marker_config=dict(data.get("marker_config", {})),
+                pipeline_settings=dict(data.get("pipeline_settings", {})),
                 results_hidden_columns=dict(data.get("results_hidden_columns", {})),
                 advanced_ui_visible=bool(data.get("advanced_ui_visible", False)),
+                show_mode_labels=bool(data.get("show_mode_labels", False)),
                 compare_methods_visible=bool(
                     data.get("compare_methods_visible", False)
                 ),

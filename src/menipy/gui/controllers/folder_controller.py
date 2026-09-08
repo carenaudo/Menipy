@@ -5,6 +5,7 @@ import json
 
 from PySide6.QtCore import QObject, Qt, Signal
 from PySide6.QtWidgets import (
+    QAbstractItemView,
     QDialog,
     QFileDialog,
     QHBoxLayout,
@@ -29,16 +30,21 @@ class FolderController(QObject):
         self.setup = window.setup_panel_ctrl
         self.runner = window.runner
         self.batch_id = None
+        self._running_batch = False
         self.requests = {}
         self.outcomes = {}
         self.rows = {}
         self.records = {}
-        self.button = QPushButton("Run folder", window.workflowBar)
+        action_layout = self.setup.runAllBtn.parentWidget().layout()
+        action_index = action_layout.indexOf(self.setup.runAllBtn) + 1
+        self.button = QPushButton("Run folder", self.setup.panel)
         self.button.setObjectName("runFolderBtn")
-        window.workflowSourceLayout.addWidget(self.button)
+        self.button.setStyleSheet(self.setup.autoCalibrateBtn.styleSheet())
+        action_layout.insertWidget(action_index, self.button)
         self.button.clicked.connect(self.start)
-        self.results_button = QPushButton("Folder results", window.workflowBar)
-        window.workflowSourceLayout.addWidget(self.results_button)
+        self.results_button = QPushButton("Folder results", self.setup.panel)
+        self.results_button.setStyleSheet(self.setup.autoCalibrateBtn.styleSheet())
+        action_layout.insertWidget(action_index + 1, self.results_button)
         self.dialog = QDialog(window)
         self.dialog.setWindowTitle("Folder results — independent images")
         self.dialog.resize(780, 430)
@@ -47,6 +53,7 @@ class FolderController(QObject):
         self.label = QLabel()
         layout.addWidget(self.label)
         self.table = QTableWidget(0, 3)
+        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.table.setHorizontalHeaderLabels(["File", "Status", "Details"])
         self.table.horizontalHeader().setStretchLastSection(True)
         layout.addWidget(self.table)
@@ -93,7 +100,7 @@ class FolderController(QObject):
         self.window.workflowSourceModeButtons[self.setup.MODE_BATCH].setToolTip(
             "Frame sequence folder (requires FPS)" if dynamic else "Image folder"
         )
-        self.stop.setEnabled(self.batch_id is not None and self.runner.busy)
+        self.stop.setEnabled(self._running_batch and self.runner.busy)
         self.retry.setEnabled(
             not self.runner.busy and "failed" in self.outcomes.values()
         )
@@ -135,6 +142,7 @@ class FolderController(QObject):
                     "scale",
                     "detector_diagnostics",
                     "preprocessing_markers",
+                    "calibration_provenance",
                 ):
                     owned.pop(key, None)
                 owned.update(image=path, camera=None, auto_calibrate=True)
@@ -153,6 +161,7 @@ class FolderController(QObject):
     def submit(self, requests):
         batch = RunRequest.create(requests[0].pipeline, {}, operation="batch")
         self.batch_id = batch.job_id
+        self._running_batch = True
         for request in requests:
             self.requests[request.job_id] = request
             self.outcomes[request.job_id] = "queued"
@@ -180,8 +189,12 @@ class FolderController(QObject):
                 result = self.window.pipeline_ctrl.on_completed(event.completion)
                 if result is not None:
                     self.records[job] = result.model_dump(mode="json")
-                    state = "accepted" if result.accepted else "rejected"
+                    state = result.display_status.lower()
                     detail = "; ".join(result.rejection_reasons)
+                    if result.diagnostics.get("calibration"):
+                        detail = "; ".join(
+                            filter(None, (detail, result.calibration_summary))
+                        )
             else:
                 detail = event.completion.error or state
         self.outcomes[job] = state
@@ -193,12 +206,18 @@ class FolderController(QObject):
     def update_count(self):
         done = sum(s not in ("queued", "running") for s in self.outcomes.values())
         self.label.setText(
-            f"{done} / {len(self.outcomes)} files finished. Results are saved to history."
+            f"{done} / {len(self.outcomes)} files finished. "
+            + (
+                "History is unsaved; use Retry save or Save recovery copy in Results."
+                if getattr(self.window.results_panel_ctrl.history, "unsaved", False)
+                else "Results are saved to history."
+            )
         )
 
     def on_finished(self, completion):
         if completion.request.job_id != self.batch_id:
             return
+        self._running_batch = False
         for job, state in self.outcomes.items():
             if state in ("queued", "running"):
                 self.outcomes[job] = completion.state

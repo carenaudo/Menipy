@@ -143,8 +143,11 @@ def test_clear_overlay_button_emits_signal(
 
 
 def test_run_all_button_emits_signal(
-    qtbot, setup_panel_controller: SetupPanelController
+    qtbot, setup_panel_controller: SetupPanelController, tmp_path
 ):
+    source = tmp_path / "ready.png"
+    source.write_bytes(b"source identity")
+    setup_panel_controller.set_image_path(str(source))
     mock_signal = Mock()
     setup_panel_controller.run_all_requested.connect(mock_signal)
     if setup_panel_controller.runAllBtn:
