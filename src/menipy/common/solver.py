@@ -26,6 +26,15 @@ def _residuals_pointwise(obs_xy: np.ndarray, model_xy: np.ndarray) -> np.ndarray
     Both curves are resampled to the same number of points.
     """
 
+    return _prepare_pointwise_residual(obs_xy)(model_xy)
+
+
+def _prepare_pointwise_residual(
+    obs_xy: np.ndarray,
+) -> Callable[[np.ndarray], np.ndarray]:
+    """Resample the fixed observations once per fit, preserving operation order."""
+    check_cancelled()
+
     def _arclen_param(xy):
         seg = np.linalg.norm(np.diff(xy, axis=0), axis=1)
         s = np.concatenate([[0.0], np.cumsum(seg)])
@@ -41,10 +50,13 @@ def _residuals_pointwise(obs_xy: np.ndarray, model_xy: np.ndarray) -> np.ndarray
     m = min(len(obs_xy), 400)
     u = np.linspace(0.0, 1.0, m)
     obs_r = _resample(obs_xy, u, m=m)
-    mod_r = _resample(model_xy, u, m=m)
-    diff = obs_r - mod_r
-    # stack x and y residuals so LSQ can treat both
-    return diff.reshape(-1)
+
+    def residual(model_xy):
+        check_cancelled()
+        mod_r = _resample(model_xy, u, m=m)
+        return (obs_r - mod_r).reshape(-1)
+
+    return residual
 
 
 def _residuals_normal_projection(
@@ -98,9 +110,10 @@ def run(
 
     # choose residual function
     if config.distance == "normal_projection":
-        residual_fn = _residuals_normal_projection
+        def residual_fn(model_xy):
+            return _residuals_normal_projection(obs_xy, model_xy)
     else:
-        residual_fn = _residuals_pointwise
+        residual_fn = _prepare_pointwise_residual(obs_xy)
 
     weights = None
     if config.weights is not None:
@@ -126,7 +139,7 @@ def run(
         """
         check_cancelled()
         model_xy = np.asarray(integrator(x, physics, geometry), dtype=float)
-        r = residual_fn(obs_xy, model_xy)
+        r = residual_fn(model_xy)
         if weights is None:
             return r
         if np.isscalar(weights):

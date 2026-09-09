@@ -324,6 +324,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.preset_ctrl = PresetController(self)
         self.readiness_ctrl = ReadinessController(self)
+        preferences_action = self.menuConfig.addAction("Workspace Preferences…")
+        preferences_action.triggered.connect(self._show_workspace_preferences)
         from PySide6.QtWidgets import QScrollArea
 
         self.setupHostLayout.removeWidget(self.setup_panel)
@@ -339,6 +341,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         top = QHBoxLayout()
         top.addWidget(self.workflowAnalysisHost)
         top.addStretch()
+        self.actionExportCsv.setText("Export all history…")
+        self.actionExportCsvBtn.setText("Export all history")
+        self.actionExportCsvBtn.setToolTip(
+            "Export every retained history record with full timestamps, unrounded metrics, validation and provenance; ignores table filters and hidden columns."
+        )
         top.addWidget(self.actionExportCsvBtn)
         top.addWidget(self.workflowPanelToggleHost)
         rows.addLayout(top)
@@ -1050,6 +1057,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 logger.error(f"Failed to connect action '{action_name}': {e}")
 
             # No runtime icon/tooltip setting here; the .ui defines action properties.
+
+    def _show_workspace_preferences(self):
+        from menipy.gui.dialogs.settings_dialog import SettingsDialog
+
+        SettingsDialog(self).exec()
 
     def _wire_action_bar(self) -> None:
         if not hasattr(self, "main_controller") or not self.main_controller:

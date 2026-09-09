@@ -147,6 +147,7 @@ class ResultsPanel:
         self.summary_label: QLabel | None = panel.findChild(QLabel, "summaryLabel")
         self.history = get_results_history()
         self.settings = settings if settings is not None else AppSettings.load()
+        self.history.max_history = self.settings.history_limit
         self.unit_system = getattr(self.settings, "unit_system", "SI")
         self.current_pipeline_filter = VALID_PIPELINES_FILTER
         self.pipeline_ui_manager = PipelineUIManager()
@@ -319,12 +320,18 @@ class ResultsPanel:
         self.diagnostics_button.toggled.connect(self.set_diagnostics_visible)
         actions_layout.addWidget(self.diagnostics_button)
 
-        self.clear_button = QPushButton("Clear")
+        self.clear_button = QPushButton("Archive all")
+        self.clear_button.setToolTip(
+            "Save a complete JSON archive, then clear active history. Archives are separate from Export all history."
+        )
         set_button_icon(self.clear_button, "x", size=14)
         self.clear_button.clicked.connect(self._clear_history)
         actions_layout.addWidget(self.clear_button)
 
-        self.export_button = QPushButton("Export")
+        self.export_button = QPushButton("Export current view")
+        self.export_button.setToolTip(
+            "Export filtered rows and visible columns as displayed, plus validation and source fields. Use Export all history for full precision and provenance."
+        )
         set_button_icon(self.export_button, "download", size=14)
         self.export_button.clicked.connect(self._export_csv)
         actions_layout.addWidget(self.export_button)
@@ -496,7 +503,10 @@ class ResultsPanel:
         from PySide6.QtWidgets import QFileDialog
 
         file_path, _ = QFileDialog.getSaveFileName(
-            self.panel, "Export Results", "", "CSV Files (*.csv)"
+            self.panel,
+            "Export current view (includes validation and source fields)",
+            "",
+            "CSV Files (*.csv)",
         )
         if not file_path:
             return
@@ -526,6 +536,8 @@ class ResultsPanel:
 
                 # Write data
                 for row in range(self.table.rowCount()):
+                    if self.table.isRowHidden(row):
+                        continue
                     row_data = []
                     for col in range(self.table.columnCount()):
                         if self.table.isColumnHidden(col) and self._raw_headers[
@@ -576,6 +588,12 @@ class ResultsPanel:
             raw_headers = list(headers)
 
         # Update table
+        reuse_cells = (
+            self._raw_headers == raw_headers
+            and getattr(self, "_rendered_pipeline", None)
+            == self.current_pipeline_filter
+        )
+        self._rendered_pipeline = self.current_pipeline_filter
         display_headers = [get_label_with_unit(h, unit_system) for h in headers]
         self.table.setColumnCount(len(display_headers))
         self.table.setRowCount(len(rows))
@@ -607,6 +625,9 @@ class ResultsPanel:
                 except (ValueError, TypeError):
                     pass
 
+                existing = self.table.item(row_idx, col_idx) if reuse_cells else None
+                if existing is not None and existing.text() == str(transformed_value):
+                    continue
                 item = QTableWidgetItem(str(transformed_value))
                 item.setFlags(item.flags() & ~Qt.ItemIsEditable)  # Make read-only
                 if raw_headers[col_idx] == "pipeline":
@@ -629,7 +650,12 @@ class ResultsPanel:
             if self.current_pipeline_filter != VALID_PIPELINES_FILTER
             else ""
         )
-        self.count_label.setText(f"{measurement_count} measurements{filter_text}")
+        self.count_label.setText(
+            f"{measurement_count} measurements{filter_text} · limit {self.history.max_history}"
+        )
+        self.count_label.setToolTip(
+            f"Active history limit: {self.history.max_history}. Older records are archived before removal. Change the limit in Config → Workspace Preferences."
+        )
         if self.key_results_count_label:
             self.key_results_count_label.setText(
                 f"{measurement_count} measurements{filter_text}"

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
@@ -125,11 +126,37 @@ class ResultsHistory:
         """Add a new measurement to history."""
         self.measurements.insert(0, measurement)  # Most recent first
         if not self.unsaved:
+            try:
+                self._archive(self.measurements[self.max_history :])
+            except OSError as exc:
+                self.unsaved, self.save_error = True, f"Archive failed: {exc}"
+                self._notify_persistence()
+                return
             del self.measurements[self.max_history :]
         self._save_history()
 
+    @property
+    def archive_directory(self) -> Path:
+        return self._data_dir / "history_archive"
+
+    def _archive(self, measurements: list[MeasurementResult]) -> None:
+        """Write a complete immutable snapshot before removing active records."""
+        if not measurements:
+            return
+        payload = json.dumps(
+            [m.model_dump(mode="json") for m in measurements], sort_keys=True
+        )
+        digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+        self._write_atomic(self.archive_directory / f"{digest}.json", measurements)
+
     def clear_history(self) -> None:
         """Clear all measurement history."""
+        try:
+            self._archive(self.measurements)
+        except OSError as exc:
+            self.unsaved, self.save_error = True, f"Archive failed: {exc}"
+            self._notify_persistence()
+            return
         self.measurements.clear()
         self._save_history()
 
@@ -245,18 +272,83 @@ class ResultsHistory:
     def export_csv(
         self, file_path: str | Path, pipeline_filter: str | None = None
     ) -> bool:
-        """Export measurement history to a CSV file."""
+        """Export canonical, unrounded history independently of table visibility."""
         import csv
 
         try:
-            headers, rows = self.get_table_data(pipeline_filter=pipeline_filter)
-            if not headers:
-                return False
-
+            measurements = [
+                m
+                for m in self.measurements
+                if not pipeline_filter or m.pipeline == pipeline_filter
+            ]
+            headers = [
+                "export_schema_version",
+                "id",
+                "timestamp",
+                "pipeline",
+                "schema_version",
+                "file_name",
+                "file_path",
+                "status",
+                "accepted",
+                "rejection_reasons",
+                "rejection_reasons_json",
+                "calibration",
+                "px_per_mm",
+                "calibration_origin",
+                "units_json",
+                "results_json",
+                "diagnostics_json",
+                "run_metadata_json",
+            ]
+            metrics = sorted(
+                {key for m in measurements for key in m.results} - set(headers)
+            )
             with open(file_path, "w", newline="", encoding="utf-8") as f:
-                writer = csv.writer(f)
-                writer.writerow(headers)
-                writer.writerows(rows)
+                writer = csv.DictWriter(f, fieldnames=headers + metrics)
+                writer.writeheader()
+                for m in measurements:
+                    calibration = m.diagnostics.get("calibration", {})
+                    row = {
+                        "export_schema_version": "1.0",
+                        "id": m.id,
+                        "timestamp": m.timestamp.isoformat(),
+                        "pipeline": m.pipeline,
+                        "schema_version": m.results.get(
+                            "schema_version",
+                            (m.run_metadata or {}).get("results_schema_version", ""),
+                        ),
+                        "file_name": m.file_name,
+                        "file_path": m.file_path,
+                        "status": m.display_status,
+                        "accepted": m.accepted,
+                        "rejection_reasons": ";".join(m.rejection_reasons),
+                        "rejection_reasons_json": json.dumps(m.rejection_reasons),
+                        "calibration": m.calibration_summary,
+                        "px_per_mm": calibration.get("px_per_mm"),
+                        "calibration_origin": calibration.get("origin", "not_recorded"),
+                        "units_json": json.dumps(
+                            {
+                                "length": "mm",
+                                "angle": "deg",
+                                "time": "s",
+                                "surface_tension": "mN/m",
+                                "volume": "uL",
+                            }
+                        ),
+                        "results_json": json.dumps(m.results),
+                        "diagnostics_json": json.dumps(m.diagnostics),
+                        "run_metadata_json": json.dumps(m.run_metadata or {}),
+                    }
+                    row.update(
+                        {
+                            key: json.dumps(m.results[key])
+                            if isinstance(m.results.get(key), (dict, list))
+                            else m.results.get(key)
+                            for key in metrics
+                        }
+                    )
+                    writer.writerow(row)
             return True
         except Exception as e:
             logger.error(f"Failed to export CSV: {e}")
@@ -297,9 +389,16 @@ class ResultsHistory:
         """Write every in-memory record to a separate, reloadable history file."""
         self._write_atomic(Path(destination))
 
-    def _write_atomic(self, destination: Path) -> None:
+    def _write_atomic(self, destination: Path, measurements=None) -> None:
         payload = json.dumps(
-            {"measurements": [m.model_dump(mode="json") for m in self.measurements]},
+            {
+                "measurements": [
+                    m.model_dump(mode="json")
+                    for m in (
+                        self.measurements if measurements is None else measurements
+                    )
+                ]
+            },
             ensure_ascii=False,
             indent=2,
         )

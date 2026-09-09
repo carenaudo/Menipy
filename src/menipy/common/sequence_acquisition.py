@@ -12,6 +12,7 @@ import numpy as np
 
 from menipy.common.cancellation import check_cancelled
 from menipy.models.frame import Frame
+from menipy.models.frame_store import DiskFrameStore
 from menipy.models.temporal import SequenceMetadata
 
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}
@@ -53,8 +54,12 @@ def _validate_images(images: list[np.ndarray]) -> tuple[int, int]:
 
 
 def load_image_sequence(
-    path: str | Path, *, fps: float | None, check_cancelled=check_cancelled
-) -> tuple[list[Frame], SequenceMetadata]:
+    path: str | Path,
+    *,
+    fps: float | None,
+    check_cancelled=check_cancelled,
+    disk_backed: bool = False,
+) -> tuple[list[Frame] | DiskFrameStore, SequenceMetadata]:
     """Load a naturally sorted directory as one sequence, never as a batch."""
     root = Path(path).expanduser().resolve()
     if not root.is_dir():
@@ -69,6 +74,8 @@ def load_image_sequence(
         ),
         key=_natural_key,
     )
+    if disk_backed:
+        return _load_disk_sequence(root, paths, float(fps), check_cancelled)
     images: list[np.ndarray] = []
     for candidate in paths:
         check_cancelled()
@@ -98,12 +105,14 @@ def load_image_sequence(
 
 
 def load_video(
-    path: str | Path, *, check_cancelled=check_cancelled
-) -> tuple[list[Frame], SequenceMetadata]:
+    path: str | Path, *, check_cancelled=check_cancelled, disk_backed: bool = False
+) -> tuple[list[Frame] | DiskFrameStore, SequenceMetadata]:
     """Decode a video and preserve monotonic container timestamps when available."""
     source = Path(path).expanduser().resolve()
     if not source.is_file():
         raise SequenceAcquisitionError("video_missing")
+    if disk_backed:
+        return _load_disk_sequence(source, None, None, check_cancelled)
     capture = cv2.VideoCapture(str(source))
     if not capture.isOpened():
         capture.release()
@@ -144,6 +153,69 @@ def load_video(
         frame_count=len(frames),
     )
     return frames, metadata
+
+
+def _load_disk_sequence(source, paths, fps, check_cancelled):
+    """Decode once to scratch storage, preserving the eager loader's timing rules."""
+    store = DiskFrameStore()
+    capture = None
+    timestamps = []
+    try:
+        if paths is None:
+            capture = cv2.VideoCapture(str(source))
+            if not capture.isOpened():
+                raise SequenceAcquisitionError("video_open_failed")
+            fps = float(capture.get(cv2.CAP_PROP_FPS))
+            while True:
+                check_cancelled()
+                ok, image = capture.read()
+                if not ok:
+                    break
+                store.append(image)
+                timestamps.append(float(capture.get(cv2.CAP_PROP_POS_MSEC)) / 1000.0)
+        else:
+            for path in paths:
+                check_cancelled()
+                image = cv2.imread(str(path), cv2.IMREAD_UNCHANGED)
+                if image is None:
+                    raise SequenceAcquisitionError(
+                        f"sequence_corrupt_image:{path.name}"
+                    )
+                if image.ndim == 3 and image.shape[2] == 4:
+                    image = cv2.cvtColor(image, cv2.COLOR_BGRA2BGR)
+                store.append(image)
+        if not store:
+            raise SequenceAcquisitionError("sequence_no_frames")
+        if not np.isfinite(fps) or fps <= 0:
+            raise SequenceAcquisitionError("video_fps_invalid")
+        if len(timestamps) != len(store) or not all(
+            timestamps[i] > timestamps[i - 1] for i in range(1, len(timestamps))
+        ):
+            timestamps = [i / fps for i in range(len(store))]
+        store.timestamps_s = timestamps
+        height, width = store.shape[:2]
+        metadata = SequenceMetadata(
+            source_type="video" if paths is None else "image_sequence",
+            source_id=str(source),
+            sha256=_digest_files(paths or [source], check_cancelled),
+            width=width,
+            height=height,
+            fps=fps,
+            timestamps_s=timestamps,
+            frame_count=len(store),
+        )
+        return store, metadata
+    except ValueError as exc:
+        store.close()
+        if str(exc) == "sequence_variable_dimensions":
+            raise SequenceAcquisitionError(str(exc)) from exc
+        raise
+    except BaseException:
+        store.close()
+        raise
+    finally:
+        if capture is not None:
+            capture.release()
 
 
 def frames_from_memory(

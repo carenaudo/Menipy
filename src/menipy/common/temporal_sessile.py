@@ -83,18 +83,26 @@ def _robust_slope(t: np.ndarray, values: np.ndarray) -> float:
     return float(coef[0])
 
 
+def _velocity_windows(valid):
+    """Yield the same seven-index neighbourhood without rescanning a sequence."""
+    check_cancelled()
+    ordered = all(a.frame_index < b.frame_index for a, b in zip(valid, valid[1:]))
+    for position, frame in enumerate(valid):
+        check_cancelled()
+        # Unique increasing integer indices allow at most three eligible records
+        # on either side. Keep legacy semantics for externally supplied ordering.
+        candidates = valid[max(0, position - 3):position + 4] if ordered else valid
+        yield frame, [other for other in candidates
+                      if abs(other.frame_index - frame.frame_index) <= 3
+                      and other.segment_id == frame.segment_id]
+
+
 def _assign_states(frames: list[TemporalFrameResult]) -> float:
     valid = [
         frame for frame in frames if frame.accepted and frame.half_width_mm is not None
     ]
-    for frame in valid:
+    for frame, neighbours in _velocity_windows(valid):
         check_cancelled()
-        neighbours = [
-            other
-            for other in valid
-            if abs(other.frame_index - frame.frame_index) <= 3
-            and other.segment_id == frame.segment_id
-        ]
         if len(neighbours) >= 3:
             t = np.asarray([other.timestamp_s for other in neighbours], dtype=float)
             values = np.asarray(
@@ -182,12 +190,22 @@ def _assign_states(frames: list[TemporalFrameResult]) -> float:
 
 
 def _bootstrap_stats(values: Sequence[float]) -> dict[str, float | int | list[float]]:
+    check_cancelled()
     array = np.asarray(values, dtype=float)
     median = float(np.median(array))
     mad = float(np.median(np.abs(array - median)))
     rng = np.random.default_rng(BOOTSTRAP_SEED)
-    samples = rng.choice(array, size=(2000, len(array)), replace=True)
-    medians = np.median(samples, axis=1)
+    # Keep the original row-major draw sequence, but retain only a bounded
+    # block of samples. A single very long row still needs O(frame_count) space.
+    batch_rows = max(1, min(2000, 262144 // max(1, len(array))))
+    medians = np.empty(2000, dtype=float)
+    for start in range(0, 2000, batch_rows):
+        check_cancelled()
+        end = min(start + batch_rows, 2000)
+        samples = rng.choice(array, size=(end - start, len(array)), replace=True)
+        medians[start:end] = np.median(samples, axis=1, overwrite_input=True)
+        del samples
+    check_cancelled()
     return {
         "median_deg": median,
         "mad_deg": mad,
@@ -301,7 +319,7 @@ def _summarize(frames: list[TemporalFrameResult], fps: float) -> dict[str, Any]:
 
 
 def analyze_dynamic_sessile(
-    frames: list[Frame],
+    frames: Sequence[Frame],
     metadata: SequenceMetadata,
     *,
     px_per_mm: float | None,

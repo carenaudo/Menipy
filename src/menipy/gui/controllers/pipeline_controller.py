@@ -471,6 +471,10 @@ class PipelineController:
         measurement = None
         if ctx.results or not persisted["accepted"]:
             metadata = request.metadata()
+            metadata["results_schema_version"] = (ctx.results or {}).get(
+                "schema_version"
+            )
+            metadata["runtime"] = ctx.execution_provenance
             metadata["warnings"] = list(completion.warnings)
             # Runtime-derived calibration remains auditable alongside requested settings.
             metadata["effective_calibration"] = {

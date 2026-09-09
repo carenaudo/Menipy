@@ -448,7 +448,10 @@ class MainController(QObject):
         from menipy.models.results import get_results_history
 
         file_path, _ = QFileDialog.getSaveFileName(
-            self.window, "Export Results to CSV", "", "CSV Files (*.csv)"
+            self.window,
+            "Export all history — machine-readable CSV",
+            "",
+            "CSV Files (*.csv)",
         )
         if not file_path:
             return

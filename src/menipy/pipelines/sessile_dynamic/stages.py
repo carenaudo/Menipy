@@ -16,6 +16,7 @@ from menipy.common.sequence_acquisition import (
 from menipy.common.temporal_sessile import analyze_dynamic_sessile
 from menipy.models.context import Context
 from menipy.models.frame import Frame
+from menipy.models.frame_store import DiskFrameStore
 from menipy.pipelines.base import PipelineBase
 
 
@@ -41,17 +42,22 @@ class DynamicSessilePipeline(PipelineBase):
         if source:
             path = Path(source)
             if path.is_dir():
-                frames, metadata = load_image_sequence(path, fps=ctx.sequence_fps)
+                frames, metadata = load_image_sequence(
+                    path, fps=ctx.sequence_fps, disk_backed=True
+                )
             elif path.suffix.lower() in VIDEO_SUFFIXES:
-                frames, metadata = load_video(path)
+                frames, metadata = load_video(path, disk_backed=True)
             else:
                 raise ValueError("dynamic_source_must_be_video_or_sequence_directory")
         else:
             raw_frames = ctx.frames
             if isinstance(raw_frames, np.ndarray):
                 raw_frames = [raw_frames]
-            frames, metadata = frames_from_memory(list(raw_frames or []), fps=ctx.sequence_fps)
-        ctx.frames = frames
+            frames, metadata = frames_from_memory(
+                list(raw_frames or []), fps=ctx.sequence_fps
+            )
+        ctx.sequence_store = frames if isinstance(frames, DiskFrameStore) else None
+        ctx.frames = [frames[0]] if ctx.sequence_store is not None else frames
         ctx.current_frame = frames[0]
         ctx.image = frames[0].image
         ctx.sequence_metadata = metadata
@@ -84,18 +90,30 @@ class DynamicSessilePipeline(PipelineBase):
     def do_compute_metrics(self, ctx: Context) -> Context | None:
         if ctx.sequence_metadata is None:
             raise ValueError("dynamic_sequence_metadata_missing")
-        frame_values = [
-            frame if isinstance(frame, Frame) else Frame(image=frame)
-            for frame in list(ctx.frames or [])
-        ]
-        explicit_scale = ctx.px_per_mm or (ctx.scale or {}).get("px_per_mm")
-        dynamic = analyze_dynamic_sessile(
-            frame_values,
-            ctx.sequence_metadata,
-            px_per_mm=explicit_scale,
-            needle_diameter_mm=ctx.needle_diameter_mm,
-            contact_angle_method=ctx.contact_angle_method if ctx.contact_angle_method in {"tangent", "circle_fit", "spherical_cap", "auto_residual"} else "auto_residual",
+        frame_values = (
+            ctx.sequence_store
+            if ctx.sequence_store is not None
+            else [
+                frame if isinstance(frame, Frame) else Frame(image=frame)
+                for frame in list(ctx.frames or [])
+            ]
         )
+        explicit_scale = ctx.px_per_mm or (ctx.scale or {}).get("px_per_mm")
+        try:
+            dynamic = analyze_dynamic_sessile(
+                frame_values,
+                ctx.sequence_metadata,
+                px_per_mm=explicit_scale,
+                needle_diameter_mm=ctx.needle_diameter_mm,
+                contact_angle_method=ctx.contact_angle_method
+                if ctx.contact_angle_method
+                in {"tangent", "circle_fit", "spherical_cap", "auto_residual"}
+                else "auto_residual",
+            )
+        finally:
+            if ctx.sequence_store is not None:
+                ctx.sequence_store.close()
+                ctx.sequence_store = None
         ctx.dynamic_sessile_result = dynamic
         ctx.temporal_frame_results = dynamic.frames
         ctx.results = {
@@ -120,7 +138,9 @@ class DynamicSessilePipeline(PipelineBase):
                     "metadata": dynamic.metadata.model_dump(mode="json"),
                     "calibration": dynamic.calibration,
                     **dynamic.diagnostics,
-                    "frames": [frame.model_dump(mode="json") for frame in dynamic.frames],
+                    "frames": [
+                        frame.model_dump(mode="json") for frame in dynamic.frames
+                    ],
                 }
             },
         }
@@ -129,7 +149,9 @@ class DynamicSessilePipeline(PipelineBase):
             "rejection_reasons": dynamic.rejection_reasons,
             "checks": {
                 "dynamic_sequence": {
-                    "code": "dynamic_sequence_valid" if dynamic.accepted else "dynamic_sequence_rejected",
+                    "code": "dynamic_sequence_valid"
+                    if dynamic.accepted
+                    else "dynamic_sequence_rejected",
                     "passed": dynamic.accepted,
                     "severity": "error",
                     "reason": ";".join(dynamic.rejection_reasons),
@@ -139,17 +161,43 @@ class DynamicSessilePipeline(PipelineBase):
         return ctx
 
     def do_overlay(self, ctx: Context) -> Context | None:
-        first = next((frame for frame in ctx.temporal_frame_results if frame.accepted), None)
+        first = next(
+            (frame for frame in ctx.temporal_frame_results if frame.accepted), None
+        )
         if first is None:
             ctx.overlay_commands = []
             return ctx
         commands: list[dict[str, Any]] = []
         if first.contour:
-            commands.append({"type": "polyline", "points": first.contour, "closed": True, "color": "yellow", "thickness": 2})
+            commands.append(
+                {
+                    "type": "polyline",
+                    "points": first.contour,
+                    "closed": True,
+                    "color": "yellow",
+                    "thickness": 2,
+                }
+            )
         if first.baseline:
-            commands.append({"type": "line", "p1": first.baseline[0], "p2": first.baseline[1], "color": "cyan", "thickness": 2})
+            commands.append(
+                {
+                    "type": "line",
+                    "p1": first.baseline[0],
+                    "p2": first.baseline[1],
+                    "color": "cyan",
+                    "thickness": 2,
+                }
+            )
         for contact in first.contacts or ():
-            commands.append({"type": "cross", "p": contact, "color": "red", "size": 6, "thickness": 2})
+            commands.append(
+                {
+                    "type": "cross",
+                    "p": contact,
+                    "color": "red",
+                    "size": 6,
+                    "thickness": 2,
+                }
+            )
         ctx.overlay_commands = commands
         return ctx
 

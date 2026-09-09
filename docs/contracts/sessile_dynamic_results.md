@@ -56,6 +56,11 @@ Video timestamps are used when strictly monotonic. Otherwise constant-FPS
 timestamps are generated from the container FPS. Image sequences require an
 explicit FPS and natural filename ordering.
 
+File-backed pipeline acquisition uses a lossless temporary frame store. Only
+the first preview image is retained in `ctx.frames`; the excluded
+`ctx.sequence_store` supplies frames during analysis and closes on termination.
+This storage change does not change the per-frame result or export contract.
+
 ## Stable rejection codes
 
 The public codes include `sequence_fps_required`,

@@ -8,6 +8,7 @@ from typing import Any
 import numpy as np
 from scipy.integrate import trapezoid
 
+from menipy.common.cancellation import check_cancelled
 from menipy.common.registry import register_pendant_approximator
 from menipy.models.surface_tension import surface_tension
 from menipy.pipelines.pendant.strict_young_laplace import (
@@ -71,6 +72,16 @@ def _beta_from_gamma(
 def _selected_plane_lookup_all() -> (
     dict[float, tuple[np.ndarray, np.ndarray, np.ndarray]]
 ):
+    from menipy.pipelines.pendant import strict_young_laplace as strict
+    from menipy.pipelines.pendant.lookup_cache import load_or_build
+
+    # Runtime replacement of the integrator must not reuse a built-in table.
+    if integrate_young_laplace_profile_mm is not strict.integrate_young_laplace_profile_mm or integrate_young_laplace_profile_mm.__module__ != strict.__name__:
+        return _build_selected_plane_lookup()
+    return load_or_build(_build_selected_plane_lookup, source_files=[__file__, strict.__file__], planes=DEFAULT_SELECTED_PLANES, dependencies=[_profile, integrate_young_laplace_profile_mm])
+
+
+def _build_selected_plane_lookup():
     beta_grid = np.linspace(0.03, 2.5, 24)
     height_grid = np.linspace(0.8, 4.5, 24)
     by_plane = {
@@ -78,6 +89,7 @@ def _selected_plane_lookup_all() -> (
     }
     for beta in beta_grid:
         for height in height_grid:
+            check_cancelled()
             model = integrate_young_laplace_profile_mm(
                 1.0,
                 float(beta),
@@ -111,6 +123,7 @@ def _selected_plane_lookup_all() -> (
 
 
 def _selected_plane_lookup(k: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    check_cancelled()
     empty = (
         np.array([], dtype=float),
         np.array([], dtype=float),

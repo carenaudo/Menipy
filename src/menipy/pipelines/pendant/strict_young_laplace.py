@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Any
 
 import numpy as np
@@ -371,14 +372,18 @@ def fit_pendant_young_laplace_strict(
         height_mm=height_mm,
     )
 
+    @lru_cache(maxsize=8)
+    def shape_from_params(r0_mm: float, beta: float) -> np.ndarray:
+        # Height and integration settings are fixed for this fit. Offset-only
+        # finite differences need the same physical shape, with no rounding.
+        return integrate_young_laplace_profile_mm(
+            r0_mm, beta, target_height_mm=height_mm
+        )
+
     def model_from_params(params: np.ndarray) -> np.ndarray:
         check_cancelled()
         r0_mm, beta, x_offset_mm, z_offset_mm = params
-        model = integrate_young_laplace_profile_mm(
-            r0_mm,
-            beta,
-            target_height_mm=height_mm,
-        )
+        model = shape_from_params(float(r0_mm), float(beta))
         if model.size == 0:
             return model
         return model + np.array([x_offset_mm, z_offset_mm])

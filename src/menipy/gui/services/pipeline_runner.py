@@ -170,6 +170,9 @@ def execute_request(request, token):
     )
     parameters["cancellation_token"] = token
     parameters["measurement_id"] = request.job_id
+    from menipy.common.runtime_provenance import runtime_provenance
+
+    provenance_at_start = runtime_provenance()
     provenance = parameters.pop("calibration_provenance", None)
     if request.stages:
         ctx = pipeline.run_with_plan(
@@ -181,6 +184,7 @@ def execute_request(request, token):
         ctx = pipeline.run(**parameters)
     from menipy.gui.services.calibration_provenance import describe_calibration
 
+    ctx.execution_provenance = provenance_at_start
     parameters["calibration_provenance"] = provenance
     ctx.calibration_provenance = describe_calibration(parameters, ctx, warnings)
     warnings = ctx.calibration_provenance.warnings

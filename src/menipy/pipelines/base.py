@@ -566,8 +566,13 @@ class PipelineBase:
         """
         ctx = Context()
         ctx = self._prime_ctx(ctx, **kwargs)
-        for name, fn in self.build_plan(only=only, include_prereqs=include_prereqs):
-            ctx = self._call_stage(ctx, name, fn)
+        try:
+            for name, fn in self.build_plan(only=only, include_prereqs=include_prereqs):
+                ctx = self._call_stage(ctx, name, fn)
+        finally:
+            if ctx.sequence_store is not None:
+                ctx.sequence_store.close()
+                ctx.sequence_store = None
         self._ctx = ctx
         return ctx
 
@@ -581,8 +586,13 @@ class PipelineBase:
 
         self.logger.info("Starting pipeline: %s", self.name)
 
-        for name, fn in self.build_plan():
-            ctx = self._call_stage(ctx, name, fn)
+        try:
+            for name, fn in self.build_plan():
+                ctx = self._call_stage(ctx, name, fn)
+        finally:
+            if ctx.sequence_store is not None:
+                ctx.sequence_store.close()
+                ctx.sequence_store = None
 
         self.logger.info("Finished pipeline: %s", self.name)
         return ctx

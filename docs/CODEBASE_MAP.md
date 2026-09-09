@@ -63,6 +63,30 @@ Versioned analysis presets use `models/preset.py` and
 `readiness_controller.py` owns source readiness, calibration invalidation and
 accessible workflow labels. See [presets and workflow UX](guides/presets_workflow_ux.md),
 `tests/test_presets_readiness_layout.py`, and `tools/smoke_presets_layout.py`.
+File-backed dynamic acquisition uses `models/frame_store.py` and the excluded
+`Context.sequence_store`; acquisition and pipeline cleanup own its lifetime.
+Canonical history CSV lives in `models/results.py`, while the results panel owns
+the display export. Worker provenance uses `common/runtime_provenance.py`.
+See [sequence memory, profiling and exports](guides/sequence_memory_profiling_exports.md),
+`tests/test_sequence_storage_exports.py`, and `tools/profile_analysis.py`.
+Workspace preferences use `gui/services/workspace_preferences.py` and
+`gui/dialogs/settings_dialog.py`; retention archives remain in `models/results.py`.
+See [workspace preferences and retention](guides/workspace_preferences_retention.md),
+`tests/test_workspace_preferences.py`, and `tools/profile_history.py` for behavior
+and table-scaling measurements.
+Pendant fit-local shape reuse is described in
+[numerical optimization](guides/numerical_optimization.md), with exact-equivalence
+tests in `tests/test_pendant_fit_cache.py` and paired timing in
+`tools/profile_pendant_cache.py`.
+Deterministic pendant table persistence lives in `pipelines/pendant/lookup_cache.py`;
+`tests/test_lookup_cache.py` checks invalidation/faults and
+`tools/profile_lookup_cache.py` measures fresh-process reuse.
+Fixed observation preparation in `common/solver.py` and seven-index temporal
+windows in `common/temporal_sessile.py` are checked by
+`tests/test_numerical_repeated_work.py`; `tools/profile_repeated_work.py` measures
+their paired timings.
+Bounded temporal bootstrap sampling is covered by `tests/test_bootstrap_batches.py`;
+`tools/profile_bootstrap_batches.py` measures allocation and timing equivalence.
 
 ## Plugin graph
 

@@ -18,6 +18,7 @@ from .config import (
 )
 from .fit import Fit
 from .frame import Frame
+from .frame_store import DiskFrameStore
 from .geometry import Contour, Geometry, SubstrateProfile
 from .result import Result
 from .state import MarkerSet
@@ -37,6 +38,10 @@ class Context(BaseModel):
     )
 
     # Acquisition / images
+    sequence_store: DiskFrameStore | None = Field(
+        default=None, exclude=True, repr=False
+    )
+    execution_provenance: dict[str, Any] = Field(default_factory=dict)
     frames: np.ndarray | list[np.ndarray] | list[Frame] | None = (
         None  # np.ndarray or list[np.ndarray]
     )

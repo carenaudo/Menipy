@@ -4,6 +4,12 @@ This guide standardizes how the GUI Results Panel renders results for each pipel
 
 ## Goals
 
+The toolbar's **Export all history** uses canonical CSV export schema `1.0`,
+full ISO timestamps, unrounded metrics and mandatory JSON provenance regardless
+of view filters/hidden columns. **Export current view** retains display precision
+and filters, with mandatory validation/source columns. Scientific schema versions
+remain separate. See [export columns and legacy rules](../guides/sequence_memory_profiling_exports.md).
+
 - Detect active pipeline and select its schema.
 - Render canonical keys with clear labels, units, and precision.
 - Show diagnostics when available (residuals, timings, method tags).

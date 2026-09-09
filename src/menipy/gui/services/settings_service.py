@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import os
+import tempfile
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import List, Optional
@@ -26,6 +28,7 @@ class AppSettings:
     results_hidden_columns: dict = field(default_factory=dict)
     advanced_ui_visible: bool = False
     show_mode_labels: bool = False
+    history_limit: int = 100
     compare_methods_visible: bool = False
     diagnostics_visible: bool = False
     guided_splitter_sizes: list[int] | None = None
@@ -59,6 +62,7 @@ class AppSettings:
                 results_hidden_columns=dict(data.get("results_hidden_columns", {})),
                 advanced_ui_visible=bool(data.get("advanced_ui_visible", False)),
                 show_mode_labels=bool(data.get("show_mode_labels", False)),
+                history_limit=max(10, min(1000, int(data.get("history_limit", 100)))),
                 compare_methods_visible=bool(
                     data.get("compare_methods_visible", False)
                 ),
@@ -82,4 +86,16 @@ class AppSettings:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         tmp = asdict(self).copy()
         tmp.pop("path", None)
-        self.path.write_text(json.dumps(tmp, indent=2), encoding="utf-8")
+        temporary = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w", encoding="utf-8", dir=self.path.parent, delete=False
+            ) as stream:
+                temporary = Path(stream.name)
+                stream.write(json.dumps(tmp, indent=2))
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.replace(temporary, self.path)
+        finally:
+            if temporary is not None:
+                temporary.unlink(missing_ok=True)
