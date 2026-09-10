@@ -77,13 +77,16 @@ def build_pendant_profile_envelope_mm(
     )
     local = (xy - origin) @ basis
     row_keys = np.rint(local[:, 1] / bin_px).astype(int)
+    # Stable grouping preserves each bin's original summation order.
+    check_cancelled()
+    order = np.argsort(row_keys, kind="stable")
+    sorted_keys = row_keys[order]
+    grouped = local[order]
+    boundaries = np.r_[0, np.flatnonzero(np.diff(sorted_keys)) + 1, len(order)]
     rows: list[tuple[float, float]] = []
-    for row in np.unique(row_keys):
+    for start, end in zip(boundaries[:-1], boundaries[1:]):
         check_cancelled()
-        pts = xy[row_keys == row]
-        if pts.size == 0:
-            continue
-        local_pts = local[row_keys == row]
+        local_pts = grouped[start:end]
         z_mm = float(np.mean(local_pts[:, 1])) / float(px_per_mm)
         if z_mm < -0.5 / float(px_per_mm):
             continue
@@ -101,10 +104,11 @@ def build_pendant_profile_envelope_mm(
     arr = np.asarray(rows, dtype=float)
     arr = arr[np.argsort(arr[:, 1])]
     merged: list[tuple[float, float]] = []
-    for z in np.unique(arr[:, 1]):
+    boundaries = np.r_[0, np.flatnonzero(np.diff(arr[:, 1])) + 1, len(arr)]
+    for start, end in zip(boundaries[:-1], boundaries[1:]):
         check_cancelled()
-        r = float(np.max(arr[arr[:, 1] == z, 0]))
-        merged.append((r, float(z)))
+        r = float(np.max(arr[start:end, 0]))
+        merged.append((r, float(arr[start, 1])))
     profile = np.asarray(merged, dtype=float)
     if profile.shape[0] < 2:
         return np.empty((0, 2), dtype=float)
@@ -170,8 +174,14 @@ def integrate_young_laplace_profile_mm(
     max_step: float = 0.02,
     branch: str = "full",
     return_metadata: bool = False,
+    _derivative_cache: dict[tuple[str, bytes], list[float]] | None = None,
 ) -> np.ndarray | tuple[np.ndarray, dict[str, Any]]:
-    """Integrate a symmetric pendant Young-Laplace profile in millimetres."""
+    """Integrate a symmetric pendant Young-Laplace profile in millimetres.
+
+    The private derivative cache is used only for a table-build height sweep.
+    Keys retain exact beta and float64 state bytes; cancellation and adaptive
+    integration still run independently for every requested profile.
+    """
     r0_mm = float(r0_mm)
     beta = float(beta)
     if not np.isfinite(r0_mm) or not np.isfinite(beta) or r0_mm <= 0:
@@ -189,16 +199,32 @@ def integrate_young_laplace_profile_mm(
 
     def ode(_s: float, y: np.ndarray) -> list[float]:
         check_cancelled()
-        r, z, psi = y
+        r, z, psi = y[0], y[1], y[2]
+        sin_psi = np.sin(psi)
         if abs(r) < 1e-10:
             sin_psi_over_r = 1.0
         else:
-            sin_psi_over_r = float(np.sin(psi) / r)
+            sin_psi_over_r = float(sin_psi / r)
         return [
             float(np.cos(psi)),
-            float(np.sin(psi)),
+            float(sin_psi),
             float(2.0 - beta * z - sin_psi_over_r),
         ]
+    if _derivative_cache is not None:
+        uncached_ode = ode
+        beta_key = beta.hex()
+
+        def ode(s: float, y: np.ndarray) -> list[float]:
+            check_cancelled()
+            key = (beta_key, y.tobytes())
+            cached = _derivative_cache.get(key)
+            if cached is not None:
+                return cached
+            derivative = uncached_ode(s, y)
+            if len(_derivative_cache) >= 16384:
+                del _derivative_cache[next(iter(_derivative_cache))]
+            _derivative_cache[key] = derivative
+            return derivative
 
     def hit_axis(s: float, y: np.ndarray) -> float:
         if s <= 0.1:

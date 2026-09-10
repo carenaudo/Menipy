@@ -211,9 +211,14 @@ def find_contact_points_from_contour(
 
     signed = (contour - a) @ normal
     intersections: list[np.ndarray] = []
-    for p0, p1, h0, h1 in zip(
-        contour, np.roll(contour, -1, axis=0), signed, np.roll(signed, -1)
-    ):
+    next_signed = np.roll(signed, -1)
+    # Retain edge order and scalar interpolation, but visit only crossings.
+    eligible = np.flatnonzero(~(np.abs(next_signed - signed) <= 1e-12))
+    h0s, h1s = signed[eligible], next_signed[eligible]
+    crossing = (h0s == 0.0) | (h0s * h1s < 0.0)
+    for index in eligible[crossing]:
+        p0, p1 = contour[index], contour[(index + 1) % len(contour)]
+        h0, h1 = signed[index], next_signed[index]
         dh = float(h1 - h0)
         if abs(dh) <= 1e-12:
             continue

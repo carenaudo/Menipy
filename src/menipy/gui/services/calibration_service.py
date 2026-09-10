@@ -101,6 +101,9 @@ class CalibrationComputation:
                 self.result.confidence_scores["drop"] = drop_conf
                 logger.info(f"Drop re-detected with {len(drop_contour)} points")
 
+        from menipy.common.liquid_boundary import update_calibration_boundary
+
+        update_calibration_boundary(self.result, self.pipeline_name)
         check_cancelled()
         return self.original_image, self.result
 

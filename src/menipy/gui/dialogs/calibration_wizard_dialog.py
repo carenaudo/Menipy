@@ -557,7 +557,10 @@ class CalibrationWizardDialog(QDialog):
 
         # Draw drop contour
         if result.drop_contour is not None and self._region_enabled.get("drop", True):
-            contour = np.asarray(result.drop_contour, dtype=np.int32)
+            boundary = getattr(result, "liquid_boundary", None)
+            contour = np.asarray(
+                boundary if boundary is not None else result.drop_contour, dtype=np.int32
+            )
             if contour.ndim == 2:
                 contour = contour.reshape(-1, 1, 2)
             cv2.drawContours(overlay, [contour], -1, (0, 255, 0), 2)  # Green (BGR)
@@ -565,6 +568,9 @@ class CalibrationWizardDialog(QDialog):
         # Draw contact points (separate from drop contour for independent visibility)
         if result.contact_points and self._region_enabled.get("contact", True):
             left, right = result.contact_points
+            boundary = getattr(result, "liquid_boundary", None)
+            if boundary is not None and len(boundary) >= 2:
+                left, right = [tuple(np.rint(point).astype(int)) for point in boundary[[0, -1]]]
             cv2.circle(overlay, left, 5, (0, 0, 255), -1)  # Red
             cv2.circle(overlay, right, 5, (0, 0, 255), -1)
             # Draw connecting line for visibility
@@ -675,6 +681,7 @@ class CalibrationWizardDialog(QDialog):
             self.result.needle_rect = None
         if not self._region_enabled.get("drop", True):
             self.result.drop_contour = None
+            self.result.liquid_boundary = None
             self.result.contact_points = None
         if not self._region_enabled.get("roi", True):
             self.result.roi_rect = None
@@ -798,6 +805,10 @@ class CalibrationWizardDialog(QDialog):
                 self.result.confidence_scores["roi"] = 1.0
                 logger.info(f"Manual ROI rect set: ({x}, {y}, {w}, {h})")
 
+            # Refresh only display geometry; retain measured samples for analysis.
+            from menipy.common.liquid_boundary import update_calibration_boundary
+
+            update_calibration_boundary(self.result, self.pipeline_name)
             # Update UI
             self._show_results()
             self._apply_btn.setEnabled(True)

@@ -77,9 +77,15 @@ def _robust_slope(t: np.ndarray, values: np.ndarray) -> float:
         )
         normalized = np.abs(residual) / (1.345 * scale)
         weights = np.where(normalized <= 1.0, 1.0, 1.0 / np.maximum(normalized, 1e-12))
-        coef = np.linalg.lstsq(design * weights[:, None], values * weights, rcond=None)[
+        updated = np.linalg.lstsq(design * weights[:, None], values * weights, rcond=None)[
             0
         ]
+        # Identical coefficients reproduce identical residuals and weights on
+        # every remaining iteration; no tolerance-based convergence is used.
+        if updated.tobytes() == coef.tobytes():
+            break
+        coef = updated
+    check_cancelled()
     return float(coef[0])
 
 
@@ -155,11 +161,14 @@ def _assign_states(frames: list[TemporalFrameResult]) -> float:
         # The seven-frame fit remains the reported velocity. The adjacent robust
         # median only snaps state transitions so a plateau is not shifted by half
         # the classification window.
-        velocity = (
-            float(np.median(local_slopes))
-            if local_slopes
-            else frame.contact_velocity_mm_s
-        )
+        if len(local_slopes) == 2:
+            velocity = (0.0 + local_slopes[0] + local_slopes[1]) / 2.0
+        elif local_slopes:
+            # NumPy's median reduces even a singleton through a sum starting
+            # at +0.0; preserve its handling of signed zero.
+            velocity = local_slopes[0] + 0.0
+        else:
+            velocity = frame.contact_velocity_mm_s
         frame.state = (
             "pinned"
             if velocity is None or abs(velocity) <= deadband
@@ -206,12 +215,13 @@ def _bootstrap_stats(values: Sequence[float]) -> dict[str, float | int | list[fl
         medians[start:end] = np.median(samples, axis=1, overwrite_input=True)
         del samples
     check_cancelled()
+    interval = np.percentile(medians, [2.5, 97.5], overwrite_input=True)
     return {
         "median_deg": median,
         "mad_deg": mad,
         "ci95_deg": [
-            float(np.percentile(medians, 2.5)),
-            float(np.percentile(medians, 97.5)),
+            float(interval[0]),
+            float(interval[1]),
         ],
         "n_frames": int(len(array)),
     }

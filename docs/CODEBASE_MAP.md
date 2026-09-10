@@ -81,14 +81,65 @@ tests in `tests/test_pendant_fit_cache.py` and paired timing in
 Deterministic pendant table persistence lives in `pipelines/pendant/lookup_cache.py`;
 `tests/test_lookup_cache.py` checks invalidation/faults and
 `tools/profile_lookup_cache.py` measures fresh-process reuse.
+First-ever table generation reuses exact ODE derivatives within each beta sweep;
+`tests/test_lookup_derivative_reuse.py` checks complete table/profile equivalence,
+bounds and cancellation. `tools/profile_cold_lookup_build.py` measures uncached
+builds; `tools/profile_lookup_rhs.py` audits exact derivative overlap.
 Fixed observation preparation in `common/solver.py` and seven-index temporal
 windows in `common/temporal_sessile.py` are checked by
 `tests/test_numerical_repeated_work.py`; `tools/profile_repeated_work.py` measures
 their paired timings.
 Bounded temporal bootstrap sampling is covered by `tests/test_bootstrap_batches.py`;
 `tools/profile_bootstrap_batches.py` measures allocation and timing equivalence.
+Stable pendant envelope grouping is checked in `tests/test_pendant_envelope_grouping.py`;
+`tools/profile_pendant_envelope.py` compares construction times and exact outputs.
+Strict ODE callback reuse is covered by `tests/test_ode_callback_reuse.py`;
+`tools/profile_ode_reuse.py` measures integration and complete-fit timings.
+Exact temporal regression convergence is covered by `tests/test_robust_slope_convergence.py`;
+`tools/profile_slope_convergence.py` measures complete classification timings.
+Straight-baseline crossing selection in `common/geometry.py` is checked by
+`tests/test_contact_crossing_selection.py`; `tools/profile_contact_crossings.py`
+measures contact-detection timings.
+Shared sessile/pendant ODE invariant calculations are checked by
+`tests/test_ode_invariants.py`; `tools/profile_ode_invariants.py` measures
+integration and synthetic fitting workflows.
+Scalar adjacent-velocity medians are checked by `tests/test_adjacent_velocity.py`;
+`tools/profile_adjacent_velocity.py` measures full temporal classification.
+Pendant multi-plane profile preparation is checked by
+`tests/test_multi_plane_preparation.py`; `tools/profile_multi_plane_preparation.py`
+measures warmed multi-plane estimation.
+Combined bootstrap percentiles are checked by `tests/test_bootstrap_percentiles.py`;
+`tools/profile_bootstrap_percentiles.py` measures complete bootstrap timings.
+Sessile clipping-mask reuse is covered by `tests/test_clip_mask_reuse.py`;
+`tools/profile_clip_mask.py` measures clipping with exact geometry comparisons.
+`tools/profile_solver_reuse.py` audits exact repeated integration requests before
+adding numerical caches; it does not change application execution.
+Bounded active-contour matrix reuse lives in `math/active_contour.py`, with
+`tests/test_snake_matrix_cache.py` and `tools/profile_snake_matrix.py` covering
+exact evolution and warmed full-snake timing.
+Shared line/flux gradient sampling is covered by `tests/test_snake_force_reuse.py`
+and `tools/profile_snake_forces.py`, including default-setting timing controls.
+Deferred iteration curvature in the same solver is checked by
+`tests/test_snake_geometry_work.py`; `tools/profile_snake_geometry.py` measures
+complete evolution while preserving final geometry and convergence.
+Conditional iteration normals are covered by `tests/test_snake_normal_skip.py`
+and `tools/profile_snake_normals.py`; final output geometry remains complete.
+Single-image sessile/pendant profiling uses `tools/profile_single_image_state.py`;
+`tests/test_ode_state_access.py` and its frozen `tests/ode_state_reference.py`
+check direct pendant ODE state access against unchanged adaptive profiles/events.
+Single-run needle-row detection in `common/sessile_detection.py` is verified by
+`tests/test_needle_single_run.py`; `tools/profile_single_image_calibration.py`
+compares complete sessile and pendant auto-calibration outputs and timings.
+Run-local shaft detection reuse between needle and fallback-mask steps is checked
+by `tests/test_calibration_shaft_reuse.py` and measured by
+`tools/profile_calibration_shaft_reuse.py`.
 
 ## Plugin graph
+
+Calibration display boundaries are separated from measured contours by
+`common/liquid_boundary.py` and `CalibrationResult.liquid_boundary`. See
+[liquid boundary](guides/liquid_boundary.md), `tests/test_liquid_boundary.py`,
+and `tools/preview_liquid_boundary.py` for geometry and offscreen visual checks.
 
 ```mermaid
 flowchart LR

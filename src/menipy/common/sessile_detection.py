@@ -11,6 +11,7 @@ import numpy as np
 from menipy.common.geometry import find_contact_points_from_contour
 from menipy.models.geometry import SubstrateProfile
 
+NeedleShaftResult = tuple[tuple[int, int, int, int] | None, float, int | None]
 
 @dataclass
 class SessileDropDetection:
@@ -27,6 +28,9 @@ def _center_run(row: np.ndarray, center_x: int) -> tuple[int, int] | None:
     indices = np.flatnonzero(row)
     if indices.size == 0:
         return None
+    # Sorted unique indices form one run exactly when their span equals their count.
+    if int(indices[-1]) - int(indices[0]) + 1 == indices.size:
+        return int(indices[0]), int(indices[-1])
     splits = np.flatnonzero(np.diff(indices) > 1) + 1
     runs = np.split(indices, splits)
     best = min(
@@ -107,7 +111,8 @@ def detect_sessile_needle_shaft(
 
 
 def _segment_sessile_otsu_fallback(
-    image: np.ndarray, *, substrate_y: int | None
+    image: np.ndarray, *, substrate_y: int | None,
+    needle_shaft_result: NeedleShaftResult | None = None,
 ) -> np.ndarray:
     """Segment a filled silhouette and detach its top shaft when necessary."""
     gray = ensure_gray_image(image)
@@ -117,9 +122,9 @@ def _segment_sessile_otsu_fallback(
     )
     if substrate_y is not None:
         binary[max(0, int(substrate_y) - 4) :, :] = 0
-    _, _, expansion_y = detect_sessile_needle_shaft(
-        image, substrate_y=substrate_y
-    )
+    if needle_shaft_result is None:
+        needle_shaft_result = detect_sessile_needle_shaft(image, substrate_y=substrate_y)
+    _, _, expansion_y = needle_shaft_result
     if expansion_y is not None:
         binary[: int(expansion_y), :] = 0
     kernel = np.ones((3, 3), np.uint8)
@@ -458,8 +463,13 @@ def detect_sessile_drop_contour(
     adaptive_block_size: int = 21,
     adaptive_c: int = 2,
     contact_band_px: int = 5,
+    needle_shaft_result: NeedleShaftResult | None = None,
 ) -> SessileDropDetection:
-    """Detect a measured sessile drop profile without synthetic closure edges."""
+    """Detect a measured sessile drop profile without synthetic closure edges.
+
+    An optional needle_shaft_result must come from the same image and substrate_y.
+    Omission retains independent detection; a supplied failed result is reusable.
+    """
     binary = segment_sessile_binary(
         image,
         substrate_y=substrate_y,
@@ -536,7 +546,7 @@ def detect_sessile_drop_contour(
     # components can otherwise look closer to the baseline while enclosing
     # only a small fraction of the actual drop.
     fallback_binary = _segment_sessile_otsu_fallback(
-        image, substrate_y=substrate_y
+        image, substrate_y=substrate_y, needle_shaft_result=needle_shaft_result
     )
     fallback_contours, _ = cv2.findContours(
         fallback_binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE

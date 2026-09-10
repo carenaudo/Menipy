@@ -48,6 +48,7 @@ import logging
 from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import Enum
+from functools import lru_cache
 from typing import Any
 
 import cv2
@@ -56,6 +57,27 @@ from scipy.interpolate import splev, splprep
 from scipy.ndimage import map_coordinates
 
 logger = logging.getLogger(__name__)
+
+
+@lru_cache(maxsize=8)
+def _cached_shape_inverse(n, coefficients, boundary, builder, invert):
+    """Retain at most eight small, read-only solver matrices per process."""
+    alpha, beta, gamma = (float.fromhex(value) for value in coefficients)
+    matrix = builder(n, alpha, beta, boundary) + gamma * np.eye(n, dtype=float)
+    inverse = invert(matrix)
+    inverse.setflags(write=False)
+    return inverse
+
+
+def _shape_inverse(n, config, boundary):
+    if n > 300:
+        # Large standalone snakes must not inflate the temporal tracking cache.
+        matrix = build_pentadiagonal_matrix(n, config.alpha, config.beta, boundary)
+        return np.linalg.inv(matrix + config.gamma * np.eye(n, dtype=float))
+    coefficients = tuple(float(value).hex() for value in (config.alpha, config.beta, config.gamma))
+    return _cached_shape_inverse(
+        n, coefficients, boundary, build_pentadiagonal_matrix, np.linalg.inv
+    )
 
 
 # -----------------------------------------------------------------------------
@@ -340,25 +362,8 @@ def compute_contour_normals(
         zeros_2d = np.zeros((n, 2), dtype=float)
         return zeros_2d, zeros_2d, np.zeros(n, dtype=float)
 
-    if closed:
-        prev_xy = np.roll(xy, 1, axis=0)
-        next_xy = np.roll(xy, -1, axis=0)
-    else:
-        prev_xy = np.vstack([xy[0], xy[:-1]])
-        next_xy = np.vstack([xy[1:], xy[-1]])
-
-    # Central difference tangent
-    dx = next_xy[:, 0] - prev_xy[:, 0]
-    dy = next_xy[:, 1] - prev_xy[:, 1]
-    lengths = np.hypot(dx, dy)
-    lengths[lengths < 1e-9] = 1.0
-
-    tx = dx / lengths
-    ty = dy / lengths
-    tangents = np.column_stack([tx, ty])
-
-    # Outward normal is perpendicular to tangent: (ty, -tx)
-    normals = np.column_stack([ty, -tx])
+    tangents, normals, lengths = _contour_directions(xy, closed)
+    tx, ty = tangents[:, 0], tangents[:, 1]
 
     # Arc-length step ds between adjacent points
     ds = lengths / 2.0
@@ -376,6 +381,34 @@ def compute_contour_normals(
     curvatures = dtx * ty - dty * tx
 
     return tangents, normals, curvatures
+
+
+def _contour_directions(
+    xy: np.ndarray, closed: bool
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Central-difference directions for contours with at least three vertices."""
+    if closed:
+        prev_xy = np.roll(xy, 1, axis=0)
+        next_xy = np.roll(xy, -1, axis=0)
+    else:
+        prev_xy = np.vstack([xy[0], xy[:-1]])
+        next_xy = np.vstack([xy[1:], xy[-1]])
+    dx = next_xy[:, 0] - prev_xy[:, 0]
+    dy = next_xy[:, 1] - prev_xy[:, 1]
+    lengths = np.hypot(dx, dy)
+    lengths[lengths < 1e-9] = 1.0
+    tx = dx / lengths
+    ty = dy / lengths
+    return np.column_stack([tx, ty]), np.column_stack([ty, -tx]), lengths
+
+
+def _evolution_normals(
+    xy: np.ndarray, closed: bool, config: ActiveContourConfig | None = None
+) -> np.ndarray | None:
+    """Skip curvature until the final output; evolution only consumes normals."""
+    if config is not None and config.w_flux == 0.0 and config.w_balloon == 0.0:
+        return None
+    return _contour_directions(xy, closed)[1]
 
 
 def resample_contour_arclength(
@@ -482,7 +515,7 @@ def precompute_image_gradients(
 def compute_external_forces(
     image: np.ndarray,
     xy: np.ndarray,
-    normals: np.ndarray,
+    normals: np.ndarray | None,
     config: ActiveContourConfig,
     precomputed_gradients: tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray] | None = None,
 ) -> np.ndarray:
@@ -497,7 +530,8 @@ def compute_external_forces(
     Args:
         image: Grayscale image (2D uint8 or float array).
         xy: (N, 2) array of vertex coordinates (x, y).
-        normals: (N, 2) unit normal vectors.
+        normals: (N, 2) unit normal vectors; may be None when both normal-force
+            weights (flux and balloon) are zero.
         config: ActiveContourConfig containing force weights and smoothing sigma.
         precomputed_gradients: Optional precomputed (egx, egy, gx, gy) tuple from
             precompute_image_gradients to avoid redundant recomputations in loops.
@@ -505,6 +539,8 @@ def compute_external_forces(
     Returns:
         (N, 2) external force vectors (fx, fy) at each vertex.
     """
+    if normals is None and (config.w_flux != 0.0 or config.w_balloon != 0.0):
+        raise ValueError("Normals are required for flux and balloon forces")
     h, w = image.shape[:2]
 
     if precomputed_gradients is not None:
@@ -524,13 +560,16 @@ def compute_external_forces(
         fx += config.w_edge * map_coordinates(egx, coords, order=1, mode="nearest")
         fy += config.w_edge * map_coordinates(egy, coords, order=1, mode="nearest")
 
-    if config.w_line != 0.0:
-        fx += config.w_line * map_coordinates(gx, coords, order=1, mode="nearest")
-        fy += config.w_line * map_coordinates(gy, coords, order=1, mode="nearest")
-
-    if config.w_flux != 0.0:
+    # Line and normal-flux forces use the same image-gradient samples.
+    if config.w_line != 0.0 or config.w_flux != 0.0:
         samp_gx = map_coordinates(gx, coords, order=1, mode="nearest")
         samp_gy = map_coordinates(gy, coords, order=1, mode="nearest")
+
+    if config.w_line != 0.0:
+        fx += config.w_line * samp_gx
+        fy += config.w_line * samp_gy
+
+    if config.w_flux != 0.0:
         flux = samp_gx * normals[:, 0] + samp_gy * normals[:, 1]
         fx += config.w_flux * flux * normals[:, 0]
         fy += config.w_flux * flux * normals[:, 1]
@@ -593,9 +632,7 @@ def evolve_active_contour(
         xy[-1] = np.asarray(pinned_endpoints[1], dtype=float)
 
     # Pre-build shape matrix A and pre-invert (A + gamma * I)
-    A = build_pentadiagonal_matrix(n, config.alpha, config.beta, boundary_condition)
-    M = A + config.gamma * np.eye(n, dtype=float)
-    inv_M = np.linalg.inv(M)
+    inv_M = _shape_inverse(n, config, boundary_condition)
 
     # Precompute static spatial image gradient fields once
     gradients = precompute_image_gradients(image, config)
@@ -617,7 +654,7 @@ def evolve_active_contour(
         curr_xy = np.column_stack([x, y])
 
         # 1. Compute geometry (tangents, normals)
-        tangents, normals, _ = compute_contour_normals(curr_xy, closed=closed)
+        normals = _evolution_normals(curr_xy, closed, config)
 
         # 2. Compute external forces using precomputed gradient fields
         f_ext = compute_external_forces(

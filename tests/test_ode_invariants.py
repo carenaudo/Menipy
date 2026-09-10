@@ -1,3 +1,5 @@
+"""Reference integrations for invariant callback calculations."""
+
 from typing import Any
 
 import numpy as np
@@ -6,7 +8,7 @@ from scipy.integrate import solve_ivp
 from menipy.common.cancellation import check_cancelled
 
 
-def young_laplace_ode(
+def legacy_pendant(
     params: np.ndarray,
     physics: dict[str, Any],
     geometry: dict[str, Any] | None = None,
@@ -36,15 +38,10 @@ def young_laplace_ode(
     if R0_mm <= 0:
         return np.array([[0.0, 0.0]])
 
-    apex_curvature = 1.0 / R0_mm
-    twice_curvature = 2.0 / R0_mm
-    gravity_coefficient = beta / (R0_mm**2)
-
     def odesys(s, y):
         check_cancelled()
         # y = [r, z, psi]
         r, z, psi = y
-        sin_psi = np.sin(psi)
 
         # Avoid division by zero at apex (s=0, r=0)
         # Using L'Hopital's rule: lim(s->0) sin(psi)/r = dpsi/ds
@@ -57,13 +54,13 @@ def young_laplace_ode(
         # dpsi/ds = 2/R0_mm + (beta/R0_mm^2) * z - sin(psi)/r
 
         if r < 1e-12:
-            sin_psi_r = apex_curvature
+            sin_psi_r = 1.0 / R0_mm
         else:
-            sin_psi_r = sin_psi / r
+            sin_psi_r = np.sin(psi) / r
 
         drds = np.cos(psi)
-        dzds = sin_psi
-        dpsids = twice_curvature + gravity_coefficient * z - sin_psi_r
+        dzds = np.sin(psi)
+        dpsids = (2.0 / R0_mm) + (beta / (R0_mm**2)) * z - sin_psi_r
 
         return [drds, dzds, dpsids]
 
@@ -110,7 +107,7 @@ def young_laplace_ode(
     return np.column_stack([r_full, z_full])
 
 
-def sessile_young_laplace_ode(
+def legacy_sessile(
     params: np.ndarray,
     physics: dict[str, Any],
     geometry: dict[str, Any] | None = None,
@@ -156,34 +153,32 @@ def sessile_young_laplace_ode(
         except (TypeError, ValueError):
             target_height_mm = None
 
-    apex_curvature = 1.0 / R0_mm
-    twice_curvature = 2.0 / R0_mm
-    gravity_coefficient = Bo / (R0_mm**2)
-
     def odesys(s, y):
         check_cancelled()
         r, z, psi = y
-        sin_psi = np.sin(psi)
         if r < 1e-12:
-            sin_psi_r = apex_curvature
+            sin_psi_r = 1.0 / R0_mm
         else:
-            sin_psi_r = sin_psi / r
+            sin_psi_r = np.sin(psi) / r
 
         drds = np.cos(psi)
-        dzds = sin_psi
-        dpsids = twice_curvature + gravity_coefficient * z - sin_psi_r
+        dzds = np.sin(psi)
+        dpsids = (2.0 / R0_mm) + (Bo / (R0_mm**2)) * z - sin_psi_r
         return [drds, dzds, dpsids]
 
     events = []
     if target_height_mm is not None and target_height_mm > 0:
+
         def hit_target_h(s, y):
             return y[1] - target_height_mm
+
         hit_target_h.terminal = True
         hit_target_h.direction = 1
         events.append(hit_target_h)
 
     def hit_overhang(s, y):
         return (np.pi * 175.0 / 180.0) - y[2]
+
     hit_overhang.terminal = True
     hit_overhang.direction = -1
     events.append(hit_overhang)
@@ -214,7 +209,72 @@ def sessile_young_laplace_ode(
     return np.column_stack([r_full, z_full])
 
 
-from menipy.common.registry import SOLVERS
+import pytest
 
-SOLVERS.register("young_laplace_ode", young_laplace_ode)
-SOLVERS.register("sessile_young_laplace_ode", sessile_young_laplace_ode)
+from menipy.math import young_laplace as yl
+
+
+@pytest.mark.parametrize(
+    "params", [[2.0], [1.2, 0], [1.2, 0.6], [0.1, 3.0], [5.0, -0.1], [-1.0, 0.6]]
+)
+@pytest.mark.parametrize("height", [None, 0.5, 2.0, 10.0])
+def test_exact_adaptive_profiles(params, height):
+    for current, reference in (
+        (yl.young_laplace_ode, legacy_pendant),
+        (yl.sessile_young_laplace_ode, legacy_sessile),
+    ):
+        geometry = {"height_mm": height}
+        actual = current(np.array(params), {}, geometry)
+        expected = reference(np.array(params), {}, geometry)
+        np.testing.assert_array_equal(actual, expected)
+
+
+@pytest.mark.parametrize(
+    "function", [yl.young_laplace_ode, yl.sessile_young_laplace_ode]
+)
+def test_callback_cancellation(function, monkeypatch):
+    from menipy.common.cancellation import AnalysisCancelled
+
+    calls = []
+
+    def cancel():
+        calls.append(True)
+        if len(calls) == 3:
+            raise AnalysisCancelled()
+
+    monkeypatch.setattr(yl, "check_cancelled", cancel)
+    with pytest.raises(AnalysisCancelled):
+        function(np.array([1.2, 0.6]), {})
+    assert len(calls) == 3
+
+
+def fitted_output(integrator):
+    from types import SimpleNamespace
+
+    from menipy.common import solver
+    from menipy.models.fit import FitConfig
+
+    geometry = {"height_mm": 1.8}
+    obs = integrator(np.array([2.0, 0.25]), {}, geometry)
+    obs = obs + np.random.default_rng(82).normal(0, 0.0001, obs.shape)
+    ctx = SimpleNamespace(
+        contour=SimpleNamespace(xy=obs, units="mm"), geometry=geometry
+    )
+    result = solver.run(
+        ctx,
+        integrator=integrator,
+        config=FitConfig(x0=[1.9, 0.2], bounds=([0.5, 0.01], [4.0, 1.0])),
+    )
+    del result["solver"]["time_ms"]
+    return result
+
+
+@pytest.mark.parametrize(
+    "current,reference",
+    [
+        (yl.young_laplace_ode, legacy_pendant),
+        (yl.sessile_young_laplace_ode, legacy_sessile),
+    ],
+)
+def test_exact_fit(current, reference):
+    assert fitted_output(current) == fitted_output(reference)

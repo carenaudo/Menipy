@@ -124,6 +124,9 @@ class OverlayManager:
         # Draw contact points
         if result.contact_points:
             left, right = result.contact_points
+            boundary = getattr(result, "liquid_boundary", None)
+            if boundary is not None and len(boundary) >= 2:
+                left, right = boundary[[0, -1]]
             self.image_view.add_marker_point(
                 QPointF(left[0], left[1]),
                 color=QColor(255, 0, 0),
@@ -152,7 +155,8 @@ class OverlayManager:
 
         # Draw drop contour
         if result.drop_contour is not None:
-            contour = np.asarray(result.drop_contour)
+            boundary = getattr(result, "liquid_boundary", None)
+            contour = np.asarray(boundary if boundary is not None else result.drop_contour)
             if contour.size > 0:
                 self.image_view.add_marker_contour(
                     contour,

@@ -144,25 +144,19 @@ def clip_contour_to_substrate(
     # Tolerance scaled with substrate length (helps with pixel-scale geometry)
     epsilon = float(max(1e-9, 1e-6 * float(np.linalg.norm(line_vec))))
 
-    def is_inside(pt: np.ndarray) -> bool:
-        """Check if inside."""
-        # Signed area (cross product) test: positive means same side as apex
-        # Keep a small negative tolerance to allow near-collinear points.
-        return cross2d(line_vec, pt - p1) * side >= -epsilon
-
     intersections: list[np.ndarray] = []
     clipped: list[np.ndarray] = []
 
     # Fast path: everything already on the apex side.
-    inside_mask = np.array([is_inside(pt) for pt in contour])
+    inside_mask = cross2d(line_vec, contour - p1) * side >= -epsilon
     if inside_mask.all():
         return contour, None
 
     # Iterate explicit segments (prev, curr) to avoid relying on implicit loop state
     rolled = np.roll(contour, -1, axis=0)
-    for prev, curr in zip(contour, rolled):
-        prev_in = is_inside(prev)
-        curr_in = is_inside(curr)
+    for prev, curr, prev_in, curr_in in zip(
+        contour, rolled, inside_mask, np.roll(inside_mask, -1)
+    ):
 
         if curr_in:
             if not prev_in:

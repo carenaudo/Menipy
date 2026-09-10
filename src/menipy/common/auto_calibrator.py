@@ -46,6 +46,8 @@ class CalibrationResult:
 
     # Drop contour as Nx2 array of (x, y) points
     drop_contour: np.ndarray | None = None
+    # Display/region closure; kept separate from measured samples used by fits.
+    liquid_boundary: np.ndarray | None = field(default=None, kw_only=True)
 
     # ROI as (x, y, width, height) encompassing the region of interest
     roi_rect: tuple[int, int, int, int] | None = None
@@ -161,6 +163,7 @@ class AutoCalibrator:
 
     def _detect_sessile(self) -> CalibrationResult:
         """Run sessile drop detection pipeline."""
+        self._sessile_shaft_result = None
         result = CalibrationResult()
         result.enhanced_image = self.enhanced_gray.copy()
 
@@ -450,9 +453,10 @@ class AutoCalibrator:
         self,
     ) -> tuple[tuple[int, int, int, int] | None, float]:
         """Detect needle region (contour touching top border) for sessile."""
-        shaft_rect, shaft_confidence, _ = detect_sessile_needle_shaft(
+        self._sessile_shaft_result = detect_sessile_needle_shaft(
             self.original_image, substrate_y=self._substrate_y
         )
+        shaft_rect, shaft_confidence, _ = self._sessile_shaft_result
         if shaft_rect is not None:
             self._needle_rect = shaft_rect
             return shaft_rect, shaft_confidence
@@ -505,6 +509,7 @@ class AutoCalibrator:
             substrate_y=self._substrate_y,
             needle_rect=self._needle_rect,
             min_area_fraction=self.min_area_fraction,
+            needle_shaft_result=getattr(self, "_sessile_shaft_result", None),
         )
         self._drop_contour = detection.contour
         if detection.binary_mask is not None:
@@ -778,4 +783,8 @@ def run_auto_calibration(
         CalibrationResult with detected regions.
     """
     calibrator = AutoCalibrator(image, pipeline_name, **kwargs)
-    return calibrator.detect_all()
+    result = calibrator.detect_all()
+    from menipy.common.liquid_boundary import update_calibration_boundary
+
+    update_calibration_boundary(result, pipeline_name)
+    return result

@@ -82,12 +82,20 @@ def _selected_plane_lookup_all() -> (
 
 
 def _build_selected_plane_lookup():
+    from menipy.pipelines.pendant import strict_young_laplace as strict
+
     beta_grid = np.linspace(0.03, 2.5, 24)
     height_grid = np.linspace(0.8, 4.5, 24)
     by_plane = {
         round(float(k), 4): ([], [], []) for k in DEFAULT_SELECTED_PLANES + (1.0,)
     }
     for beta in beta_grid:
+        # Derivatives are autonomous and identical for exact beta/state values.
+        # Reuse only within this beta's height sweep, never across table builds.
+        integration_options = {}
+        if (integrate_young_laplace_profile_mm is strict.integrate_young_laplace_profile_mm
+                and integrate_young_laplace_profile_mm.__module__ == strict.__name__):
+            integration_options["_derivative_cache"] = {}
         for height in height_grid:
             check_cancelled()
             model = integrate_young_laplace_profile_mm(
@@ -96,6 +104,7 @@ def _build_selected_plane_lookup():
                 target_height_mm=float(height),
                 branch="right",
                 max_step=0.08,
+                **integration_options,
             )
             r, z = _profile(model)
             if r.size < 3:
@@ -151,6 +160,11 @@ def _selected_plane_estimate(
     ctx: Any, profile_mm: np.ndarray, physics: dict[str, Any], *, k: float
 ) -> dict[str, Any]:
     r, z = _profile(profile_mm)
+    return _selected_plane_from_profile(ctx, r, z, physics, k=k)
+
+
+def _selected_plane_from_profile(ctx, r, z, physics, *, k):
+    """Evaluate one plane using an already filtered and ordered profile."""
     prefix = "approx_selected_plane"
     if r.size < 3:
         return {f"{prefix}_status": "not_enough_profile_points"}
@@ -206,8 +220,10 @@ def multi_selected_plane(
     """Approximate IFT from a median over multiple selected planes."""
     estimates = []
     plane_rows = []
+    r, z = _profile(profile_mm)
     for k in DEFAULT_SELECTED_PLANES:
-        raw = _selected_plane_estimate(ctx, profile_mm, physics, k=k)
+        check_cancelled()
+        raw = _selected_plane_from_profile(ctx, r, z, physics, k=k)
         gamma = raw.get("approx_selected_plane_surface_tension_mN_m")
         status = raw.get("approx_selected_plane_status")
         plane_rows.append(
