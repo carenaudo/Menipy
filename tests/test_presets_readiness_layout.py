@@ -40,6 +40,78 @@ def test_preset_roundtrip_restores_full_settings(window, tmp_path):
     assert window.settings.pipeline_settings == {"contact_angle_method": "tangent"}
 
 
+def test_preset_notes_replace_legacy_tab_notes(window, monkeypatch):
+    from PySide6.QtWidgets import QInputDialog, QMessageBox
+
+    from menipy.gui.services.settings_service import pipeline_settings_for
+
+    window.settings.set_pipeline_settings(
+        "sessile", {"notes": "old tab note", "contact_angle_method": "circle_fit"}
+    )
+    warnings, prompts = [], []
+    monkeypatch.setattr(QMessageBox, "warning", lambda *args: warnings.append(args))
+    monkeypatch.setattr(QInputDialog, "getText", lambda *a, **k: ("Documented", True))
+
+    def notes_prompt(parent, title, label, text=""):
+        prompts.append(text)
+        return "Water on glass", True
+
+    monkeypatch.setattr(QInputDialog, "getMultiLineText", notes_prompt)
+    window.setup_panel_ctrl.sop_ctrl.on_add_sop()
+
+    assert prompts == ["old tab note"]  # the old note is offered once
+    preset = window.preset_ctrl.selected()
+    assert preset.name == "Documented"
+    assert preset.notes == "Water on glass"
+    assert "notes" not in preset.pipeline_settings
+    remaining = pipeline_settings_for(window.settings, "sessile")
+    assert remaining == {"contact_angle_method": "circle_fit"}
+
+    window.preset_ctrl.update()
+    assert window.preset_ctrl.selected().notes == "Water on glass"
+
+    monkeypatch.setattr(QInputDialog, "getMultiLineText", lambda *a, **k: ("edited ", True))
+    window.preset_ctrl.edit_notes()
+    assert window.preset_ctrl.selected().notes == "edited"
+    assert not warnings
+
+
+def test_unticked_overlay_is_saved_and_skipped_by_run_analysis(window):
+    from menipy.pipelines.discover import PIPELINE_MAP
+
+    sop_ctrl = window.setup_panel_ctrl.sop_ctrl
+    pipeline = window.setup_panel_ctrl.current_pipeline_name()
+    widgets = {w.step_name: w for w in sop_ctrl._step_widgets}
+
+    widgets["overlay"].includeChk.setChecked(False)
+
+    default = window.sops.get(pipeline, window.sops.default_name())
+    assert "overlay" not in default.include_stages
+    assert "validation" in default.include_stages
+    skipped = window.pipeline_ctrl._skipped_stages(PIPELINE_MAP[pipeline])
+    assert skipped == ("overlay",)
+
+    # Switching pipelines and back restores the saved choice.
+    window.setup_panel_ctrl.pendantBtn.click()
+    window.setup_panel_ctrl.sessileBtn.click()
+    widgets = {w.step_name: w for w in sop_ctrl._step_widgets}
+    assert not widgets["overlay"].is_included()
+
+
+def test_preset_with_legacy_stage_names_validates_and_applies(window):
+    preset = window.preset_ctrl.capture("Legacy stages")
+    legacy = preset.model_copy(
+        update={"stages": ["acquisition", "edge_detection", "outputs", "optimization"]}
+    )
+    assert window.preset_ctrl.apply(legacy, confirm=False)
+    widgets = {w.step_name: w for w in window.setup_panel_ctrl.sop_ctrl._step_widgets}
+    assert not widgets["overlay"].is_included()
+
+    bogus = preset.model_copy(update={"stages": ["acquisition", "not_a_stage"]})
+    with pytest.raises(ValueError, match="unavailable pipeline stages"):
+        window.preset_ctrl.validate(bogus)
+
+
 def test_conflicting_preset_is_rejected_before_mutation(window):
     preset = window.preset_ctrl.capture("Missing plugin")
     preset.plugins["not_installed.py"] = "different"

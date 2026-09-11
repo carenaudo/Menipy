@@ -21,6 +21,8 @@ class SessileDropDetection:
     contact_points: tuple[tuple[int, int], tuple[int, int]] | None
     confidence: float
     binary_mask: np.ndarray | None = None
+    solidity: float | None = None
+    fill_ratio: float | None = None
 
 
 def _center_run(row: np.ndarray, center_x: int) -> tuple[int, int] | None:
@@ -110,18 +112,54 @@ def detect_sessile_needle_shaft(
     return rect, confidence, expansion_y
 
 
+# Row-mask band that cuts above the baseline, detaching the drop from a
+# substrate rendered as dark as the drop itself.
+_SUBSTRATE_DETACH_BAND_PX = -4
+
+
+def _dedupe_bands(*bands: int) -> list[int]:
+    """Return the given row-mask bands in order, without repeats.
+
+    Parameters
+    ----------
+    *bands : int
+        Candidate ``contact_band_px`` offsets.
+
+    Returns
+    -------
+    list of int
+        The distinct offsets, first occurrence order preserved.
+    """
+    seen: list[int] = []
+    for band in bands:
+        if band not in seen:
+            seen.append(band)
+    return seen
+
+
 def _segment_sessile_otsu_fallback(
     image: np.ndarray, *, substrate_y: int | None,
     needle_shaft_result: NeedleShaftResult | None = None,
+    contact_band_px: int = 5,
 ) -> np.ndarray:
-    """Segment a filled silhouette and detach its top shaft when necessary."""
+    """Segment a filled silhouette and detach its top shaft when necessary.
+
+    ``contact_band_px`` places the row mask relative to the baseline, and the
+    right choice depends on the substrate's polarity. A positive band keeps the
+    contact region the tangent fit needs, which is correct when the substrate is
+    brighter than the drop. A negative band cuts above the baseline, which is
+    what detaches the drop from a substrate rendered as dark as the drop itself;
+    without it the two fuse into one full-width component. Callers that cannot
+    tell which applies should try both -- see ``_SUBSTRATE_DETACH_BAND_PX``.
+    """
     gray = ensure_gray_image(image)
     blur = cv2.GaussianBlur(gray, (5, 5), 0)
     _, binary = cv2.threshold(
         blur, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU
     )
     if substrate_y is not None:
-        binary[max(0, int(substrate_y) - 4) :, :] = 0
+        mask_start = min(binary.shape[0], max(0, int(substrate_y) + contact_band_px))
+        binary[mask_start:, :] = 0
     if needle_shaft_result is None:
         needle_shaft_result = detect_sessile_needle_shaft(image, substrate_y=substrate_y)
     _, _, expansion_y = needle_shaft_result
@@ -408,6 +446,110 @@ def detect_sessile_substrate_line(
     return line, conf
 
 
+def _correct_overhanging_contacts(
+    contour: np.ndarray,
+    contact_points: tuple[tuple[int, int], tuple[int, int]],
+    substrate_y: int,
+    band_px: float,
+    overhang_px: float = 2.0,
+) -> tuple[tuple[int, int], tuple[int, int]]:
+    """Move contacts to the silhouette's foot where the drop overhangs its base.
+
+    Contacts are first taken as the extreme contour points within a band above
+    the baseline. For a drop above 90 degrees that extreme is the bulge, not the
+    contact: on exact caps it sat 7, 24 and 31 px outward at 135, 150 and 160
+    degrees, and measuring the tangent from there reads the profile curling back
+    under the bulge as an acute angle. Where the band extends beyond the foot --
+    the contour's lowest row near the baseline -- the foot is the contact.
+
+    Parameters
+    ----------
+    contour : np.ndarray
+        Drop contour, shape (N, 2).
+    contact_points : tuple
+        Left and right contacts from the band search.
+    substrate_y : int
+        Baseline row.
+    band_px : float
+        Height of the band the contacts were searched in.
+    overhang_px : float, optional
+        Minimum outward excess of the band over the foot to count as overhang.
+
+    Returns
+    -------
+    tuple
+        Contacts, with an overhanging side moved to its foot.
+    """
+    xy = np.asarray(contour, dtype=float).reshape(-1, 2)
+    foot_y = min(float(np.max(xy[:, 1])), float(substrate_y))
+    foot = xy[np.abs(xy[:, 1] - foot_y) <= 1.0]
+    band = xy[(xy[:, 1] >= float(substrate_y) - band_px) & (xy[:, 1] <= foot_y)]
+    if foot.shape[0] < 2 or band.shape[0] < 2:
+        return contact_points
+
+    (left_x, left_y), (right_x, right_y) = contact_points
+    foot_left, foot_right = float(np.min(foot[:, 0])), float(np.max(foot[:, 0]))
+    if float(np.min(band[:, 0])) < foot_left - overhang_px:
+        left_x = int(round(foot_left))
+    if float(np.max(band[:, 0])) > foot_right + overhang_px:
+        right_x = int(round(foot_right))
+    return ((left_x, left_y), (right_x, right_y))
+
+
+def contour_solidity(contour: np.ndarray) -> float:
+    """Return the ratio of a contour's area to its convex hull area.
+
+    A sessile cap clipped at a straight baseline is essentially convex, so a
+    boundary that dives into the silhouette -- for example where an interior
+    segmentation hole breaks through to the exterior -- drops this well below
+    one while a clean profile stays near 0.99.
+
+    Parameters
+    ----------
+    contour : np.ndarray
+        OpenCV contour, shaped (N, 1, 2) or (N, 2).
+
+    Returns
+    -------
+    float
+        Solidity in [0, 1]; ``0.0`` when the hull area is degenerate.
+    """
+    area = float(cv2.contourArea(contour))
+    hull_area = float(cv2.contourArea(cv2.convexHull(contour)))
+    if hull_area <= 0.0:
+        return 0.0
+    return float(np.clip(area / hull_area, 0.0, 1.0))
+
+
+def contour_fill_ratio(contour: np.ndarray, binary: np.ndarray) -> float:
+    """Return the fraction of a contour's interior that is actually foreground.
+
+    Adaptive thresholding of a large homogeneous silhouette classifies the
+    interior as background, so the enclosed mask is riddled with holes. That is
+    invisible to ``cv2.contourArea`` -- which sees only the outer boundary --
+    but shows up here as a ratio far below one.
+
+    Parameters
+    ----------
+    contour : np.ndarray
+        OpenCV contour, shaped (N, 1, 2) or (N, 2).
+    binary : np.ndarray
+        Binary mask the contour was extracted from.
+
+    Returns
+    -------
+    float
+        Fill ratio; ``0.0`` when the contour encloses no area.
+    """
+    filled = np.zeros(binary.shape[:2], dtype=np.uint8)
+    cv2.drawContours(filled, [contour.reshape(-1, 1, 2).astype(np.int32)], -1, 255, -1)
+    enclosed = float(np.count_nonzero(filled))
+    if enclosed <= 0.0:
+        return 0.0
+    covered = float(np.count_nonzero(cv2.bitwise_and(filled, binary)))
+    return covered / enclosed
+
+
 def segment_sessile_binary(
     image: np.ndarray,
     *,
@@ -454,6 +596,7 @@ def detect_sessile_drop_contour(
     substrate_y: int | None = None,
     needle_rect: tuple[int, int, int, int] | None = None,
     min_area_fraction: float = 0.005,
+    min_solidity: float = 0.95,
     substrate_touch_tolerance: int = 15,
     rectangularity_threshold: float = 0.85,
     min_gap_from_needle: int = 40,
@@ -487,11 +630,17 @@ def detect_sessile_drop_contour(
     image_area = float(height * width)
     center_x = width // 2
     min_area = image_area * min_area_fraction
-    substrate_contours: list[tuple[np.ndarray, float, int, int]] = []
-    floating_contours: list[tuple[np.ndarray, float, int, int]] = []
+    # (contour, area, distance_from_center, distance_to_substrate,
+    #  solidity, fill_ratio, source_binary)
+    Candidate = tuple[np.ndarray, float, int, int, float, float, np.ndarray]
+    substrate_contours: list[Candidate] = []
+    floating_contours: list[Candidate] = []
 
     def collect_candidates(
-        candidate_contours: list[np.ndarray], *, fallback: bool = False
+        candidate_contours: list[np.ndarray],
+        source_binary: np.ndarray,
+        *,
+        fallback: bool = False,
     ) -> None:
         for cnt in candidate_contours:
             x, y, w, h = cv2.boundingRect(cnt)
@@ -528,42 +677,98 @@ def detect_sessile_drop_contour(
 
             cnt_center_x = x + w // 2
             distance_from_center = abs(cnt_center_x - center_x)
+            solidity = contour_solidity(cnt)
+            fill_ratio = contour_fill_ratio(cnt, source_binary)
             if substrate_y is not None:
                 distance_to_substrate = abs((y + h) - int(substrate_y))
                 if distance_to_substrate <= substrate_touch_tolerance:
                     substrate_contours.append(
-                        (cnt, area, distance_from_center, distance_to_substrate)
+                        (
+                            cnt,
+                            area,
+                            distance_from_center,
+                            distance_to_substrate,
+                            solidity,
+                            fill_ratio,
+                            source_binary,
+                        )
                     )
                 elif y + h <= int(substrate_y) + contact_band_px:
                     floating_contours.append(
-                        (cnt, area, distance_from_center, distance_to_substrate)
+                        (
+                            cnt,
+                            area,
+                            distance_from_center,
+                            distance_to_substrate,
+                            solidity,
+                            fill_ratio,
+                            source_binary,
+                        )
                     )
             else:
-                floating_contours.append((cnt, area, distance_from_center, 0))
+                floating_contours.append(
+                    (
+                        cnt,
+                        area,
+                        distance_from_center,
+                        0,
+                        solidity,
+                        fill_ratio,
+                        source_binary,
+                    )
+                )
 
-    collect_candidates(contours)
+    collect_candidates(contours, binary)
     # Compare the adaptive candidates with a filled silhouette. Thin edge
     # components can otherwise look closer to the baseline while enclosing
     # only a small fraction of the actual drop.
-    fallback_binary = _segment_sessile_otsu_fallback(
-        image, substrate_y=substrate_y, needle_shaft_result=needle_shaft_result
-    )
-    fallback_contours, _ = cv2.findContours(
-        fallback_binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
-    )
-    before_fallback = len(substrate_contours) + len(floating_contours)
-    collect_candidates(fallback_contours, fallback=True)
-    if len(substrate_contours) + len(floating_contours) > before_fallback:
-        binary = fallback_binary
+    # Two row-mask bands, because the right one depends on the substrate's
+    # polarity. Keeping the contact band preserves the contact region a tangent
+    # fit needs on a substrate brighter than the drop; cutting above the
+    # baseline is what detaches the drop from a substrate as dark as the drop,
+    # which would otherwise fuse into one full-width component. Offering both
+    # lets the candidate filters and the quality gate pick, instead of
+    # hard-coding an assumption about the sample.
+    for band_px in _dedupe_bands(contact_band_px, _SUBSTRATE_DETACH_BAND_PX):
+        fallback_binary = _segment_sessile_otsu_fallback(
+            image,
+            substrate_y=substrate_y,
+            needle_shaft_result=needle_shaft_result,
+            contact_band_px=band_px,
+        )
+        fallback_contours, _ = cv2.findContours(
+            fallback_binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
+        )
+        collect_candidates(fallback_contours, fallback_binary, fallback=True)
+
+    def quality_tier(item: Candidate) -> int:
+        # A notched silhouette -- an interior hole that broke through to the
+        # boundary -- scores far below a clean cap on solidity. Ranking the gate
+        # ahead of raw area stops a marginally larger but corrupted candidate
+        # from winning, while leaving the ordering untouched when every
+        # candidate falls on the same side of the gate.
+        #
+        # Fill ratio is deliberately not part of the gate. Holes that have not
+        # broken through do not touch the external contour, so a hollow
+        # adaptive-threshold ring can carry a perfect boundary; demoting it
+        # handed the win to a silhouette truncated above the baseline and
+        # wrecked the contact angles. It stays available as a diagnostic.
+        return 1 if item[4] >= min_solidity else 0
 
     if substrate_contours:
-        substrate_contours.sort(key=lambda item: (-item[1], item[3], item[2]))
-        best_cnt, area, _, distance_to_substrate = substrate_contours[0]
+        substrate_contours.sort(
+            key=lambda item: (-quality_tier(item), -item[1], item[3], item[2])
+        )
+        best = substrate_contours[0]
     elif floating_contours:
-        floating_contours.sort(key=lambda item: (-item[1], item[2]))
-        best_cnt, area, _, distance_to_substrate = floating_contours[0]
+        floating_contours.sort(
+            key=lambda item: (-quality_tier(item), -item[1], item[2])
+        )
+        best = floating_contours[0]
     else:
         return SessileDropDetection(None, None, 0.0, binary)
+
+    best_cnt, area, _, distance_to_substrate, solidity, fill_ratio, binary = best
 
     contour = best_cnt.reshape(-1, 2).astype(np.float64)
     contact_points = None
@@ -606,6 +811,14 @@ def detect_sessile_drop_contour(
                     (int(round(ellipse_contacts[1][0])), int(substrate_y)),
                 )
 
+    if contact_points is not None and substrate_y is not None:
+        contact_points = _correct_overhanging_contacts(
+            contour,
+            contact_points,
+            int(substrate_y),
+            band_px=max(20.0, float(substrate_touch_tolerance + 5)),
+        )
+
     area_score = min(1.0, area / max(min_area * 4.0, 1.0))
     touch_score = 1.0
     if substrate_y is not None:
@@ -613,4 +826,11 @@ def detect_sessile_drop_contour(
             0.0, 1.0 - float(distance_to_substrate) / max(substrate_touch_tolerance, 1)
         )
     confidence = float(np.clip(0.4 + 0.4 * area_score + 0.2 * touch_score, 0.0, 1.0))
-    return SessileDropDetection(contour, contact_points, confidence, binary)
+    return SessileDropDetection(
+        contour,
+        contact_points,
+        confidence,
+        binary,
+        solidity=solidity,
+        fill_ratio=fill_ratio,
+    )

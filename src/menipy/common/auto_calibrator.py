@@ -605,34 +605,46 @@ class AutoCalibrator:
         mask = np.zeros((self.height, self.width), dtype=np.uint8)
         cv2.drawContours(mask, [drop_cnt], -1, 255, 1)
 
+        # The tolerance only decides *that* the contour has left the shaft; the
+        # contact is where it started to leave. Reporting the trigger row puts
+        # the contact `tolerance` pixels outward and a row or two down the drop.
+        # Walking back up the contiguous outward run recovers the departure
+        # while an isolated antialiased shaft pixel above it still cannot
+        # trigger a contact.
+        mid_x = int(x + w / 2)
+
         # Find left contact point (where contour moves left of shaft)
         contact_y_left = y
         contact_x_left = int(ref_x_left)
+        left_edge: dict[int, int] = {}
 
         for cy in range(y, y + h):
             check_cancelled()
-            row = mask[cy, 0 : int(x + w / 2)]  # Left half
-            indices = np.where(row > 0)[0]
+            indices = np.where(mask[cy, 0:mid_x] > 0)[0]  # Left half
             if len(indices) > 0:
-                current_x = indices[0]  # Leftmost pixel
-                if current_x < (ref_x_left - tolerance):
+                left_edge[cy] = int(indices[0])  # Leftmost pixel
+                if left_edge[cy] < (ref_x_left - tolerance):
                     contact_y_left = cy
-                    contact_x_left = current_x
+                    while left_edge.get(contact_y_left - 1, ref_x_left) < ref_x_left:
+                        contact_y_left -= 1
+                    contact_x_left = left_edge[contact_y_left]
                     break
 
         # Find right contact point (where contour moves right of shaft)
         contact_y_right = y
         contact_x_right = int(ref_x_right)
+        right_edge: dict[int, int] = {}
 
         for cy in range(y, y + h):
             check_cancelled()
-            row = mask[cy, int(x + w / 2) : self.width]  # Right half
-            indices = np.where(row > 0)[0]
+            indices = np.where(mask[cy, mid_x : self.width] > 0)[0]  # Right half
             if len(indices) > 0:
-                current_x = indices[-1] + int(x + w / 2)  # Rightmost pixel
-                if current_x > (ref_x_right + tolerance):
+                right_edge[cy] = int(indices[-1]) + mid_x  # Rightmost pixel
+                if right_edge[cy] > (ref_x_right + tolerance):
                     contact_y_right = cy
-                    contact_x_right = current_x
+                    while right_edge.get(contact_y_right - 1, ref_x_right) > ref_x_right:
+                        contact_y_right -= 1
+                    contact_x_right = right_edge[contact_y_right]
                     break
 
         # Needle bottom: use the lower contact point (higher y) when both sides are close,

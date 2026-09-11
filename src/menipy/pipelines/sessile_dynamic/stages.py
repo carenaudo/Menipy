@@ -107,7 +107,7 @@ class DynamicSessilePipeline(PipelineBase):
                 needle_diameter_mm=ctx.needle_diameter_mm,
                 contact_angle_method=ctx.contact_angle_method
                 if ctx.contact_angle_method
-                in {"tangent", "circle_fit", "spherical_cap", "auto_residual"}
+                in {"tangent", "circle_fit", "spherical_cap", "auto_residual", "arc_spline", "clothoid_spline"}
                 else "auto_residual",
             )
         finally:

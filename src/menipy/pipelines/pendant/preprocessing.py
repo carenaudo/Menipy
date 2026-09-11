@@ -14,19 +14,35 @@ from menipy.models.context import Context
 logger = logging.getLogger(__name__)
 
 
+# Geometry a caller can supply -- from calibration, a wizard, or a script --
+# which automatic detection may fill in but never overwrite.
+_CALLER_GEOMETRY = (
+    "needle_rect",
+    "contact_points",
+    "apex_point",
+    "roi",
+    "detected_roi",
+    "drop_contour",
+    "detected_contour",
+)
+
+
 def do_preprocessing(ctx: Context) -> Context | None:
-    """
-    Preprocess image for pendant drop analysis.
+    """Preprocess an image for pendant drop analysis.
 
-    Uses the auto_detect preprocessor plugin to run:
-        1. Drop contour detection
-    2. Needle detection (shaft line analysis)
-    3. ROI computation
+    When the ``auto_detect`` preprocessor plugin is registered it runs drop
+    contour detection, needle detection (shaft line analysis) and ROI
+    computation. Detection only fills in geometry the caller left unset;
+    supplied geometry (see ``_CALLER_GEOMETRY``) is kept as given.
 
-    Args:
-        ctx: Pipeline context with image data
+    Parameters
+    ----------
+    ctx : Context
+        Pipeline context with image data.
 
-    Returns:
+    Returns
+    -------
+    Context or None
         Updated context with preprocessing results.
     """
     # Check if auto-detection is enabled
@@ -80,9 +96,24 @@ def do_preprocessing(ctx: Context) -> Context | None:
                     else:
                         setattr(self._ctx, name, value)
 
+            # Auto-detection fills in geometry the caller did not supply; it
+            # must not overwrite geometry that was supplied. Its needle
+            # detector estimates the contacts with a different tolerance than
+            # AutoCalibrator, so calibrated or hand-edited contacts moved and
+            # changed where the contour is clipped at the needle.
+            supplied = {
+                name: getattr(ctx, name, None)
+                for name in _CALLER_GEOMETRY
+                if getattr(ctx, name, None) is not None
+            }
             detection_ctx = DetectionContext(ctx)
             PREPROCESSORS["auto_detect"](detection_ctx)
-            logger.info("Pendant auto-detection complete")
+            for name, value in supplied.items():
+                setattr(ctx, name, value)
+            logger.info(
+                "Pendant auto-detection complete (kept supplied: %s)",
+                ", ".join(sorted(supplied)) or "none",
+            )
         else:
             logger.warning("auto_detect preprocessor not registered")
 

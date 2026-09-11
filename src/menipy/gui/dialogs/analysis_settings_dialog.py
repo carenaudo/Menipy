@@ -29,18 +29,21 @@ from PySide6.QtWidgets import (
 
 from menipy.gui.dialogs.geometry_config_dialog import GeometryConfigDialog
 from menipy.gui.dialogs.overlay_config_dialog import OverlayConfigDialog
-from menipy.gui.dialogs.physics_config_dialog import PhysicsConfigDialog
 from menipy.gui.dialogs.preprocessing_config_dialog import PreprocessingConfigDialog
 from menipy.models.config import (
     EdgeDetectionSettings,
-    PhysicsParams,
     PreprocessingSettings,
 )
+from menipy.pipelines.base import PipelineBase
 from menipy.pipelines.discover import PIPELINE_MAP
 
 
 class AnalysisSettingsDialog(QDialog):
-    """Collects analysis settings; now with Steps Choicer."""
+    """Configuration tabs for the stages of one pipeline.
+
+    Which stages run is chosen in the setup panel's step list; this dialog only
+    configures them.
+    """
 
     def __init__(
         self,
@@ -62,51 +65,30 @@ class AnalysisSettingsDialog(QDialog):
         saved = self._load_saved()
         self._preproc = saved.get("preproc") or preprocessing or PreprocessingSettings()
         self._edge = saved.get("edge") or edge or EdgeDetectionSettings()
-        self._pipeline_settings_dict = saved.get("pipeline") or pipeline_settings or {}
+        # The caller's per-pipeline settings are what runs use (they may come
+        # from an applied preset); QSettings only fills in when there are none.
+        self._pipeline_settings_dict = pipeline_settings or saved.get("pipeline") or {}
 
-        # Load other settings from dict if present, or defaults
-        self._physics_params = PhysicsParams(
-            **self._pipeline_settings_dict.get("physics", {})
-        )
+        # Load other settings from dict if present, or defaults. Densities and
+        # gravity have no tab here: they come from the setup panel only.
         self._geometry_config = self._pipeline_settings_dict.get("geometry_config", {})
         self._overlay_config = self._pipeline_settings_dict.get("overlay_config", {})
 
-        # Pipeline metadata for steps
+        # One configuration tab per configurable stage the pipeline runs.
+        # Which stages run is chosen in the setup panel's step list, not here.
         self._pipeline_class = PIPELINE_MAP.get(self._pipeline_name.lower())
-        self._ui_metadata = (
-            getattr(self._pipeline_class, "ui_metadata", {})
-            if self._pipeline_class
-            else {}
-        )
-
-        # Determine available stages from pipeline metadata or fallback
-        self._available_stages = self._ui_metadata.get("stages", [])
-        if not self._available_stages and self._pipeline_class:
-            # Fallback to DEFAULT_SEQ if no metadata
-            self._available_stages = [n for n, _ in self._pipeline_class.DEFAULT_SEQ]
-
-        # Determine enabled stages
-        # Default to all if not specified in settings
-        self._enabled_stages = set(
-            self._pipeline_settings_dict.get("enabled_stages", self._available_stages)
-        )
+        stage_source = self._pipeline_class or PipelineBase
+        self._available_stages = stage_source.stage_names()
 
         self._tabs_map = {}  # Map stage name -> QWidget tab
 
         self._build_ui()
-        self._update_tabs_visibility()
 
     # ------------------------------------------------------------------ UI
     def _build_ui(self):
         layout = QVBoxLayout(self)
         self._tabs = QTabWidget()
         layout.addWidget(self._tabs, 1)
-
-        # 1. Steps Choicer Tab (Always first)
-        self._tabs.addTab(self._build_steps_tab(), "Steps")
-
-        # Create tabs for all potential stages
-        # We create them all once, then show/hide based on enabled status
         self._create_stage_tabs()
 
         # Footer buttons
@@ -148,10 +130,6 @@ class AnalysisSettingsDialog(QDialog):
                 tab_widget = self._build_geometry_tab()
                 tab_title = "Geometry"
 
-            elif stage == "physics":
-                tab_widget = self._build_physics_tab()
-                tab_title = "Physics"
-
             elif stage == "overlay":
                 tab_widget = self._build_overlay_tab()
                 tab_title = "Overlay"
@@ -183,109 +161,6 @@ class AnalysisSettingsDialog(QDialog):
             )
             # Map this to a special key
             self._tabs_map["__pipeline_custom__"] = self._pipeline_widget
-
-    def _build_steps_tab(self) -> QWidget:
-        """Create the tab for selecting enabled pipeline steps."""
-        w = QWidget()
-        layout = QVBoxLayout(w)
-        layout.setContentsMargins(16, 16, 16, 16)
-
-        info = QLabel("Select the analysis steps to perform:")
-        info.setStyleSheet("font-weight: bold; margin-bottom: 8px;")
-        layout.addWidget(info)
-
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QScrollArea.Shape.NoFrame)
-        content = QWidget()
-        v = QVBoxLayout(content)
-        v.setSpacing(10)
-
-        stage_names = {
-            "acquisition": "Image Acquisition",
-            "preprocessing": "Preprocessing",
-            "feature_detection": "Feature Detection",
-            "contour_extraction": "Contour Extraction",
-            "contour_refinement": "Contour Refinement",
-            "calibration": "Calibration",
-            "geometric_features": "Geometry",
-            "physics": "Physics",
-            "profile_fitting": "Profile Fitting",
-            "compute_metrics": "Compute Metrics",
-            "overlay": "Result Overlay",
-            "validation": "Validation",
-        }
-
-        self._stage_checkboxes = {}
-
-        for stage in self._available_stages:
-            name = stage_names.get(stage, stage.replace("_", " ").title())
-            chk = QCheckBox(name)
-            chk.setChecked(stage in self._enabled_stages)
-            chk.stateChanged.connect(lambda s, st=stage: self._on_step_toggled(st, s))
-
-            if stage == "acquisition":
-                chk.setEnabled(False)
-                chk.setChecked(True)
-
-            v.addWidget(chk)
-            self._stage_checkboxes[stage] = chk
-
-        v.addStretch()
-        scroll.setWidget(content)
-        layout.addWidget(scroll)
-
-        # Helper buttons
-        btn_layout = QHBoxLayout()
-        btn_all = QPushButton("Select All")
-        btn_all.clicked.connect(self._select_all_steps)
-        btn_none = QPushButton("Select Minimum")
-        btn_none.clicked.connect(self._select_min_steps)
-        btn_layout.addWidget(btn_all)
-        btn_layout.addWidget(btn_none)
-        btn_layout.addStretch()
-        layout.addLayout(btn_layout)
-
-        return w
-
-    def _on_step_toggled(self, stage: str, state: int):
-        checked = state == Qt.CheckState.Checked.value
-        if checked:
-            self._enabled_stages.add(stage)
-        else:
-            self._enabled_stages.discard(stage)
-        self._update_tabs_visibility()
-
-    def _select_all_steps(self):
-        for _stage, chk in self._stage_checkboxes.items():
-            if chk.isEnabled():
-                chk.setChecked(True)
-
-    def _select_min_steps(self):
-        min_stages = {"acquisition"}
-        for stage, chk in self._stage_checkboxes.items():
-            if chk.isEnabled():
-                chk.setChecked(stage in min_stages)
-
-    def _update_tabs_visibility(self):
-        """Show/Hide tabs based on enabled stages."""
-        for stage, widget in self._tabs_map.items():
-            if stage == "__pipeline_custom__":
-                # Logic for custom tab? Maybe always show if enabled?
-                # Or assume it relies on 'profile_fitting' or similar?
-                # For now let's always show it if it exists
-                continue
-
-            idx = self._tabs.indexOf(widget)
-            if idx >= 0:
-                is_enabled = stage in self._enabled_stages
-                # Edge detection alias
-                if stage == "contour_extraction":
-                    is_enabled = is_enabled or (
-                        "edge_detection" in self._enabled_stages
-                    )
-
-                self._tabs.setTabVisible(idx, is_enabled)
 
     # --- Tab Builders ---
 
@@ -476,28 +351,6 @@ class AnalysisSettingsDialog(QDialog):
                 s.snake_beta = new_settings.get("beta", s.snake_beta)
                 s.snake_gamma = new_settings.get("gamma", s.snake_gamma)
 
-    def _build_physics_tab(self) -> QWidget:
-        """Tab for PhysicsParams using PhysicsConfigDialog."""
-        w = QWidget()
-        v = QVBoxLayout(w)
-        v.setContentsMargins(12, 12, 12, 12)
-
-        lbl = QLabel("Configure physical parameters (density, gravity, etc).")
-        v.addWidget(lbl)
-
-        self._physics_summary = QLabel(
-            str(self._physics_params)
-        )  # Just basic str for now
-        self._physics_summary.setWordWrap(True)
-        self._physics_summary.setStyleSheet("color: #7f8c8d;")
-        v.addWidget(self._physics_summary)
-
-        btn = QPushButton("Configure Physics...")
-        btn.clicked.connect(self._open_physics_dialog)
-        v.addWidget(btn)
-        v.addStretch(1)
-        return w
-
     def _build_geometry_tab(self) -> QWidget:
         """Tab for Geometry settings using GeometryConfigDialog."""
         w = QWidget()
@@ -562,12 +415,6 @@ class AnalysisSettingsDialog(QDialog):
         if dlg.exec():
             self._preproc = dlg.settings()
             summary_label.setText(self._preproc_summary())
-
-    def _open_physics_dialog(self):
-        dlg = PhysicsConfigDialog(self._physics_params, parent=self)
-        if dlg.exec():
-            self._physics_params = dlg.get_params()
-            self._physics_summary.setText(str(self._physics_params))
 
     def _open_geometry_dialog(self):
         dlg = GeometryConfigDialog(parent=self)
@@ -647,20 +494,24 @@ class AnalysisSettingsDialog(QDialog):
         return self._edge
 
     def pipeline_settings(self) -> dict | None:
-        """pipeline settings.
+        """Settings of the pipeline-specific tab plus the dialog's sub-configs.
 
         Returns
         -------
-        type
-        Description.
+        dict
+            Flat pipeline settings for this pipeline.
         """
         settings = {}
         if self._pipeline_widget and hasattr(self._pipeline_widget, "get_settings"):
             settings = self._pipeline_widget.get_settings() or {}
 
+        # Notes moved to presets; keep an old tab note until a new preset
+        # takes it over (see PresetController.legacy_notes).
+        legacy_notes = self._pipeline_settings_dict.get("notes")
+        if legacy_notes:
+            settings["notes"] = legacy_notes
+
         # Merge all our dynamic tabs
-        settings["enabled_stages"] = list(self._enabled_stages)
-        settings["physics"] = self._physics_params.model_dump()
         settings["geometry_config"] = self._geometry_config
         settings["overlay_config"] = self._overlay_config
 

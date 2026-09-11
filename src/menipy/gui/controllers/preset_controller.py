@@ -6,10 +6,18 @@ import math
 from importlib.metadata import version
 from pathlib import Path
 
-from PySide6.QtWidgets import QFileDialog, QHBoxLayout, QMessageBox, QPushButton
+from PySide6.QtWidgets import (
+    QFileDialog,
+    QHBoxLayout,
+    QInputDialog,
+    QMessageBox,
+    QPushButton,
+)
 
+from menipy.gui.services.settings_service import pipeline_settings_for
 from menipy.gui.services.sop_service import Sop
 from menipy.models.preset import AnalysisPreset
+from menipy.pipelines.base import canonical_stage_name
 
 CONTROLS = (
     "needleLengthSpin",
@@ -46,6 +54,7 @@ class PresetController:
         for title, callback in (
             ("Apply…", self.apply_selected),
             ("Update", self.update),
+            ("Notes…", self.edit_notes),
             ("Import…", self.import_file),
             ("Export…", self.export_file),
         ):
@@ -54,7 +63,21 @@ class PresetController:
             button.clicked.connect(callback)
             buttons.addWidget(button)
 
-    def capture(self, name):
+    def capture(self, name, notes=""):
+        """Snapshot the current setup as a preset.
+
+        Parameters
+        ----------
+        name : str
+            Preset name.
+        notes : str, optional
+            Free-text description stored with the preset.
+
+        Returns
+        -------
+        AnalysisPreset
+            The captured preset (not yet saved).
+        """
         parameters = self.window.pipeline_ctrl._build_pipeline_run_kwargs()[2]
         controls = {}
         for name_ in CONTROLS:
@@ -65,6 +88,7 @@ class PresetController:
                 )
         return AnalysisPreset(
             name=name,
+            notes=notes.strip(),
             pipeline=self.setup.current_pipeline_name(),
             application_version=version("menipy"),
             stages=self.setup.collect_included_stages(),
@@ -75,9 +99,13 @@ class PresetController:
             ),
             markers=self.window.preprocessing_ctrl.markers.model_copy(deep=True),
             controls=controls,
-            pipeline_settings=dict(
-                getattr(self.window.settings, "pipeline_settings", {}) or {}
-            ),
+            pipeline_settings={
+                key: value
+                for key, value in pipeline_settings_for(
+                    self.window.settings, self.setup.current_pipeline_name()
+                ).items()
+                if key != "notes"  # Legacy tab notes live in ``notes`` now.
+            },
             geometry={
                 key: parameters[key]
                 for key in ("roi", "needle_rect", "contact_line")
@@ -114,7 +142,52 @@ class PresetController:
                 raise ValueError(
                     "Use Add to create a named preset; the pipeline default is unchanged."
                 )
-            self.save(self.capture(name))
+            try:
+                notes = self.selected().notes  # Update keeps the preset's notes.
+            except ValueError:
+                notes = ""  # Legacy stage-only SOP.
+            self.save(self.capture(name, notes))
+        except Exception as exc:
+            QMessageBox.warning(self.window, "Preset", str(exc))
+
+    def legacy_notes(self):
+        """Notes typed in the old pipeline settings tab, to seed a new preset.
+
+        Returns
+        -------
+        str
+            The current pipeline's legacy ``notes`` setting, or ``""``.
+        """
+        settings = pipeline_settings_for(
+            self.window.settings, self.setup.current_pipeline_name()
+        )
+        return str(settings.get("notes") or "")
+
+    def forget_legacy_notes(self):
+        """Drop the legacy ``notes`` setting once a preset has taken it over."""
+        settings = self.window.settings
+        pipeline = self.setup.current_pipeline_name()
+        stored = pipeline_settings_for(settings, pipeline)
+        if stored.pop("notes", None) is None:
+            return
+        if hasattr(settings, "set_pipeline_settings"):
+            settings.set_pipeline_settings(pipeline, stored)
+        else:
+            settings.pipeline_settings = stored
+        try:
+            settings.save()
+        except OSError:
+            pass
+
+    def edit_notes(self):
+        """Edit the notes of the selected preset and save it."""
+        try:
+            preset = self.selected()
+            text, ok = QInputDialog.getMultiLineText(
+                self.window, "Preset notes", f"Notes for '{preset.name}':", preset.notes
+            )
+            if ok:
+                self.save(preset.model_copy(update={"notes": text.strip()}))
         except Exception as exc:
             QMessageBox.warning(self.window, "Preset", str(exc))
 
@@ -129,7 +202,10 @@ class PresetController:
             raise ValueError(
                 f"Pipeline is not selectable in this window: {preset.pipeline}"
             )
-        if not preset.stages or set(preset.stages) - set(self.sop.stage_order):
+        known = set(self.sop.stages_for(preset.pipeline))
+        stages = {canonical_stage_name(stage) for stage in preset.stages}
+        # ``None`` is a stage that no longer exists (e.g. "optimization").
+        if not preset.stages or stages - known - {None}:
             raise ValueError("Preset contains unavailable pipeline stages.")
         for key, value in preset.geometry.items():
             if key not in ("roi", "needle_rect", "contact_line"):
@@ -184,7 +260,8 @@ class PresetController:
         self.validate(preset)
         summary = (
             f"Apply '{preset.name}' to {preset.pipeline}?\n"
-            f"Stages: {', '.join(preset.stages)}\n"
+            + (f"Notes: {preset.notes}\n" if preset.notes else "")
+            + f"Stages: {', '.join(preset.stages)}\n"
             f"Units: {preset.unit_system}; edge method: {preset.edge_detection.method}\n"
             f"Geometry: {json.dumps(preset.geometry)}\n"
             "Preprocessing, detection, physics, calibration choices, markers and pipeline settings will be replaced. "
@@ -214,7 +291,9 @@ class PresetController:
                 widget.setValue(value)
             else:
                 widget.setCurrentText(str(value))
-        self.window.settings.pipeline_settings = dict(preset.pipeline_settings)
+        self.window.settings.set_pipeline_settings(
+            preset.pipeline, dict(preset.pipeline_settings)
+        )
         self.window.settings.save()
         self.window.preprocessing_ctrl.set_settings(
             preset.preprocessing.model_copy(deep=True)
@@ -239,8 +318,7 @@ class PresetController:
             confidence_scores={"roi": 1.0, "needle": 1.0, "substrate": 1.0},
         )
         self.window.main_controller._on_calibration_complete(result)
-        for widget in self.sop._step_widgets:
-            widget.set_included(widget.step_name in preset.stages)
+        self.sop.apply_included_stages(preset.stages)
         self.window.pipeline_ctrl.mark_setup_changed()
         return True
 

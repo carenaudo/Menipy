@@ -112,7 +112,8 @@ from menipy.gui.services.settings_service import AppSettings
 from menipy.gui.services.sop_service import SopService
 from menipy.gui.viewmodels.run_vm import RunViewModel
 
-# default stage order for SOPs / step list
+# Fallback step list for a pipeline without a known class; the step list
+# normally shows the selected pipeline's own stages (PipelineBase.stage_names).
 STAGE_ORDER: list[str] = [
     "acquisition",
     "preprocessing",

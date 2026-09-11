@@ -14,7 +14,10 @@ from menipy.models.context import Context
 from menipy.models.geometry import Contour, Geometry
 from menipy.models.surface_tension import jennings_pallas_beta, surface_tension
 from menipy.pipelines.pendant.approximations import volume_apex_lookup
-from menipy.pipelines.pendant.stages import PendantPipeline
+from menipy.pipelines.pendant.stages import (
+    PendantPipeline,
+    _enabled_pendant_approximators,
+)
 from menipy.pipelines.pendant.strict_young_laplace import (
     integrate_young_laplace_profile_mm,
     model_mm_to_pendant_px,
@@ -115,6 +118,21 @@ def test_pendant_surface_tension_uses_geometric_mn_per_m_units():
     assert ctx.results["surface_tension_mN_m"] == pytest.approx(expected_n_m * 1000.0)
     assert ctx.results["surface_tension_mN_m"] != pytest.approx(expected_n_m)
     assert ctx.results["fit_warning"] == "young_laplace_fit_unreliable"
+
+
+@pytest.mark.parametrize("nested", [False, True])
+def test_pendant_approximator_selection_reaches_context(nested):
+    selection = {
+        "pendant_approximation_methods": ["selected_plane", "clothoid_zones"],
+        "pendant_approximator_settings": {"minimize_adsa": {"maxiter": 7}},
+    }
+    kwargs = {"analysis_params": selection} if nested else dict(selection)
+
+    ctx = PendantPipeline()._prime_ctx(Context(), **kwargs)
+
+    assert ctx.pendant_approximation_methods == ["selected_plane", "clothoid_zones"]
+    assert ctx.pendant_approximator_settings == {"minimize_adsa": {"maxiter": 7}}
+    assert _enabled_pendant_approximators(ctx) == ["selected_plane", "clothoid_zones"]
 
 
 def test_builtin_pendant_approximators_registered_by_default():

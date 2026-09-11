@@ -330,7 +330,11 @@ def refine_apex_curvature(
     contour : np.ndarray
         Array shape (N,2) of contour points (x,y).
     window : int
-        Window size for curvature / local profile estimation.
+        Legacy window size hint, in pixels. Kept for API compatibility: the
+        sub-pixel fit now sizes its own window from the apex curvature, and a
+        hint smaller than that window would only re-introduce the sagitta
+        starvation it exists to avoid. Values above 10 px are still honoured as
+        an upper bound.
     subpixel_steps : int
         Number of subpixel steps (ignored, kept for API compatibility).
 
@@ -345,11 +349,12 @@ def refine_apex_curvature(
         raise ValueError("contour must be of shape (N, 2)")
 
     try:
+        hint = float(window) * 2.0
         res = detect_apex(
             contour,
             mode="sessile",
             refine=True,
-            window_px=max(10.0, float(window * 2)),
+            window_px=hint if hint > 10.0 else None,
         )
         return np.array(res.point, dtype=float), float(res.confidence)
     except Exception:
@@ -506,10 +511,111 @@ def _substrate_frame(
         contact_point, dtype=float
     )
     signed_heights = rel @ normal_vec
-    nonzero = signed_heights[np.abs(signed_heights) > 0.5]
-    if nonzero.size and float(np.median(nonzero)) < 0:
-        normal_vec = -normal_vec
+    # Orient towards the apex: the vertex farthest from the substrate. A median
+    # vote over all vertices flips on flat drops, where the closure edge just
+    # below the baseline holds about as many vertices as the arc above it.
+    if signed_heights.size and float(np.max(np.abs(signed_heights))) > 0.5:
+        extreme = float(signed_heights[int(np.argmax(np.abs(signed_heights)))])
+        if extreme < 0:
+            normal_vec = -normal_vec
     return substrate_vec, normal_vec
+
+
+def _flank_arc_mask(
+    contour_2d: np.ndarray,
+    contact: np.ndarray,
+    heights: np.ndarray,
+    inward: np.ndarray,
+    radius: float,
+    min_points: int = 5,
+) -> np.ndarray | None:
+    """Mark the contour arc that climbs from a contact point up the drop flank.
+
+    Walks the ordered contour both ways from the vertex nearest the contact
+    point, keeping vertices within ``radius``, and picks the direction that
+    gains the most height above the substrate. The flank climbs while the
+    silhouette's closure edge runs along the substrate, so this separates them
+    regardless of the contact angle and of where the closure edge sits. A
+    geometric mask cannot: once a silhouette stops a few pixels above the
+    baseline, its closure edge is "above the substrate and inward" too, and it
+    dominated the tangent fit.
+
+    Parameters
+    ----------
+    contour_2d : np.ndarray
+        Ordered contour vertices, shape (N, 2).
+    contact : np.ndarray
+        Contact point (x, y).
+    heights : np.ndarray
+        Signed height of each vertex above the substrate, apex side positive.
+    inward : np.ndarray
+        Signed distance of each vertex along the substrate, towards the drop
+        interior positive.
+    radius : float
+        Maximum distance from the contact point to keep a vertex.
+    min_points : int, optional
+        Minimum number of above-substrate vertices required on the chosen arc.
+
+    Returns
+    -------
+    np.ndarray or None
+        Boolean vertex mask of the flank arc above the substrate, or ``None``
+        when no arc qualifies and the caller should fall back to geometric
+        selection.
+    """
+    n = contour_2d.shape[0]
+    if n < 2 * min_points:
+        return None
+    distances = np.linalg.norm(contour_2d - contact, axis=1)
+    start = int(np.argmin(distances))
+
+    best_climb = -np.inf
+    best_indices: np.ndarray | None = None
+    for step in (1, -1):
+        indices = []
+        index = start
+        for _ in range(n // 2):
+            if distances[index] > radius and indices:
+                break
+            indices.append(index)
+            index = (index + step) % n
+        arc = np.asarray(indices, dtype=int)
+        climb = float(np.max(heights[arc]) - heights[arc[0]])
+        if climb > best_climb:
+            best_climb, best_indices = climb, arc
+
+    if best_indices is None or best_climb <= 1.0:
+        return None
+
+    # Trim a hook: a contact endpoint that slid along the substrate leaves a
+    # short outward run before the contour turns up the real flank. Only an
+    # acute flank -- one that ends the window further inward than it started --
+    # can carry one; an obtuse flank keeps moving outward and is left alone.
+    # The excursion must also be shallow. A near-vertical flank that bulges past
+    # its contact and comes back is real geometry, but it bulges steeply --
+    # a pixel or two outward over many pixels of height -- whereas a slid
+    # endpoint runs out at a low elevation. A trim that would leave too little
+    # flank is not applied.
+    along = inward[best_indices]
+    turn = int(np.argmin(along))
+    excursion = float(along[0] - along[turn])
+    is_hook = (
+        turn > 0
+        and along[-1] > along[0] + 1.0
+        and excursion > 1.0
+        and excursion >= 0.5 * max(float(heights[best_indices[turn]]), 0.5)
+    )
+    if is_hook:
+        trimmed = best_indices[turn:]
+        if np.count_nonzero(heights[trimmed] > 0.5) >= min_points:
+            best_indices = trimmed
+
+    mask = np.zeros(n, dtype=bool)
+    mask[best_indices] = True
+    mask &= heights > 0.5
+    if np.count_nonzero(mask) < min_points:
+        return None
+    return mask
 
 
 def _contact_branch_points(
@@ -543,7 +649,51 @@ def _contact_branch_points(
         inward_sign = 1.0
     inward_substrate_vec = inward_sign * substrate_vec
 
+    flank_mask = _flank_arc_mask(
+        contour_2d, contact, h_all, s_all * inward_sign, float(window_px)
+    )
+    if flank_mask is not None:
+        return contour_2d[flank_mask], inward_substrate_vec, normal_vec
+
+    legacy_points, _ = _legacy_branch_selection(
+        contour_2d, rel_all, s_all, h_all, inward_sign, window_px
+    )
+    return legacy_points, inward_substrate_vec, normal_vec
+
+
+def _legacy_branch_selection(
+    contour_2d: np.ndarray,
+    rel_all: np.ndarray,
+    s_all: np.ndarray,
+    h_all: np.ndarray,
+    inward_sign: float,
+    window_px: int,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Select flank points geometrically, growing the window until enough qualify.
+
+    Parameters
+    ----------
+    contour_2d : np.ndarray
+        Contour vertices, shape (N, 2).
+    rel_all : np.ndarray
+        Vertices relative to the contact point.
+    s_all, h_all : np.ndarray
+        Coordinates along the substrate and along the apex-side normal.
+    inward_sign : float
+        ``+1`` or ``-1``, orienting ``s_all`` towards the drop interior.
+    window_px : int
+        Base selection radius in pixels.
+
+    Returns
+    -------
+    points : np.ndarray
+        Selected vertices.
+    mask : np.ndarray
+        Boolean vertex mask of the selection.
+    """
+    n = contour_2d.shape[0]
     best_points = np.empty((0, 2), dtype=float)
+    best_mask = np.zeros(n, dtype=bool)
     for factor in (1.0, 1.5, 2.0, 3.0):
         radius = float(window_px) * factor
         distances = np.linalg.norm(rel_all, axis=1)
@@ -566,11 +716,11 @@ def _contact_branch_points(
             mask = branch_mask
         local_points = contour_2d[mask]
         if local_points.shape[0] >= 5:
-            return local_points, inward_substrate_vec, normal_vec
+            return local_points, mask
         if local_points.shape[0] > best_points.shape[0]:
-            best_points = local_points
+            best_points, best_mask = local_points, mask
 
-    return best_points, inward_substrate_vec, normal_vec
+    return best_points, best_mask
 
 
 def estimate_contact_angle_circle_fit(

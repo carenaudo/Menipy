@@ -44,6 +44,35 @@ class PipelineError(RuntimeError):
     """Raised when a pipeline stage fails fatally."""
 
 
+# Stage names used before the canonical sequence below; ``None`` marks a stage
+# that no longer exists. Stored SOPs and presets may still contain them.
+LEGACY_STAGE_NAMES: dict[str, str | None] = {
+    "edge_detection": "contour_extraction",
+    "geometry": "geometric_features",
+    "scaling": "calibration",
+    "solver": "profile_fitting",
+    "outputs": "compute_metrics",
+    "optimization": None,
+}
+
+
+def canonical_stage_name(name: str) -> str | None:
+    """Current name of a stage.
+
+    Parameters
+    ----------
+    name : str
+        Canonical or legacy stage name.
+
+    Returns
+    -------
+    str or None
+        The canonical name, or ``None`` for a removed legacy stage.
+    """
+    name = str(name).strip().lower()
+    return LEGACY_STAGE_NAMES.get(name, name)
+
+
 class PipelineBase:
     """
     Template-Method pipeline skeleton.
@@ -75,6 +104,46 @@ class PipelineBase:
         ("overlay", None),
         ("validation", None),
     ]
+    # Stages a run may leave out because no later stage reads their output.
+    # ``overlay`` only draws (``preview``/``overlay``/``overlay_commands``);
+    # the preview then shows the plain image. Every other stage feeds the next
+    # one, and ``validation`` produces the accept/reject flag of the result.
+    OPTIONAL_STAGES: ClassVar[frozenset[str]] = frozenset({"overlay"})
+
+    @classmethod
+    def stage_names(cls) -> list[str]:
+        """Stages this pipeline runs, in order.
+
+        Returns
+        -------
+        list of str
+            Canonical stage names with an implementation.
+        """
+        return [n for n, _ in cls.DEFAULT_SEQ if callable(getattr(cls, f"do_{n}", None))]
+
+    @classmethod
+    def skipped_stages(cls, included: list[str] | tuple[str, ...]) -> list[str]:
+        """Optional stages that a stage selection leaves out.
+
+        Required stages always run, so only optional stages missing from
+        ``included`` are returned.
+
+        Parameters
+        ----------
+        included : sequence of str
+            Selected stages; legacy names are accepted.
+
+        Returns
+        -------
+        list of str
+            Optional stages to skip, in pipeline order.
+        """
+        chosen = {canonical_stage_name(name) for name in included}
+        return [
+            name
+            for name in cls.stage_names()
+            if name in cls.OPTIONAL_STAGES and name not in chosen
+        ]
 
     # ---- Stage hooks (override in subclasses as needed) ----
     def do_acquisition(self, ctx: Context) -> Context | None:
@@ -362,10 +431,13 @@ class PipelineBase:
                 "experimental_geometry_mode",
                 "needle_geometry_method",
                 "pendant_initializer",
+                "pendant_contour_model",
                 "contact_angle_method",
                 "onnx_proposal_mode",
                 "segmentation_provider",
                 "onnx_proposal_classes",
+                "pendant_approximation_methods",
+                "pendant_approximator_settings",
             ):
                 if key in analysis_params and key in type(ctx).model_fields:
                     setattr(ctx, key, analysis_params[key])
@@ -527,35 +599,67 @@ class PipelineBase:
         return ctx
 
     def build_plan(self, only: list[str] | None = None, include_prereqs: bool = True):
+        """Ordered ``(stage, callable)`` pairs to execute.
+
+        Parameters
+        ----------
+        only : list of str, optional
+            Target stages (legacy names accepted). ``None`` plans every stage.
+        include_prereqs : bool, optional
+            With ``True`` (default) every stage up to the last target runs,
+            because each stage needs the output of the earlier ones.
+
+        Returns
+        -------
+        list of tuple
+            The stage plan.
+        """
         seq = [(n, getattr(self, f"do_{n}", None)) for (n, _fn) in self.DEFAULT_SEQ]
         seq = [(n, fn) for (n, fn) in seq if callable(fn)]
         if not only:
             return seq
         names = [n for (n, _fn) in seq]
+        targets = [canonical_stage_name(n) for n in only]
+        targets = [n for n in targets if n in names]
+        if not targets:
+            raise PipelineError(f"None of the requested stages exist: {list(only)}")
         if include_prereqs:
             # keep everything up to the furthest requested stage
             idx = {n: i for i, n in enumerate(names)}
-            last = max(idx[n] for n in only if n in idx)
+            last = max(idx[n] for n in targets)
             wanted = set(names[: last + 1])
         else:
-            wanted = set(only)
+            wanted = set(targets)
         return [(n, fn) for (n, fn) in seq if n in wanted]
+
+    def _without_skipped(self, plan: list, skip_stages) -> list:
+        """Drop ``skip_stages`` from ``plan``; only optional stages may go."""
+        skip = {canonical_stage_name(n) for n in (skip_stages or ())} - {None}
+        required = skip - set(self.OPTIONAL_STAGES)
+        if required:
+            raise PipelineError(
+                f"Required stages cannot be skipped: {sorted(required)}"
+            )
+        return [(n, fn) for (n, fn) in plan if n not in skip]
 
     def run_with_plan(
         self,
         *,
         only: list[str] | None = None,
         include_prereqs: bool = True,
+        skip_stages: list[str] | tuple[str, ...] | None = None,
         **kwargs: Any,
     ) -> Context:
-        """Run with plan.
+        """Run a subset of the stage sequence.
 
         Parameters
         ----------
         only : list[str], optional
-            List of stage names to run.
+            Target stages; ``None`` runs every stage.
         include_prereqs : bool, optional
             Whether to include prerequisite stages. Default is True.
+        skip_stages : sequence of str, optional
+            Optional stages (see ``OPTIONAL_STAGES``) to leave out.
         **kwargs : Any
             Additional keyword arguments.
 
@@ -563,11 +667,19 @@ class PipelineBase:
         -------
         Context
             The result context from the pipeline execution.
+
+        Raises
+        ------
+        PipelineError
+            If ``skip_stages`` names a required stage.
         """
+        plan = self._without_skipped(
+            self.build_plan(only=only, include_prereqs=include_prereqs), skip_stages
+        )
         ctx = Context()
         ctx = self._prime_ctx(ctx, **kwargs)
         try:
-            for name, fn in self.build_plan(only=only, include_prereqs=include_prereqs):
+            for name, fn in plan:
                 ctx = self._call_stage(ctx, name, fn)
         finally:
             if ctx.sequence_store is not None:
@@ -579,15 +691,18 @@ class PipelineBase:
     def run(self, **kwargs: Any) -> Context:
         """
         Execute the full stage sequence and return the populated Context.
-        Any **kwargs are seeded into Context for 'acquisition' to use.
+        Any **kwargs are seeded into Context for 'acquisition' to use; an
+        optional ``skip_stages`` sequence leaves out optional stages (see
+        ``OPTIONAL_STAGES``).
         """
+        plan = self._without_skipped(self.build_plan(), kwargs.pop("skip_stages", None))
         ctx = Context()
         ctx = self._prime_ctx(ctx, **kwargs)
 
         self.logger.info("Starting pipeline: %s", self.name)
 
         try:
-            for name, fn in self.build_plan():
+            for name, fn in plan:
                 ctx = self._call_stage(ctx, name, fn)
         finally:
             if ctx.sequence_store is not None:

@@ -14,6 +14,19 @@ from menipy.models.context import Context
 logger = logging.getLogger(__name__)
 
 
+# Geometry a caller can supply -- from calibration, a wizard, or a script --
+# which automatic detection may fill in but never overwrite.
+_CALLER_GEOMETRY = (
+    "substrate_line",
+    "substrate_profile",
+    "contact_points",
+    "needle_rect",
+    "roi",
+    "drop_contour",
+    "apex_point",
+)
+
+
 def do_preprocessing(ctx: Context) -> Context | None:
     """
     Preprocess image for sessile drop analysis.
@@ -81,9 +94,24 @@ def do_preprocessing(ctx: Context) -> Context | None:
                     else:
                         setattr(self._ctx, name, value)
 
+            # Auto-detection fills in geometry the caller did not supply; it
+            # must not overwrite geometry that was supplied. Its substrate
+            # detector only inspects the image's outer columns and replaced a
+            # calibrated baseline with the drop's equator on obtuse drops,
+            # which then dragged the contacts and the angle with it.
+            supplied = {
+                name: getattr(ctx, name, None)
+                for name in _CALLER_GEOMETRY
+                if getattr(ctx, name, None) is not None
+            }
             detection_ctx = DetectionContext(ctx)
             PREPROCESSORS["auto_detect"](detection_ctx)
-            logger.info("Sessile auto-detection complete")
+            for name, value in supplied.items():
+                setattr(ctx, name, value)
+            logger.info(
+                "Sessile auto-detection complete (kept supplied: %s)",
+                ", ".join(sorted(supplied)) or "none",
+            )
         else:
             logger.warning("auto_detect preprocessor not registered")
 

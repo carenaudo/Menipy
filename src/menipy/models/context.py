@@ -78,6 +78,9 @@ class Context(BaseModel):
     experimental_geometry_mode: str = "off"
     needle_geometry_method: str = "legacy"
     pendant_initializer: str = "legacy"
+    # "raw" fits the strict pendant model to the contour; "clothoid_zones" fits it
+    # to the two-zone clothoid spline's samples, seeded by its anchored profile.
+    pendant_contour_model: str = "raw"
     contact_angle_method: str = "tangent"
     pendant_axis_origin_px: tuple[float, float] | None = None
     pendant_axis_direction_xy: tuple[float, float] | None = None

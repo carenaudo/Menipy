@@ -12,6 +12,7 @@ class AnalysisPreset(BaseModel):
     model_config = ConfigDict(extra="forbid")
     schema_version: Literal[1] = 1
     name: str = Field(min_length=1)
+    notes: str = Field(default="", description="Free-text description of the preset.")
     pipeline: str
     application_version: str
     stages: list[str]

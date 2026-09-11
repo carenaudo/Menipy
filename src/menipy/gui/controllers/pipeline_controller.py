@@ -17,9 +17,26 @@ from menipy.gui.controllers.edge_detection_controller import (
 from menipy.gui.controllers.preprocessing_controller import (
     PreprocessingPipelineController,
 )
-from menipy.models.config import PhysicsParams
+from menipy.gui.services.settings_service import pipeline_settings_for
+from menipy.pipelines.base import canonical_stage_name
 
 logger = logging.getLogger(__name__)
+
+# Pipeline settings (from the method tabs of the analysis settings dialog or a
+# preset) that are passed to a run. A tab input whose key is not listed here
+# has no effect on the analysis.
+FORWARDED_PIPELINE_SETTINGS = (
+    "experimental_geometry_mode",
+    "needle_geometry_method",
+    "pendant_initializer",
+    "pendant_contour_model",
+    "contact_angle_method",
+    "onnx_proposal_mode",
+    "segmentation_provider",
+    "onnx_proposal_classes",
+    "pendant_approximation_methods",
+    "pendant_approximator_settings",
+)
 
 
 class PipelineController:
@@ -230,16 +247,8 @@ class PipelineController:
         settings_owner = getattr(self, "settings", None) or getattr(
             self.window, "settings", None
         )
-        pipeline_settings = getattr(settings_owner, "pipeline_settings", {}) or {}
-        for key in (
-            "experimental_geometry_mode",
-            "needle_geometry_method",
-            "pendant_initializer",
-            "contact_angle_method",
-            "onnx_proposal_mode",
-            "segmentation_provider",
-            "onnx_proposal_classes",
-        ):
+        pipeline_settings = pipeline_settings_for(settings_owner, name)
+        for key in FORWARDED_PIPELINE_SETTINGS:
             if key in pipeline_settings:
                 run_kwargs[key] = pipeline_settings[key]
         if params.get("analysis_params"):
@@ -250,13 +259,6 @@ class PipelineController:
             run_kwargs["camera"] = cam_id
         if frames is not None:
             run_kwargs["frames"] = frames
-
-        physics_params = sandbox.get("physics_params")
-        if physics_params is not None and hasattr(physics_params, "g"):
-            try:
-                run_kwargs["physics"]["g"] = float(physics_params.g)
-            except Exception:
-                pass
 
         if auto_calibrate:
             run_kwargs["auto_calibrate"] = True
@@ -380,6 +382,7 @@ class PipelineController:
         sandbox_config=None,
         check_acquisition=False,
         auto_calibrate=False,
+        use_step_list=False,
     ):
         from menipy.gui.services.pipeline_runner import RunRequest
 
@@ -399,14 +402,9 @@ class PipelineController:
                 if not ready:
                     return None
                 parameters.update(overlays)
-            aliases = {
-                "edge_detection": "contour_extraction",
-                "geometry": "geometric_features",
-                "scaling": "calibration",
-                "solver": "profile_fitting",
-                "outputs": "compute_metrics",
-            }
-            stages = tuple(aliases.get(stage, stage) for stage in stages)
+            stages = tuple(
+                canonical for canonical in map(canonical_stage_name, stages) if canonical
+            )
             request = RunRequest.create(
                 name,
                 parameters,
@@ -414,6 +412,7 @@ class PipelineController:
                 stages=stages,
                 revision=self._revision(),
                 warnings=() if auto_calibrate else warnings,
+                skip_stages=self._skipped_stages(pipeline) if use_step_list else (),
             )
             return self.run_vm.submit(request)
         except Exception as exc:
@@ -423,20 +422,30 @@ class PipelineController:
     def run_simple_analysis(self):
         return self._submit_analysis(operation="quick_analysis", check_acquisition=True)
 
+    def _skipped_stages(self, pipeline_cls) -> tuple[str, ...]:
+        """Optional stages unticked in the step list for ``pipeline_cls``."""
+        collect = getattr(self.setup_ctrl, "collect_included_stages", None)
+        skipped = getattr(pipeline_cls, "skipped_stages", None)
+        if not (self.sops and callable(collect) and callable(skipped)):
+            return ()
+        return tuple(skipped(collect()))
+
     def run_full(self):
-        return self._submit_analysis(check_acquisition=True)
+        return self._submit_analysis(check_acquisition=True, use_step_list=True)
 
     def run_all(self):
-        stages = self.setup_ctrl.collect_included_stages() if self.sops else ()
+        """Run every stage except the optional ones unticked in the step list."""
         return self._submit_analysis(
-            stages=stages, operation="sop", check_acquisition=True
+            operation="sop", check_acquisition=True, use_step_list=True
         )
 
     def run_stage(self, stage_name):
+        """Run the pipeline up to ``stage_name`` (its prerequisites included)."""
         return self._submit_analysis(
             stages=(stage_name,),
             operation="stage",
             check_acquisition=stage_name == "acquisition",
+            use_step_list=True,
         )
 
     def test_stage(self, stage_name, sandbox_config=None):

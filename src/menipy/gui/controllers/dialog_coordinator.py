@@ -15,12 +15,11 @@ from PySide6.QtCore import QObject, Slot
 from PySide6.QtWidgets import QDialog, QMessageBox
 
 from menipy.gui.dialogs.acquisition_config_dialog import AcquisitionConfigDialog
+from menipy.gui.dialogs.analysis_settings import PHASE_PROPERTIES_NOTE
 from menipy.gui.dialogs.edge_detection_config_dialog import EdgeDetectionConfigDialog
 from menipy.gui.dialogs.geometry_config_dialog import GeometryConfigDialog
 from menipy.gui.dialogs.overlay_config_dialog import OverlayConfigDialog
-from menipy.gui.dialogs.physics_config_dialog import PhysicsConfigDialog
 from menipy.gui.dialogs.preprocessing_config_dialog import PreprocessingConfigDialog
-from menipy.models.config import PhysicsParams
 
 if TYPE_CHECKING:
     from PySide6.QtWidgets import QMainWindow
@@ -77,10 +76,12 @@ class DialogCoordinator(QObject):
         stage = (stage_name or "").strip().lower()
 
         handler = {
-            "physics": self._show_physics_dialog,
+            "physics": self._show_phase_properties,
             "overlay": self._show_overlay_dialog,
+            "geometric_features": self._show_geometry_dialog,
             "geometry": self._show_geometry_dialog,
             "preprocessing": self._show_preprocessing_dialog,
+            "contour_extraction": self._show_edge_detection_dialog,
             "edge_detection": self._show_edge_detection_dialog,
             "acquisition": self._show_acquisition_dialog,
         }.get(stage)
@@ -94,25 +95,21 @@ class DialogCoordinator(QObject):
                 f"Configuration for '{stage_name}' is not available yet.",
             )
 
-    def _show_physics_dialog(self) -> None:
-        """Show the physics configuration dialog."""
-        try:
-            initial_params = getattr(self.settings, "physics_config", PhysicsParams())
-            if not isinstance(initial_params, PhysicsParams):
-                initial_params = PhysicsParams()
-        except Exception:
-            initial_params = PhysicsParams()
+    def _show_phase_properties(self) -> None:
+        """Take the user to Phase Properties, the one place physics is set.
 
-        dialog = PhysicsConfigDialog(initial_params, parent=self.window)
-        if dialog.exec() == QDialog.Accepted:
-            self.settings.physics_config = dialog.get_params()
-            self._save_settings()
-            self.window.statusBar().showMessage("Physics configuration saved.", 2000)
-            logger.info(
-                "Physics configuration updated: %s", self.settings.physics_config
-            )
-        else:
-            logger.info("Physics configuration cancelled.")
+        Densities and gravity are entered once on the setup panel (with the
+        material database); a separate physics dialog would be a second,
+        conflicting copy.
+        """
+        setup = getattr(self.window, "setup_panel_ctrl", None)
+        spin = getattr(setup, "dropDensitySpin", None)
+        if spin is not None and spin.isVisible():
+            spin.setFocus()
+            spin.selectAll()
+            self.window.statusBar().showMessage(PHASE_PROPERTIES_NOTE, 5000)
+            return
+        QMessageBox.information(self.window, "Physics", PHASE_PROPERTIES_NOTE)
 
     def _show_overlay_dialog(self) -> None:
         """Show the overlay configuration dialog."""

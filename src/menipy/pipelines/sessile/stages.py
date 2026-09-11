@@ -20,6 +20,7 @@ from menipy.models.context import Context
 from menipy.models.fit import FitConfig
 from menipy.pipelines.base import PipelineBase
 from menipy.pipelines.utils import ensure_contour
+from menipy.pipelines.utils import image_for_contour as _image_for_refinement
 
 # Get solver from registry (loaded at startup)
 young_laplace_default = get_solver("young_laplace_ode", fallback=young_laplace_ode)
@@ -366,8 +367,14 @@ class SessilePipeline(PipelineBase):
             "spherical_cap",
             "auto_residual",
             "lbadsa",
+            "arc_spline",
         ]:
             contact_angle_method = "tangent"
+        refine_image = (
+            _image_for_refinement(ctx, xy_calc)
+            if contact_angle_method in ("arc_spline", "clothoid_spline")
+            else None
+        )
 
         # Get contact points (may have been set by contour_refinement)
         use_contact_points = getattr(ctx, "sessile_calc_contact_points", None)
@@ -388,6 +395,7 @@ class SessilePipeline(PipelineBase):
             contact_angle_method=contact_angle_method,
             contact_points=use_contact_points,
             substrate_profile=substrate_profile,
+            image=refine_image,
         )
 
         if getattr(ctx, "experimental_geometry_mode", "off") == "shadow" and contact_angle_method != "auto_residual":
@@ -590,16 +598,17 @@ class SessilePipeline(PipelineBase):
                         )
                         y_offset += 25
 
-            model_pts = ctx.results.get("lbadsa_model_contour_xy")
-            if model_pts is not None and len(model_pts) > 1:
-                cmds.append(
-                    {
-                        "type": "polyline",
-                        "points": np.asarray(model_pts).tolist(),
-                        "closed": False,
-                        "color": "cyan",
-                        "thickness": 1,
-                    }
-                )
+            for key in ("lbadsa_model_contour_xy", "arc_spline_model_contour_xy"):
+                model_pts = ctx.results.get(key)
+                if model_pts is not None and len(model_pts) > 1:
+                    cmds.append(
+                        {
+                            "type": "polyline",
+                            "points": np.asarray(model_pts).tolist(),
+                            "closed": False,
+                            "color": "cyan",
+                            "thickness": 1,
+                        }
+                    )
 
         return ovl.run(ctx, commands=cmds, alpha=0.6)

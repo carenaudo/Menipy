@@ -2,29 +2,22 @@
 Tests for stage-based detection preprocessor plugins.
 """
 
-import sys
-from importlib import import_module
 from pathlib import Path
 
 import cv2
 import numpy as np
+import pytest
 
-# Add plugins directory to path
-plugins_dir = Path(__file__).parent.parent / "plugins"
-sys.path.insert(0, str(plugins_dir))
-
-
-# Import plugins to register them
-for plugin_name in (
-    "preproc_detect_substrate",
-    "preproc_detect_needle",
-    "preproc_detect_drop",
-    "preproc_detect_roi",
-    "preproc_auto_detect",
-):
-    import_module(plugin_name)
-
+from menipy.common.auto_calibrator import AutoCalibrator
 from menipy.common.registry import PREPROCESSORS
+from menipy.pipelines.pendant.stages import PendantPipeline
+
+PENDANT_SAMPLE = Path(__file__).resolve().parents[1] / "data/samples/gota pendiente 1.png"
+
+# The plugins are registered per module by the conftest fixture, which
+# restores the registry afterwards; registering them at import time leaked
+# auto-detection into every pipeline test collected later.
+pytestmark = pytest.mark.usefixtures("preproc_plugins")
 
 
 class MockContext:
@@ -192,3 +185,50 @@ class TestAutoDetectPreprocessor:
 
         # Should not detect anything when disabled
         assert not hasattr(ctx, "substrate_line") or ctx.substrate_line is None
+
+
+def _run_pendant_contour(calibration, **overrides):
+    geometry = {
+        "drop_contour": calibration.drop_contour,
+        "contact_points": calibration.contact_points,
+        "apex_point": calibration.apex_point,
+        "needle_rect": calibration.needle_rect,
+        "roi_rect": calibration.roi_rect,
+    }
+    geometry.update(overrides)
+    return PendantPipeline().run_with_plan(
+        only=["contour_extraction"], image=str(PENDANT_SAMPLE), **geometry
+    )
+
+
+class TestPendantPipelineWithAutoDetect:
+    """The pendant pipeline runs ``auto_detect`` whenever it is registered."""
+
+    def test_keeps_supplied_calibration_geometry(self):
+        """Auto-detection must not replace calibrated needle and contacts.
+
+        The plugin's needle detector puts the contacts of this sample at
+        y=123 instead of AutoCalibrator's y=134; overwriting them moved the
+        needle clipping of a contour the caller had already calibrated.
+        """
+        calibration = AutoCalibrator(cv2.imread(str(PENDANT_SAMPLE)), "pendant").detect_all()
+        assert calibration.contact_points is not None
+
+        ctx = _run_pendant_contour(calibration)
+
+        assert ctx.detected_contour is not None  # auto-detection did run
+        assert tuple(ctx.needle_rect) == tuple(calibration.needle_rect)
+        assert [tuple(map(int, p)) for p in ctx.contact_points] == [
+            tuple(map(int, p)) for p in calibration.contact_points
+        ]
+        contact_y = min(p[1] for p in calibration.contact_points)
+        assert np.min(np.asarray(ctx.contour.xy)[:, 1]) >= contact_y
+
+    def test_fills_in_geometry_the_caller_left_unset(self):
+        """Missing contacts come from auto-detection; supplied ones stay."""
+        calibration = AutoCalibrator(cv2.imread(str(PENDANT_SAMPLE)), "pendant").detect_all()
+
+        ctx = _run_pendant_contour(calibration, contact_points=None)
+
+        assert ctx.contact_points is not None
+        assert tuple(ctx.needle_rect) == tuple(calibration.needle_rect)

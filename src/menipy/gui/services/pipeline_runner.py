@@ -71,6 +71,8 @@ class RunRequest:
     job_id: str = field(default_factory=lambda: uuid4().hex)
     submitted_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     warnings: tuple[str, ...] = ()
+    # Optional stages left out of the run (unticked in the step list).
+    skip_stages: tuple[str, ...] = ()
 
     @classmethod
     def create(
@@ -82,6 +84,7 @@ class RunRequest:
         stages=(),
         revision="",
         warnings=(),
+        skip_stages=(),
     ):
         params = deepcopy(parameters)
         job_id = uuid4().hex
@@ -101,6 +104,7 @@ class RunRequest:
             revision,
             job_id=job_id,
             warnings=tuple(warnings),
+            skip_stages=tuple(skip_stages or ()),
         )
 
     def metadata(self):
@@ -111,6 +115,7 @@ class RunRequest:
             "operation": self.operation,
             "source": self.source,
             "stages": list(self.stages),
+            "skipped_stages": list(self.skip_stages),
             "settings": json_settings(self.parameters),
         }
 
@@ -178,8 +183,11 @@ def execute_request(request, token):
         ctx = pipeline.run_with_plan(
             only=list(request.stages),
             include_prereqs=True,
+            skip_stages=list(request.skip_stages),
             **parameters,
         )
+    elif request.skip_stages:
+        ctx = pipeline.run(skip_stages=list(request.skip_stages), **parameters)
     else:
         ctx = pipeline.run(**parameters)
     from menipy.gui.services.calibration_provenance import describe_calibration

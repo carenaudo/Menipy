@@ -138,7 +138,9 @@ def test_every_entry_uses_worker_and_submitted_context(
     assert ctx.measurement_id == job
     assert ctx.image.shape == (12, 12, 3)
     if entry == "run_all":
-        assert completion.request.stages == ("acquisition", "physics")
+        # Every stage runs; only the unticked optional stage is left out.
+        assert completion.request.stages == ()
+        assert completion.request.skip_stages == ("overlay",)
     if entry == "test_stage":
         assert completion.warnings == ("test warning",)
     assert len(flow.stored) == bool(ctx.results)
@@ -150,6 +152,84 @@ def test_quick_analysis_uses_selected_canonical_pipeline(flow, qtbot):
     flow.ctrl.run_simple_analysis()
     qtbot.waitUntil(lambda: bool(flow.finished))
     assert flow.stored[0].pipeline == "pendant"
+
+
+def test_pendant_approximator_selection_reaches_context(flow, qtbot):
+    flow.selected["name"] = "pendant"
+    flow.ctrl.window.settings.pipeline_settings = {
+        "pendant_approximation_methods": ["volume_apex_lookup", "clothoid_zones"],
+    }
+    flow.ctrl.run_full()
+    qtbot.waitUntil(lambda: bool(flow.finished))
+    assert flow.finished[0].state == "completed"
+    assert flow.contexts[0].pendant_approximation_methods == [
+        "volume_apex_lookup",
+        "clothoid_zones",
+    ]
+
+
+def test_stage_test_physics_comes_from_setup_panel(flow):
+    flow.ctrl.setup_ctrl.get_calibration_params = lambda: {
+        "needle_diameter_mm": 0.5,
+        "drop_density_kg_m3": 998.2,
+        "fluid_density_kg_m3": 1.2,
+        "g": 9.79,
+    }
+    # A stale sandbox physics object must not override the setup panel values.
+    sandbox = {"physics_params": SimpleNamespace(g=1.0)}
+    _, _, run_kwargs, _ = flow.ctrl._build_pipeline_run_kwargs(sandbox_config=sandbox)
+    assert run_kwargs["physics"] == {"rho1": 998.2, "rho2": 1.2, "g": 9.79}
+
+
+def test_pipeline_settings_apply_only_to_their_pipeline(flow, qtbot):
+    from menipy.gui.services.settings_service import AppSettings
+
+    settings = AppSettings(path=None)
+    settings.set_pipeline_settings(
+        "pendant",
+        {
+            "pendant_approximation_methods": ["clothoid_zones"],
+            "pendant_approximator_settings": {"minimize_adsa": {"maxiter": 7}},
+        },
+    )
+    # Saving the sessile dialog afterwards must not replace the pendant settings.
+    settings.set_pipeline_settings("sessile", {"contact_angle_method": "circle_fit"})
+    flow.ctrl.window.settings = settings
+
+    for pipeline in ("pendant", "sessile"):
+        flow.selected["name"] = pipeline
+        flow.ctrl.run_full()
+        qtbot.waitUntil(lambda: not flow.runner.busy)
+
+    pendant_ctx, sessile_ctx = flow.contexts
+    assert pendant_ctx.pendant_approximation_methods == ["clothoid_zones"]
+    assert pendant_ctx.pendant_approximator_settings == {"minimize_adsa": {"maxiter": 7}}
+    assert pendant_ctx.contact_angle_method == "tangent"  # Context default
+    assert sessile_ctx.contact_angle_method == "circle_fit"
+    assert sessile_ctx.pendant_approximation_methods is None
+
+
+def test_per_pipeline_settings_persist_and_legacy_fallback(tmp_path):
+    from types import SimpleNamespace
+
+    from menipy.gui.services.settings_service import (
+        AppSettings,
+        pipeline_settings_for,
+    )
+
+    legacy = SimpleNamespace(pipeline_settings={"contact_angle_method": "circle_fit"})
+    assert pipeline_settings_for(legacy, "pendant") == legacy.pipeline_settings
+
+    path = tmp_path / "settings.json"
+    settings = AppSettings(path=path)
+    settings.set_pipeline_settings("pendant", {"pendant_approximation_methods": []})
+    settings.save()
+    loaded = AppSettings.load(path)
+    assert pipeline_settings_for(loaded, "pendant") == {
+        "pendant_approximation_methods": []
+    }
+    # Once settings are stored per pipeline, others no longer inherit them.
+    assert pipeline_settings_for(loaded, "sessile") == {}
 
 
 @pytest.mark.parametrize(

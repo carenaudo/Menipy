@@ -739,7 +739,16 @@ class ImprovedSnakeDetector:
 # Registry Registration
 # -----------------------------------------------------------------------------
 
-# Register detectors (Core ones registered at top, ensure these are too)
+# Register detectors. Every method offered by EdgeDetectionSettings.method must
+# appear here: an unregistered name resolves to the built-in fallback in
+# common/edge_detection.py, which silently ignores the detector's parameters.
+EDGE_DETECTORS.register("canny", CannyDetector().detect)
+EDGE_DETECTORS.register("threshold", ThresholdDetector().detect)
+EDGE_DETECTORS.register("sobel", SobelDetector().detect)
+EDGE_DETECTORS.register("scharr", ScharrDetector().detect)
+EDGE_DETECTORS.register("laplacian", LaplacianBasicDetector().detect)
+EDGE_DETECTORS.register("active_contour", LegacySnakeDetector().detect)
+EDGE_DETECTORS.register("legacy_snake", LegacySnakeDetector().detect)
 EDGE_DETECTORS.register("otsu", OtsuEdgeDetector().detect)
 EDGE_DETECTORS.register("adaptive", AdaptiveEdgeDetector().detect)
 EDGE_DETECTORS.register("log", LoGEdgeDetector().detect)
@@ -749,9 +758,9 @@ EDGE_DETECTORS.register("improved_snake", ImprovedSnakeDetector().detect)
 register_detector_settings("log", LoGSettings)
 register_detector_settings("adaptive", AdaptiveSettings)
 
-# Settings for these plugins already registered via calls above or previously.
-# Canny/etc registered at top.
-
 logger.info(
-    "Registered edge detection plugins: otsu, adaptive, log, improved_snake, canny, etc."
+    "Registered edge detection plugins: %s",
+    ", ".join(sorted(EDGE_DETECTORS.names())) if hasattr(EDGE_DETECTORS, "names")
+    else "canny, threshold, sobel, scharr, laplacian, active_contour, "
+         "legacy_snake, otsu, adaptive, log, improved_snake",
 )

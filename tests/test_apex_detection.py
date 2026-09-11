@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import cv2
 import numpy as np
 import pytest
 
@@ -107,6 +108,67 @@ def test_tilted_substrate_perpendicular_distance():
     res_disp = detect_apex(xy, mode="sessile", baseline=(p1, p2), refine=False)
     assert res_disp.point[0] == pytest.approx(true_summit[0], abs=1.0)
     assert res_disp.point[1] == pytest.approx(true_summit[1], abs=1.0)
+
+
+def _pixel_cap_contour(radius, tilt_deg, cut_depth=0.0):
+    """Pixelized spherical cap on a tilted baseline, optionally with a cut top.
+
+    Returns the contour, the baseline and the expected apex: the crown, or the
+    point where the symmetry axis meets a top cut parallel to the baseline.
+    """
+    tilt = np.radians(tilt_deg)
+    along = np.array([np.cos(tilt), np.sin(tilt)])
+    up = np.array([along[1], -along[0]])
+    foot = np.array([320.3, 400.2])
+    center = foot + 0.4 * radius * up
+    yy, xx = np.mgrid[0:480, 0:640]
+    rel = np.stack([xx - foot[0], yy - foot[1]], axis=-1)
+    height = rel @ up
+    crown_height = 1.4 * radius
+    mask = ((xx - center[0]) ** 2 + (yy - center[1]) ** 2 <= radius**2) & (height >= 0)
+    if cut_depth:
+        mask &= height <= crown_height - cut_depth
+    contours, _ = cv2.findContours(
+        mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
+    )
+    contour = max(contours, key=cv2.contourArea).reshape(-1, 2).astype(float)
+    baseline = (tuple(foot - 300 * along), tuple(foot + 300 * along))
+    return contour, baseline, foot + (crown_height - cut_depth) * up
+
+
+@pytest.mark.parametrize("tilt_deg", [-3.0, 2.0])
+@pytest.mark.parametrize("cut_depth", [0.0, 12.0])
+def test_normal_projection_centres_pixel_crest(tilt_deg, cut_depth):
+    """A tilted baseline must not snap the apex to one end of the crest run.
+
+    The single vertex of maximum normal height is an end of the horizontal
+    pixel run at the crest (or a corner of a needle-cut top), 8-10 px from the
+    crown here. Contours sit half a pixel inside the mask edge.
+    """
+    contour, baseline, expected = _pixel_cap_contour(100, tilt_deg, cut_depth)
+    res = detect_apex_normal(contour, baseline=baseline, mode="sessile")
+    assert np.linalg.norm(np.asarray(res.point) - expected) < 1.5
+
+
+def test_refinement_keeps_crest_centre_when_crest_is_flat():
+    """A crest wider than the fit window has no peak to refine.
+
+    Refinement must keep the crest median instead of returning whichever tied
+    vertex comes first in contour order.
+    """
+    xs_flat = np.arange(260.0, 381.0)
+    xy = np.vstack(
+        [
+            np.column_stack([np.arange(200.0, 260.0), np.linspace(360.0, 301.0, 60)]),
+            np.column_stack([xs_flat, np.full_like(xs_flat, 300.0)]),
+            np.column_stack([np.arange(381.0, 441.0), np.linspace(301.0, 360.0, 60)]),
+        ]
+    )
+    xy = np.roll(xy, -90, axis=0)  # first flat vertex in contour order is x=290
+
+    res = detect_apex(xy, mode="sessile", refine=True, window_px=15.0)
+    assert res.point[0] == pytest.approx(320.0, abs=0.5)
+    assert res.point[1] == pytest.approx(300.0, abs=0.5)
 
 
 def test_asymmetric_droplet_peak_shift():

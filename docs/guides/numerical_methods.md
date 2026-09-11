@@ -558,9 +558,11 @@ where $\hat{\mathbf{n}}$ is the unit inward normal perpendicular to the substrat
 
 $$\hat{\mathbf{n}} = (-u_y, u_x) \quad \text{such that } \hat{\mathbf{n}} \text{ points into the droplet fluid}$$
 
-The apex coordinate is reconstructed along the substrate frame:
+The vertex that attains $h_{\max}$ is not a usable apex *location*. A pixel contour's crest is a horizontal run, and once the baseline is tilted, even by a degree, $h_\perp$ grows linearly along that run, so the maximum sits at one end of it. On a needle-occluded (flat) top it sits at a corner of the cut. On a 100 px drop tilted by 2° that is ~9 px from the crown. The position along the substrate is therefore taken from crest chords. Walking the ordered contour both ways from the maximum vertex until $h_\perp$ drops below $h_{\max} - k\,b$ (band width $b$ = `band_px`, $k = 2, 3, 4$) gives two interpolated crossings $u_k^{L}, u_k^{R}$. For an axisymmetric crest every chord parallel to the substrate is bisected by the axis, so
 
-$$\mathbf{p}_{\text{apex}} = \mathbf{p}_1 + \text{median}(\{u_j\}) \, \hat{\mathbf{u}} + h_{\max} \, \hat{\mathbf{n}}$$
+$$u_{\text{apex}} = \text{median}_k\!\left(\tfrac{1}{2}(u_k^{L} + u_k^{R})\right), \qquad \mathbf{p}_{\text{apex}} = \mathbf{p}_1 + u_{\text{apex}} \, \hat{\mathbf{u}} + h_\perp(u_{\text{apex}}) \, \hat{\mathbf{n}}$$
+
+where $h_\perp(u_{\text{apex}})$ is interpolated along the crest run. An open contour that ends at its crest (no crossing on one side) falls back to the median of the vertices tied at $h_{\max}$.
 
 ### 11.3. Curved Substrates: Radial & Elevation Clearance (`detect_apex_curved_substrate`)
 
@@ -586,6 +588,17 @@ A local polynomial of order 2 or 3 is fitted within a search radius $w$:
 
 $$\eta(\xi) = a\xi^2 + b\xi + c \quad (+ \, d\xi^3)$$
 
+**The radius $w$ is set by the curvature, not fixed.** Over a half-width $w$ a crest of radius $R_0$ sags by $w^2 / 2R_0$. Below roughly a pixel that sag is buried in the $\pm 0.5$ px quantization of a mask contour, and $\xi^* = -b/2a$ becomes ill-conditioned — a fixed 15 px window leaves only 0.75 px of sag on a 150 px drop, which measured *worse* than no refinement at all. Menipy therefore solves for the window that spans a chosen sag $s$,
+
+$$w = \sqrt{2 R_0 s}, \qquad w \le R_0/2,$$
+
+and iterates it against the radius the fit itself implies. The cap at $R_0/2$ keeps the quartic a circle carries beyond its osculating parabola down to ~6% of the sag, which matters on small drops where a wide window overshoots the crown.
+
+$R_0$ is bootstrapped without a window from **crest chords**. A chord $d$ below the summit has half-width $c$ with $c^2 = 2R_0 d - d^2$, so $R_0 = (c^2 + d^2)/2d$, measured by interpolating the contour at several depths. Its departures from the circular ideal are themselves diagnostics:
+
+- **Radius spread across depths.** Constant for a circle; a needle-cut top reads far wider just under the cut than below it. Past a 1.7× ratio the summit is cut or kinked, there is no crest to refine, and the chord midpoint is kept (`cut_crest_fallback`).
+- **Sideways drift of the chord midpoints.** Zero when every chord is bisected by one axis. Only a crest that drifts is asymmetric enough to license the cubic term; residual tests cannot do this job, because the staircase of a pixel contour is structured noise that a cubic fits well enough to pass an F-test on a perfectly symmetric drop.
+
 1. **Continuous Sub-Pixel Peak**:
    Setting $\frac{d\eta}{d\xi} = 0$:
    - For parabolic fit ($d=0$): $\xi^* = -\frac{b}{2a}$
@@ -597,10 +610,17 @@ $$\eta(\xi) = a\xi^2 + b\xi + c \quad (+ \, d\xi^3)$$
 2. **Apex Radius of Curvature ($R_0$)**:
    The apex curvature $\kappa_0$ of the profile is directly determined by the second derivative at the summit:
 
-   $$\kappa_0 = \left| \frac{d^2\eta}{d\xi^2} \right|_{\xi^*} = |2a|, \quad R_0 = \frac{1}{\kappa_0} = \frac{1}{|2a|}$$
+   $$\kappa_0 = \left| \frac{d^2\eta}{d\xi^2} \right|_{\xi^*} = |6d\xi^* + 2a|, \quad R_0 = \frac{1}{\kappa_0}$$
+
+   (which reduces to $1/|2a|$ for the parabolic fit).
 
 3. **Asymmetric Tangential Shift**:
    The coordinate $\xi^*$ quantifies tangential summit displacement due to contact angle hysteresis, windage, or substrate heterogeneity.
+
+4. **No resolvable peak**:
+   Refinement is abandoned, and the candidate apex returned unchanged, whenever the window provably cannot resolve a crest: the fit is not concave (`no_peak_fallback`), the modelled sag $|a| w^2$ does not exceed the fit residuals threefold (`unresolved_curvature_fallback`), or $\xi^*$ falls outside the fitted region (`vertex_outside_window_fallback`) — clamping it back, as an earlier revision did, invents a crest several pixels from the one that was measured. Taking the window's highest vertex instead would reintroduce the first-index bias of §11.1.
+
+   Measured against pixelized spherical caps with analytically known crowns (R 20–150 px, tilt −8…10°), the adaptive fit gives a mean/max apex error of 0.51/0.61 px against 0.75/1.61 px unrefined, and never degrades a needle-cut top below the unrefined chord midpoint.
 
 ---
 

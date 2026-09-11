@@ -3,6 +3,7 @@
 Unit tests."""
 
 import numpy as np
+import pytest
 
 from menipy.common.geometry import (
     detect_baseline_ransac,
@@ -43,8 +44,12 @@ def test_detect_baseline_ransac_bottom_aligns():
 def test_refine_apex_curvature_on_circle():
     contour = _circle_contour(center=(50, 50), radius=10)
     apex, conf = refine_apex_curvature(contour, window=5)
-    # Apex should lie on the contour vertical span
-    assert 40.0 <= apex[1] <= 60.0
+    # Sessile apex is the crown (50, 40), not the circle centre. The crown sits
+    # exactly on the contour's extreme row, so a sub-pixel estimate lands on
+    # either side of y = 40; the 10 px fit window spans a third of this small
+    # circle, and a polynomial crest fitted to it overshoots by ~0.13 px.
+    assert apex[0] == pytest.approx(50.0, abs=0.25)
+    assert apex[1] == pytest.approx(40.0, abs=0.25)
     assert conf >= 0.0
 
 

@@ -66,9 +66,11 @@ class TestRefineApexCurvature:
 
         apex, confidence = refine_apex_curvature(contour)
 
+        # The apex is the crown of the arc (50, 10), on the contour; the arc
+        # centre (50, 30) lies inside the drop.
         assert confidence > 0.5
-        assert abs(apex[0] - 50) < 5  # Should be near center
-        assert abs(apex[1] - 30) < 5
+        assert abs(apex[0] - 50) < 1
+        assert abs(apex[1] - 10) < 1
 
     def test_flat_contour(self):
         """Test on flat contour (should fallback gracefully)."""

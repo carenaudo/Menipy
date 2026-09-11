@@ -7,12 +7,41 @@ import os
 import tempfile
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, List, Optional
 
 
 def _default_path() -> Path:
     # cross-platform: ~/.adsa/settings.json
     return Path.home() / ".adsa" / "settings.json"
+
+
+def pipeline_settings_for(settings: Any, pipeline: str | None) -> dict:
+    """Settings that apply to a run of ``pipeline``.
+
+    Settings are stored per pipeline so that saving one pipeline's dialog does
+    not replace another's. Settings files written before that split only have
+    the flat ``pipeline_settings`` dict, which is used while no pipeline has
+    its own entry.
+
+    Parameters
+    ----------
+    settings : AppSettings or object
+        Settings owner; objects without ``pipeline_settings_by_name`` are
+        treated as legacy.
+    pipeline : str or None
+        Pipeline name.
+
+    Returns
+    -------
+    dict
+        A copy of the pipeline's settings (empty when it has none).
+    """
+    by_name = getattr(settings, "pipeline_settings_by_name", None) or {}
+    if pipeline and isinstance(by_name.get(pipeline), dict):
+        return dict(by_name[pipeline])
+    if by_name:
+        return {}
+    return dict(getattr(settings, "pipeline_settings", None) or {})
 
 
 @dataclass
@@ -24,7 +53,9 @@ class AppSettings:
     # Overlay appearance configuration (serialized as a simple dict)
     overlay_config: dict | None = None
     marker_config: dict = field(default_factory=dict)
+    # Last saved pipeline settings (legacy mirror); runs read the per-pipeline map.
     pipeline_settings: dict = field(default_factory=dict)
+    pipeline_settings_by_name: dict = field(default_factory=dict)
     results_hidden_columns: dict = field(default_factory=dict)
     advanced_ui_visible: bool = False
     show_mode_labels: bool = False
@@ -59,6 +90,13 @@ class AppSettings:
                 overlay_config=data.get("overlay_config"),
                 marker_config=dict(data.get("marker_config", {})),
                 pipeline_settings=dict(data.get("pipeline_settings", {})),
+                pipeline_settings_by_name={
+                    str(name): dict(values)
+                    for name, values in (
+                        data.get("pipeline_settings_by_name") or {}
+                    ).items()
+                    if isinstance(values, dict)
+                },
                 results_hidden_columns=dict(data.get("results_hidden_columns", {})),
                 advanced_ui_visible=bool(data.get("advanced_ui_visible", False)),
                 show_mode_labels=bool(data.get("show_mode_labels", False)),
@@ -80,6 +118,19 @@ class AppSettings:
         except Exception:
             # fallback to defaults
             return cls(path=p)
+
+    def set_pipeline_settings(self, pipeline: str, values: dict) -> None:
+        """Store the settings of one pipeline.
+
+        Parameters
+        ----------
+        pipeline : str
+            Pipeline name (``"pendant"``, ``"sessile"``...).
+        values : dict
+            Settings from that pipeline's settings dialog or preset.
+        """
+        self.pipeline_settings_by_name[pipeline] = dict(values)
+        self.pipeline_settings = dict(values)
 
     def save(self) -> None:
         """Save."""

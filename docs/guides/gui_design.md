@@ -19,7 +19,12 @@ workflow bar and split workbench:
 - **Setup Rail (Left)**: Hosts setup controls such as calibration, phase
   properties, pipeline-specific settings, and the main **Run Analysis** action.
   Advanced SOP/stage controls are opened through the Advanced workflow dialog
-  rather than expanded inline.
+  rather than expanded inline. Its **Pipeline Stages** list shows the selected
+  pipeline's real stages: required stages always run, optional stages (only
+  **Overlay** today) have a checkbox, and Run Analysis runs every stage except
+  the unticked optional ones. Each step's ▶ runs the pipeline up to that step.
+  The choice is saved in the selected stage-only SOP; complete presets save it
+  with **Update**. The Analysis Settings dialog only configures stages.
 
 - **Scientific Step Test Rail (Left, Science Focus Only)**: When the user
   chooses **View -> Focus -> Science**, a checkable **Test** button appears in
@@ -47,9 +52,10 @@ panel. These dialogs provide granular control over parameters.
 
 -   **Preprocessing Configuration Dialog**: Allows users to adjust settings for image cropping, resizing, filtering, background subtraction, and normalization.
 -   **Edge Detection Configuration Dialog**: Provides extensive controls for edge detection algorithms (Canny, Threshold, Sobel, Active Contour, etc.) and contour refinement.
--   **Geometry, Physics, and Overlay Dialogs**: Exposed to the Step Test panel as
+-   **Geometry and Overlay Dialogs**: Exposed to the Step Test panel as
     sandboxed editors for scientific review. Sandbox edits affect test runs only
-    until the user clicks **Apply**.
+    until the user clicks **Apply**. Densities and gravity are not edited there:
+    every run, test runs included, uses Phase Properties on the setup panel.
 
 ## 4. Scientific Step Test Panel
 

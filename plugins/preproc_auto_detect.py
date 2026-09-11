@@ -74,13 +74,16 @@ def auto_detect_preprocessor(ctx):
 
         # Run in correct order
         if pipeline == "sessile":
-            # Sessile: substrate -> drop -> needle -> roi
+            # Sessile: substrate -> needle -> drop -> roi. The needle must
+            # precede the drop so drop detection can reject the shaft; running
+            # it afterwards leaves needle_rect unset and the guard inert. This
+            # matches AutoCalibrator._detect_sessile.
             if detect_substrate and "detect_substrate" in PREPROCESSORS:
                 ctx = PREPROCESSORS["detect_substrate"](ctx)
-            if detect_drop and "detect_drop" in PREPROCESSORS:
-                ctx = PREPROCESSORS["detect_drop"](ctx)
             if detect_needle and "detect_needle" in PREPROCESSORS:
                 ctx = PREPROCESSORS["detect_needle"](ctx)
+            if detect_drop and "detect_drop" in PREPROCESSORS:
+                ctx = PREPROCESSORS["detect_drop"](ctx)
             if detect_roi and "detect_roi" in PREPROCESSORS:
                 ctx = PREPROCESSORS["detect_roi"](ctx)
         else:

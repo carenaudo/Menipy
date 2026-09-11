@@ -21,6 +21,119 @@ from menipy.models.geometry import SubstrateProfile
 from menipy.models.surface_tension import volume_from_contour
 
 
+def _int_point(point: np.ndarray) -> tuple[int, int]:
+    """Round a 2-D point to built-in ``int``s.
+
+    ``tuple(arr.astype(int))`` yields ``np.int64`` scalars, which pydantic
+    cannot serialize -- a single one breaks the whole measurement history.
+
+    Parameters
+    ----------
+    point : np.ndarray
+        Two-element array of coordinates.
+
+    Returns
+    -------
+    tuple of int
+        The coordinates as built-in integers.
+    """
+    return (int(point[0]), int(point[1]))
+
+
+def _arc_spline_angles(
+    contour_2d: np.ndarray,
+    p1: np.ndarray,
+    p2: np.ndarray,
+    substrate_line,
+    substrate_profile: SubstrateProfile | None,
+    image: np.ndarray | None,
+    segment: str = "arc",
+) -> tuple[float, float, float, float, dict, list | None]:
+    """Contact angles from the apex-anchored arc or clothoid spline.
+
+    Parameters
+    ----------
+    contour_2d : np.ndarray
+        Drop silhouette, shape ``(N, 2)``.
+    p1, p2 : np.ndarray
+        Left and right contact points.
+    substrate_line : tuple or None
+        Straight substrate line; its direction is the angle reference.
+    substrate_profile : SubstrateProfile or None
+        Curved substrate; its local tangent at each contact is the reference.
+    image : np.ndarray or None
+        Source image for contrast refinement of the fitted interface.
+    segment : {"arc", "clothoid"}, optional
+        Circular arcs (:mod:`menipy.common.arc_spline`) or linear-curvature
+        clothoids (:mod:`menipy.common.clothoid_spline`).
+
+    Returns
+    -------
+    tuple
+        ``(theta_left, theta_right, sigma_left, sigma_right, diagnostics,
+        model_contour_xy)``. A fit that fails its quality gate reports NaN
+        angles and ``diagnostics["rejection_reasons"]``; the model contour is
+        kept for overlays unless the fit could not run at all.
+    """
+    from menipy.common.arc_spline import fit_sessile_arc_spline, refine_on_image
+
+    fit_sessile, fitter = fit_sessile_arc_spline, None
+    if segment == "clothoid":
+        from menipy.common.clothoid_spline import (
+            fit_clothoid_spline,
+            fit_sessile_clothoid_spline,
+        )
+
+        fit_sessile, fitter = fit_sessile_clothoid_spline, fit_clothoid_spline
+    tangents = None
+    if substrate_profile is not None and substrate_profile.type != "line":
+        tangents = tuple(
+            np.array([np.cos(a), np.sin(a)])
+            for a in (
+                np.radians(substrate_profile.eval_tangent_angle_deg(float(p[0]), float(p[1])))
+                for p in (p1, p2)
+            )
+        )
+    elif substrate_line is not None:
+        direction = np.asarray(substrate_line[1], float) - np.asarray(substrate_line[0], float)
+        if np.hypot(*direction) > 0:
+            tangents = (direction, direction)
+    try:
+        fit, interface = fit_sessile(contour_2d, p1, p2, substrate_tangents=tangents)
+        refined = False
+        if image is not None:
+            fit, _ = refine_on_image(
+                image, fit, interface, p1, p2, fitter=fitter, substrate_tangents=tangents
+            )
+            refined = True
+    except (ValueError, np.linalg.LinAlgError) as exc:
+        nan = float("nan")
+        diagnostics = {"accepted": False, "rejection_reasons": [f"fit_failed: {exc}"]}
+        return nan, nan, float("inf"), float("inf"), diagnostics, None
+    diagnostics = {
+        "image_refined": refined,
+        "contact_points_used": [[float(v) for v in c] for c in fit.contact_points],
+        **fit.to_diagnostics(),
+    }
+    model = [[float(x), float(y)] for x, y in fit.sample(1.0)]
+    if not fit.accepted:
+        # keep the model for inspection overlays, but report no angle
+        nan = float("nan")
+        return nan, nan, float("inf"), float("inf"), diagnostics, model
+
+    def sigma(value: float) -> float:
+        return float(value) if np.isfinite(value) else float(fit.rmse_px)
+
+    return (
+        float(fit.theta_p1_deg),
+        float(fit.theta_p2_deg),
+        sigma(fit.sigma_p1_deg),
+        sigma(fit.sigma_p2_deg),
+        diagnostics,
+        model,
+    )
+
+
 def compute_sessile_metrics(
     contour: np.ndarray,
     px_per_mm: float,
@@ -34,8 +147,14 @@ def compute_sessile_metrics(
     contact_angle_method: str = "tangent",
     contact_points: tuple[tuple[int, int], tuple[int, int]] | None = None,
     substrate_profile: SubstrateProfile | None = None,
+    image: np.ndarray | None = None,
 ) -> dict:
-    """Compute sessile drop metrics with optional auto-detection and curved substrate support."""
+    """Compute sessile drop metrics with optional auto-detection and curved substrate support.
+
+    ``image`` is only used by the ``arc_spline`` method, which refines the
+    fitted interface to the steepest contrast along its normals when given the
+    image the contour was extracted from.
+    """
     contour_2d = contour.reshape(-1, 2)
 
     # Reconcile substrate_line and substrate_profile
@@ -81,7 +200,7 @@ def compute_sessile_metrics(
         # Use pre-computed contact points from calibration
         p1 = np.array(contact_points[0], dtype=float)
         p2 = np.array(contact_points[1], dtype=float)
-        contact_line = (tuple(p1.astype(int)), tuple(p2.astype(int)))
+        contact_line = (_int_point(p1), _int_point(p2))
         diameter_px = float(np.linalg.norm(p1 - p2))
     elif sub_ref is not None:
         # Find contact points from contour intersection with substrate
@@ -90,7 +209,7 @@ def compute_sessile_metrics(
             contour_2d, sub_ref, tolerance=contact_point_tolerance_px
         )
         if p1 is not None and p2 is not None:
-            contact_line = (tuple(p1.astype(int)), tuple(p2.astype(int)))
+            contact_line = (_int_point(p1), _int_point(p2))
             diameter_px = float(np.linalg.norm(p1 - p2))
 
     # Auto-detect apex if requested and not provided.
@@ -194,6 +313,8 @@ def compute_sessile_metrics(
     method_left = method_right = "unavailable"
     selector_diagnostics: dict = {}
     lbadsa_payload: dict | None = None
+    arc_payload: dict | None = None
+    arc_model_xy: list | None = None
 
     if sub_ref is not None and p1 is not None and p2 is not None:
         if contact_angle_method == "lbadsa":
@@ -212,6 +333,20 @@ def compute_sessile_metrics(
             theta_right_deg = float(lbadsa_payload["theta_right_deg"])
             method_left = method_right = "lbadsa"
             uncertainty_left = uncertainty_right = float(lbadsa_payload.get("rmse_px", 1.0))
+        elif contact_angle_method in ("arc_spline", "clothoid_spline"):
+            (
+                theta_left_deg,
+                theta_right_deg,
+                uncertainty_left,
+                uncertainty_right,
+                arc_payload,
+                arc_model_xy,
+            ) = _arc_spline_angles(
+                contour_2d, p1, p2, substrate_line, substrate_profile, image,
+                segment="clothoid" if contact_angle_method == "clothoid_spline" else "arc",
+            )
+            accepted = arc_payload.get("accepted")
+            method_left = method_right = contact_angle_method if accepted else "rejected"
         elif contact_angle_method == "auto_residual":
             contour_len = len(contour.reshape(-1, 2))
             tangent_window_px = 30 if contour_len > 200 else 15
@@ -363,6 +498,17 @@ def compute_sessile_metrics(
             "lbadsa_diagnostics": lbadsa_payload.get("diagnostics"),
             "lbadsa_model_contour_xy": lbadsa_payload.get("model_contour_xy"),
         } if lbadsa_payload is not None else {}),
+        **({
+            "arc_spline": arc_payload,
+            "arc_spline_model_contour_xy": arc_model_xy,
+            "method_left": method_left,
+            "method_right": method_right,
+            # validation reads rejections of the active method from here
+            "experimental_geometry": {"sessile_arc_spline": {
+                "accepted": bool(arc_payload.get("accepted")),
+                "rejection_reasons": list(arc_payload.get("rejection_reasons") or []),
+            }},
+        } if arc_payload is not None else {}),
         "uncertainty_deg": {"left": uncertainty_left, "right": uncertainty_right},
         "contact_angle_fit_rmse_px": {
             "left": uncertainty_left,

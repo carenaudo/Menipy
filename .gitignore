@@ -204,3 +204,8 @@ out_hysteresis/
 # Local research documents and notes
 evaporation_research_report.md
 *research_report.md
+
+# Third-party papers kept locally for validation. Authors, DOIs and licenses are
+# recorded in the tracked README; the papers themselves are not redistributed.
+docs/research/references/*
+!docs/research/references/README.md

@@ -380,7 +380,11 @@ class MainController(QObject):
             self.preprocessing_ctrl, "settings", PreprocessingSettings()
         )
         edge = getattr(self.edge_detection_ctrl, "settings", EdgeDetectionSettings())
-        pipeline_settings = getattr(self.settings, "pipeline_settings", {})
+        # Only this pipeline's own settings: the dialog falls back to its last
+        # saved values instead of showing another pipeline's.
+        pipeline_settings = (
+            getattr(self.settings, "pipeline_settings_by_name", None) or {}
+        ).get(pipeline_name)
         dialog = AnalysisSettingsDialog(
             pipeline_name,
             preprocessing=preprocessing,
@@ -399,7 +403,7 @@ class MainController(QObject):
             self.preprocessing_ctrl.set_settings(pre)
         if self.edge_detection_ctrl is not None:
             self.edge_detection_ctrl.set_settings(edge_settings)
-        self.settings.pipeline_settings = pipe or {}
+        self.settings.set_pipeline_settings(pipeline_name, pipe or {})
         try:
             self.settings.save()
         except OSError as exc:
@@ -420,6 +424,7 @@ class MainController(QObject):
 
     @Slot()
     def open_physics_config(self) -> None:
+        """Config > Physics: go to Phase Properties on the setup panel."""
         self.dialog_coordinator.show_dialog_for_stage("physics")
 
     @Slot()

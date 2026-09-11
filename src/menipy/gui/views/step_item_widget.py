@@ -8,7 +8,14 @@ from typing import Optional
 
 from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QToolButton, QWidget
+from PySide6.QtWidgets import (
+    QCheckBox,
+    QHBoxLayout,
+    QLabel,
+    QSizePolicy,
+    QToolButton,
+    QWidget,
+)
 
 
 def _load_icon(name: str) -> QIcon:
@@ -37,14 +44,37 @@ _STATUS_COLORS = {
 }
 
 
+REQUIRED_TOOLTIP = "Always runs: later steps use its output."
+OPTIONAL_TOOLTIP = "Optional: untick to leave this step out of Run Analysis."
+
+
 class StepItemWidget(QWidget):
+    """One pipeline stage in the step list: status, include toggle, run, configure.
+
+    Parameters
+    ----------
+    step_name : str
+        Canonical stage name.
+    parent : QWidget, optional
+        Parent widget.
+    """
+
     playClicked = Signal(str)
     configClicked = Signal(str)
+    includedChanged = Signal(str, bool)
 
     def __init__(self, step_name: str, parent: QWidget | None = None):
         super().__init__(parent)
         self._name = step_name
         self._included = True
+        self._optional = False
+
+        self.includeChk = QCheckBox()
+        self.includeChk.setChecked(True)
+        self.includeChk.setToolTip(OPTIONAL_TOOLTIP)
+        self.includeChk.setAccessibleName(f"Include {step_name.replace('_', ' ')}")
+        self.includeChk.setVisible(False)
+        self.includeChk.toggled.connect(self._on_include_toggled)
 
         self.statusLbl = QLabel()
         self.statusLbl.setFixedSize(10, 10)
@@ -52,7 +82,7 @@ class StepItemWidget(QWidget):
 
         display_name = step_name.replace("_", " ").title()
         self.nameLbl = QLabel(display_name)
-        self.nameLbl.setToolTip(step_name)
+        self.nameLbl.setToolTip(REQUIRED_TOOLTIP)
         self.nameLbl.setObjectName("stepNameLabel")
         self.nameLbl.setMinimumWidth(0)
         self.nameLbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
@@ -80,6 +110,7 @@ class StepItemWidget(QWidget):
         lay = QHBoxLayout(self)
         lay.setContentsMargins(8, 4, 8, 4)
         lay.setSpacing(8)
+        lay.addWidget(self.includeChk)
         lay.addWidget(self.statusLbl)
         lay.addWidget(self.nameLbl, 1)
         lay.addWidget(self.playBtn)
@@ -107,18 +138,56 @@ class StepItemWidget(QWidget):
         self._apply_status_style(status)
 
     def is_included(self) -> bool:
-        return self._included
+        """Whether the step takes part in Run Analysis (required steps always do)."""
+        return self._included or not self._optional
+
+    def is_optional(self) -> bool:
+        """Whether the step can be left out of a run."""
+        return self._optional
+
+    def set_optional(self, optional: bool) -> None:
+        """Show the include checkbox (optional step) or lock the step in.
+
+        Parameters
+        ----------
+        optional : bool
+            ``True`` for a stage the pipeline can skip.
+        """
+        self._optional = bool(optional)
+        self.includeChk.setVisible(self._optional)
+        if not self._optional:
+            self.set_included(True)
+        else:
+            self.nameLbl.setToolTip(OPTIONAL_TOOLTIP)
+
+    def _on_include_toggled(self, checked: bool) -> None:
+        if checked == self._included:
+            return
+        self.set_included(checked)
+        self.includedChanged.emit(self._name, self._included)
 
     def set_included(self, included: bool) -> None:
-        self._included = bool(included)
+        """Include or exclude the step; required steps stay included.
+
+        Parameters
+        ----------
+        included : bool
+            New inclusion state.
+        """
+        self._included = bool(included) or not self._optional
+        self.includeChk.blockSignals(True)
+        self.includeChk.setChecked(self._included)
+        self.includeChk.blockSignals(False)
         self.setProperty("included", self._included)
         self.playBtn.setEnabled(self._included)
         self.cfgBtn.setEnabled(self._included)
         if self._included:
-            self.nameLbl.setToolTip(self._name)
+            self.nameLbl.setToolTip(
+                OPTIONAL_TOOLTIP if self._optional else REQUIRED_TOOLTIP
+            )
             self._apply_status_style(self.property("stepState") or "pending")
         else:
-            self.nameLbl.setToolTip(f"{self._name} excluded from current SOP")
+            self.nameLbl.setToolTip(f"{self._name} is left out of Run Analysis")
             self.statusLbl.setStyleSheet(
                 "background-color: #CBD5E1; border-radius: 5px;"
             )

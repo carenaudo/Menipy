@@ -26,6 +26,7 @@ from menipy.pipelines.pendant import (  # noqa: F401
     approximations as _pendant_approximations,
 )
 from menipy.pipelines.pendant import initializers as _pendant_initializers  # noqa: F401
+from menipy.pipelines.pendant import zone_spline as _pendant_zone_spline
 from menipy.pipelines.pendant.strict_young_laplace import (
     PendantStrictFitInput,
     build_pendant_profile_envelope_mm,
@@ -48,6 +49,8 @@ DEFAULT_PENDANT_APPROXIMATION_METHODS = [
     "multi_selected_plane",
     "volume_apex_lookup",
 ]
+# Registered approximators that only run when explicitly selected.
+OPTIONAL_PENDANT_APPROXIMATION_METHODS = ["clothoid_zones"]
 
 
 def _contour_to_xy(contour: object) -> np.ndarray:
@@ -214,6 +217,29 @@ def _append_pendant_dimensionless_numbers(ctx: Context, results: dict) -> None:
             results["worthington_number"] = worthington_number(float(volume_uL), vmax)
     except Exception:
         return
+
+
+def _append_clothoid_zones(fit: dict, results: dict) -> None:
+    """Copy the two-zone clothoid spline outputs of the profile stage into results."""
+    if "contour_model" in fit:
+        results["contour_model"] = fit["contour_model"]
+    zone = fit.get("clothoid_zones")
+    if not isinstance(zone, dict):
+        return
+    results["clothoid_zones"] = {k: v for k, v in zone.items() if k != "model_contour_xy"}
+    results.setdefault("experimental_geometry", {})["pendant_clothoid_zones"] = {
+        "accepted": bool(zone.get("accepted")),
+        "rejection_reasons": list(zone.get("rejection_reasons") or []),
+    }
+    if zone.get("model_contour_xy"):
+        results["clothoid_zones_model_contour_xy"] = zone["model_contour_xy"]
+    if zone.get("accepted"):
+        for key in ("needle_angle_deg", "needle_angle_p1_deg", "needle_angle_p2_deg"):
+            results[key] = zone.get(key)
+        results["clothoid_zones_surface_tension_mN_m"] = zone.get("surface_tension_mN_m")
+        results["clothoid_zones_laplace_surface_tension_mN_m"] = (zone.get("laplace") or {}).get(
+            "surface_tension_mN_m"
+        )
 
 
 def _enabled_pendant_approximators(ctx: Context) -> list[str]:
@@ -526,20 +552,38 @@ class PendantPipeline(PipelineBase):
                 except Exception:
                     needle_radius_mm = None
 
+            strict_kwargs = {
+                "contour_px": xy,
+                "axis_x_px": float(ctx.geometry.axis_x),
+                "apex_y_px": float(apex_xy[1]),
+                "px_per_mm": px_per_mm,
+                "r0_seed_mm": r0_seed_mm,
+                "beta_seed": beta_seed,
+                "axis_origin_px": getattr(ctx, "pendant_axis_origin_px", None),
+                "axis_direction_xy": getattr(ctx, "pendant_axis_direction_xy", None),
+            }
+            contour_model = str(getattr(ctx, "pendant_contour_model", "raw") or "raw")
+            zone_diag = None
+            if contour_model == "clothoid_zones":
+                zone_fit, zone_diag = _pendant_zone_spline.fit_clothoid_zones(ctx, xy, px_per_mm)
+                if zone_fit is not None and zone_fit.accepted:
+                    strict_kwargs.update(_pendant_zone_spline.strict_inputs_from_fit(zone_fit, px_per_mm))
+                else:
+                    contour_model = "raw"
+                    self.logger.warning(
+                        "Clothoid-zone contour rejected (%s); strict fit uses the raw contour",
+                        ", ".join(zone_diag.get("rejection_reasons") or []),
+                    )
             ctx.fit = fit_pendant_young_laplace_strict(
                 PendantStrictFitInput(
-                    contour_px=xy,
-                    axis_x_px=float(ctx.geometry.axis_x),
-                    apex_y_px=float(apex_xy[1]),
-                    px_per_mm=px_per_mm,
-                    r0_seed_mm=r0_seed_mm,
-                    beta_seed=beta_seed,
                     physics=ctx.physics or {},
                     needle_radius_mm=needle_radius_mm,
-                    axis_origin_px=getattr(ctx, "pendant_axis_origin_px", None),
-                    axis_direction_xy=getattr(ctx, "pendant_axis_direction_xy", None),
+                    **strict_kwargs,
                 )
             )
+            if zone_diag is not None:
+                ctx.fit["contour_model"] = contour_model
+                ctx.fit["clothoid_zones"] = zone_diag
             if getattr(ctx, "experimental_geometry_mode", "off") == "shadow" and getattr(ctx, "pendant_initializer", "legacy") == "legacy":
                 robust_fn = registry.PENDANT_INITIALIZERS.get("robust_axis")
                 if robust_fn is not None:
@@ -721,6 +765,7 @@ class PendantPipeline(PipelineBase):
         except Exception as e:
             self.logger.warning(f"Failed to calculate geometric stats: {e}")
 
+        _append_clothoid_zones(fit, results)
         ctx.results = results
         return ctx
 
@@ -808,6 +853,19 @@ class PendantPipeline(PipelineBase):
                     )
             except Exception:
                 pass
+        zone_xy = (ctx.results or {}).get("clothoid_zones_model_contour_xy")
+        if zone_xy and ((ctx.results or {}).get("clothoid_zones") or {}).get("accepted"):
+            cmds.append(
+                {
+                    "type": "polyline",
+                    "points": np.asarray(zone_xy, dtype=float).tolist(),
+                    "closed": False,
+                    "color": "magenta",
+                    "thickness": 1,
+                    "tag": "pendant_clothoid_zones",
+                    "layer": "fit",
+                }
+            )
         # Store commands for UI-side rendering (e.g., Qt painter toggles)
         ctx.overlay_commands = cmds
         return ovl.run(ctx, commands=cmds, alpha=0.6)

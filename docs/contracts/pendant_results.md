@@ -26,6 +26,12 @@ This document defines the pendant pipeline results contract used by the GUI Resu
   - `approx_selected_plane_surface_tension_mN_m`, `approx_selected_plane_beta`, `approx_selected_plane_status` — Single selected-plane approximation result.
   - `approx_multi_selected_plane_surface_tension_mN_m`, `approx_multi_selected_plane_std_mN_m`, `approx_multi_selected_plane_planes` — Multi-plane approximation result and per-plane diagnostics.
   - `approx_volume_apex_surface_tension_mN_m`, `approx_volume_apex_beta`, `approx_volume_apex_status` — Volume plus apex-curvature lookup approximation.
+  - `approx_clothoid_zones_surface_tension_mN_m`, `approx_clothoid_zones_beta`, `approx_clothoid_zones_r0_mm`, `approx_clothoid_zones_laplace_surface_tension_mN_m`, `approx_clothoid_zones_needle_angle_deg`, `approx_clothoid_zones_status` (`ok`, `rejected`, `fit_failed`, `missing_contour_or_scale`), `approx_clothoid_zones_rejection_reasons` — Two-zone clothoid spline approximator (opt-in, not in the default list, never promoted as the public fallback).
+  - `contour_model` (string) — `raw` or `clothoid_zones`: what the strict fit was fitted to; present only when `Context.pendant_contour_model = "clothoid_zones"` was requested (a rejected spline falls back to `raw`).
+  - `clothoid_zones` (object) — With `pendant_contour_model = "clothoid_zones"`: the spline diagnostics (`segment`, `zones_p1`/`zones_p2` clothoids per zone, `bond`, `apex_radius_px`, `equator_radius_px`, `surface_tension_mN_m`, `laplace` {`c0_per_px`, `c1_per_px2`, `bond`, `slope_correction`, `surface_tension_mN_m`, `surface_tension_raw_mN_m`}, needle angles raw/corrected/sigma per side, `axis_tilt_deg`, `contact_slide_px`, `contact_points_xy`, `rmse_px`, `edge_noise_px`, `image_refined`, `levels`, `accepted`, `rejection_reasons`).
+  - `clothoid_zones_surface_tension_mN_m`, `clothoid_zones_laplace_surface_tension_mN_m` (float) — Anchored Young-Laplace (box + golden-section Bond) and spline mean-curvature slope surface tensions, when the spline is accepted.
+  - `needle_angle_deg`, `needle_angle_p1_deg`, `needle_angle_p2_deg` (float) — Tangent angle of the interface at the needle contact, measured from the horizontal (Young-Laplace `φ`: 90° vertical, above 90° the neck turns back towards the axis); from the accepted clothoid spline.
+  - `clothoid_zones_model_contour_xy` (list) — The spline sampled every 2 px (image pixels), for the overlay.
   - `residuals` (object) — Fit residuals/diagnostics; implementation‑defined structure.
   - `timings_ms` (object) — Per‑stage timings populated by the pipeline runner.
   - `image_path` (string) — Source image path (for provenance in exports).
@@ -41,6 +47,8 @@ When explicitly enabled, `diagnostics.experimental_geometry` may contain a
 robust pendant axis initializer with `axis_origin_px`, `axis_direction_xy`,
 `r0_seed_mm`, `beta_seed`, coverage, asymmetry, and rejection reasons. The
 legacy vertical-axis fields remain valid when the initializer is disabled.
+With `pendant_contour_model = "clothoid_zones"`, `experimental_geometry.pendant_clothoid_zones`
+holds `accepted` and `rejection_reasons` of the spline.
 
 Phase-C shadow runs may add `diagnostics.onnx_proposals`. Proposal masks and
 contours are non-authoritative and do not alter calibration, strict fitting,
@@ -64,7 +72,7 @@ Notes
 - `diameter_mm`, `height_mm`, `r0_mm`: display with 2–3 decimals; export full precision.
 - `surface_tension_mN_m`: display with 1–2 decimals.
 - `volume_uL`: display with 2–3 decimals for small drops; adaptive formatting allowed.
-- Angles are not part of pendant; omit unless explicitly defined in future extensions.
+- Needle angles (`needle_angle_*_deg`) are the only pendant angles; degrees, display with 1 decimal.
 
 ## Example
 

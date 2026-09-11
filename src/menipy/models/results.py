@@ -12,9 +12,40 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel, Field
+import numpy as np
+from pydantic import BaseModel, Field, field_validator
 
 logger = logging.getLogger(__name__)
+
+
+def to_builtin(value: Any) -> Any:
+    """Recursively convert numpy scalars and arrays to built-in Python types.
+
+    Pipeline stages route numeric results through numpy, and a stray
+    ``np.int64`` or ``np.float64`` anywhere in a free-form payload makes the
+    whole history unserializable -- pydantic raises before ``json.dumps`` is
+    ever reached, so a JSON encoder cannot rescue it.
+
+    Parameters
+    ----------
+    value : Any
+        Arbitrarily nested mapping, sequence or scalar.
+
+    Returns
+    -------
+    Any
+        The same structure with numpy scalars as ``int``/``float``/``bool`` and
+        arrays as nested lists. Tuples become lists, matching JSON round-trips.
+    """
+    if isinstance(value, np.generic):
+        return value.item()
+    if isinstance(value, np.ndarray):
+        return value.tolist()
+    if isinstance(value, dict):
+        return {key: to_builtin(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [to_builtin(item) for item in value]
+    return value
 
 
 class MeasurementResult(BaseModel):
@@ -30,6 +61,12 @@ class MeasurementResult(BaseModel):
     rejection_reasons: list[str] = Field(default_factory=list)
     diagnostics: dict[str, Any] = Field(default_factory=dict)
     run_metadata: dict[str, Any] | None = None
+
+    @field_validator("results", "diagnostics", "run_metadata", mode="before")
+    @classmethod
+    def _coerce_numpy(cls, value: Any) -> Any:
+        """Strip numpy scalars from free-form payloads so history stays saveable."""
+        return to_builtin(value)
 
     @property
     def display_status(self) -> str:

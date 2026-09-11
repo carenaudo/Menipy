@@ -149,7 +149,7 @@ Additional triage completed:
 - src/menipy/common/physics.py
 - src/menipy/common/scaling.py
 - src/menipy/gui/dialogs/analysis_settings/__init__.py
-- src/menipy/gui/dialogs/analysis_settings/captive_bubble_settings.py
+- src/menipy/gui/dialogs/analysis_settings/captive_bubble_settings.py (removed: its only inputs, density/gravity/solver/notes, never reached a run)
 - src/menipy/gui/dialogs/analysis_settings/pendant_settings.py
 - src/menipy/gui/dialogs/analysis_settings/sessile_settings.py
 - src/menipy/gui/dialogs/calibration_wizard.py

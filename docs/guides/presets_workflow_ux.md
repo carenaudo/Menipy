@@ -19,7 +19,12 @@ check its fit to the current source before analysis.
 
 Presets remain in `~/.menipy/sops.json` under their pipeline, with a versioned
 `__preset__` payload inside the existing SOP parameters. Legacy stage-only SOPs
-continue to toggle stage inclusion automatically. Complete presets require the
+continue to toggle stage inclusion automatically. Stage lists written before the
+stage rename (`edge_detection`, `geometry`, `outputs`, ...) are translated to the
+current names; since required stages always run, such a list only decides
+whether the optional **Overlay** stage runs. A preset's optional **notes** are
+entered when it is added, kept by **Update**, edited with **Notes…** and shown
+in the Apply review. Complete presets require the
 explicit Apply action. The default SOP remains stage-only. SOP writes now replace
 the file atomically and restore in-memory state if saving fails.
 

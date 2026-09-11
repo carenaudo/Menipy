@@ -251,6 +251,18 @@ def test_pipeline_test_stage_list_refreshes_on_pipeline_switch(
     assert controller.panel._stage_names == ["preprocessing", "validation"]
 
 
+def test_pipeline_test_physics_stage_uses_phase_properties(main_window):
+    controller = main_window.pipeline_step_test_ctrl
+
+    controller.panel.set_stages(["preprocessing", "physics"])
+    controller.panel.stageList.setCurrentRow(1)
+
+    assert controller.panel.current_stage() == "physics"
+    assert not controller.panel.editConfigBtn.isEnabled()
+    assert "Phase Properties" in controller.panel.configInfo.text()
+    assert "physics_params" not in controller.sandbox_config()
+
+
 def test_pipeline_test_sandbox_does_not_mutate_live_settings_until_apply(main_window):
     controller = main_window.pipeline_step_test_ctrl
     live_settings = main_window.preprocessing_ctrl.settings
@@ -786,17 +798,53 @@ def test_steps_list_uses_vertical_layout(setup_panel_controller: SetupPanelContr
 
 
 def test_excluded_step_stays_readable_but_is_not_collected(
+    setup_panel_controller: SetupPanelController, monkeypatch
+):
+    sop_ctrl = setup_panel_controller.sop_ctrl
+    if sop_ctrl.sops:  # never write the real ~/.menipy/sops.json from a test
+        monkeypatch.setattr(sop_ctrl.sops, "upsert", lambda *_: None)
+    widgets = {w.step_name: w for w in sop_ctrl._step_widgets}
+    overlay = widgets["overlay"]
+
+    overlay.includeChk.setChecked(False)
+
+    assert overlay.isEnabled()
+    assert not overlay.is_included()
+    assert "overlay" not in setup_panel_controller.collect_included_stages()
+    overlay.includeChk.setChecked(True)
+
+
+def test_step_list_shows_real_stages_and_locks_required_ones(
     setup_panel_controller: SetupPanelController,
 ):
+    from menipy.pipelines.discover import PIPELINE_MAP
+
+    pipeline = setup_panel_controller.current_pipeline_name()
     widgets = setup_panel_controller.sop_ctrl._step_widgets
-    assert widgets
-    first = widgets[0]
+    assert [w.step_name for w in widgets] == PIPELINE_MAP[pipeline].stage_names()
+    for widget in widgets:
+        optional = widget.step_name == "overlay"
+        assert widget.is_optional() is optional
+        assert widget.includeChk.isVisibleTo(widget) is optional
+        if not optional:
+            widget.set_included(False)  # required steps cannot be excluded
+            assert widget.is_included()
 
-    first.set_included(False)
 
-    assert first.isEnabled()
-    assert not first.is_included()
-    assert first.step_name not in setup_panel_controller.collect_included_stages()
+def test_legacy_sop_stage_names_are_translated(
+    setup_panel_controller: SetupPanelController,
+):
+    sop = setup_panel_controller.sop_ctrl
+    widgets = {w.step_name: w for w in sop._step_widgets}
+    # A pre-rename SOP that ran "up to outputs" (overlay and validation unticked).
+    sop.apply_included_stages(
+        ["acquisition", "preprocessing", "edge_detection", "geometry", "outputs"]
+    )
+    assert not widgets["overlay"].is_included()
+    assert widgets["validation"].is_included()  # required now
+    assert widgets["contour_extraction"].is_included()
+    sop.apply_included_stages(["edge_detection", "overlay", "optimization"])
+    assert widgets["overlay"].is_included()
 
 
 def test_included_step_controls_emit_signals(qtbot, setup_panel_controller):

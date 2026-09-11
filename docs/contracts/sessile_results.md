@@ -14,7 +14,7 @@ This document defines the sessile pipeline results contract used by the GUI Resu
   - `volume_uL` (float) — Volume in microlitres.
   - `drop_surface_mm2` (float) — Drop surface area in mm².
   - `baseline_tilt_deg` (float) — Estimated substrate tilt in degrees.
-  - `method` (string) — Angle method tag: `tangent`, `spherical_cap`, `circle_fit`, `auto_residual`, `young_laplace`.
+  - `method` (string) — Angle method tag: `tangent`, `spherical_cap`, `circle_fit`, `auto_residual`, `lbadsa`, `arc_spline`, `clothoid_spline`, `young_laplace`.
 - optional keys:
   - `contact_angle_deg` (float) — Single angle from spherical‑cap approximation (legacy/quick estimate).
   - `uncertainty_deg` (object) — Angle uncertainty per side: `{ "left": x, "right": y }`.
@@ -43,6 +43,17 @@ Phase-B opt-in runs may add `experimental_geometry` with bilateral needle
 lines and per-side selector candidates. `auto_residual` may select tangent on
 one side and circle fit on the other; `method_left` and `method_right` are
 diagnostic tags and do not change the schema version.
+
+`arc_spline` and `clothoid_spline` runs add `arc_spline` (object) and
+`arc_spline_model_contour_xy` (list of `[x, y]`, the fitted interface from P1
+over the apex to P2, drawn by the overlay). The object carries `segment`
+(`arc` or `clothoid`), `accepted`, `rejection_reasons`, segment counts
+per side, raw and corrected angles, the bias correction, per-side noise sigma,
+residual RMS, `init` (`physics` or `blind`), the box-matched Young-Laplace
+prior per side (`physics`: Bond number, angle, apex radius), `image_refined`
+and `contact_points_used`. A rejected fit reports NaN angles with
+`method_left`/`method_right` tag `rejected`; the model contour is kept for
+inspection. See `docs/research/arc_spline_contour.md`.
 
 Phase-C shadow runs may add `diagnostics.onnx_proposals`. These values are
 comparison metadata only and never replace the sessile contour, substrate,

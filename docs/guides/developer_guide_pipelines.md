@@ -27,7 +27,29 @@ The `PipelineBase` class provides a `run` method that executes these stages in a
 
 Legacy stage method aliases such as `do_edge_detection`, `do_geometry`,
 `do_scaling`, `do_solver`, and `do_outputs` still exist for compatibility, but
-new pipelines should use the canonical names above.
+new pipelines should use the canonical names above. Stored SOPs and presets may
+still contain the legacy names; `canonical_stage_name()` (and
+`LEGACY_STAGE_NAMES`) in `pipelines/base.py` translates them.
+
+#### Required and optional stages
+
+Each stage reads what the earlier stages left in the `Context`, so stages
+cannot be switched off one by one. A run can only:
+
+- **stop after a stage** — `run_with_plan(only=[stage], include_prereqs=True)`
+  runs every stage up to and including `stage`;
+- **leave out optional stages** — `run(skip_stages=[...])` or
+  `run_with_plan(..., skip_stages=[...])`. Only names in the class attribute
+  `OPTIONAL_STAGES` are accepted; anything else raises `PipelineError`.
+
+`OPTIONAL_STAGES` defaults to `{"overlay"}`: overlay stages only draw
+(`ctx.preview`, `ctx.overlay`, `ctx.overlay_commands`), nothing later reads
+them, and the GUI preview falls back to the plain image. `validation` is
+required because it produces the accept/reject flag of the result.
+`stage_names()` lists a pipeline's stages and `skipped_stages(included)` turns a
+stored stage selection (legacy names allowed) into the stages to skip. Only add a
+stage to `OPTIONAL_STAGES` after checking that no later stage, the GUI or the
+result contract uses its output.
 
 ### 1.2. The `Context` Object
 
@@ -53,8 +75,8 @@ provide prerequisite context fields such as `roi`, `needle_rect`,
 feature cannot be detected, the panel reports an inline prerequisite warning.
 
 Stage configuration edits in the panel are sandboxed. The controller clones live
-preprocessing, edge-detection, geometry, physics, and overlay settings for test
-runs. **Apply** writes sandbox values back to the live controllers/settings;
+preprocessing, edge-detection, geometry, and overlay settings for test runs;
+densities and gravity always come from Phase Properties on the setup panel. **Apply** writes sandbox values back to the live controllers/settings;
 **Discard** reloads from the live state.
 
 ### 1.4. Pipeline Discovery

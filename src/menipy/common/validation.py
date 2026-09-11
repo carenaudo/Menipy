@@ -200,7 +200,8 @@ def validate(ctx: Context, thresholds: dict[str, float] | None = None) -> QAResu
     active_experimental = (
         getattr(ctx, "needle_geometry_method", "legacy") == "bilateral_robust"
         or getattr(ctx, "pendant_initializer", "legacy") == "robust_axis"
-        or getattr(ctx, "contact_angle_method", "tangent") == "auto_residual"
+        or getattr(ctx, "pendant_contour_model", "raw") == "clothoid_zones"
+        or getattr(ctx, "contact_angle_method", "tangent") in ("auto_residual", "arc_spline", "clothoid_spline")
     )
     experimental_geometry_ok = True
     if active_experimental:

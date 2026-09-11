@@ -311,6 +311,7 @@ class SetupPanelController(QObject):
             ),
             play_callback=self.play_stage_requested.emit,
             config_callback=self.config_stage_requested.emit,
+            pipeline_map=PIPELINE_MAP,
         )
 
         self._mode_group = QButtonGroup(self)
@@ -578,12 +579,12 @@ class SetupPanelController(QObject):
             self._apply_mode(self.MODE_SINGLE)
 
     def collect_included_stages(self) -> list[str]:
-        """collect included stages.
+        """Stages that take part in Run Analysis.
 
         Returns
         -------
-        type
-        Description.
+        list of str
+            Required stages plus the ticked optional ones, in run order.
         """
         if hasattr(self, "sop_ctrl"):
             return self.sop_ctrl.collect_included_stages()

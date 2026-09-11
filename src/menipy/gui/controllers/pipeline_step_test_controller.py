@@ -11,12 +11,10 @@ from PySide6.QtWidgets import QDialog, QMessageBox
 from menipy.gui.dialogs.edge_detection_config_dialog import EdgeDetectionConfigDialog
 from menipy.gui.dialogs.geometry_config_dialog import GeometryConfigDialog
 from menipy.gui.dialogs.overlay_config_dialog import OverlayConfigDialog
-from menipy.gui.dialogs.physics_config_dialog import PhysicsConfigDialog
 from menipy.gui.dialogs.preprocessing_config_dialog import PreprocessingConfigDialog
 from menipy.gui.views.pipeline_step_test_panel import PipelineStepTestPanel
 from menipy.models.config import (
     EdgeDetectionSettings,
-    PhysicsParams,
     PreprocessingSettings,
 )
 
@@ -28,8 +26,12 @@ class PipelineStepTestController(QObject):
         "preprocessing": "Edit preprocessing settings in a sandbox. Apply keeps them.",
         "contour_extraction": "Edit edge detection settings in a sandbox. Apply keeps them.",
         "geometric_features": "Edit geometry settings in a sandbox. Apply keeps them.",
-        "physics": "Edit unit-aware physics settings in a sandbox. Apply keeps them.",
         "overlay": "Edit overlay rendering settings in a sandbox. Apply keeps them.",
+    }
+    # Stages whose inputs are edited elsewhere; the test uses those values.
+    FIXED_STAGE_HELP = {
+        "physics": "Uses the densities and gravity from Phase Properties in the "
+        "setup panel (with the material database).",
     }
 
     def __init__(
@@ -54,7 +56,6 @@ class PipelineStepTestController(QObject):
         self.pipeline_map = {str(k).lower(): v for k, v in (pipeline_map or {}).items()}
         self._preprocessing_settings = PreprocessingSettings()
         self._edge_detection_settings = EdgeDetectionSettings()
-        self._physics_params = PhysicsParams()
         self._geometry_config: dict[str, Any] = {}
         self._overlay_config: dict[str, Any] = {}
         self._dirty = False
@@ -81,12 +82,6 @@ class PipelineStepTestController(QObject):
         else:
             self._edge_detection_settings = EdgeDetectionSettings()
 
-        physics = getattr(self.window.settings, "physics_config", PhysicsParams())
-        self._physics_params = (
-            physics.model_copy(deep=True)
-            if isinstance(physics, PhysicsParams)
-            else PhysicsParams()
-        )
         self._geometry_config = dict(
             getattr(self.window.settings, "geometry_config", {}) or {}
         )
@@ -123,7 +118,6 @@ class PipelineStepTestController(QObject):
             "edge_detection_settings": self._edge_detection_settings.model_copy(
                 deep=True
             ),
-            "physics_params": self._physics_params.model_copy(deep=True),
             "geometry_config": dict(self._geometry_config),
             "overlay_config": dict(self._overlay_config),
         }
@@ -144,7 +138,7 @@ class PipelineStepTestController(QObject):
         if not stage:
             self.panel.set_stage_help("No stage selected.")
             return
-        help_text = self.EDITABLE_STAGE_HELP.get(
+        help_text = self.EDITABLE_STAGE_HELP.get(stage) or self.FIXED_STAGE_HELP.get(
             stage,
             "This stage has no dedicated editable test configuration yet. It will run with the current sandbox inputs.",
         )
@@ -177,13 +171,6 @@ class PipelineStepTestController(QObject):
             dialog.set_config(self._geometry_config)
             if dialog.exec() == QDialog.Accepted:
                 self._geometry_config = dict(dialog.get_config())
-                self._set_dirty(True)
-            return
-
-        if stage == "physics":
-            dialog = PhysicsConfigDialog(self._physics_params, parent=self.window)
-            if dialog.exec() == QDialog.Accepted:
-                self._physics_params = dialog.get_params().model_copy(deep=True)
                 self._set_dirty(True)
             return
 
@@ -268,7 +255,6 @@ class PipelineStepTestController(QObject):
             self.edge_detection_ctrl.set_settings(
                 self._edge_detection_settings.model_copy(deep=True)
             )
-        self.window.settings.physics_config = self._physics_params.model_copy(deep=True)
         self.window.settings.geometry_config = dict(self._geometry_config)
         self.window.settings.overlay_config = dict(self._overlay_config)
         preview_panel = getattr(self.window, "preview_panel", None)

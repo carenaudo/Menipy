@@ -43,6 +43,29 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
+# --- Sub-pixel apex refinement tuning ----------------------------------------
+# Sag the fit window aims to span. Well clear of the +/-0.5 px quantization of a
+# binary-mask contour, yet short enough for a parabola to model a circular
+# crest. Swept from 2 to 10 px against caps, needle-cut tops and rotated-ellipse
+# crests with known summits: 5 px minimizes the ellipse error and sits within
+# 0.03 px of the best cap and cut-top scores.
+_SAGITTA_TARGET_PX = 5.0
+# Widest and narrowest fit half-widths, in pixels.
+_MAX_HALFWIDTH_PX = 60.0
+_MIN_HALFWIDTH_PX = 3.0
+# A circular crest gives the same chord radius at every depth. Measured on
+# pixelized caps (R 20-150 px, tilt -8..10 deg) the estimates spread by at most
+# 1.27x; a 4 px needle cut already spreads them by 1.73x and a 12 px cut by 2.3x.
+# Past this ratio the summit is cut or kinked and there is no crest to refine.
+_CHORD_SPREAD_MAX = 1.7
+# Modelled sag must exceed the fit residuals by this factor to be believed.
+_SIGNIFICANCE_K = 3.0
+# Sideways march of the chord midpoint, per pixel of depth, above which the
+# crest is asymmetric enough to fit a cubic. Measured on pixelized caps and on
+# rotated-ellipse crests with analytically known summits: symmetric shapes stay
+# under 0.31 px/px, ellipses rotated 20-35 deg reach 0.34-1.08.
+_ASYMMETRY_DRIFT_MIN = 0.33
+
 
 @dataclass(frozen=True)
 class ApexResult:
@@ -157,13 +180,16 @@ def detect_apex_normal(
 
     On a tilted or inclined substrate, the highest point in image Y does not
     coincide with the droplet summit. The physical apex is the point with the
-    maximum perpendicular distance from the substrate baseline line.
+    maximum perpendicular distance from the substrate baseline line. Its
+    position along the substrate is taken as the median midpoint of crest
+    chords 2, 3 and 4 bands below that maximum, which is robust to pixel
+    quantization and to flat (needle-occluded) tops.
 
     Args:
-        contour: (N, 2) array of contour points.
+        contour: (N, 2) array of ordered contour points.
         baseline: Substrate baseline chord ((x1, y1), (x2, y2)).
         mode: Drop mode ('sessile', 'pendant', 'captive_bubble', etc.).
-        band_px: Tolerance in pixels for multi-point crest averaging.
+        band_px: Crest band width in pixels; sets the depth of the crest chords.
 
     Returns:
         ApexResult with detected apex, normal/tangent vectors, and band points.
@@ -197,33 +223,107 @@ def detect_apex_normal(
     # Project contour points onto normal direction: h = (p - p1) . n
     diffs = pts - p1
     h_perps = np.dot(diffs, n)
+    u_coords = np.dot(diffs, u)
 
-    h_max = float(np.max(h_perps))
-    exact_mask = np.abs(h_perps - h_max) <= 1e-4
-    band_mask = h_perps >= (h_max - max(0.25, float(band_px)))
-
-    if np.sum(exact_mask) >= 2:
-        band_pts = pts[exact_mask]
-        mean_h = h_max
-    elif np.sum(exact_mask) == 1:
-        band_pts = pts[exact_mask]
-        mean_h = h_max
+    # A pixel contour's crest is a horizontal run. Once the baseline is tilted,
+    # even slightly, the single vertex of maximum h is an end of that run, not
+    # its centre; on a needle-occluded (flat) top it is a corner of the chord.
+    # Bisect the crest chord a few bands below the maximum instead.
+    crest = _crest_chord_midpoint(pts, h_perps, u_coords, band_px)
+    if crest is not None:
+        median_u, crest_h, band_points = crest
     else:
-        band_pts = pts[band_mask]
-        mean_h = float(np.mean(h_perps[band_mask]))
+        h_max = float(np.max(h_perps))
+        exact_mask = np.abs(h_perps - h_max) <= 1e-4
+        median_u = float(np.median(u_coords[exact_mask]))
+        crest_h = h_max
+        band_points = int(np.sum(exact_mask))
 
-    u_coords = np.dot(band_pts - p1, u)
-    median_u = float(np.median(u_coords))
-
-    apex_coords = p1 + median_u * u + mean_h * n
+    apex_coords = p1 + median_u * u + crest_h * n
     return ApexResult(
         point=(float(apex_coords[0]), float(apex_coords[1])),
         confidence=0.95,
         method="normal_projection",
-        band_points=int(band_pts.shape[0]),
+        band_points=band_points,
         tangent=(float(u[0]), float(u[1])),
         normal=(float(n[0]), float(n[1])),
     )
+
+
+def _crest_chord_midpoint(
+    pts: np.ndarray,
+    heights: np.ndarray,
+    along: np.ndarray,
+    band_px: float,
+    depths: tuple[float, ...] = (2.0, 3.0, 4.0),
+) -> tuple[float, float, int] | None:
+    """Locate the crest along the substrate from chords a few bands below it.
+
+    Walks the ordered contour both ways from the vertex of maximum height until
+    the height drops below ``h_max - depth * band_px``, interpolates the two
+    crossings and takes their midpoint. For an axisymmetric crest every chord
+    parallel to the substrate is bisected by the axis, so the midpoint does not
+    depend on where pixel quantization put the maximum vertex.
+
+    Parameters
+    ----------
+    pts : np.ndarray
+        Ordered contour vertices, shape (N, 2).
+    heights : np.ndarray
+        Height of each vertex along the apex-side substrate normal.
+    along : np.ndarray
+        Coordinate of each vertex along the substrate.
+    band_px : float
+        Crest band width in pixels; chord depths are multiples of it.
+    depths : tuple of float, optional
+        Chord depths below the maximum, in units of ``band_px``.
+
+    Returns
+    -------
+    tuple of (float, float, int) or None
+        Crest coordinate along the substrate, contour height there and number
+        of vertices in the crest run, or ``None`` when a chord does not close
+        on both sides (open contour ending at its crest).
+    """
+    n_pts = pts.shape[0]
+    if n_pts < 3:
+        return None
+    closed = float(np.linalg.norm(pts[0] - pts[-1])) <= 2.0
+    top = int(np.argmax(heights))
+    h_max = float(heights[top])
+    band = max(0.25, float(band_px))
+
+    midpoints = []
+    run: set[int] = {top}
+    for depth in depths:
+        level = h_max - depth * band
+        ends = []
+        for step in (1, -1):
+            i = top
+            crossing = None
+            for _ in range(n_pts - 1):
+                j = i + step
+                if not closed and not 0 <= j < n_pts:
+                    break
+                j %= n_pts
+                if heights[j] < level:
+                    t = (heights[i] - level) / (heights[i] - heights[j])
+                    crossing = along[i] + t * (along[j] - along[i])
+                    break
+                run.add(j)
+                i = j
+            if crossing is None:
+                return None
+            ends.append(crossing)
+        midpoints.append(0.5 * (ends[0] + ends[1]))
+
+    crest_u = float(np.median(midpoints))
+    run_idx = np.fromiter(run, dtype=int)
+    order = np.argsort(along[run_idx])
+    crest_h = float(
+        np.interp(crest_u, along[run_idx][order], heights[run_idx][order])
+    )
+    return crest_u, crest_h, int(run_idx.size)
 
 
 def detect_apex_curved_substrate(
@@ -309,40 +409,329 @@ def detect_apex_curved_substrate(
     return detect_apex_flat(pts, mode=mode)
 
 
+def _walk_branch(
+    xi: np.ndarray,
+    eta: np.ndarray,
+    start: int,
+    closed: bool,
+    halfwidth: float,
+    depth_limit: float,
+) -> np.ndarray:
+    """Collect the contiguous contour run around ``start`` inside a local window.
+
+    Walking the contour, instead of masking every vertex by distance, keeps the
+    fit on the crest branch: an unrelated part of the outline that happens to
+    pass close to the apex -- the substrate edge of a small drop, the opposite
+    wall of a narrow neck -- is never picked up.
+
+    Parameters
+    ----------
+    xi : np.ndarray
+        Coordinate of each vertex along the substrate tangent, apex-relative.
+    eta : np.ndarray
+        Coordinate of each vertex along the apex-side normal, apex-relative.
+    start : int
+        Index of the vertex closest to the initial apex estimate.
+    closed : bool
+        Whether the contour wraps around from its last vertex to its first.
+    halfwidth : float
+        Maximum ``|xi|`` of a vertex in the window.
+    depth_limit : float
+        Minimum ``eta`` of a vertex in the window (a negative depth below the
+        crest); stops the walk from running down a steep flank.
+
+    Returns
+    -------
+    np.ndarray
+        Indices of the contiguous run, unordered.
+    """
+    n_pts = xi.size
+    idx = [start]
+    for step in (1, -1):
+        i = start
+        for _ in range(n_pts - 1):
+            j = i + step
+            if not closed and not 0 <= j < n_pts:
+                break
+            j %= n_pts
+            if j == start:
+                break
+            if abs(xi[j]) > halfwidth or eta[j] < depth_limit:
+                break
+            idx.append(j)
+            i = j
+    return np.asarray(idx, dtype=int)
+
+
+@dataclass(frozen=True)
+class CrestChords:
+    """Crest geometry read off contour chords, independently of any fit window.
+
+    Attributes
+    ----------
+    radius : float
+        Median per-depth estimate of the apex radius of curvature, in pixels.
+    radius_spread : float
+        Ratio of the largest to the smallest per-depth radius estimate. One for
+        a circular crest; well above one for a cut or kinked top.
+    tight_radius : float
+        Same radius measured from the shorter flank alone, which is the one a
+        fit window must not outgrow on an asymmetric crest.
+    axis_drift : float
+        Sideways march of the chord midpoint per pixel of depth. Near zero for
+        a symmetric crest, where every chord is bisected by the same axis.
+    """
+
+    radius: float
+    radius_spread: float
+    tight_radius: float
+    axis_drift: float
+
+
+def _chord_crossings(
+    xi: np.ndarray,
+    eta: np.ndarray,
+    start: int,
+    closed: bool,
+    depth: float,
+) -> tuple[float, float] | None:
+    """Locate where the contour crosses a chord ``depth`` pixels below the crest.
+
+    Parameters
+    ----------
+    xi : np.ndarray
+        Apex-relative tangential coordinate of every vertex.
+    eta : np.ndarray
+        Apex-relative normal coordinate of every vertex.
+    start : int
+        Index of the vertex closest to the initial apex estimate.
+    closed : bool
+        Whether the contour wraps around.
+    depth : float
+        Depth of the chord below the crest, in pixels.
+
+    Returns
+    -------
+    tuple of float or None
+        The two crossing coordinates along the tangent, or ``None`` when the
+        chord does not close on both sides.
+    """
+    n_pts = xi.size
+    ends: list[float] = []
+    for step in (1, -1):
+        i = start
+        crossing = None
+        for _ in range(n_pts - 1):
+            j = i + step
+            if not closed and not 0 <= j < n_pts:
+                break
+            j %= n_pts
+            if j == start:
+                break
+            if eta[j] < -depth:
+                denom = eta[i] - eta[j]
+                t = (eta[i] + depth) / denom if abs(denom) > 1e-12 else 0.0
+                crossing = xi[i] + t * (xi[j] - xi[i])
+                break
+            i = j
+        if crossing is None:
+            return None
+        ends.append(float(crossing))
+    return ends[0], ends[1]
+
+
+def _measure_crest_chords(
+    xi: np.ndarray,
+    eta: np.ndarray,
+    start: int,
+    closed: bool,
+    depths: tuple[float, ...] = (2.0, 3.0, 4.0, 6.0, 8.0),
+) -> CrestChords | None:
+    """Measure the crest from chords at several depths below the summit.
+
+    For a circular crest a chord ``d`` below the summit has half-width ``c``
+    obeying ``c**2 = 2 R d - d**2``, hence ``R = (c**2 + d**2) / (2 d)``, and
+    every chord is bisected by the axis. Chords are read off the contour by
+    interpolation, so none of this needs a fit window -- which is what makes it
+    usable to *choose* one, and to judge what the window will be able to fit.
+
+    Two departures from that ideal carry information. A cut (needle-occluded)
+    top reads far wider just under the chord than below it, so its per-depth
+    radii fan out instead of agreeing. And on an asymmetric crest the chord
+    midpoints march sideways with depth rather than staying on one axis.
+
+    Parameters
+    ----------
+    xi : np.ndarray
+        Apex-relative tangential coordinate of every vertex.
+    eta : np.ndarray
+        Apex-relative normal coordinate of every vertex.
+    start : int
+        Index of the vertex closest to the initial apex estimate.
+    closed : bool
+        Whether the contour wraps around.
+    depths : tuple of float, optional
+        Chord depths below the crest, in pixels.
+
+    Returns
+    -------
+    CrestChords or None
+        Crest measurements, or ``None`` when no chord closes on both sides.
+    """
+    radii: list[float] = []
+    tight: list[float] = []
+    used: list[float] = []
+    midpoints: list[float] = []
+    for depth in depths:
+        ends = _chord_crossings(xi, eta, start, closed, depth)
+        if ends is None:
+            continue
+        half_width = 0.5 * abs(ends[0] - ends[1])
+        if half_width <= 1e-6:
+            continue
+        radii.append((half_width**2 + depth**2) / (2.0 * depth))
+        # The same radius from the shorter flank alone. On an asymmetric crest
+        # the flat side runs far out and would size the fit window for a
+        # curvature the steep side does not have.
+        flank = max(min(abs(ends[0]), abs(ends[1])), 1e-6)
+        tight.append((flank**2 + depth**2) / (2.0 * depth))
+        midpoints.append(0.5 * (ends[0] + ends[1]))
+        used.append(depth)
+
+    if not radii:
+        return None
+
+    drift = float(np.polyfit(used, midpoints, 1)[0]) if len(used) >= 3 else 0.0
+
+    return CrestChords(
+        radius=float(np.median(radii)),
+        radius_spread=float(max(radii) / min(radii)),
+        tight_radius=float(np.median(tight)),
+        axis_drift=drift,
+    )
+
+
+def _stationary_point(coeffs: np.ndarray, order: int) -> float | None:
+    """Locate the crest of a fitted polynomial along the tangent.
+
+    Parameters
+    ----------
+    coeffs : np.ndarray
+        Polynomial coefficients in :func:`numpy.polyfit` order.
+    order : int
+        Order of the fit, 2 or 3.
+
+    Returns
+    -------
+    float or None
+        Tangential coordinate of the maximum, or ``None`` when the polynomial
+        has no concave stationary point.
+    """
+    if order == 3:
+        d_cub, a, b = float(coeffs[0]), float(coeffs[1]), float(coeffs[2])
+    else:
+        d_cub, a, b = 0.0, float(coeffs[0]), float(coeffs[1])
+
+    if abs(d_cub) > 1e-7:
+        disc = 4.0 * (a**2) - 12.0 * d_cub * b
+        if disc >= 0:
+            roots = (
+                (-2.0 * a + np.sqrt(disc)) / (6.0 * d_cub),
+                (-2.0 * a - np.sqrt(disc)) / (6.0 * d_cub),
+            )
+            maxima = [r for r in roots if (6.0 * d_cub * r + 2.0 * a) < 0]
+            if maxima:
+                return float(min(maxima, key=abs))
+
+    if a >= -1e-8:
+        return None
+    return float(-b / (2.0 * a))
+
+
+def _window_for_radius(r0: float, sagitta_px: float, cap: float) -> float:
+    """Choose a fit half-width that resolves ``sagitta_px`` of sag at radius ``r0``.
+
+    A circle of radius ``r0`` sags by ``w**2 / (2 r0)`` over a half-width ``w``.
+    Solving for the half-width whose sag clears the +/-0.5 px quantization of a
+    binary-mask contour by a few pixels gives ``w = sqrt(2 r0 s)``. The window is
+    additionally kept below ``r0 / 2``, where the quartic term a circle carries
+    beyond its osculating parabola still amounts to only ~6% of the sag.
+
+    Parameters
+    ----------
+    r0 : float
+        Apex radius of curvature estimate, in pixels.
+    sagitta_px : float
+        Target sag over the window, in pixels.
+    cap : float
+        Hard upper bound on the half-width.
+
+    Returns
+    -------
+    float
+        Fit half-width in pixels.
+    """
+    w = float(np.sqrt(2.0 * max(r0, 1e-6) * sagitta_px))
+    w = min(w, 0.5 * r0, cap)
+    return float(max(w, _MIN_HALFWIDTH_PX))
+
+
 def refine_apex_polynomial(
     contour: np.ndarray,
     initial_apex: tuple[float, float] | ApexResult,
     baseline: tuple[tuple[float, float], tuple[float, float]] | None = None,
     mode: str = "sessile",
-    window_px: float = 15.0,
-    order: int = 2,
+    window_px: float | None = None,
+    order: int = 3,
+    *,
+    sagitta_px: float = _SAGITTA_TARGET_PX,
 ) -> ApexResult:
-    """Refine droplet apex to sub-pixel coordinates using local polynomial modeling.
+    """Refine a droplet apex to sub-pixel coordinates with a curvature-adapted fit.
 
-    Transforms contour points in a local window around `initial_apex` into the
-    substrate-aligned coordinate frame (tangential xi, normal eta). Fits an
-    order-2 (or order-3) polynomial:
-        eta(xi) = a * xi^2 + b * xi + c (+ d * xi^3)
+    Contour points around ``initial_apex`` are expressed in the substrate-aligned
+    frame (tangential ``xi``, normal ``eta``) and modelled by
+    ``eta(xi) = a xi**2 + b xi + c (+ d xi**3)``; the continuous crest is the
+    stationary point ``xi*`` of that polynomial, and the apex curvature radius
+    follows from the quadratic term.
 
-    Analytically locates the continuous peak:
-        xi* = -b / (2 * a)  [order 2] or cubic stationary root [order 3]
-        eta* = a * (xi*)^2 + b * xi* + c
+    The fit window is *not* fixed. Crest chords first give the apex radius ``R0``
+    (:func:`_measure_crest_chords`), and the half-width is set to ``w = sqrt(2 R0 s)``
+    with ``s`` a few pixels of sag, capped at ``R0 / 2``
+    (:func:`_window_for_radius`); the fit then iterates so that ``w`` tracks the
+    radius it implies. A narrower window leaves the sag under pixel quantization
+    and makes ``xi* = -b / 2a`` ill-conditioned on large drops; a wider one lets
+    the parabola overshoot the crown of a small one.
 
-    This provides:
-    1. Sub-pixel continuous coordinates: p_apex = p_init + xi* * u + eta* * n.
-    2. Apex radius of curvature: R0 = 1 / |2 * a|.
-    3. Asymmetry offset: xi* directly quantifies crest shift for asymmetric drops.
+    Refinement is abandoned -- the crest estimate is returned unchanged, with a
+    ``*_fallback`` method name -- whenever the window provably cannot resolve a
+    crest: a flat (needle-cut) top, a fit whose modelled sag does not stand out
+    of its own residuals, or a stationary point outside the fitted region.
 
-    Args:
-        contour: (N, 2) array of contour points.
-        initial_apex: Initial candidate apex (x, y) or ApexResult.
-        baseline: Optional baseline chord to align tangent/normal axes.
-        mode: Drop mode ('sessile', 'pendant', 'captive_bubble', etc.).
-        window_px: Search radius in pixels around initial_apex.
-        order: Polynomial fit order (2 for parabolic, 3 for asymmetric cubic).
+    Parameters
+    ----------
+    contour : np.ndarray
+        Contour points, shape (N, 2).
+    initial_apex : tuple of float or ApexResult
+        Crest estimate to refine.
+    baseline : tuple of tuple of float, optional
+        Substrate chord ``((x1, y1), (x2, y2))`` aligning the tangent and normal.
+    mode : str, optional
+        Drop mode ('sessile', 'pendant', 'captive_bubble', 'capillary_rise').
+    window_px : float, optional
+        Upper bound on the fit half-width, in pixels. ``None`` (the default)
+        lets the curvature alone set it.
+    order : int, optional
+        Highest polynomial order allowed. A cubic is fitted only on a crest the
+        chords measured as asymmetric, so a lopsided summit is resolved without
+        letting pixel noise bend a symmetric one.
+    sagitta_px : float, optional
+        Sag the window aims to span, in pixels.
 
-    Returns:
-        ApexResult containing refined sub-pixel coordinates, R0, asymmetry, and confidence.
+    Returns
+    -------
+    ApexResult
+        Refined sub-pixel apex with ``r0_px``, ``asymmetry_px`` and confidence,
+        or the unrefined crest when the crest cannot be resolved.
     """
     pts = _ensure_2d_contour(contour)
     if isinstance(initial_apex, ApexResult):
@@ -372,98 +761,154 @@ def refine_apex_polynomial(
         u = np.array([1.0, 0.0], dtype=float)
         n = np.array([0.0, 1.0], dtype=float) if is_bottom_apex else np.array([0.0, -1.0], dtype=float)
 
-    # Extract points in local Euclidean window
-    dists = np.linalg.norm(pts - p_init, axis=1)
-    w_px = max(5.0, float(window_px))
-    mask = dists <= w_px
-    local_pts = pts[mask]
+    tangent = (float(u[0]), float(u[1]))
+    normal = (float(n[0]), float(n[1]))
 
-    if local_pts.shape[0] < 5:
-        mask = dists <= (w_px * 2.0)
-        local_pts = pts[mask]
-
-    if local_pts.shape[0] < 5:
+    def _fallback(method: str, points: int, r0: float | None = None) -> ApexResult:
+        """Return the unrefined crest estimate under a diagnostic method name."""
         return ApexResult(
             point=(float(p_init[0]), float(p_init[1])),
-            confidence=0.5,
-            method="initial_fallback",
+            confidence=0.6 if points >= 5 else 0.5,
+            method=method,
+            r0_px=r0,
             asymmetry_px=0.0,
-            band_points=int(local_pts.shape[0]),
-            tangent=(float(u[0]), float(u[1])),
-            normal=(float(n[0]), float(n[1])),
+            curvature_kappa=(1.0 / r0) if r0 else None,
+            band_points=int(points),
+            tangent=tangent,
+            normal=normal,
         )
 
-    # Transform into local (xi, eta) coordinates
-    diffs = local_pts - p_init
-    xi = np.dot(diffs, u)
-    eta = np.dot(diffs, n)
+    if pts.shape[0] < 5:
+        return _fallback("initial_fallback", pts.shape[0])
 
-    fit_order = min(order, 3) if len(local_pts) >= 7 else 2
-    try:
-        coeffs = np.polyfit(xi, eta, fit_order)
-    except (np.linalg.LinAlgError, ValueError):
-        return ApexResult(
-            point=(float(p_init[0]), float(p_init[1])),
-            confidence=0.5,
-            method="fit_error_fallback",
-            band_points=int(local_pts.shape[0]),
-            tangent=(float(u[0]), float(u[1])),
-            normal=(float(n[0]), float(n[1])),
-        )
+    # Apex-relative local frame for the whole contour.
+    diffs_all = pts - p_init
+    xi_all = np.dot(diffs_all, u)
+    eta_all = np.dot(diffs_all, n)
+    closed = bool(pts.shape[0] > 3 and float(np.linalg.norm(pts[0] - pts[-1])) <= 2.0)
+    start = int(np.argmin(np.linalg.norm(diffs_all, axis=1)))
 
-    if fit_order == 2:
-        d_cub = 0.0
-        a, b, c = float(coeffs[0]), float(coeffs[1]), float(coeffs[2])
-    elif fit_order == 3:
-        d_cub, a, b, c = float(coeffs[0]), float(coeffs[1]), float(coeffs[2]), float(coeffs[3])
-    else:
-        d_cub, a, b, c = 0.0, 0.0, 0.0, 0.0
+    w_cap = _MAX_HALFWIDTH_PX
+    if window_px is not None and float(window_px) > 0.0:
+        w_cap = min(w_cap, max(float(window_px), _MIN_HALFWIDTH_PX))
 
-    if a >= -1e-8:
-        apex_cand = local_pts[np.argmax(eta)]
-        return ApexResult(
-            point=(float(apex_cand[0]), float(apex_cand[1])),
-            confidence=0.6,
-            method="local_max_fallback",
-            asymmetry_px=0.0,
-            band_points=int(local_pts.shape[0]),
-            tangent=(float(u[0]), float(u[1])),
-            normal=(float(n[0]), float(n[1])),
-        )
+    chords = _measure_crest_chords(xi_all, eta_all, start, closed)
+    r0_chord = chords.radius if chords is not None else None
 
-    if fit_order == 3 and abs(d_cub) > 1e-7:
-        disc = 4.0 * (a**2) - 12.0 * d_cub * b
-        if disc >= 0:
-            root1 = (-2.0 * a + np.sqrt(disc)) / (6.0 * d_cub)
-            root2 = (-2.0 * a - np.sqrt(disc)) / (6.0 * d_cub)
-            xi_candidates = [r for r in (root1, root2) if (6.0 * d_cub * r + 2.0 * a) < 0]
-            if xi_candidates:
-                xi_star = min(xi_candidates, key=abs)
-            else:
-                xi_star = -b / (2.0 * a)
-        else:
-            xi_star = -b / (2.0 * a)
-    else:
-        xi_star = -b / (2.0 * a)
+    # A needle-occluded (or otherwise cut) top is not a crest: its chords fan
+    # out with depth instead of tracing one radius. Nothing there can be
+    # refined, so keep the measured chord midpoint -- and report no radius,
+    # since the chords of a cut top measure the cut, not the hidden summit.
+    if chords is not None and chords.radius_spread > _CHORD_SPREAD_MAX:
+        return _fallback("cut_crest_fallback", pts.shape[0])
 
-    # Gate: xi* must remain within the local window
-    if abs(xi_star) > w_px:
-        xi_star = float(np.clip(xi_star, -w_px * 0.5, w_px * 0.5))
+    # Only a crest whose chord midpoints visibly march sideways is asymmetric
+    # enough for a cubic term to describe rather than to chase pixel noise.
+    allow_cubic = (
+        order >= 3
+        and chords is not None
+        and abs(chords.axis_drift) >= _ASYMMETRY_DRIFT_MIN
+    )
 
-    eta_star = a * (xi_star**2) + b * xi_star + c
+    w = (
+        _window_for_radius(chords.tight_radius, sagitta_px, w_cap)
+        if chords is not None
+        else min(15.0, w_cap)
+    )
+
+    coeffs: np.ndarray | None = None
+    fit_order = 2
+    local_idx = np.empty(0, dtype=int)
+    w_fit = w
+    rms_resid = 0.0
+    r2 = 0.0
+
+    for _ in range(3):
+        # Widen until the window holds enough vertices to fit and test a parabola.
+        while True:
+            local_idx = _walk_branch(
+                xi_all, eta_all, start, closed, w, -max(2.0 * sagitta_px, 2.0)
+            )
+            if local_idx.size >= 6 or w >= w_cap - 1e-9:
+                break
+            w = min(w * 1.6, w_cap)
+        w_fit = w
+        if local_idx.size < 5:
+            return _fallback("initial_fallback", local_idx.size, r0_chord)
+
+        xi = xi_all[local_idx]
+        eta = eta_all[local_idx]
+        try:
+            quad = np.polyfit(xi, eta, 2)
+        except (np.linalg.LinAlgError, ValueError):
+            return _fallback("fit_error_fallback", local_idx.size, r0_chord)
+
+        coeffs, fit_order = quad, 2
+        # Prefer the parabola. A cubic is taken only on a crest whose chords
+        # already showed it to be asymmetric. Judging the cubic by its own
+        # residuals instead does not work: the staircase of a pixel contour is
+        # structured, not independent, noise, and a cubic fits that staircase
+        # well enough to pass an F-test on a perfectly symmetric drop -- which
+        # then moves the apex by several pixels.
+        if allow_cubic and local_idx.size >= 9:
+            try:
+                cubic = np.polyfit(xi, eta, 3)
+            except (np.linalg.LinAlgError, ValueError):
+                cubic = None
+            if cubic is not None and _stationary_point(cubic, 3) is not None:
+                coeffs, fit_order = cubic, 3
+
+        a = float(coeffs[-3])
+        if a >= -1e-8:
+            # No concave crest in the window (flat or needle-cut top): there is
+            # nothing to refine, and ``argmax(eta)`` would only return whichever
+            # tied vertex comes first in contour order.
+            return _fallback("no_peak_fallback", local_idx.size, r0_chord)
+
+        resid = eta - np.polyval(coeffs, xi)
+        rms_resid = float(np.sqrt(np.mean(resid**2)))
+        ss_tot = float(np.sum((eta - np.mean(eta)) ** 2))
+        r2 = float(max(0.0, 1.0 - float(np.sum(resid**2)) / ss_tot)) if ss_tot > 1e-12 else 0.8
+
+        # Re-centre the window on the radius the fit itself implies.
+        w_next = _window_for_radius(1.0 / (2.0 * abs(a)), sagitta_px, w_cap)
+        if abs(w_next - w) <= 0.1 * w:
+            break
+        w = w_next
+
+    if coeffs is None:
+        return _fallback("initial_fallback", local_idx.size, r0_chord)
+
     if fit_order == 3:
-        eta_star += d_cub * (xi_star**3)
+        d_cub, a = float(coeffs[0]), float(coeffs[1])
+    else:
+        d_cub, a = 0.0, float(coeffs[0])
+
+    # A crest the window cannot resolve: the modelled sag does not stand out of
+    # the residuals, so -b / 2a is driven by pixel noise rather than by shape.
+    if abs(a) * w_fit * w_fit < _SIGNIFICANCE_K * rms_resid:
+        return _fallback("unresolved_curvature_fallback", local_idx.size, r0_chord)
+
+    xi_star = _stationary_point(coeffs, fit_order)
+    if xi_star is None:
+        return _fallback("no_peak_fallback", local_idx.size, r0_chord)
+
+    # The stationary point must sit well inside the fitted region: outside it the
+    # polynomial only extrapolates, and clamping it back would invent a crest
+    # several pixels away from the one that was actually measured.
+    if not np.isfinite(xi_star) or abs(xi_star) > 0.5 * w_fit:
+        return _fallback("vertex_outside_window_fallback", local_idx.size, r0_chord)
+
+    eta_star = float(np.polyval(coeffs, xi_star))
+    if abs(eta_star) > max(1.0, sagitta_px):
+        return _fallback("vertex_off_crest_fallback", local_idx.size, r0_chord)
 
     p_refined = p_init + xi_star * u + eta_star * n
 
-    # Apex curvature radius R0 = 1 / |2a|
-    kappa_0 = abs(2.0 * a)
+    # Curvature at the stationary point: 2a for a parabola, 6 d xi* + 2a cubic.
+    kappa_0 = abs(6.0 * d_cub * xi_star + 2.0 * a)
     r0_px = (1.0 / kappa_0) if kappa_0 > 1e-9 else None
 
-    eta_pred = np.polyval(coeffs, xi)
-    ss_tot = float(np.sum((eta - np.mean(eta)) ** 2))
-    ss_res = float(np.sum((eta - eta_pred) ** 2))
-    r2 = float(max(0.0, 1.0 - ss_res / ss_tot)) if ss_tot > 1e-12 else 0.8
     confidence = float(np.clip(0.5 + 0.49 * r2, 0.5, 0.99))
 
     return ApexResult(
@@ -473,9 +918,9 @@ def refine_apex_polynomial(
         r0_px=float(r0_px) if r0_px is not None else None,
         asymmetry_px=float(xi_star),
         curvature_kappa=float(kappa_0),
-        band_points=int(local_pts.shape[0]),
-        tangent=(float(u[0]), float(u[1])),
-        normal=(float(n[0]), float(n[1])),
+        band_points=int(local_idx.size),
+        tangent=tangent,
+        normal=normal,
     )
 
 
@@ -543,7 +988,7 @@ def detect_apex(
     substrate: Any = None,
     contact_points: tuple[tuple[float, float], tuple[float, float]] | None = None,
     refine: bool = True,
-    window_px: float = 15.0,
+    window_px: float | None = None,
     band_px: float = 1.0,
     order: int = 3,
 ) -> ApexResult:
@@ -556,7 +1001,9 @@ def detect_apex(
     3. Contact points without explicit baseline -> baseline from contact chord.
     4. Un-tilted / default -> `detect_apex_flat` with multi-point horizontal centroid averaging.
     5. Sub-pixel continuous refinement -> `refine_apex_polynomial` for sub-pixel
-       coordinates, apex curvature R0, and physical asymmetry estimation.
+       coordinates, apex curvature R0, and physical asymmetry estimation. Its
+       fit window follows the measured curvature, and it returns the crest
+       estimate untouched when the crest cannot be resolved.
 
     Args:
         contour: (N, 2) array of drop contour points.
@@ -565,9 +1012,11 @@ def detect_apex(
         substrate: Optional SubstrateProfile or curved substrate object.
         contact_points: Optional ((xL, yL), (xR, yR)) three-phase contact points.
         refine: If True, executes sub-pixel polynomial peak refinement.
-        window_px: Neighborhood radius in pixels for sub-pixel refinement.
+        window_px: Upper bound on the sub-pixel fit half-width in pixels; None
+            (default) lets the apex curvature alone set it.
         band_px: Vertical/normal band width in pixels for discrete crest averaging.
-        order: Polynomial refinement order (2 for symmetric parabolic, 3 for asymmetric cubic).
+        order: Highest polynomial refinement order (2 parabolic; 3 allows an
+            asymmetric cubic on crests measured to be asymmetric).
 
     Returns:
         ApexResult with sub-pixel apex coordinates, confidence, R0, asymmetry, and method.

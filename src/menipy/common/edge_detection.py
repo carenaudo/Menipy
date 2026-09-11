@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import inspect
 import logging
 from collections.abc import Callable
+from typing import Any
 
 import numpy as np
 
@@ -69,6 +71,58 @@ def _fallback_canny(img: np.ndarray, settings: EdgeDetectionSettings) -> np.ndar
 # -------- strategies --------
 # Strategies (CannyDetector, ThresholdDetector, etc.) have been moved to plugins/edge_detectors.py
 # and are no longer defined here. We rely on the registry.
+
+
+def _detector_context(
+    detector: Callable[..., np.ndarray], ctx: Any, roi_x0: int, roi_y0: int
+) -> dict[str, Any]:
+    """Collect the optional scene hints a detector declares, in ROI coordinates.
+
+    Detectors such as ``improved_snake`` can mask the substrate and reject the
+    needle when told where they are, but only accept those arguments if their
+    signature declares them. Hints are offset into the cropped ROI frame the
+    detector actually sees.
+
+    Parameters
+    ----------
+    detector : callable
+        The resolved detector.
+    ctx : Any
+        Pipeline context supplying ``substrate_line`` and ``needle_rect``.
+    roi_x0 : int
+        Left edge of the ROI crop in full-image coordinates.
+    roi_y0 : int
+        Top edge of the ROI crop in full-image coordinates.
+
+    Returns
+    -------
+    dict
+        Keyword arguments the detector accepts; empty when it accepts none.
+    """
+    try:
+        accepted = set(inspect.signature(detector).parameters)
+    except (TypeError, ValueError):
+        return {}
+
+    hints: dict[str, Any] = {}
+
+    if "substrate_y" in accepted:
+        substrate_line = getattr(ctx, "substrate_line", None)
+        if substrate_line is None:
+            profile = getattr(ctx, "substrate_profile", None)
+            if profile is not None and hasattr(profile, "to_chord"):
+                substrate_line = profile.to_chord()
+        if substrate_line:
+            baseline_y = (float(substrate_line[0][1]) + float(substrate_line[1][1])) / 2.0
+            hints["substrate_y"] = int(round(baseline_y)) - roi_y0
+
+    if "needle_rect" in accepted:
+        needle_rect = getattr(ctx, "needle_rect", None)
+        if needle_rect:
+            n_x, n_y, n_w, n_h = (int(v) for v in needle_rect)
+            hints["needle_rect"] = (n_x - roi_x0, n_y - roi_y0, n_w, n_h)
+
+    return hints
 
 
 def get_contour_detector(
@@ -270,7 +324,7 @@ def run(ctx, settings: EdgeDetectionSettings):
 
     # 3) select detector (Strategy Pattern) and apply
     detector = get_contour_detector(settings.method)
-    xy = detector(img_roi_gray, settings)
+    xy = detector(img_roi_gray, settings, **_detector_context(detector, ctx, x0, y0))
 
     if xy.size == 0:
         logger.warning(
