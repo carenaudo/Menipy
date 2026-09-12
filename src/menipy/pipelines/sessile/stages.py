@@ -122,6 +122,50 @@ class SessilePipeline(PipelineBase):
         ctx.sessile_calc_contour = None
         ctx.sessile_calc_contact_points = None
 
+        # A raw segmentation is diagnostic evidence, never an authoritative
+        # liquid region. For straight boundaries construct the one valid free
+        # surface arc before any fitting code can see a substrate/reflection
+        # return path or a synthetic closing segment.
+        if ctx.contour is not None:
+            substrate_profile = getattr(ctx, "substrate_profile", None)
+            substrate_line = getattr(ctx, "substrate_line", None)
+            is_manual_curve = (
+                substrate_profile is not None
+                and getattr(substrate_profile, "type", "line") != "line"
+            )
+            if substrate_line is not None and not is_manual_curve:
+                raw_xy = ensure_contour(ctx)
+                apex_point = getattr(ctx, "apex_point", None)
+                if apex_point is None:
+                    apex_res = detect_apex(raw_xy, mode="sessile", baseline=substrate_line, refine=True)
+                    apex_point = apex_res.point
+                    ctx.apex_point = (int(round(apex_point[0])), int(round(apex_point[1])))
+                from menipy.common.liquid_boundary import build_straight_liquid_geometry
+
+                geometry = build_straight_liquid_geometry(
+                    raw_xy,
+                    substrate_line,
+                    apex=apex_point,
+                    contact_points=getattr(ctx, "contact_points", None),
+                    provenance="manual" if getattr(ctx, "substrate_profile", None) is not None else "automatic",
+                )
+                ctx.liquid_geometry = geometry
+                ctx.detector_diagnostics["liquid_geometry"] = {
+                    "status": geometry.status,
+                    "rejection_reasons": list(geometry.rejection_reasons),
+                }
+                if geometry.status == "complete" and geometry.contact_points is not None:
+                    observed = np.asarray(geometry.observed_surface, dtype=float).reshape(-1, 2)
+                    contacts = geometry.contact_points
+                    # Contacts are constraints, not contour samples from the
+                    # detector. They are included only as endpoints for local
+                    # contact geometry; no solid-side closure is appended.
+                    ctx.sessile_calc_contour = np.vstack([contacts[0], observed, contacts[1]])
+                    ctx.sessile_calc_contact_points = contacts
+                    ctx.contact_points = contacts
+                    return ctx
+                return ctx
+
         # If using pre-detected contour, skip clipping to preserve the closed polygon
         if getattr(ctx, "drop_contour", None) is not None:
             # Still apply refinement if enabled
@@ -293,6 +337,21 @@ class SessilePipeline(PipelineBase):
 
     def do_geometric_features(self, ctx: Context) -> Context | None:
         """Extract geometric features: axis, apex, baseline, tilt, and angles."""
+        liquid_geometry = getattr(ctx, "liquid_geometry", None)
+        if liquid_geometry is not None and liquid_geometry.status != "complete":
+            ctx._sessile_metrics = {
+                "availability": {
+                    "contact_angles": "unavailable",
+                    "physical_geometry": "unavailable",
+                    "reasons": list(liquid_geometry.rejection_reasons),
+                }
+            }
+            ctx.qa = {
+                "ok": False,
+                "rejection_reasons": list(liquid_geometry.rejection_reasons),
+            }
+            return ctx
+
         xy_display = ensure_contour(ctx)
         x, y = xy_display[:, 0], xy_display[:, 1]
 
@@ -440,7 +499,7 @@ class SessilePipeline(PipelineBase):
 
     def do_calibration(self, ctx: Context) -> Context | None:
         """Set up pixel-to-mm scaling."""
-        ctx.scale = ctx.scale or {"px_per_mm": 1.0}
+        ctx.scale = ctx.scale or {}
         return ctx
 
     def do_physics(self, ctx: Context) -> Context | None:
@@ -449,6 +508,9 @@ class SessilePipeline(PipelineBase):
 
     def do_profile_fitting(self, ctx: Context) -> Context | None:
         """Fit spherical Young-Laplace profile."""
+        if getattr(getattr(ctx, "liquid_geometry", None), "status", "complete") != "complete":
+            ctx.note("Profile fitting withheld: complete liquid geometry is unavailable.")
+            return ctx
         integrator = get_solver(self.solver_name, fallback=young_laplace_default)
         assert (
             integrator is not None

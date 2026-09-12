@@ -59,6 +59,12 @@ Phase-C shadow runs may add `diagnostics.onnx_proposals`. These values are
 comparison metadata only and never replace the sessile contour, substrate,
 contact points, angles, acceptance, or rejection reasons.
 
+New runs may add `diagnostics.liquid_geometry` and `availability`. A straight
+boundary is `complete`, `partial`, or `unresolved`; area, volume, and
+full-profile values are withheld unless it is complete. Supported geometric
+contact angles remain available without a px/mm calibration, while physical
+values are withheld when calibration provenance is missing.
+
 When `accepted` is false, physical measurement keys are not promoted into the
 persisted `results` object. The rejected record and its diagnostics remain
 available for audit, GUI inspection, and JSON/CSV export.

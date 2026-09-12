@@ -397,6 +397,11 @@ class PendantPipeline(PipelineBase):
                 ctx.drop_contour = calib.drop_contour
             if getattr(ctx, "roi_rect", None) is None and calib.roi_rect is not None:
                 ctx.roi_rect = calib.roi_rect
+            from menipy.common.liquid_boundary import update_calibration_boundary
+
+            update_calibration_boundary(calib, "pendant")
+            if getattr(ctx, "liquid_geometry", None) is None:
+                ctx.liquid_geometry = calib.liquid_geometry
 
         return ctx
 
@@ -415,6 +420,41 @@ class PendantPipeline(PipelineBase):
             from menipy.models.geometry import Contour
 
             xy = _contour_to_xy(detected)
+            liquid_geometry = getattr(ctx, "liquid_geometry", None)
+            if liquid_geometry is None and getattr(ctx, "contact_points", None) is not None:
+                from menipy.common.liquid_boundary import build_straight_liquid_geometry
+
+                contacts = ctx.contact_points
+                apex = getattr(ctx, "apex_point", None)
+                if apex is None and len(xy):
+                    apex = tuple(map(float, xy[int(np.argmax(xy[:, 1]))]))
+                    ctx.apex_point = (int(round(apex[0])), int(round(apex[1])))
+                liquid_geometry = build_straight_liquid_geometry(
+                    xy,
+                    contacts,
+                    apex=apex,
+                    contact_points=contacts,
+                )
+                ctx.liquid_geometry = liquid_geometry
+            if liquid_geometry is not None:
+                if liquid_geometry.status != "complete":
+                    ctx.qa = {
+                        "ok": False,
+                        "rejection_reasons": list(liquid_geometry.rejection_reasons),
+                    }
+                    ctx.detector_diagnostics["liquid_geometry"] = {
+                        "status": liquid_geometry.status,
+                        "rejection_reasons": list(liquid_geometry.rejection_reasons),
+                    }
+                    return ctx
+                if liquid_geometry.contact_points is not None and liquid_geometry.observed_surface is not None:
+                    xy = np.vstack(
+                        [
+                            liquid_geometry.contact_points[0],
+                            np.asarray(liquid_geometry.observed_surface, dtype=float),
+                            liquid_geometry.contact_points[1],
+                        ]
+                    )
             xy = _clip_contour_at_pendant_contacts(
                 xy, getattr(ctx, "contact_points", None)
             )
@@ -488,7 +528,7 @@ class PendantPipeline(PipelineBase):
                     f"needle_diameter_mm={needle_diameter_mm} but no needle_rect detected for calibration"
                 )
 
-        ctx.scale = {"px_per_mm": px_per_mm if px_per_mm > 0 else 1.0}
+        ctx.scale = {"px_per_mm": px_per_mm} if px_per_mm > 0 else {}
         return ctx
 
     def do_physics(self, ctx: Context) -> Context | None:

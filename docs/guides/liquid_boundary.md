@@ -17,14 +17,15 @@ there is no smoothing, convex hull or approximate simplification.
 The wizard and applied calibration overlays use the boundary, including its
 display contact points. The calibration service updates it after restoring
 manual regions, and drawing a new manual region refreshes the display geometry.
-Measured contours and analytical contact points remain unchanged for fitting.
-Replacing those samples with a closed display region caused scientific
-regressions during development, so that approach was not retained.
+Raw measured contours remain diagnostic evidence. `LiquidGeometry` is the
+authoritative apex-side result for straight boundaries: it keeps observed
+free-surface samples separate from the closed region used for display and area.
+The closing contact segment is never passed to edge or profile fitting.
 
-Missing or degenerate contact geometry retains the legacy contour behavior.
-This implements straight contact chords, not curved substrate boundaries, and
-does not repair an incorrectly selected droplet component or wrong contact
-points. Scientific stage/debug contour views still represent measured data.
+Missing, degenerate, or ambiguous straight contact geometry is unresolved; it
+is not closed through a substrate, reflection, or needle mask. Automatic
+detection proposes straight lines only. Explicit manual circular profiles keep
+their existing local-tangent handling; rough interfaces require user review.
 
 ## Validation
 

@@ -65,6 +65,10 @@ class DialogCoordinator(QObject):
         self.preprocessing_ctrl = preprocessing_ctrl
         self.edge_detection_ctrl = edge_detection_ctrl
         self._load_image = image_loader  # Callable to load current image for previews
+        # PySide logs a RuntimeWarning when disconnect() is called for a slot
+        # that is no longer connected. Dialog cleanup can be reached through
+        # more than one close path, so retain the connection we actually made.
+        self._dialog_preview_connections: dict[int, object] = {}
 
     def set_image_loader(self, loader: callable) -> None:
         """Set the image loader callable for preview generation."""
@@ -135,8 +139,7 @@ class DialogCoordinator(QObject):
 
         # Connect preview signals
         self._connect_edge_preview_to_dialog(dialog)
-        if hasattr(dialog, "previewRequested"):
-            dialog.previewRequested.connect(self._on_edge_detection_preview)
+        self._connect_dialog_preview(dialog, self._on_edge_detection_preview)
 
         dialog.configApplied.connect(_apply)
         try:
@@ -170,8 +173,7 @@ class DialogCoordinator(QObject):
 
         # Connect preview signals
         self._connect_edge_preview_to_dialog(dialog)
-        if hasattr(dialog, "previewRequested"):
-            dialog.previewRequested.connect(self._on_geometry_preview)
+        self._connect_dialog_preview(dialog, self._on_geometry_preview)
 
         dialog.configApplied.connect(_apply)
         try:
@@ -181,11 +183,6 @@ class DialogCoordinator(QObject):
                 logger.info("Geometry configuration cancelled")
         finally:
             self._cleanup_dialog_connections(dialog, _apply)
-            try:
-                if hasattr(dialog, "previewRequested"):
-                    dialog.previewRequested.disconnect(self._on_geometry_preview)
-            except Exception:
-                pass
 
     def _show_preprocessing_dialog(self) -> None:
         """Show the preprocessing configuration dialog."""
@@ -201,7 +198,7 @@ class DialogCoordinator(QObject):
             self.preprocessing_ctrl.settings, parent=self.window
         )
         self.preprocessing_ctrl.previewReady.connect(dialog._on_preview_image_ready)
-        dialog.previewRequested.connect(self._on_preprocessing_preview)
+        self._connect_dialog_preview(dialog, self._on_preprocessing_preview)
 
         if dialog.exec() == QDialog.Accepted:
             self.preprocessing_ctrl.set_settings(dialog.settings())
@@ -212,6 +209,7 @@ class DialogCoordinator(QObject):
         else:
             logger.info("Preprocessing configuration cancelled")
 
+        self._disconnect_dialog_preview(dialog)
         self.preprocessing_ctrl.previewReady.disconnect(dialog._on_preview_image_ready)
 
     def _show_edge_detection_dialog(self) -> None:
@@ -230,7 +228,7 @@ class DialogCoordinator(QObject):
 
         # Connect preview feed
         self._connect_edge_preview_to_dialog(dialog)
-        dialog.previewRequested.connect(self._on_edge_detection_preview)
+        self._connect_dialog_preview(dialog, self._on_edge_detection_preview)
 
         try:
             if dialog.exec() == QDialog.Accepted:
@@ -242,10 +240,7 @@ class DialogCoordinator(QObject):
             else:
                 logger.info("Edge Detection configuration cancelled")
         finally:
-            try:
-                dialog.previewRequested.disconnect(self._on_edge_detection_preview)
-            except Exception:
-                pass
+            self._disconnect_dialog_preview(dialog)
             try:
                 if hasattr(self.edge_detection_ctrl, "previewRequested") and hasattr(
                     dialog, "_on_preview_image_ready"
@@ -301,6 +296,22 @@ class DialogCoordinator(QObject):
                 "Could not connect edge detection preview to dialog", exc_info=True
             )
 
+    def _connect_dialog_preview(self, dialog, slot) -> None:
+        """Connect one dialog preview slot and record the exact connection."""
+        if not hasattr(dialog, "previewRequested"):
+            return
+        key = id(dialog)
+        if key in self._dialog_preview_connections:
+            return
+        dialog.previewRequested.connect(slot)
+        self._dialog_preview_connections[key] = slot
+
+    def _disconnect_dialog_preview(self, dialog) -> None:
+        """Disconnect a preview slot only when this coordinator connected it."""
+        slot = self._dialog_preview_connections.pop(id(dialog), None)
+        if slot is not None:
+            dialog.previewRequested.disconnect(slot)
+
     def _cleanup_dialog_connections(self, dialog, apply_callback) -> None:
         """Cleanup signal connections after dialog closes."""
         try:
@@ -314,11 +325,7 @@ class DialogCoordinator(QObject):
                 )
         except Exception:
             pass
-        try:
-            if hasattr(dialog, "previewRequested"):
-                dialog.previewRequested.disconnect(self._on_edge_detection_preview)
-        except Exception:
-            pass
+        self._disconnect_dialog_preview(dialog)
 
     @Slot(object)
     def _on_preprocessing_preview(self, settings) -> None:

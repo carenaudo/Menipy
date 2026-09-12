@@ -134,6 +134,7 @@ class OverlayManager:
                 layer="markers",
                 tag="cal_contact_left",
             )
+            self.image_view.add_marker_text("P1", QPointF(left[0] + 7, left[1] - 7), color=QColor(255, 0, 0), layer="markers", tag="cal_contact_left_label")
             self.image_view.add_marker_point(
                 QPointF(right[0], right[1]),
                 color=QColor(255, 0, 0),
@@ -141,6 +142,7 @@ class OverlayManager:
                 layer="markers",
                 tag="cal_contact_right",
             )
+            self.image_view.add_marker_text("P2", QPointF(right[0] + 7, right[1] - 7), color=QColor(255, 0, 0), layer="markers", tag="cal_contact_right_label")
 
         if getattr(result, "apex_point", None):
             apex = result.apex_point
@@ -152,6 +154,7 @@ class OverlayManager:
                 layer="markers",
                 tag="apex",
             )
+            self.image_view.add_marker_text("Apex", QPointF(apex[0] + 7, apex[1] - 7), color=QColor(255, 0, 0), layer="markers", tag="apex_label")
 
         # Draw drop contour
         if result.drop_contour is not None:

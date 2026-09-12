@@ -130,7 +130,14 @@ def build_persisted_analysis(ctx: Any) -> dict[str, Any]:
             physical_values_withheld=not calibration.physical_values_enabled,
         )
         if not calibration.physical_values_enabled:
-            raw_results = {}
+            # Contact angles are dimensionless image geometry. Do not hide a
+            # supported geometric result merely because no mm scale was chosen.
+            raw_results = {
+                key: value
+                for key, value in raw_results.items()
+                if key.startswith("theta_")
+                or key in {"contact_angle_deg", "availability", "diagnostics"}
+            }
     return {
         "accepted": accepted,
         "rejection_reasons": reasons,

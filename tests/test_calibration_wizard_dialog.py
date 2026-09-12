@@ -42,11 +42,13 @@ def test_worker_calibration_preserves_manual_regions(monkeypatch):
     monkeypatch.setattr(
         auto_calibrator.AutoCalibrator, "_segment_image_adaptive", lambda _: None
     )
-    monkeypatch.setattr(
-        auto_calibrator.AutoCalibrator,
-        "_detect_drop_sessile",
-        lambda _: (None, None, 0),
-    )
+    received_roi = []
+
+    def detect_drop(calibrator):
+        received_roi.append(getattr(calibrator, "_roi_rect", None))
+        return None, None, 0
+
+    monkeypatch.setattr(auto_calibrator.AutoCalibrator, "_detect_drop_sessile", detect_drop)
     _, result = CalibrationComputation(
         np.zeros((32, 32, 3), dtype=np.uint8), "sessile", manual
     ).run()
@@ -54,3 +56,4 @@ def test_worker_calibration_preserves_manual_regions(monkeypatch):
     assert result.needle_rect == manual.needle_rect
     assert result.substrate_line == manual.substrate_line
     assert result.confidence_scores["substrate"] == 1.0
+    assert received_roi == [manual.roi_rect]

@@ -140,6 +140,9 @@ Calibration display boundaries are separated from measured contours by
 `common/liquid_boundary.py` and `CalibrationResult.liquid_boundary`. See
 [liquid boundary](guides/liquid_boundary.md), `tests/test_liquid_boundary.py`,
 and `tools/preview_liquid_boundary.py` for geometry and offscreen visual checks.
+`LiquidGeometry` is the authoritative apex-side surface/contact contract for
+straight boundaries; raw contours remain detector evidence. See
+`tests/test_liquid_geometry_contract.py` for tilted-line and crossing coverage.
 
 ```mermaid
 flowchart LR

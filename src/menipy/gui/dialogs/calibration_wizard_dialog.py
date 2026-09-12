@@ -573,6 +573,8 @@ class CalibrationWizardDialog(QDialog):
                 left, right = [tuple(np.rint(point).astype(int)) for point in boundary[[0, -1]]]
             cv2.circle(overlay, left, 5, (0, 0, 255), -1)  # Red
             cv2.circle(overlay, right, 5, (0, 0, 255), -1)
+            cv2.putText(overlay, "P1", (left[0] + 7, left[1] - 7), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 1)
+            cv2.putText(overlay, "P2", (right[0] + 7, right[1] - 7), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 1)
             # Draw connecting line for visibility
             cv2.line(overlay, left, right, (0, 0, 255), 1)
 
@@ -787,10 +789,13 @@ class CalibrationWizardDialog(QDialog):
                 y = min(p1[1], p2[1])
                 w = abs(p2[0] - p1[0])
                 h = abs(p2[1] - p1[1])
-                # Needle should be vertical, so ensure minimum width
-                if w < 10:
-                    w = 40
-                    x = x - 20
+                # A needle exclusion is a real user-drawn rectangle. Do not
+                # manufacture a 40 px width from a line: that value used to
+                # leak into physical calibration as an invented scale.
+                if w < 2 or h < 2:
+                    logger.warning("Manual needle region is too small; ignoring it")
+                    self._drawing_mode = None
+                    return
                 self.result.needle_rect = (x, y, w, h)
                 self.result.confidence_scores["needle"] = 1.0
                 logger.info(f"Manual needle rect set: ({x}, {y}, {w}, {h})")

@@ -124,6 +124,24 @@ def test_dynamic_states_summary_and_raw_series_are_deterministic(monkeypatch):
     assert first.diagnostics["raw_values_promoted"] is True
 
 
+def test_confirmed_substrate_is_locked_while_each_frame_is_checked(monkeypatch):
+    _install_sequence_stubs(monkeypatch)
+    frames = [Frame(image=np.zeros((160, 200), dtype=np.uint8)) for _ in range(30)]
+    reference = ((0.0, 118.0), (199.0, 118.0))
+    result = analyze_dynamic_sessile(
+        frames,
+        _metadata(),
+        px_per_mm=10.0,
+        needle_diameter_mm=None,
+        reference_substrate_line=reference,
+    )
+
+    assert result.accepted
+    assert result.calibration["substrate_reference_line"] == reference
+    assert result.calibration["substrate_reference_source"] == "confirmed"
+    assert all(frame.baseline == reference for frame in result.frames if frame.accepted)
+
+
 def test_short_occlusion_reacquires_without_interpolation(monkeypatch):
     _install_sequence_stubs(monkeypatch, gap=range(12, 15))
     frames = [Frame(image=np.zeros((160, 200), dtype=np.uint8)) for _ in range(30)]

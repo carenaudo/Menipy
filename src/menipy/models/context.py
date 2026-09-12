@@ -19,7 +19,7 @@ from .config import (
 from .fit import Fit
 from .frame import Frame
 from .frame_store import DiskFrameStore
-from .geometry import Contour, Geometry, SubstrateProfile
+from .geometry import Contour, Geometry, LiquidGeometry, SubstrateProfile
 from .result import Result
 from .state import MarkerSet
 from .temporal import DynamicSessileResult, SequenceMetadata, TemporalFrameResult
@@ -58,6 +58,7 @@ class Context(BaseModel):
     contours_by_frame: list[Contour] = Field(default_factory=list)
     fluid_interface_contour: Contour | None = None
     solid_interface_contour: Contour | None = None
+    liquid_geometry: LiquidGeometry | None = None
 
     # Geometry / scaling / physics
     detected_geometry: Geometry | None = None

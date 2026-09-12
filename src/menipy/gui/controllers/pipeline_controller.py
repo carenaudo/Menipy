@@ -83,10 +83,14 @@ class PipelineController:
             overlays["roi"] = roi_rect
 
         needle_rect = preview.needle_rect() if hasattr(preview, "needle_rect") else None
-        if not needle_rect:
-            missing.append("needle region")
-        else:
+        if needle_rect:
             overlays["needle_rect"] = needle_rect
+        # Ordinary sessile contact-angle analysis needs a contact boundary and
+        # visible liquid flanks, not a dispensing needle. Needle-in-drop is a
+        # separate analysis mode with its own requirements.
+        pipeline_name = str(self.setup_ctrl.gather_run_params().get("name", "")).lower()
+        if pipeline_name == "needle_hysteresis" and not needle_rect:
+            missing.append("needle region")
 
         requires_contact = bool(
             getattr(self.window.settings, "acquisition_requires_contact_line", False)
@@ -155,6 +159,12 @@ class PipelineController:
             payload["contact_points"] = result.contact_points
         if getattr(result, "apex_point", None):
             payload["apex_point"] = result.apex_point
+        if getattr(result, "substrate_line", None):
+            payload["substrate_line"] = result.substrate_line
+        if getattr(result, "substrate_profile", None):
+            payload["substrate_profile"] = result.substrate_profile
+        if getattr(result, "liquid_geometry", None):
+            payload["liquid_geometry"] = result.liquid_geometry
         return payload
 
     def _build_pipeline_run_kwargs(
@@ -209,31 +219,45 @@ class PipelineController:
         except (ValueError, TypeError):
             needle_diameter_mm = 0.54
         needle_rect = overlays.get("needle_rect")
-        if (
-            needle_rect
-            and isinstance(needle_diameter_mm, (int, float))
-            and needle_diameter_mm > 0
-        ):
+        supplied_scale = calibration_params.get("px_per_mm")
+        spatial = calibration_params.get("spatial_calibration") or {}
+        px_per_mm = None
+        scale_method = "uncalibrated"
+        if spatial.get("method") == "known_distance":
             try:
-                px_per_mm = float(needle_rect[2]) / needle_diameter_mm
-            except Exception:
-                px_per_mm = 100.0 / max(needle_diameter_mm or 0.1, 0.1)
-        else:
-            px_per_mm = 100.0 / max(needle_diameter_mm or 0.1, 0.1)
-            warnings.append("Needle width was unavailable; using fallback scale.")
+                from menipy.common.spatial_calibration import (
+                    px_per_mm_from_known_distance,
+                )
+
+                px_per_mm = px_per_mm_from_known_distance(
+                    spatial.get("segment"), spatial.get("distance_mm")
+                )
+                scale_method = "known_distance"
+            except (TypeError, ValueError):
+                warnings.append("Known-distance calibration is invalid; review its segment and distance.")
+        elif isinstance(supplied_scale, (int, float)) and np.isfinite(supplied_scale) and supplied_scale > 0:
+            px_per_mm = float(supplied_scale)
+            scale_method = "direct"
+        elif needle_rect and isinstance(needle_diameter_mm, (int, float)) and needle_diameter_mm > 0:
+            width = float(needle_rect[2])
+            if width > 0:
+                px_per_mm = width / needle_diameter_mm
+                scale_method = "needle_diameter"
+        if px_per_mm is None:
+            warnings.append("No spatial calibration is available; physical values will be withheld.")
 
         run_kwargs = dict(overlays)
         run_kwargs["calibration_params"] = calibration_params
-        run_kwargs["scale"] = {"px_per_mm": px_per_mm}
+        if px_per_mm is not None:
+            run_kwargs["scale"] = {"px_per_mm": px_per_mm}
         calibration_result = getattr(self.window, "_last_calibration_result", None)
         run_kwargs["calibration_provenance"] = {
-            "origin": "measured"
-            if needle_rect
-            and calibration_result is not None
-            and "needle" not in getattr(calibration_result, "manual_regions", [])
-            else "manual"
-            if needle_rect
-            else "estimated",
+            "origin": "measured" if scale_method == "needle_diameter" else "manual" if scale_method == "direct" else "missing",
+            "method": scale_method,
+            "px_per_mm": px_per_mm,
+            "reference_id": spatial.get("reference_id"),
+            "reference_geometry": {"segment": spatial.get("segment")} if spatial.get("segment") else {},
+            "entered_distance_mm": spatial.get("distance_mm"),
             "warnings": list(warnings),
             "component_confidence": dict(
                 getattr(calibration_result, "confidence_scores", {}) or {}

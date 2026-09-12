@@ -83,7 +83,7 @@ class FolderController(QObject):
         self.button.setEnabled(not self.runner.busy)
         self.results_button.setVisible(bool(self.requests))
         self.button.setToolTip(
-            "Analyze each image independently with automatic calibration for each file; selected-image regions are not reused."
+            "Analyze each image independently. A confirmed sessile substrate line is reused and checked in every image."
         )
         try:
             count = len(folder_images(self.setup.batch_path())) if folder else 0
@@ -125,7 +125,9 @@ class FolderController(QObject):
             )
             requests = []
             for path in files:
-                # Independent images must not inherit detections from the selected preview.
+                # Independent images must not inherit drop/needle detections.
+                # A confirmed sessile substrate is a sample reference and is
+                # deliberately retained for every image in the set.
                 owned = dict(parameters)
                 for key in (
                     "image",
@@ -135,6 +137,7 @@ class FolderController(QObject):
                     "needle_rect",
                     "contact_line",
                     "substrate_line",
+                    "substrate_profile",
                     "drop_contour",
                     "detected_contour",
                     "contact_points",
@@ -144,7 +147,8 @@ class FolderController(QObject):
                     "preprocessing_markers",
                     "calibration_provenance",
                 ):
-                    owned.pop(key, None)
+                    if key not in {"substrate_line", "substrate_profile"}:
+                        owned.pop(key, None)
                 owned.update(image=path, camera=None, auto_calibrate=True)
                 requests.append(
                     RunRequest.create(name, owned, revision="folder-history")

@@ -24,7 +24,7 @@ from menipy.common.sessile_detection import (
     detect_sessile_substrate_robust,
     segment_sessile_binary,
 )
-from menipy.models.geometry import SubstrateProfile
+from menipy.models.geometry import LiquidGeometry, SubstrateProfile
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +48,7 @@ class CalibrationResult:
     drop_contour: np.ndarray | None = None
     # Display/region closure; kept separate from measured samples used by fits.
     liquid_boundary: np.ndarray | None = field(default=None, kw_only=True)
+    liquid_geometry: LiquidGeometry | None = field(default=None, kw_only=True)
 
     # ROI as (x, y, width, height) encompassing the region of interest
     roi_rect: tuple[int, int, int, int] | None = None
@@ -510,6 +511,7 @@ class AutoCalibrator:
             needle_rect=self._needle_rect,
             min_area_fraction=self.min_area_fraction,
             needle_shaft_result=getattr(self, "_sessile_shaft_result", None),
+            roi_rect=getattr(self, "_roi_rect", None),
         )
         self._drop_contour = detection.contour
         if detection.binary_mask is not None:
