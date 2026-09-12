@@ -854,7 +854,7 @@ class PendantPipeline(PipelineBase):
             except Exception:
                 pass
         zone_xy = (ctx.results or {}).get("clothoid_zones_model_contour_xy")
-        if zone_xy and ((ctx.results or {}).get("clothoid_zones") or {}).get("accepted"):
+        if zone_xy:
             cmds.append(
                 {
                     "type": "polyline",

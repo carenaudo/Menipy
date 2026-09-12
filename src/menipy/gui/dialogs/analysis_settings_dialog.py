@@ -190,6 +190,9 @@ class AnalysisSettingsDialog(QDialog):
         form.setSpacing(10)
 
         # Import specific registry for edge detectors
+        from menipy.common import plugins
+
+        plugins.ensure_loaded()
         from menipy.common.registry import EDGE_DETECTORS
 
         # Get available methods from registry, fallback to defaults if empty

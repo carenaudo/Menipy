@@ -608,7 +608,17 @@ class SessilePipeline(PipelineBase):
                             "closed": False,
                             "color": "cyan",
                             "thickness": 1,
+                            "tag": (
+                                "sessile_arc_spline"
+                                if key == "arc_spline_model_contour_xy"
+                                else "sessile_lbadsa"
+                            ),
+                            "layer": "fit",
                         }
                     )
 
+        # Keep the structured commands alongside the raster preview so the GUI
+        # can render/toggle the fitted contour without changing the preview
+        # image or the authoritative result payload.
+        ctx.overlay_commands = cmds
         return ovl.run(ctx, commands=cmds, alpha=0.6)

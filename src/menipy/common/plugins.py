@@ -102,6 +102,16 @@ def _register_from_module(mod) -> None:
                 for name, fn in d.items():
                     reg_fn(name, fn)
 
+    # Detector settings are consumed by the GUI independently of detector
+    # execution.  Support the same declarative registration style for them so
+    # dynamically loaded detectors fully participate in the settings flow.
+    from .plugin_settings import register_detector_settings
+
+    detector_settings = getattr(mod, "DETECTOR_SETTINGS", None)
+    if isinstance(detector_settings, dict):
+        for name, settings_model in detector_settings.items():
+            register_detector_settings(name, settings_model)
+
 
 def discover_into_db(db: PluginDB, plugin_dirs: Iterable[Path]) -> int:
     """

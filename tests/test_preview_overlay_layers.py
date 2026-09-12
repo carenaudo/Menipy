@@ -111,6 +111,73 @@ def test_preview_fit_polyline_is_open(qtbot):
     assert path.elementCount() == 3
 
 
+def test_preview_renders_sessile_arc_spline_as_fit_overlay(qtbot):
+    widget = _load_preview_panel()
+    qtbot.addWidget(widget)
+    panel = PreviewPanel(widget, ImageView, DummySettings())
+    panel.display_context(
+        SimpleNamespace(
+            image=np.zeros((80, 100, 3), dtype=np.uint8),
+            preview=None,
+            overlay_commands=[
+                {
+                    "type": "polyline",
+                    "points": [[10, 60], [25, 30], [40, 15], [55, 30], [70, 60]],
+                    "closed": False,
+                    "tag": "sessile_arc_spline",
+                    "layer": "fit",
+                }
+            ],
+        )
+    )
+
+    item = _item(panel.image_view, "sessile_arc_spline")
+    assert item.isVisible()
+    assert item.path().elementCount() == 5
+
+    widget.findChild(QCheckBox, "showFitCheck").setChecked(False)
+    assert not item.isVisible()
+    assert panel.image_view.has_overlay("sessile_arc_spline")
+
+
+def test_preview_renders_pendant_clothoid_zones_as_fit_overlay(qtbot):
+    widget = _load_preview_panel()
+    qtbot.addWidget(widget)
+    panel = PreviewPanel(widget, ImageView, DummySettings())
+    panel.display_context(
+        SimpleNamespace(
+            image=np.zeros((100, 120, 3), dtype=np.uint8),
+            preview=None,
+            overlay_commands=[
+                {
+                    "type": "polyline",
+                    "points": [[50, 10], [45, 35], [40, 70]],
+                    "closed": False,
+                    "tag": "pendant_clothoid_zones",
+                    "layer": "fit",
+                }
+            ],
+        )
+    )
+
+    item = _item(panel.image_view, "pendant_clothoid_zones")
+    assert item.isVisible()
+    assert item.path().elementCount() == 3
+
+    panel.render_overlay_commands(
+        [
+            {
+                "type": "polyline",
+                "points": [[10, 10], [20, 20]],
+                "closed": False,
+                "tag": "result_contour",
+                "layer": "contour",
+            }
+        ]
+    )
+    assert not panel.image_view.has_overlay("pendant_clothoid_zones")
+
+
 def test_display_context_prefers_base_image_and_rendered_commands(qtbot):
     widget = _load_preview_panel()
     qtbot.addWidget(widget)

@@ -93,6 +93,12 @@ class EdgeDetectionConfigDialog(QDialog):
     def _build_ui(self) -> None:
         self.setMinimumSize(680, 440)
 
+        # Populate the method selector from active plugins discovered through
+        # the standard plugin database, including their settings models.
+        from menipy.common import plugins
+
+        plugins.ensure_loaded()
+
         outer = QVBoxLayout(self)
         outer.setContentsMargins(12, 12, 12, 12)
         outer.setSpacing(12)

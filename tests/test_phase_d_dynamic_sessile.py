@@ -156,6 +156,37 @@ def test_dynamic_exports_have_stable_long_form_without_contours(monkeypatch, tmp
         assert len(list(reader)) == 30
 
 
+def test_dynamic_pipeline_promotes_hydrodynamics_end_to_end(monkeypatch, tmp_path):
+    """The discovered pipeline carries the additive summary fields to exports."""
+    _install_sequence_stubs(monkeypatch)
+    from menipy.pipelines.sessile_dynamic import DynamicSessilePipeline
+
+    frames = [np.zeros((160, 200), dtype=np.uint8) for _ in range(30)]
+    ctx = DynamicSessilePipeline().run(
+        frames=frames,
+        sequence_fps=10.0,
+        px_per_mm=10.0,
+    )
+
+    assert ctx.dynamic_sessile_result is not None
+    assert ctx.results["pipeline"] == "sessile_dynamic"
+    assert ctx.results["schema_version"] == "1.0"
+    assert ctx.results["theta_advancing_deg"] == pytest.approx(120.0)
+    assert ctx.results["theta_receding_deg"] == pytest.approx(80.0)
+    # No tilt/Cox fit is fabricated for this level substrate fixture, but the
+    # contract fields are present and serializable as optional values.
+    assert "cox_voinov_theta_equilibrium_deg" in ctx.results
+    assert ctx.results["tilt_range_deg"] == pytest.approx(0.0)
+
+    paths = export_dynamic_result(ctx.dynamic_sessile_result, tmp_path)
+    with paths["summary_csv"].open(newline="", encoding="utf-8") as handle:
+        row = next(csv.DictReader(handle))
+    assert row["pipeline"] == "sessile_dynamic"
+    assert row["schema_version"] == "1.0"
+    assert "cox_voinov_theta_equilibrium_deg" in row
+    assert "critical_sliding_angle_deg" in row
+
+
 def test_pipeline_is_discovered_without_changing_static_sessile():
     assert "sessile_dynamic" in PIPELINE_MAP
     assert PIPELINE_MAP["sessile"].name == "sessile"

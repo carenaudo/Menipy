@@ -20,6 +20,7 @@ from menipy.math.hydrodynamics import (
 )
 from menipy.models.frame import Frame
 from menipy.models.temporal import (
+    DYNAMIC_SUMMARY_FIELDS,
     DynamicSessileResult,
     SequenceMetadata,
     TemporalFrameResult,
@@ -318,12 +319,15 @@ def _summarize(frames: list[TemporalFrameResult], fps: float) -> dict[str, Any]:
 
     # Substrate inclination and tilting plate analysis
     tilting_data = analyze_tilting_plate(frames)
+    summary["tilt_range_deg"] = float(tilting_data.get("tilt_range_deg", 0.0))
     if tilting_data.get("is_tilting", False):
         summary["tilting_plate"] = tilting_data
-        if tilting_data.get("critical_sliding_angle_deg") is not None:
-            summary["critical_sliding_angle_deg"] = tilting_data[
-                "critical_sliding_angle_deg"
-            ]
+        for field in DYNAMIC_SUMMARY_FIELDS:
+            if field in tilting_data:
+                summary[field] = tilting_data[field]
+
+    for field in DYNAMIC_SUMMARY_FIELDS:
+        summary.setdefault(field, None)
 
     return summary
 
@@ -600,6 +604,7 @@ def export_dynamic_result(
         "theta_advancing_deg",
         "theta_receding_deg",
         "contact_angle_hysteresis_deg",
+        *DYNAMIC_SUMMARY_FIELDS,
     ]
     summary_row = {
         "pipeline": result.pipeline,
@@ -608,7 +613,11 @@ def export_dynamic_result(
         "rejection_reasons": ";".join(result.rejection_reasons),
         "source_id": result.metadata.source_id,
         "fps": result.metadata.fps,
-        **{key: result.summary.get(key, "") for key in summary_columns},
+        **{
+            key: result.summary.get(key, "")
+            for key in summary_columns
+            if key not in {"pipeline", "schema_version"}
+        },
     }
     with summary_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(

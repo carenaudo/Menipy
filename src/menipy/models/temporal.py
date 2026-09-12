@@ -67,3 +67,28 @@ class DynamicSessileResult(BaseModel):
     summary: dict[str, Any] = Field(default_factory=dict)
     frames: list[TemporalFrameResult] = Field(default_factory=list)
     diagnostics: dict[str, Any] = Field(default_factory=dict)
+
+
+# These are the scalar, sequence-level fields promoted by the dynamic result
+# contract.  The nested ``cox_voinov_*`` and ``tilting_plate`` objects remain
+# in ``summary`` for auditability; these columns make the common values easy to
+# consume without requiring knowledge of the nested payload.
+DYNAMIC_SUMMARY_FIELDS: tuple[str, ...] = (
+    "cox_voinov_theta_advancing_deg",
+    "cox_voinov_theta_receding_deg",
+    "cox_voinov_theta_equilibrium_deg",
+    "cox_voinov_hysteresis_deg",
+    "tilt_range_deg",
+    "critical_sliding_angle_deg",
+    "critical_frame_index",
+    "theta_advancing_critical_deg",
+    "theta_receding_critical_deg",
+)
+
+__all__ = [
+    "TemporalState",
+    "SequenceMetadata",
+    "TemporalFrameResult",
+    "DynamicSessileResult",
+    "DYNAMIC_SUMMARY_FIELDS",
+]

@@ -117,6 +117,7 @@ class DynamicSessilePipeline(PipelineBase):
         ctx.dynamic_sessile_result = dynamic
         ctx.temporal_frame_results = dynamic.frames
         ctx.results = {
+            "pipeline": dynamic.pipeline,
             "schema_version": dynamic.schema_version,
             **dynamic.summary,
             "series": [
