@@ -1,0 +1,4 @@
+Tensión interfacial	     	      	         	Otros resultados	                           	       	      	      	Sistema     	            	          	Parámetros de medición   	Miscelánea
+IFT [mN/m]         	Wo   	Estado	Fit SL   	Volumen [µl]    	Superficie de la gota [mm²]	ß      	R     	f [°] 	?(d) [g/cm³]	?(a) [g/cm³]	?? [g/cm³]	Tamaño de referencia [mm]	Referencia [px/mm]
+72,41              	0,409	Ok    	Automatic	17,40           	32,447                     	-0,2831	102,91	178,89	0,9982      	0,0013      	0,9969    	1,83                     	71,076
+                   	     	      	         	                	                           	       	      	      	            	            	          	                         	 

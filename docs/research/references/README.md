@@ -75,6 +75,10 @@ of September 2026, 110.7° / 119.1° after — still well above the instrument's
 and a reflective substrate.
 
 ---
+TODO: Buscar fotos aca
+https://www.nature.com/articles/srep21048
+https://pubs.rsc.org/ra/article/7/55/34321/580193/A-comparative-analysis-of-antibacterial-properties
+https://pubs.acs.org/aamick/article-supplement/703588/pdf/am7b03094_si_001/
 
 ## Searched, not usable as ground truth
 

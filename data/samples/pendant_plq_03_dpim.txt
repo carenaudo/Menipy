@@ -1,0 +1,4 @@
+Tensión interfacial	     	      	         	Otros resultados	                           	       	      	      	Sistema        	             	            	            	          	Miscelánea
+IFT [mN/m]         	Wo   	Estado	Fit SL   	Volumen [µl]    	Superficie de la gota [mm²]	ß      	R     	f [°] 	Fase de la gota	Fase ambiente	?(d) [g/cm³]	?(a) [g/cm³]	?? [g/cm³]	Referencia [px/mm]
+53,25              	0,283	Ok    	Automatic	8,86            	19,967                     	-0,2609	256,91	179,85	Water          	Air          	0,9982      	0,0013      	0,9969    	215,528
+                   	     	      	         	                	                           	       	      	      	               	             	            	            	          	 
