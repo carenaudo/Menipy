@@ -71,6 +71,7 @@ class CalibrationComputation:
             self.result.manual_regions.append("roi")
             self.result.roi_rect = manual_roi
             self.result.confidence_scores["roi"] = 1.0
+            need_redetect_drop = True
         if manual_needle:
             self.result.manual_regions.append("needle")
             self.result.needle_rect = manual_needle
@@ -79,19 +80,24 @@ class CalibrationComputation:
                 True  # Need to re-detect drop with correct needle filter
             )
 
-        # Re-run drop detection if manual substrate/needle was set
-        # This ensures drop is detected relative to correct substrate line
-        if need_redetect_drop and manual_substrate:
+        # Sessile segmentation currently needs a row mask, but the supplied
+        # tilted line is retained as the authoritative contact boundary. Pendant
+        # geometry must never be routed through the sessile detector.
+        if need_redetect_drop and self.pipeline_name == "sessile":
             logger.info("Re-running drop detection with manual substrate line...")
             calibrator = AutoCalibrator(self.original_image, self.pipeline_name)
-            # Set the correct substrate_y from manual line
-            p1, p2 = manual_substrate
-            calibrator._substrate_y = (p1[1] + p2[1]) // 2
+            if manual_substrate:
+                p1, p2 = manual_substrate
+                calibrator._substrate_y = int(round((p1[1] + p2[1]) / 2.0))
+            else:
+                calibrator._detect_substrate()
             # Set needle rect if available
             if manual_needle:
                 calibrator._needle_rect = manual_needle
             elif self.result.needle_rect:
                 calibrator._needle_rect = self.result.needle_rect
+            if manual_roi:
+                calibrator._roi_rect = manual_roi
             # Segment and detect drop
             calibrator._segment_image_adaptive()
             drop_contour, contact_pts, drop_conf = calibrator._detect_drop_sessile()
@@ -114,28 +120,19 @@ class CalibrationComputation:
         if not allow_fallback:
             return primary
 
-        supported_detectors = {"pendant", "sessile"}
-        candidates = (
-            [(self.pipeline_name, primary)]
-            if self.pipeline_name in supported_detectors
-            else []
-        )
-        for detector_name in ("pendant", "sessile"):
-            check_cancelled()
-            if detector_name == self.pipeline_name:
-                continue
-            try:
-                candidates.append(
-                    (detector_name, runner(self.original_image, detector_name))
-                )
-            except Exception:
-                logger.debug(
-                    "Fallback auto-calibration failed for %s",
-                    detector_name,
-                    exc_info=True,
-                )
-
+        # Only named adapter modes may select a detector family. A sessile or
+        # pendant request is never silently reinterpreted from aggregate score.
         preferred_fallback = {"captive_bubble": "pendant"}.get(self.pipeline_name)
+        if preferred_fallback is None:
+            primary.confidence_scores.setdefault("detector_pipeline", self.pipeline_name)
+            return primary
+        candidates = [(self.pipeline_name, primary)]
+        if preferred_fallback != self.pipeline_name:
+            try:
+                candidates.append((preferred_fallback, runner(self.original_image, preferred_fallback)))
+            except Exception:
+                logger.debug("Fallback auto-calibration failed for %s", preferred_fallback, exc_info=True)
+
         if preferred_fallback is not None:
             for detector_name, candidate in candidates:
                 if (
@@ -150,9 +147,7 @@ class CalibrationComputation:
         )
         primary_score = self._calibration_score(primary)
         best_score = self._calibration_score(best)
-        if self.pipeline_name not in supported_detectors or (
-            best is not primary and best_score > primary_score + 0.15
-        ):
+        if best is not primary and best_score > primary_score + 0.15:
             best.confidence_scores["detector_pipeline"] = best_name
             logger.info(
                 "Auto-calibration used %s detector instead of %s (score %.2f > %.2f)",
@@ -210,11 +205,7 @@ def prepare_stage_calibration(pipeline, parameters):
         not supplied and bool(parameters.get("scale"))
     )
 
-    fallback_warnings = (
-        []
-        if parameters.get("needle_rect")
-        else ["Needle width was unavailable; using fallback scale."]
-    )
+    fallback_warnings: list[str] = []
 
     image = parameters.get("image")
     if isinstance(image, (str, Path)):
@@ -244,9 +235,20 @@ def prepare_stage_calibration(pipeline, parameters):
             for key in keys:
                 if parameters.get(key) is None:
                     parameters[key] = value
-    diameter = float(
-        (parameters.get("calibration_params") or {}).get("needle_diameter_mm", 0.54)
-    )
+    calibration_params = parameters.get("calibration_params") or {}
+    spatial = calibration_params.get("spatial_calibration") or {}
+    if spatial.get("method") == "known_distance":
+        try:
+            from menipy.common.spatial_calibration import px_per_mm_from_known_distance
+
+            parameters["scale"] = {
+                "px_per_mm": px_per_mm_from_known_distance(
+                    spatial.get("segment"), spatial.get("distance_mm")
+                )
+            }
+        except (TypeError, ValueError):
+            pass
+    diameter = float(calibration_params.get("needle_diameter_mm", 0.54))
     if result.needle_rect and diameter > 0 and not manual_scale:
         parameters["scale"] = {"px_per_mm": result.needle_rect[2] / diameter}
     parameters["calibration_provenance"] = {
@@ -254,9 +256,9 @@ def prepare_stage_calibration(pipeline, parameters):
         if manual_scale
         else "measured"
         if result.needle_rect and diameter > 0
-        else "estimated"
-        if parameters.get("scale")
-        else "missing",
+        else "manual" if parameters.get("scale") else "missing",
+        "method": "known_distance" if spatial.get("method") == "known_distance" and parameters.get("scale") else "needle_diameter" if result.needle_rect and diameter > 0 and not manual_scale else "direct" if parameters.get("scale") else "uncalibrated",
+        "px_per_mm": (parameters.get("scale") or {}).get("px_per_mm"),
         "component_confidence": dict(result.confidence_scores or {}),
     }
     warnings = [
@@ -268,8 +270,8 @@ def prepare_stage_calibration(pipeline, parameters):
         )
         if value is None
     ]
-    if not parameters.get("needle_rect"):
-        warnings.extend(fallback_warnings)
+    if not parameters.get("scale"):
+        warnings.append("No spatial calibration is available; physical values will be withheld.")
     if getattr(result, "substrate_warning", False):
         warnings.append("Substrate detection is doubtful; review the baseline.")
     return parameters, warnings

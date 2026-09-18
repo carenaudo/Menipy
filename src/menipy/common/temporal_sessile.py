@@ -20,6 +20,7 @@ from menipy.math.hydrodynamics import (
 )
 from menipy.models.frame import Frame
 from menipy.models.temporal import (
+    DYNAMIC_SUMMARY_FIELDS,
     DynamicSessileResult,
     SequenceMetadata,
     TemporalFrameResult,
@@ -318,12 +319,15 @@ def _summarize(frames: list[TemporalFrameResult], fps: float) -> dict[str, Any]:
 
     # Substrate inclination and tilting plate analysis
     tilting_data = analyze_tilting_plate(frames)
+    summary["tilt_range_deg"] = float(tilting_data.get("tilt_range_deg", 0.0))
     if tilting_data.get("is_tilting", False):
         summary["tilting_plate"] = tilting_data
-        if tilting_data.get("critical_sliding_angle_deg") is not None:
-            summary["critical_sliding_angle_deg"] = tilting_data[
-                "critical_sliding_angle_deg"
-            ]
+        for field in DYNAMIC_SUMMARY_FIELDS:
+            if field in tilting_data:
+                summary[field] = tilting_data[field]
+
+    for field in DYNAMIC_SUMMARY_FIELDS:
+        summary.setdefault(field, None)
 
     return summary
 
@@ -335,6 +339,7 @@ def analyze_dynamic_sessile(
     px_per_mm: float | None,
     needle_diameter_mm: float | None,
     contact_angle_method: str = "auto_residual",
+    reference_substrate_line: tuple[tuple[float, float], tuple[float, float]] | None = None,
     use_temporal_tracking: bool = True,
     check_cancelled=check_cancelled,
 ) -> DynamicSessileResult:
@@ -355,7 +360,7 @@ def analyze_dynamic_sessile(
     tracker = TemporalDropletTracker(pipeline="sessile") if use_temporal_tracking else None
 
     output: list[TemporalFrameResult] = []
-    reference_line: tuple[tuple[float, float], tuple[float, float]] | None = None
+    reference_line: tuple[tuple[float, float], tuple[float, float]] | None = reference_substrate_line
     previous_line: tuple[tuple[float, float], tuple[float, float]] | None = None
     previous_contacts: tuple[tuple[float, float], tuple[float, float]] | None = None
     previous_contour: np.ndarray | None = None
@@ -429,15 +434,15 @@ def analyze_dynamic_sessile(
             (float(contacts_value[0][0]), float(contacts_value[0][1])),
             (float(contacts_value[1][0]), float(contacts_value[1][1])),
         )
-        line = (
+        observed_line = (
             (float(line_value[0][0]), float(line_value[0][1])),
             (float(line_value[1][0]), float(line_value[1][1])),
         )
         if contacts[0][0] >= contacts[1][0]:
             reasons.append("dynamic_contacts_inverted")
-        line_offset, line_angle = _line_offset_angle(line)
+        line_offset, line_angle = _line_offset_angle(observed_line)
         if reference_line is None:
-            reference_line = line
+            reference_line = observed_line
         if previous_line is not None:
             prior_offset, prior_angle = _line_offset_angle(previous_line)
             if (
@@ -448,6 +453,10 @@ def analyze_dynamic_sessile(
         ref_offset, ref_angle = _line_offset_angle(reference_line)
         if abs(line_offset - ref_offset) > 20.0 or abs(line_angle - ref_angle) > 3.0:
             reasons.append("dynamic_baseline_total_drift")
+        # A confirmed calibration line is authoritative for the sequence. The
+        # detected line remains valuable as frame-by-frame evidence that the
+        # camera/sample has not moved, but it cannot silently replace it.
+        line = reference_line
 
         area = _polygon_area(contour)
         if previous_contacts is not None and lost == 0:
@@ -523,6 +532,13 @@ def analyze_dynamic_sessile(
         result.diagnostics.update(
             {
                 "detectors": detection.get("detector_diagnostics", {}),
+                "substrate_reference": {
+                    "reference_line": reference_line,
+                    "observed_line": observed_line,
+                    "offset_delta_px": line_offset - ref_offset,
+                    "angle_delta_deg": line_angle - ref_angle,
+                    "source": "confirmed" if reference_substrate_line is not None else "first_detected",
+                },
                 "contact_angle": {
                     key: metrics.get(key)
                     for key in (
@@ -564,6 +580,8 @@ def analyze_dynamic_sessile(
             "px_per_mm": px_per_mm,
             "method": "explicit" if not scale_samples else "needle_initial_median",
             "samples": scale_samples,
+            "substrate_reference_line": reference_line,
+            "substrate_reference_source": "confirmed" if reference_substrate_line is not None else "first_detected",
         },
         summary=summary,
         frames=output,
@@ -600,6 +618,7 @@ def export_dynamic_result(
         "theta_advancing_deg",
         "theta_receding_deg",
         "contact_angle_hysteresis_deg",
+        *DYNAMIC_SUMMARY_FIELDS,
     ]
     summary_row = {
         "pipeline": result.pipeline,
@@ -608,7 +627,11 @@ def export_dynamic_result(
         "rejection_reasons": ";".join(result.rejection_reasons),
         "source_id": result.metadata.source_id,
         "fps": result.metadata.fps,
-        **{key: result.summary.get(key, "") for key in summary_columns},
+        **{
+            key: result.summary.get(key, "")
+            for key in summary_columns
+            if key not in {"pipeline", "schema_version"}
+        },
     }
     with summary_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(

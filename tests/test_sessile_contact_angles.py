@@ -202,7 +202,7 @@ def test_sessile_contour_extraction_normalizes_opencv_contour_shape():
     np.testing.assert_allclose(xy[0], [50.0, 100.0])
 
 
-def test_sessile_refinement_builds_separate_calculation_contour():
+def test_sessile_refinement_rejects_a_contour_that_never_reaches_the_contact_line():
     contour = np.array(
         [
             [10.0, 20.0],
@@ -226,11 +226,10 @@ def test_sessile_refinement_builds_separate_calculation_contour():
 
     assert out is not None
     assert out.contour is not None
-    assert out.sessile_calc_contour is not None
-    assert len(np.asarray(out.sessile_calc_contour).reshape(-1, 2)) >= len(
-        np.asarray(out.contour.xy).reshape(-1, 2)
-    )
-    assert out.sessile_calc_contact_points is not None
+    assert out.sessile_calc_contour is None
+    assert out.liquid_geometry is not None
+    assert out.liquid_geometry.status == "unresolved"
+    assert "contact_boundary_ambiguous_crossings" in out.liquid_geometry.rejection_reasons
 
 
 def test_contact_angle_uncertainty_estimation():
@@ -346,7 +345,7 @@ def test_sessile_3_auto_detection_finds_true_contact_angles():
         "data/samples/prueba sesil 2.png",
     ],
 )
-def test_real_sessile_samples_have_stable_contact_angles_and_diagnostic_fit(sample):
+def test_real_sessile_samples_publish_measurements_only_when_geometry_is_complete(sample):
     image = cv2.imread(str(Path(sample)))
     assert image is not None
 
@@ -374,17 +373,17 @@ def test_real_sessile_samples_have_stable_contact_angles_and_diagnostic_fit(samp
 
     ctx = SessilePipeline().run_with_plan(only=["compute_metrics"], **kwargs)
 
-    for key in ("diameter_mm", "height_mm", "volume_uL"):
-        assert np.isfinite(ctx.results[key])
-        assert ctx.results[key] > 0
-
-    assert ctx.results["theta_left_deg"] > 10.0
-    assert ctx.results["theta_right_deg"] > 10.0
-    assert np.isfinite(ctx.results["contact_angle_deg"])
-    assert "fit_R0_mm" in ctx.results
-    assert "fit_beta" in ctx.results
-    assert "R0_mm" not in ctx.results
-    assert ctx.results["fit_warning"] == "profile_fit_unreliable"
+    geometry = ctx.liquid_geometry
+    assert geometry is not None
+    if geometry.status == "complete":
+        for key in ("diameter_mm", "height_mm", "volume_uL"):
+            assert np.isfinite(ctx.results[key])
+            assert ctx.results[key] > 0
+        assert ctx.results["theta_left_deg"] > 10.0
+        assert ctx.results["theta_right_deg"] > 10.0
+    else:
+        assert ctx.results["availability"]["physical_geometry"] == "unavailable"
+        assert geometry.rejection_reasons
 
 
 @pytest.mark.parametrize(

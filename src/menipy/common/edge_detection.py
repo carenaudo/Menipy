@@ -134,6 +134,13 @@ def get_contour_detector(
       2) Plugin entry point 'menipy.edge_detection'
       3) Built-in fallback Canny
     """
+    # Pipeline consumers can reach this function without going through
+    # plugin_loader, so make the normal active-plugin discovery path explicit
+    # here.  It is idempotent and preserves the registry-first resolution.
+    from . import plugins
+
+    plugins.ensure_loaded()
+
     if name in EDGE_DETECTORS:
         return EDGE_DETECTORS[name]
 

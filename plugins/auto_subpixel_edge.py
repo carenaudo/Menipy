@@ -253,6 +253,12 @@ def subpixel_edge_detect(
 # -----------------------------------------------------------------------------
 
 EDGE_DETECTORS.register("subpixel", subpixel_edge_detect)
+
+# Keep settings registration declarative as well as registering it at import
+# time.  The plugin loader uses this mapping when loading a plugin from the
+# normal discovery database, so the settings UI does not need to import this
+# module directly.
+DETECTOR_SETTINGS = {"subpixel": SubpixelSettings}
 register_detector_settings("subpixel", SubpixelSettings)
 
 logger.info("Registered subpixel edge detection plugin.")

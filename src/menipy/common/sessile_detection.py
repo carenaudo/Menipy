@@ -61,7 +61,7 @@ def detect_sessile_needle_shaft(
         run = _center_run(mask[y], center_x)
         if run is not None:
             samples.append((y, run[0], run[1]))
-    if not samples or samples[0][0] > 4:
+    if not samples:
         return None, 0.0, None
 
     top_limit = max(12, min(limit // 3, 80))
@@ -70,10 +70,7 @@ def detect_sessile_needle_shaft(
         return None, 0.0, None
     widths = np.asarray([right - left + 1 for _, left, right in top], dtype=float)
     shaft_width = float(np.median(widths))
-    shaft_center = float(np.median([(left + right) / 2 for _, left, right in top]))
     if shaft_width < 2 or shaft_width > width * 0.2:
-        return None, 0.0, None
-    if abs(shaft_center - center_x) > width * 0.2:
         return None, 0.0, None
 
     expansion_threshold = max(shaft_width * 1.45, shaft_width + 8.0)
@@ -108,7 +105,9 @@ def detect_sessile_needle_shaft(
     bottom = expansion_y if expansion_y is not None else shaft_samples[-1][0] + 1
     rect = (left, 0, max(1, right - left + 1), max(1, int(bottom)))
     width_cv = float(np.std(widths) / max(shaft_width, 1.0))
-    confidence = float(np.clip(1.0 - width_cv - abs(shaft_center - center_x) / width, 0.0, 1.0))
+    # A needle can be deliberately off-centre or start below a cropped image
+    # border. Edge stability, not placement in the camera frame, is evidence.
+    confidence = float(np.clip(1.0 - width_cv, 0.0, 1.0))
     return rect, confidence, expansion_y
 
 
@@ -162,9 +161,14 @@ def _segment_sessile_otsu_fallback(
         binary[mask_start:, :] = 0
     if needle_shaft_result is None:
         needle_shaft_result = detect_sessile_needle_shaft(image, substrate_y=substrate_y)
-    _, _, expansion_y = needle_shaft_result
+    shaft_rect, _, expansion_y = needle_shaft_result
     if expansion_y is not None:
-        binary[: int(expansion_y), :] = 0
+        # Remove only the physical shaft. Clearing full rows created an
+        # artificial horizontal liquid edge whenever a needle entered a drop.
+        if shaft_rect is not None:
+            x, _, width, _ = shaft_rect
+            margin = max(2, int(round(width * 0.15)))
+            binary[: int(expansion_y), max(0, x - margin) : min(binary.shape[1], x + width + margin)] = 0
     kernel = np.ones((3, 3), np.uint8)
     binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel, iterations=1)
     binary = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel, iterations=2)
@@ -607,6 +611,7 @@ def detect_sessile_drop_contour(
     adaptive_c: int = 2,
     contact_band_px: int = 5,
     needle_shaft_result: NeedleShaftResult | None = None,
+    roi_rect: tuple[int, int, int, int] | None = None,
 ) -> SessileDropDetection:
     """Detect a measured sessile drop profile without synthetic closure edges.
 
@@ -647,6 +652,22 @@ def detect_sessile_drop_contour(
             area = float(cv2.contourArea(cnt))
             if area < min_area or y < 5 or x <= 5 or (x + w) >= (width - 5):
                 continue
+            if roi_rect is not None:
+                roi_x, roi_y, roi_w, roi_h = roi_rect
+                center = (x + w / 2.0, y + h / 2.0)
+                # ROI is a detector constraint, not merely a preview overlay.
+                # Require the candidate centre and its lateral extent to be in
+                # the chosen analysis window; contact-band padding may extend
+                # a few pixels below the drawn baseline.
+                if not (
+                    roi_x <= center[0] <= roi_x + roi_w
+                    and roi_y <= center[1] <= roi_y + roi_h
+                    and x >= roi_x - 2
+                    and x + w <= roi_x + roi_w + 2
+                    and y >= roi_y - 2
+                    and y + h <= roi_y + roi_h + max(5, contact_band_px)
+                ):
+                    continue
 
             if needle_rect is not None:
                 n_x, n_y, n_w, n_h = needle_rect
@@ -782,42 +803,19 @@ def detect_sessile_drop_contour(
                 (int(round(float(p1[0]))), int(substrate_y)),
                 (int(round(float(p2[0]))), int(substrate_y)),
             )
-            ellipse_contacts = _ellipse_contacts_at_baseline(
-                contour, float(substrate_y)
-            )
+            # A filled silhouette can terminate a pixel or two before a faint
+            # substrate edge. Use the local outer cap only when it agrees with
+            # the measured intersections; the later liquid-geometry validator
+            # still rejects a pair inconsistent with the apex-side surface.
+            ellipse_contacts = _ellipse_contacts_at_baseline(contour, float(substrate_y))
             if ellipse_contacts is not None:
-                nearest_width = float(contact_points[1][0] - contact_points[0][0])
-                ellipse_width = float(
-                    ellipse_contacts[1][0] - ellipse_contacts[0][0]
-                )
-                if nearest_width > 0 and 0.75 <= ellipse_width / nearest_width <= 1.25:
+                measured_width = float(contact_points[1][0] - contact_points[0][0])
+                ellipse_width = float(ellipse_contacts[1][0] - ellipse_contacts[0][0])
+                if measured_width > 0 and 0.75 <= ellipse_width / measured_width <= 1.25:
                     contact_points = (
-                        (
-                            int(round((contact_points[0][0] + ellipse_contacts[0][0]) / 2.0)),
-                            int(substrate_y),
-                        ),
-                        (
-                            int(round((contact_points[1][0] + ellipse_contacts[1][0]) / 2.0)),
-                            int(substrate_y),
-                        ),
+                        (int(round((contact_points[0][0] + ellipse_contacts[0][0]) / 2.0)), int(substrate_y)),
+                        (int(round((contact_points[1][0] + ellipse_contacts[1][0]) / 2.0)), int(substrate_y)),
                     )
-        else:
-            ellipse_contacts = _ellipse_contacts_at_baseline(
-                contour, float(substrate_y)
-            )
-            if ellipse_contacts is not None:
-                contact_points = (
-                    (int(round(ellipse_contacts[0][0])), int(substrate_y)),
-                    (int(round(ellipse_contacts[1][0])), int(substrate_y)),
-                )
-
-    if contact_points is not None and substrate_y is not None:
-        contact_points = _correct_overhanging_contacts(
-            contour,
-            contact_points,
-            int(substrate_y),
-            band_px=max(20.0, float(substrate_touch_tolerance + 5)),
-        )
 
     area_score = min(1.0, area / max(min_area * 4.0, 1.0))
     touch_score = 1.0

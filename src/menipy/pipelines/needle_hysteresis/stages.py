@@ -27,7 +27,7 @@ class NeedleHysteresisPipeline(PipelineBase):
 
     name = "needle_hysteresis"
     ui_metadata = {
-        "display_name": "Needle Drop Hysteresis",
+        "display_name": "Advancing / Receding Needle Drop",
         "icon": "sessile.svg",
         "color": "#10B981",
         "stages": ["acquisition", "compute_metrics", "overlay", "validation"],

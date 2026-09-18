@@ -44,6 +44,26 @@ class ContactLine(BaseModel):
     y2: float
 
 
+class LiquidGeometry(BaseModel):
+    """Validated liquid-side geometry, independent of a raw segmentation contour.
+
+    ``observed_surface`` contains only image-supported free-surface samples.
+    ``closed_region`` adds the straight or user-defined contact boundary solely
+    for area and display; it must never be used as an edge/fitting sample.
+    """
+
+    model_config = {"arbitrary_types_allowed": True}
+    boundary_kind: Literal["line", "arc"] = "line"
+    boundary_provenance: Literal["automatic", "manual"] = "automatic"
+    contact_boundary: list[tuple[float, float]] = Field(default_factory=list)
+    contact_points: tuple[tuple[float, float], tuple[float, float]] | None = None
+    observed_surface: np.ndarray | None = None
+    closed_region: np.ndarray | None = None
+    apex: tuple[float, float] | None = None
+    status: Literal["complete", "partial", "unresolved"] = "unresolved"
+    rejection_reasons: list[str] = Field(default_factory=list)
+
+
 class Contour(BaseModel):
     """
     Detected droplet (or meniscus) boundary.

@@ -1046,13 +1046,9 @@ def main(argv: list[str] | None = None) -> int:
                 )
 
         # Compute calibration metrics
-        px_per_mm = (
-            args.px_per_mm
-            if args.px_per_mm is not None
-            else 100.0 / max(needle_diameter_mm or 0.72, 0.001)
-        )
-        scale_origin = "manual" if args.px_per_mm is not None else "estimated"
-        scale_dict = {"px_per_mm": px_per_mm}
+        px_per_mm = args.px_per_mm
+        scale_origin = "manual" if px_per_mm is not None else "missing"
+        scale_dict = {"px_per_mm": px_per_mm} if px_per_mm is not None else {}
 
         # Run pipeline
         try:
@@ -1081,11 +1077,8 @@ def main(argv: list[str] | None = None) -> int:
             ctx.calibration_provenance = CalibrationProvenance(
                 origin=scale_origin,
                 px_per_mm=px_per_mm,
-                warnings=[
-                    "Estimated scale; physical values withheld. Supply --px-per-mm or needle calibration."
-                ]
-                if scale_origin == "estimated"
-                else [],
+                method="direct" if px_per_mm is not None else "uncalibrated",
+                warnings=["No spatial calibration is available; physical values are withheld."] if px_per_mm is None else [],
             )
             persisted = build_persisted_analysis(ctx)
             results_out = {
@@ -1216,7 +1209,7 @@ def main(argv: list[str] | None = None) -> int:
             except Exception as e:
                 logger.warning(f"Failed to auto-calibrate image {img_path.name}: {e}")
 
-        # Calibration computations (default to 0.72mm outer needle if DB lookup and overrides fail)
+        # Calibration derives only from an explicit scale or a measured needle.
         target_needle_diam = needle_diameter_mm or 0.72
         if locked_scale is not None:
             px_per_mm = float(locked_scale)
@@ -1227,10 +1220,10 @@ def main(argv: list[str] | None = None) -> int:
             scale_origin = "manual" if manual_needle else "measured"
             locked_scale_origin = scale_origin
         else:
-            px_per_mm = 100.0 / max(target_needle_diam, 0.001)
-            scale_origin = "estimated"
+            px_per_mm = None
+            scale_origin = "missing"
 
-        scale_dict = {"px_per_mm": px_per_mm}
+        scale_dict = {"px_per_mm": px_per_mm} if px_per_mm is not None else {}
 
         try:
             run_kwargs: dict[str, Any] = {
@@ -1240,7 +1233,7 @@ def main(argv: list[str] | None = None) -> int:
                 "substrate_line": substrate_line,
                 "image": str(img_path),
                 "scale": scale_dict,
-                "px_per_mm": px_per_mm,
+                **({"px_per_mm": px_per_mm} if px_per_mm is not None else {}),
                 "needle_diameter_mm": target_needle_diam,
                 "physics": {"rho1": rho1, "rho2": rho2, "g": 9.80665},
                 "onnx_proposal_mode": args.onnx_proposal_mode,
@@ -1279,11 +1272,8 @@ def main(argv: list[str] | None = None) -> int:
             ctx.calibration_provenance = CalibrationProvenance(
                 origin=scale_origin,
                 px_per_mm=px_per_mm,
-                warnings=[
-                    "Estimated scale; physical values withheld. Supply --px-per-mm or needle calibration."
-                ]
-                if scale_origin == "estimated"
-                else [],
+                method="direct" if locked_scale is not None else "needle_diameter" if px_per_mm is not None else "uncalibrated",
+                warnings=["No spatial calibration is available; physical values are withheld."] if px_per_mm is None else [],
             )
             persisted = build_persisted_analysis(ctx)
             if not persisted["accepted"] and tracker is not None:

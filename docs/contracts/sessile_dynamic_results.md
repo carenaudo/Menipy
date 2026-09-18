@@ -26,7 +26,15 @@ present only when both summaries exist. A rejected sequence is persisted with
 - `metadata`: source type/id/hash, dimensions, FPS, timestamps and frame count.
 - `calibration`: fixed scale, source and initial needle samples.
 - `summary`: valid fraction, duration, advancing/receding median, MAD, 95%
-  deterministic-bootstrap interval, speed, state durations and hysteresis.
+  deterministic-bootstrap interval, speed, state durations and hysteresis;
+  optional Cox–Voinov fields `cox_voinov_theta_advancing_deg`,
+  `cox_voinov_theta_receding_deg`, `cox_voinov_theta_equilibrium_deg`, and
+  `cox_voinov_hysteresis_deg`; and optional tilting-plate fields
+  `tilt_range_deg`, `critical_sliding_angle_deg`, `critical_frame_index`,
+  `theta_advancing_critical_deg`, and `theta_receding_critical_deg`.
+  The complete per-state Cox–Voinov fit remains in `cox_voinov_advancing` /
+  `cox_voinov_receding`, and the complete tilting result remains in
+  `tilting_plate`.
 - `frames`: frame index/time, acceptance, segment, raw left/right angles,
   baseline, contacts, half-width, seven-frame robust velocity, state,
   predicted ROI, optional contour and diagnostics.
@@ -48,7 +56,9 @@ Rejected frames are `invalid`. Reacquisition after a gap starts a new
 ## Exports
 
 - `results.json`: complete contract, including contours and diagnostics.
-- `results.csv`: one stable summary row.
+- `results.csv`: one stable summary row. Its additive columns include the
+  scalar Cox–Voinov and tilting-plate fields above; unavailable optional
+  values are empty. Existing columns and their order remain unchanged.
 - `results_frames.csv`: one row per frame, with raw geometry and state but no
   contours or masks; nested diagnostics use JSON columns.
 

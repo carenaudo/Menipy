@@ -109,6 +109,7 @@ class DynamicSessilePipeline(PipelineBase):
                 if ctx.contact_angle_method
                 in {"tangent", "circle_fit", "spherical_cap", "auto_residual", "arc_spline", "clothoid_spline"}
                 else "auto_residual",
+                reference_substrate_line=ctx.substrate_line,
             )
         finally:
             if ctx.sequence_store is not None:
@@ -117,6 +118,7 @@ class DynamicSessilePipeline(PipelineBase):
         ctx.dynamic_sessile_result = dynamic
         ctx.temporal_frame_results = dynamic.frames
         ctx.results = {
+            "pipeline": dynamic.pipeline,
             "schema_version": dynamic.schema_version,
             **dynamic.summary,
             "series": [

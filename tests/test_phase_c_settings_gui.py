@@ -127,6 +127,31 @@ def test_physics_menu_points_to_phase_properties(qtbot, monkeypatch) -> None:
     assert "Phase Properties" in shown[0][2]
 
 
+def test_dialog_preview_cleanup_is_idempotent(qtbot) -> None:
+    from types import SimpleNamespace
+
+    from PySide6.QtCore import Signal
+    from PySide6.QtWidgets import QDialog, QMainWindow
+
+    from menipy.gui.controllers.dialog_coordinator import DialogCoordinator
+
+    class PreviewDialog(QDialog):
+        previewRequested = Signal(object)
+
+    window = QMainWindow()
+    qtbot.addWidget(window)
+    dialog = PreviewDialog(parent=window)
+    qtbot.addWidget(dialog)
+    coordinator = DialogCoordinator(window, settings=SimpleNamespace())
+
+    coordinator._connect_dialog_preview(dialog, coordinator._on_edge_detection_preview)
+    coordinator._disconnect_dialog_preview(dialog)
+    # A second close/cleanup path must not ask PySide to disconnect a missing slot.
+    coordinator._disconnect_dialog_preview(dialog)
+
+    assert not coordinator._dialog_preview_connections
+
+
 def test_pendant_approximators_default_and_opt_in(qtbot) -> None:
     from menipy.pipelines.pendant.stages import DEFAULT_PENDANT_APPROXIMATION_METHODS
 
